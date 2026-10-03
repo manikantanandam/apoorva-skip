@@ -12,7 +12,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/skiptools/skip.git", from: "1.9.13"),
         .package(url: "https://github.com/skiptools/skip-fuse-ui.git", from: "1.0.0"),
-        .package(url: "https://source.skip.tools/skip-firebase.git", "0.9.0"..<"2.0.0")
+        .package(url: "https://source.skip.tools/skip-firebase.git", "0.9.0"..<"2.0.0"),
+        .package(path: "../libraries/ApoorvaAppCore")
     ],
     targets: [
         .target(
@@ -20,7 +21,8 @@ let package = Package(
             dependencies: [
                 .product(name: "SkipFuseUI", package: "skip-fuse-ui"),
                 .product(name: "SkipFirebaseFirestore", package: "skip-firebase"),
-                .product(name: "SkipFirebaseAuth", package: "skip-firebase")
+                .product(name: "SkipFirebaseAuth", package: "skip-firebase"),
+                .product(name: "ApoorvaAppCore", package: "ApoorvaAppCore")
             ],
             resources: [
                 .process("Resources")

@@ -44,9 +44,9 @@
 		530DFB723071638E00C3D1A7 /* ApoorvaOfflineStorage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaOfflineStorage; sourceTree = "<group>"; };
 		530DFB733071638E00C3D1A7 /* ApoorvaRepository */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaRepository; sourceTree = "<group>"; };
 		530DFB743071638E00C3D1A7 /* ApoorvaServices */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaServices; sourceTree = "<group>"; };
-		530DFB76307163DD00C3D1A7 /* ApoorvaApp */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaApp; sourceTree = "<group>"; };
 		530F69203071344F009A9FFD /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		530F692D3071621A009A9FFD /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		53CC3A41307176CC00E9FCBB /* ApoorvaAppCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaAppCore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -108,7 +108,7 @@
 		530DFB753071638E00C3D1A7 /* libraries */ = {
 			isa = PBXGroup;
 			children = (
-				530DFB76307163DD00C3D1A7 /* ApoorvaApp */,
+				53CC3A41307176CC00E9FCBB /* ApoorvaAppCore */,
 				530DFB713071638E00C3D1A7 /* ApoorvaModels */,
 				530DFB723071638E00C3D1A7 /* ApoorvaOfflineStorage */,
 				530DFB733071638E00C3D1A7 /* ApoorvaRepository */,
@@ -228,8 +228,10 @@
 			buildSettings = {
 				DEVELOPMENT_TEAM = 7K6Z7HB495;
 				ENABLE_PREVIEWS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				SKIP_ACTION = none;
 			};
 			name = Debug;
@@ -240,8 +242,10 @@
 			buildSettings = {
 				DEVELOPMENT_TEAM = 7K6Z7HB495;
 				ENABLE_PREVIEWS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				SKIP_ACTION = none;
 			};
 			name = Release;
