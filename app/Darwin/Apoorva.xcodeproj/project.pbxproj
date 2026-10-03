@@ -40,6 +40,11 @@
 		49F90C2B2A52156200F06D93 /* Main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Main.swift; path = Sources/Main.swift; sourceTree = SOURCE_ROOT; };
 		49F90C2F2A52156300F06D93 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		49F90C312A52156300F06D93 /* Entitlements.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Entitlements.plist; sourceTree = "<group>"; };
+		530DFB713071638E00C3D1A7 /* ApoorvaModels */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaModels; sourceTree = "<group>"; };
+		530DFB723071638E00C3D1A7 /* ApoorvaOfflineStorage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaOfflineStorage; sourceTree = "<group>"; };
+		530DFB733071638E00C3D1A7 /* ApoorvaRepository */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaRepository; sourceTree = "<group>"; };
+		530DFB743071638E00C3D1A7 /* ApoorvaServices */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaServices; sourceTree = "<group>"; };
+		530DFB76307163DD00C3D1A7 /* ApoorvaApp */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaApp; sourceTree = "<group>"; };
 		530F69203071344F009A9FFD /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		530F692D3071621A009A9FFD /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -79,6 +84,7 @@
 				496EB72F2A6AE4DE00C1253A /* Skip.env */,
 				496EB72F2A6AE4DE00C1253B /* Apoorva.xcconfig */,
 				530F692D3071621A009A9FFD /* Localizable.xcstrings */,
+				530DFB753071638E00C3D1A7 /* libraries */,
 				493609562A6B7EAE00C401E2 /* Apoorva */,
 				49F90C2A2A52156200F06D93 /* App */,
 				49AB54462B066A7E007B79B2 /* SkipStone */,
@@ -98,6 +104,19 @@
 			);
 			name = App;
 			sourceTree = "<group>";
+		};
+		530DFB753071638E00C3D1A7 /* libraries */ = {
+			isa = PBXGroup;
+			children = (
+				530DFB76307163DD00C3D1A7 /* ApoorvaApp */,
+				530DFB713071638E00C3D1A7 /* ApoorvaModels */,
+				530DFB723071638E00C3D1A7 /* ApoorvaOfflineStorage */,
+				530DFB733071638E00C3D1A7 /* ApoorvaRepository */,
+				530DFB743071638E00C3D1A7 /* ApoorvaServices */,
+			);
+			name = libraries;
+			path = ../../libraries;
+			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
 
