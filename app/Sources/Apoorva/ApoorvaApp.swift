@@ -2,6 +2,7 @@ import Foundation
 import SkipFuse
 import SwiftUI
 import SkipFirebaseCore
+import ApoorvaAppCore
 
 /// A logger for the Apoorva module.
 let logger: Logger = Logger(subsystem: "com.apoorva.app", category: "Apoorva")
@@ -14,10 +15,7 @@ let logger: Logger = Logger(subsystem: "com.apoorva.app", category: "Apoorva")
     }
 
     public var body: some View {
-        ContentView()
-            .task {
-                logger.info("Skip app logs are viewable in the Xcode console for iOS; Android logs can be viewed in Studio or using adb logcat")
-            }
+        MainView()
     }
 }
 
