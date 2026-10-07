@@ -6,11 +6,10 @@
 //
 
 import SwiftUI
-import ApoorvaViewModel
 
-public struct LoginView<ViewModel: LoginViewModelProtocol>: View {
+public struct LoginView: View {
     // 1. Inject the ViewModel
-    @StateObject private var viewModel: ViewModel
+    @Bindable private var viewModel: LoginViewModel
     
     // 2. Focus Lifecycle State remains in the View
     enum Field: Hashable {
@@ -20,29 +19,24 @@ public struct LoginView<ViewModel: LoginViewModelProtocol>: View {
     @FocusState private var focusedField: Field?
     
     // Custom initializer for dependency injection
-    public init(viewModel: @autoclosure @escaping () -> ViewModel) {
-        self._viewModel = StateObject(wrappedValue: viewModel())
+    public init(viewModel: LoginViewModel) {
+        self.viewModel = viewModel
     }
 
     public var body: some View {
         NavigationStack {
             Form {
                 Section(header: Text("Account Credentials")) {
-                    TextField("Username or Email", text: $viewModel.username)
+                    EmailTextField(text: $viewModel.username)
                         .focused($focusedField, equals: .username)
-                        .textContentType(.username)
-                        .keyboardType(.emailAddress)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                        .submitLabel(.next)
 
-                    SecureField("Password", text: $viewModel.password)
+                    PasswordTextField(password: $viewModel.password)
                         .focused($focusedField, equals: .password)
-                        .textContentType(.password)
-                        .submitLabel(.go)
                 }
                 
-                Button(action: viewModel.loginPressed) {
+                Button {
+                    viewModel.loginPressed()
+                } label: {
                     Text("Log In")
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
@@ -54,9 +48,10 @@ public struct LoginView<ViewModel: LoginViewModelProtocol>: View {
                 case .username:
                     focusedField = .password
                 case .password:
-                    if viewModel.isLoginEnabled {
+                    Task {
                         viewModel.loginPressed()
                     }
+
                 case nil:
                     break
                 }
@@ -70,7 +65,7 @@ public struct LoginView<ViewModel: LoginViewModelProtocol>: View {
 
 #Preview {
     // Injecting the Mock
-    LoginView(viewModel: MockLoginViewModel())
+//    LoginView(viewModel: LoginViewModel())
     
     // In your actual App entry point, you would inject the real one:
     // LoginView(viewModel: LoginViewModel())

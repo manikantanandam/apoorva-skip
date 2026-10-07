@@ -47,7 +47,6 @@
 		530F69203071344F009A9FFD /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		530F692D3071621A009A9FFD /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		539A4D5D307206B9003B209E /* ApoorvaUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaUI; sourceTree = "<group>"; };
-		539A4D5E307206CA003B209E /* ApoorvaViewModel */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaViewModel; sourceTree = "<group>"; };
 		53CC3A41307176CC00E9FCBB /* ApoorvaAppCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaAppCore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -111,7 +110,6 @@
 			isa = PBXGroup;
 			children = (
 				539A4D5D307206B9003B209E /* ApoorvaUI */,
-				539A4D5E307206CA003B209E /* ApoorvaViewModel */,
 				53CC3A41307176CC00E9FCBB /* ApoorvaAppCore */,
 				530DFB713071638E00C3D1A7 /* ApoorvaModels */,
 				530DFB723071638E00C3D1A7 /* ApoorvaOfflineStorage */,
