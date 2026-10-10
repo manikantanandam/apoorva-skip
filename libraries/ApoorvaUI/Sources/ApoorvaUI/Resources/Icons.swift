@@ -1,0 +1,12 @@
+//
+//  File.swift
+//  ApoorvaUI
+//
+//  Created by Manikanta Nandam on 10/10/26.
+//
+
+import Foundation
+
+public enum ApoorvaIcon: String {
+    case person = "person"
+}

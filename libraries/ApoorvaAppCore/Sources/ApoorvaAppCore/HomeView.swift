@@ -6,10 +6,11 @@
 //
 
 import SwiftUI
+import ApoorvaUI
 
 struct HomeView: View {
     var body: some View {
-        Text("HomeView!")
+        POSView()
     }
 }
 
