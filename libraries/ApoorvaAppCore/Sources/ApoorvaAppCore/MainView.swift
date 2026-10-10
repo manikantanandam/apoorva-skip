@@ -14,13 +14,13 @@ class MainViewModel {
     enum State {
         case login(LoginViewModel)
         case pos(POSViewModel)
-        case home
+        case home(AppContainer)
         case loading
     }
     
     var state: State = .loading
     
-    private let appContainer: AppContainer = AppContainer()
+    let appContainer: AppContainer = AppContainer()
     
     init() {
         Task {
@@ -35,7 +35,7 @@ class MainViewModel {
                 state = .login(appContainer.login.makeLoginViewModel())
                 print("No User logged in")
             } else {
-                state = .pos(appContainer.pos.makeLoginViewModel())
+                state = .home(appContainer)
                 print("Received: \(user!)")
             }
 
@@ -56,8 +56,8 @@ public struct MainView: View {
         switch viewModel.state {
         case .loading:
             Text("Loading")
-        case .home:
-            HomeView()
+        case .home(let container):
+            HomeView(container: container)
         case .login(let viewModel):
             LoginView(viewModel: viewModel)
         case .pos(let viewModel):
