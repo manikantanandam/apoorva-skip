@@ -30,9 +30,14 @@ public struct POSView: View {
                 icon: .phone
             )
             
-            CustomButton(text: "Logout") {
-                viewModel.logoutPressed()
-            }
+            QuickItemsView(items: viewModel.items)
+            
+            
+            
+//            CustomButton(text: "Logout", backgroundColor: .orange) {
+//                viewModel.logoutPressed()
+//            }
+            Spacer()
         }
         .padding(16)
     }

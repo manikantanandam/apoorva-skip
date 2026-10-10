@@ -11,6 +11,7 @@ import SwiftUI
 public enum ApoorvaColor {
     case systemBackGround
     case textFieldBackground
+    case buttonBackground
     case orange
     case buttonTextColor
     case textColor
@@ -30,6 +31,8 @@ public enum ApoorvaColor {
             return Color.black
         case .iconColor:
             return Color(uiColor: UIColor(red: 125/255, green: 143/255, blue: 155/255, alpha: 1))
+        case .buttonBackground:
+            return .orange
         }
     }
 }

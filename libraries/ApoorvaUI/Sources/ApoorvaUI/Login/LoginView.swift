@@ -38,7 +38,6 @@ public struct LoginView: View {
                              backgroundColor: .orange) {
                     viewModel.loginPressed()
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
             }
             .padding(16)
             .onAppear {

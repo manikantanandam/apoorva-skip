@@ -8,6 +8,11 @@
 import Foundation
 import SwiftUI
 
+public enum CustomButtonAlignment {
+    case horizontal
+    case vertical
+}
+
 public struct CustomButton: View {
     
     let text: String
@@ -17,6 +22,7 @@ public struct CustomButton: View {
     private let minHeight: CGFloat
     let backgroundColor: ApoorvaColor
     let textColor: ApoorvaColor
+    let alignment: CustomButtonAlignment
     @State private var isLoading: Bool = false
     
     public init(text: String,
@@ -25,6 +31,7 @@ public struct CustomButton: View {
                 minHeight: CGFloat = 60,
                 backgroundColor: ApoorvaColor = .systemBackGround,
                 textColor: ApoorvaColor = .buttonTextColor,
+                alignment: CustomButtonAlignment = .horizontal,
                 action: @escaping () -> Void) {
         self.text = text
         self.icon = icon
@@ -33,23 +40,45 @@ public struct CustomButton: View {
         self.backgroundColor = backgroundColor
         self.minHeight = minHeight
         self.textColor = textColor
+        self.alignment = alignment
     }
     
     public var body: some View {
-        HStack {
-            if isLoading {
-                CircularLoadingView()
-            } else {
-                Text(text)
-                    .foregroundStyle(textColor.color)
+        Group {
+            switch alignment {
+            case .horizontal:
+                HStack {
+                    content
+                }
+            case .vertical:
+                VStack {
+                    content
+                }
             }
         }
         .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .center)
         .background(backgroundColor.color)
         .onTapGesture {
-            guard !isLoading else { return }
-            isLoading = true
-            action()
+            if needLoader {
+                guard !isLoading else { return }
+                isLoading = true
+                action()
+            } else {
+                action()
+            }
+            
+        }
+    }
+    
+    @ViewBuilder var content: some View {
+        if isLoading && needLoader {
+            CircularLoadingView()
+        } else {
+            if let icon {
+                IconView(icon: icon, iconSize: 24, color: textColor.color)
+            }
+            Text(text)
+                .foregroundStyle(textColor.color)
         }
     }
 }

@@ -19,7 +19,14 @@ public struct Category: Codable, Sendable, Identifiable {
     }
     
     // Standard Initializer
-    public init(id: String, name: String, currentStock: Int, billMachineNumber: Int, lastSoldDate: Date?, isHotkey: Bool, updatedAt: Date = Date(), isDeleted: Bool = false) {
+    public init(id: String = UUID().uuidString,
+                name: String,
+                currentStock: Int = 0,
+                billMachineNumber: Int = 0,
+                lastSoldDate: Date? = nil,
+                isHotkey: Bool = false,
+                updatedAt: Date = Date(),
+                isDeleted: Bool = false) {
         self.id = id
         self.name = name
         self.currentStock = currentStock
