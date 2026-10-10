@@ -9,14 +9,16 @@ import Foundation
 
 @MainActor
 public class AppContainer {
-    public let core = CoreContainer()
-    
+    public let servicesContainer = ServicesContainer()
+    public let offlineStorageContainer = OfflineStorageContainer()
+    public lazy var repositoryContainer = RepositoryContainer(
+        servicesContainer: servicesContainer,
+        offlineStorageContainer: offlineStorageContainer
+    )
     // Feature containers are grouped and lazy-loaded
-    public lazy var login = LoginContainer(core: core)
-    public lazy var pos = POSContainer(core: core)
-//    public lazy var cashflow = CashflowContainer(core: core)
-//    public lazy var inventory = InventoryContainer(core: core)
-//    public lazy var customer = CustomerContainer(core: core)
-    
+    public lazy var modulesContainer = ModulesContainer(
+        servicesContainer: servicesContainer,
+        repositoryContainer: repositoryContainer
+    )
     public init() {}
 }

@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import ApoorvaUI
+import ApoorvaModules
 
 @MainActor
 @Observable
@@ -29,10 +29,10 @@ class MainViewModel {
     }
     
     func checkForLoggedInUser() async {
-        let authService = appContainer.core.authService
+        let authService = appContainer.servicesContainer.authService
         for await user in authService.currentUserStream {
             if user == nil {
-                state = .login(appContainer.login.makeLoginViewModel())
+                state = .login(appContainer.modulesContainer.makeLoginViewModel())
                 print("No User logged in")
             } else {
                 state = .home(appContainer)

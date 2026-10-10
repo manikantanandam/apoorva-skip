@@ -1,5 +1,5 @@
 import SwiftUI
-import ApoorvaUI
+import ApoorvaModules
 
 enum HomeViewTab: Int, CaseIterable, Identifiable {
     case pos
@@ -39,7 +39,7 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
         switch self {
         case .pos:
             // Use the container to instantiate the POSViewModel
-            POSView(viewModel: container.pos.makeLoginViewModel())
+            POSView(viewModel: container.modulesContainer.makePOSViewModel())
         case .dashboard:
             Text("Dashboard Screen")
         case .reports:
@@ -49,7 +49,7 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
         case .inventory:
             Text("Inventory Screen")
         case .profile:
-            Text("Profile Screen")
+            ProfileView(viewModel: container.modulesContainer.makeProfileViewModel())
         }
     }
 }
