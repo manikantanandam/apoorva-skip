@@ -13,17 +13,28 @@ struct PasswordTextField: View {
     @State var showPassword: Bool = false
     private let placeholder: String
     private let iconColor: Color? = nil
+    private let minHeight: CGFloat
+    private let padding: CGFloat
+    private let backgroundColor: ApoorvaColor
     
     public init(password: Binding<String>,
-                placeholder: String = "Password") {
+                placeholder: String = "Password",
+                minHeight: CGFloat = 60,
+                padding: CGFloat = 16,
+                backgroundColor: ApoorvaColor = .textFieldBackground) {
         self._password = password
         self.placeholder = placeholder
+        self.minHeight = minHeight
+        self.padding = padding
+        self.backgroundColor = backgroundColor
     }
     
     var body: some View {
         textField
             .textContentType(.password)
             .submitLabel(.go)
+            .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .center)
+            .background(backgroundColor.color)
             .overlay(alignment: .trailing) {
                 icon
             }
@@ -34,6 +45,7 @@ struct PasswordTextField: View {
             CustomTextField(text: $password, placeholder: placeholder)
         } else {
             SecureField(placeholder, text: $password)
+                .padding(.horizontal, padding)
         }
     }
     

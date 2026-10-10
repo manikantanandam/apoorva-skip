@@ -25,37 +25,22 @@ public struct LoginView: View {
 
     public var body: some View {
         NavigationStack {
-            Form {
-                Section(header: Text("Account Credentials")) {
-                    EmailTextField(text: $viewModel.username)
-                        .focused($focusedField, equals: .username)
+            VStack {
+                EmailTextField(text: $viewModel.username)
+                    .focused($focusedField, equals: .username)
+                    
 
-                    PasswordTextField(password: $viewModel.password)
-                        .focused($focusedField, equals: .password)
-                }
+                PasswordTextField(password: $viewModel.password)
+                    .focused($focusedField, equals: .password)
                 
-                Button {
+                CustomButton(text: "Login",
+                             needLoader: true,
+                             backgroundColor: .orange) {
                     viewModel.loginPressed()
-                } label: {
-                    Text("Log In")
-                        .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .disabled(!viewModel.isLoginEnabled) // Logic moved to ViewModel
+                .frame(maxWidth: .infinity, alignment: .center)
             }
-            .navigationTitle("Welcome")
-            .onSubmit {
-                switch focusedField {
-                case .username:
-                    focusedField = .password
-                case .password:
-                    Task {
-                        viewModel.loginPressed()
-                    }
-
-                case nil:
-                    break
-                }
-            }
+            .padding(16)
             .onAppear {
                 focusedField = .username
             }
