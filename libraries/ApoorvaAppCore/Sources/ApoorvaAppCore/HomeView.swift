@@ -10,7 +10,7 @@ import ApoorvaUI
 
 struct HomeView: View {
     var body: some View {
-        POSView()
+        Text("HomeView")
     }
 }
 

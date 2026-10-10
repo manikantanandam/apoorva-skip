@@ -13,7 +13,7 @@ public class AppContainer {
     
     // Feature containers are grouped and lazy-loaded
     public lazy var login = LoginContainer(core: core)
-//    public lazy var pos = PosContainer(core: core)
+    public lazy var pos = POSContainer(core: core)
 //    public lazy var cashflow = CashflowContainer(core: core)
 //    public lazy var inventory = InventoryContainer(core: core)
 //    public lazy var customer = CustomerContainer(core: core)

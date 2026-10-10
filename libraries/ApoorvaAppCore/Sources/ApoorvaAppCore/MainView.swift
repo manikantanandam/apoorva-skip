@@ -13,6 +13,7 @@ import ApoorvaUI
 class MainViewModel {
     enum State {
         case login(LoginViewModel)
+        case pos(POSViewModel)
         case home
         case loading
     }
@@ -34,7 +35,7 @@ class MainViewModel {
                 state = .login(appContainer.login.makeLoginViewModel())
                 print("No User logged in")
             } else {
-                state = .home
+                state = .pos(appContainer.pos.makeLoginViewModel())
                 print("Received: \(user!)")
             }
 
@@ -59,6 +60,9 @@ public struct MainView: View {
             HomeView()
         case .login(let viewModel):
             LoginView(viewModel: viewModel)
+        case .pos(let viewModel):
+            POSView(viewModel: viewModel)
+            
         }
     }
 }
