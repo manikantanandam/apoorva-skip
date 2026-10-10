@@ -32,6 +32,8 @@ public struct POSView: View {
             
             QuickItemsView(items: viewModel.items)
             
+            SelectedCartItemsView(items: viewModel.items)
+            
             
             
 //            CustomButton(text: "Logout", backgroundColor: .orange) {
