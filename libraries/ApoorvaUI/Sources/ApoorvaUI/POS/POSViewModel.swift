@@ -11,6 +11,10 @@ import ApoorvaServices
 @MainActor
 @Observable
 public class POSViewModel {
+    
+    var customerName: String = ""
+    var customerPhoneNumber: String = ""
+    
     private var authService: AuthServicing
     
     public init(authService: AuthServicing) {

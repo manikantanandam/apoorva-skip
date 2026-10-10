@@ -17,14 +17,24 @@ public struct POSView: View {
     }
     
     public var body: some View {
-        Text("POS View")
-        
-        Button {
-            viewModel.logoutPressed()
-        } label: {
-            Text("Log out")
+        VStack {
+            IconTextField(
+                text: $viewModel.customerName,
+                placeholder: "Customer Name",
+                icon: .person
+            )
+            
+            IconTextField(
+                text: $viewModel.customerPhoneNumber,
+                placeholder: "Phone Number",
+                icon: .phone
+            )
+            
+            CustomButton(text: "Logout") {
+                viewModel.logoutPressed()
+            }
         }
-
+        .padding(16)
     }
     
     

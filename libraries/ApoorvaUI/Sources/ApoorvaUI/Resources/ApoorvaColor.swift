@@ -13,6 +13,8 @@ public enum ApoorvaColor {
     case textFieldBackground
     case orange
     case buttonTextColor
+    case textColor
+    case iconColor
     
     public var color: Color {
         switch self {
@@ -24,6 +26,10 @@ public enum ApoorvaColor {
             return Color(uiColor: UIColor(red: 241/255, green: 243/255, blue: 246/255, alpha: 1))
         case .buttonTextColor:
             return Color.white
+        case .textColor:
+            return Color.black
+        case .iconColor:
+            return Color(uiColor: UIColor(red: 125/255, green: 143/255, blue: 155/255, alpha: 1))
         }
     }
 }
