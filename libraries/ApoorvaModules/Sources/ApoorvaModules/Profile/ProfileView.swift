@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ApoorvaUtilities
 
 public struct ProfileView: View {
     
@@ -17,14 +18,27 @@ public struct ProfileView: View {
     
     public var body: some View {
         NavigationStack {
-            VStack {
+            VStack(alignment: .leading) {
                 if let user = viewModel.appUser {
-                    Text(user.name)
-                    Text(user.email)
-                    Text(user.role.rawValue)
-                    Text(user.status)
-                    Text("\(user.createdAt.timeIntervalSince1970)")
-                    Text("\(user.updatedAt.timeIntervalSince1970)")
+                    HStack {
+                        AvatarView(imageURL: user.imageURL)
+                        VStack(alignment: .leading) {
+                            LabelView(text: user.name)
+                            LabelView(text: user.email)
+                        }
+                    }
+                    
+                    DescriptionView(title: "Role", value: user.role.rawValue)
+                    DescriptionView(title: "Status", value: user.status)
+                    
+                    DescriptionView(title: "Created At",
+                                    value: viewModel.createdAt)
+                    DescriptionView(title: "updated At",
+                                    value: viewModel.updatedAt)
+                    
+                    DescriptionView(title: "Organization",
+                                    value: viewModel.currentOrganization)
+                    
                     Spacer()
                 } else {
                     Text("No User")

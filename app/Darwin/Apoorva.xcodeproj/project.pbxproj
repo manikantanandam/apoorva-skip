@@ -47,6 +47,7 @@
 		530F69203071344F009A9FFD /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		530F692D3071621A009A9FFD /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		5372E973307A844C00330358 /* ApoorvaModules */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaModules; sourceTree = "<group>"; };
+		53B9CED0307BDFAA00F23983 /* ApoorvaUtilities */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaUtilities; sourceTree = "<group>"; };
 		53CC3A41307176CC00E9FCBB /* ApoorvaAppCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaAppCore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -109,6 +110,7 @@
 		530DFB753071638E00C3D1A7 /* libraries */ = {
 			isa = PBXGroup;
 			children = (
+				53B9CED0307BDFAA00F23983 /* ApoorvaUtilities */,
 				5372E973307A844C00330358 /* ApoorvaModules */,
 				53CC3A41307176CC00E9FCBB /* ApoorvaAppCore */,
 				530DFB713071638E00C3D1A7 /* ApoorvaModels */,

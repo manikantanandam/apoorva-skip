@@ -34,3 +34,23 @@ public class ProfileViewModel {
     }
     
 }
+
+public extension ProfileViewModel {
+    var currentOrganization: String {
+        guard let selectedOrganization = appUser?.selectedOrganization else {
+            return "Not assigned"
+        }
+        
+        return selectedOrganization.name
+    }
+    
+    var createdAt: String {
+        guard let appUser else { return "" }
+        return appUser.createdAt.toString(format: "dd-MM-yyyy")
+    }
+    
+    var updatedAt: String {
+        guard let appUser else { return "" }
+        return appUser.updatedAt.toString(format: "dd-MM-yyyy")
+    }
+}

@@ -27,58 +27,91 @@ public struct AppUser: Codable, Sendable {
     public let status: String
     public let assignedOrgs: [OrganizationSnapshot]
     public let createdAt: Date
+    public let selectedOrganization: OrganizationSnapshot?
+    public let url: String
     
     public var updatedAt: Date
     public var isDeleted: Bool
     
     public enum CodingKeys: String, CodingKey {
-        case id, name, email, role, status, assignedOrgs, createdAt, updatedAt, isDeleted
+        case id,
+             name,
+             email,
+             role,
+             status,
+             assignedOrgs,
+             createdAt,
+             updatedAt,
+             isDeleted,
+             selectedOrganization,
+             url
     }
     
     public init(from decoder: Decoder) throws {
-            let container = try decoder.container(keyedBy: CodingKeys.self)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        self.id = (try? container.decodeIfPresent(String.self, forKey: .id)) ?? UUID().uuidString
+        self.name = (try? container.decodeIfPresent(String.self, forKey: .name)) ?? "Unknown User"
+        self.email = (try? container.decodeIfPresent(String.self, forKey: .email)) ?? ""
+        self.role = (try? container.decodeIfPresent(AppUserRole.self, forKey: .role)) ?? .standard
+        self.status = (try? container.decodeIfPresent(String.self, forKey: .status)) ?? "Active"
+        self.assignedOrgs = (try? container.decodeIfPresent([OrganizationSnapshot].self, forKey: .assignedOrgs)) ?? []
+        
+        // --- BULLETPROOF DATE DECODING ---
+        if let standardDate = try? container.decodeIfPresent(Date.self, forKey: .createdAt) {
+            // 1. Success: It was a true Firestore Timestamp
+            self.createdAt = standardDate
+        } else if let dateString = try? container.decodeIfPresent(String.self, forKey: .createdAt) {
+            // 2. Fallback: It was saved as a String (like your screenshot)
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
             
-            self.id = (try? container.decodeIfPresent(String.self, forKey: .id)) ?? UUID().uuidString
-            self.name = (try? container.decodeIfPresent(String.self, forKey: .name)) ?? "Unknown User"
-            self.email = (try? container.decodeIfPresent(String.self, forKey: .email)) ?? ""
-            self.role = (try? container.decodeIfPresent(AppUserRole.self, forKey: .role)) ?? .standard
-            self.status = (try? container.decodeIfPresent(String.self, forKey: .status)) ?? "Active"
-            self.assignedOrgs = (try? container.decodeIfPresent([OrganizationSnapshot].self, forKey: .assignedOrgs)) ?? []
+            // Matches: "31 March 2026 at 19:53:12 UTC+05:30"
+            formatter.dateFormat = "dd MMMM yyyy 'at' HH:mm:ss 'UTC'ZZZZZ"
             
-            // --- BULLETPROOF DATE DECODING ---
-            if let standardDate = try? container.decodeIfPresent(Date.self, forKey: .createdAt) {
-                // 1. Success: It was a true Firestore Timestamp
-                self.createdAt = standardDate
-            } else if let dateString = try? container.decodeIfPresent(String.self, forKey: .createdAt) {
-                // 2. Fallback: It was saved as a String (like your screenshot)
-                let formatter = DateFormatter()
-                formatter.locale = Locale(identifier: "en_US_POSIX")
-                
-                // Matches: "31 March 2026 at 19:53:12 UTC+05:30"
-                formatter.dateFormat = "dd MMMM yyyy 'at' HH:mm:ss 'UTC'ZZZZZ"
-                
-                // Fix the missing leading zero in the timezone for safe parsing
-                let cleanString = dateString.replacingOccurrences(of: "UTC+5:", with: "UTC+05:")
-                
-                self.createdAt = formatter.date(from: cleanString) ?? Date()
-            } else {
-                // 3. Absolute fallback
-                self.createdAt = Date()
-            }
+            // Fix the missing leading zero in the timezone for safe parsing
+            let cleanString = dateString.replacingOccurrences(of: "UTC+5:", with: "UTC+05:")
             
-            self.updatedAt = (try? container.decodeIfPresent(Date.self, forKey: .updatedAt)) ?? Date()
-            self.isDeleted = (try? container.decodeIfPresent(Bool.self, forKey: .isDeleted)) ?? false
+            self.createdAt = formatter.date(from: cleanString) ?? Date()
+        } else {
+            // 3. Absolute fallback
+            self.createdAt = Date()
         }
+        
+        self.updatedAt = (try? container.decodeIfPresent(Date.self, forKey: .updatedAt)) ?? Date()
+        self.isDeleted = (try? container.decodeIfPresent(Bool.self, forKey: .isDeleted)) ?? false
+        self.selectedOrganization = try? container.decodeIfPresent(OrganizationSnapshot.self, forKey: .selectedOrganization)
+        self.url = (try? container.decodeIfPresent(String.self, forKey: .url)) ?? ""
+    }
     
-    public init(id: String, name: String, email: String, role: AppUserRole, status: String, assignedOrgs: [OrganizationSnapshot], createdAt: Date, updatedAt: Date = Date(), isDeleted: Bool = false) {
-            self.id = id
-            self.name = name
-            self.email = email
-            self.role = role
-            self.status = status
-            self.assignedOrgs = assignedOrgs
-            self.createdAt = createdAt
-            self.updatedAt = updatedAt
-            self.isDeleted = isDeleted
-        }
+    public init(id: String,
+                name: String,
+                email: String,
+                role: AppUserRole,
+                status: String,
+                assignedOrgs: [OrganizationSnapshot],
+                createdAt: Date,
+                updatedAt: Date = Date(),
+                isDeleted: Bool = false,
+                selectedOrganization: OrganizationSnapshot? = nil,
+                url: String = "") {
+        self.id = id
+        self.name = name
+        self.email = email
+        self.role = role
+        self.status = status
+        self.assignedOrgs = assignedOrgs
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.isDeleted = isDeleted
+        self.selectedOrganization = selectedOrganization
+        self.url = url
+    }
+}
+
+
+public extension AppUser {
+    var imageURL: URL? {
+        URL(string: url)
+    }
 }
