@@ -16,7 +16,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../ApoorvaModels"),
+        .package(path: "../libraries/ApoorvaModels"),
         .package(url: "https://github.com/groue/GRDB.swift.git", exact: "7.11.1")
     ],
     targets: [
