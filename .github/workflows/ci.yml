@@ -21,21 +21,18 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
       - name: Run Tests and Generate Coverage
         run: |
-          xcodebuild test \
-                      -workspace app/Project.xcworkspace \
-                      -scheme 'Apoorva App' \
-                      -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
-                      -derivedDataPath Build/ \
-                      -enableCodeCoverage YES
+          # Navigate to your core project directory containing Package.swift
+          cd app/
+          swift test --enable-code-coverage
 
       - name: Convert Coverage to Generic XML
         run: |
-          # Download official SonarSource conversion script
+          # Download the official conversion script
           curl -LO https://githubusercontent.com
           chmod +x xccov-to-sonarqube-generic.sh
           
-          # Convert xcresult to SonarQube generic XML format
-          ./xccov-to-sonarqube-generic.sh Build/Logs/Test/*.xcresult/ > sonarqube-generic-coverage.xml
+          # Process the coverage report generated natively by Swift Package Manager
+          ./xccov-to-sonarqube-generic.sh app/.build/debug/codecov/*.xccovreport > sonarqube-generic-coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v3
