@@ -21,17 +21,15 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
       - name: Run Tests and Generate Coverage
         run: |
-          # Navigate to your core project directory containing Package.swift
-          cd app/
-          swift test --enable-code-coverage
+          swift test --package-path app/ --enable-code-coverage
 
       - name: Convert Coverage to Generic XML
         run: |
-          # Download the official conversion script
+          # Download official SonarSource conversion script
           curl -LO https://githubusercontent.com
           chmod +x xccov-to-sonarqube-generic.sh
           
-          # Process the coverage report generated natively by Swift Package Manager
+          # Convert the SPM coverage files generated inside the app build directory
           ./xccov-to-sonarqube-generic.sh app/.build/debug/codecov/*.xccovreport > sonarqube-generic-coverage.xml
 
       - name: SonarCloud Scan
