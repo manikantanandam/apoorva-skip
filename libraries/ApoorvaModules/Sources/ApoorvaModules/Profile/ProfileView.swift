@@ -37,7 +37,8 @@ public struct ProfileView: View {
                                     value: viewModel.updatedAt)
                     
                     DescriptionView(title: "Organization",
-                                    value: viewModel.currentOrganization)
+                                    value: viewModel.currentOrganization,
+                                    navigationAllowed: true)
                     
                     Spacer()
                 } else {
