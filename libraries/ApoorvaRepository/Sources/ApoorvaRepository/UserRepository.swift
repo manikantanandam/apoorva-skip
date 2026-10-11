@@ -43,6 +43,7 @@ public final class UserRepository: UserRepositoryProtocol {
         self.userDefaults = userDefaults
         self.authService = authService
         self.userService = userService
+        print("Mani - user repository init")
     }
     
     public func getCurrentUser() async throws -> AppUser {

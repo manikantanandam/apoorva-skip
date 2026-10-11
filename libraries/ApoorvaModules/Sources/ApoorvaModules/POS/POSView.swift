@@ -17,31 +17,37 @@ public struct POSView: View {
     }
     
     public var body: some View {
-        VStack {
-            IconTextField(
-                text: $viewModel.customerName,
-                placeholder: "Customer Name",
-                icon: .person
-            )
+        NavigationStack {
+            ScrollView {
+                VStack {
+                    IconTextField(
+                        text: $viewModel.customerName,
+                        placeholder: "Customer Name",
+                        icon: .person
+                    )
+                    
+                    IconTextField(
+                        text: $viewModel.customerPhoneNumber,
+                        placeholder: "Phone Number",
+                        icon: .phone
+                    )
+                    
+                    QuickItemsView(items: viewModel.items)
+                    
+                    SelectedCartItemsView(items: viewModel.items)
+                    
+                    
+                    
+        //            CustomButton(text: "Logout", backgroundColor: .orange) {
+        //                viewModel.logoutPressed()
+        //            }
+                    Spacer()
+                }
+                .padding(16)
+            }
             
-            IconTextField(
-                text: $viewModel.customerPhoneNumber,
-                placeholder: "Phone Number",
-                icon: .phone
-            )
-            
-            QuickItemsView(items: viewModel.items)
-            
-            SelectedCartItemsView(items: viewModel.items)
-            
-            
-            
-//            CustomButton(text: "Logout", backgroundColor: .orange) {
-//                viewModel.logoutPressed()
-//            }
-            Spacer()
         }
-        .padding(16)
+        
     }
     
     
