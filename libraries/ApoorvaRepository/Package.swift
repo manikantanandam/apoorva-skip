@@ -16,8 +16,8 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../libraries/ApoorvaOfflineStorage"),
-        .package(path: "../libraries/ApoorvaServices"),
+        .package(path: "../ApoorvaOfflineStorage"),
+        .package(path: "../ApoorvaServices"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.

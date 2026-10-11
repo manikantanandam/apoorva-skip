@@ -16,7 +16,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../libraries/ApoorvaModels"),
+        .package(path: "../ApoorvaModels"),
         .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.15.0")
     ],
     targets: [
