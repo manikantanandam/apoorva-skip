@@ -3,11 +3,11 @@ import ApoorvaModules
 
 enum HomeViewTab: Int, CaseIterable, Identifiable {
     case pos
+    case profile
     case dashboard
     case reports
     case cashflow
     case inventory
-    case profile
     
     var id: Int { rawValue }
     
