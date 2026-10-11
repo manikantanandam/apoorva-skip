@@ -23,11 +23,11 @@ jobs:
       - name: Run Tests and Generate Coverage
         run: |
           xcodebuild test \
-            -project Project.xcodeproj \
-            -scheme Apoorva App \
-            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
-            -derivedDataPath Build/ \
-            -enableCodeCoverage YES
+                      -workspace app/Project.xcworkspace \
+                      -scheme 'Apoorva App' \
+                      -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+                      -derivedDataPath Build/ \
+                      -enableCodeCoverage YES
 
       - name: Convert Coverage to Generic XML
         run: |
