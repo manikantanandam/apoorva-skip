@@ -9,7 +9,7 @@ on:
 jobs:
   build-and-test:
     name: Build, Test, and Analyze
-    runs-on: macos-14 # Uses Apple Silicon M1/M2 runners with latest Xcode pre-installed
+    runs-on: macos-15 # Uses Apple Silicon M1/M2 runners with latest Xcode pre-installed
 
     steps:
       - name: Checkout Code
@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 0 # Shallow clones must be disabled for a meaningful SonarCloud analysis
 
       - name: Set up Xcode Version
-        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+        run: sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
       - name: Run Tests and Generate Coverage
         run: |
           xcodebuild test \
