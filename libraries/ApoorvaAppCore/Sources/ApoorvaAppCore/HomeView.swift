@@ -55,7 +55,7 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
 }
 
 struct HomeView: View {
-    @State private var selectedTab: HomeViewTab = .pos
+    @State private var selectedTab: HomeViewTab = .profile
     
     // Pass or initialize your AppContainer here
     let container: AppContainer

@@ -23,6 +23,7 @@ public class RepositoryContainer {
     
     public lazy var userRepository = UserRepository(
         userDefaults: offlineStorageContainer.userDefaultsStorage,
-        authService: servicesContainer.authService
+        authService: servicesContainer.authService,
+        userService: servicesContainer.userService
     )
 }

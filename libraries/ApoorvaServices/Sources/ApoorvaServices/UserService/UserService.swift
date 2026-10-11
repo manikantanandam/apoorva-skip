@@ -4,7 +4,7 @@ import FirebaseAuth
 import ApoorvaModels
 
 @MainActor
-public protocol UserServiceProtocol {
+public protocol UserServiceProtocol: Sendable {
     // Expose the fully populated user session
     var userSessionStream: AsyncStream<AppUser?> { get }
 }
@@ -39,7 +39,9 @@ public class UserService: UserServiceProtocol {
                 if let uid = partialUser?.id {
                     do {
                         // 3. Fetch full details and publish to the app
+                        print("Fetching the User details using user service")
                         let fullUser = try await self.fetchUserProfile(uid: uid)
+                        print("Got the full user")
                         self.sessionContinuation.yield(fullUser)
                     } catch {
                         print("❌ Failed to fetch full user profile: \(error)")

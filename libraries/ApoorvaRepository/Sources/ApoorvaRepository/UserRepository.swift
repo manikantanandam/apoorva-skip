@@ -33,21 +33,28 @@ public final class UserRepository: UserRepositoryProtocol {
     
     let userDefaults: UserDefaultsStorageProtocol
     let authService: AuthServicing
+    let userService: UserServiceProtocol
     
-    public init(userDefaults: UserDefaultsStorageProtocol,
-         authService: AuthServicing) {
+    public init(
+        userDefaults: UserDefaultsStorageProtocol,
+        authService: AuthServicing,
+        userService: UserServiceProtocol
+    ) {
         self.userDefaults = userDefaults
         self.authService = authService
+        self.userService = userService
     }
     
     public func getCurrentUser() async throws -> AppUser {
-        for await user in authService.currentUserStream {
+        for await user in await userService.userSessionStream {
+            print("user is received in repository")
             guard let user else {
                 break
             }
             return user
         }
-        throw UserError.notAuthenticated
+        
+        throw UserError.userNotFound
     }
     
     public func getUser(id: String) throws -> AppUser? {
@@ -69,6 +76,4 @@ public final class UserRepository: UserRepositoryProtocol {
     func key(for id: String) -> String {
         return "user_\(id)"
     }
-    
-    
 }

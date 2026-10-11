@@ -17,15 +17,15 @@ public class ProfileViewModel {
     let userRepository: UserRepositoryProtocol
     
     public init(userRepository: UserRepositoryProtocol) {
+        print("Mani - creating profile view model")
         self.userRepository = userRepository
-        checkForUser()
     }
     
     func checkForUser() {
         Task {
             do {
                 appUser = try await userRepository.getCurrentUser()
-                print("Got the user details")
+                print("Got the user details in viewmodel \(appUser)")
             } catch {
                 print("Unable to get the user details")
             }
