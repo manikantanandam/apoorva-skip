@@ -7,6 +7,11 @@ import ApoorvaModels
 public protocol UserServiceProtocol: Sendable {
     // Expose the fully populated user session
     var userSessionStream: AsyncStream<AppUser?> { get }
+    
+    func updateSelectedOrganization(
+        for user: AppUser,
+        organization: OrganizationSnapshot
+    ) async throws
 }
 
 @MainActor
@@ -88,6 +93,26 @@ public class UserService: UserServiceProtocol {
         } catch {
             // Keep your existing detailed catch blocks here
             print("❌ Decode error: \(error)")
+            throw error
+        }
+    }
+    
+    public func updateSelectedOrganization(
+        for user: AppUser,
+        organization: OrganizationSnapshot
+    ) async throws {
+        do {
+            let userRef = try db.collection(.users).document(user.id)
+            
+            let encodedOrg = try Firestore.Encoder().encode(organization)
+            
+            try await userRef.updateData([
+                "selectedOrganization": encodedOrg,
+                "updatedTimestamp": Date().timeIntervalSince1970
+            ])
+            
+        } catch {
+            print("❌ Update error: \(error)")
             throw error
         }
     }

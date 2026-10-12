@@ -8,7 +8,15 @@
 import SwiftUI
 import ApoorvaUtilities
 
+enum ProfileRoute: Hashable, Identifiable {
+    var id: String { UUID().uuidString }
+    case selectOrganization
+}
+
 public struct ProfileView: View {
+    
+    @State private var path: [ProfileRoute] = []
+    @State private var activeModal: ProfileRoute? = nil
     
     @State var viewModel: ProfileViewModel
     
@@ -17,7 +25,7 @@ public struct ProfileView: View {
     }
     
     public var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             VStack(alignment: .leading) {
                 if let user = viewModel.appUser {
                     HStack {
@@ -39,6 +47,9 @@ public struct ProfileView: View {
                     DescriptionView(title: "Organization",
                                     value: viewModel.currentOrganization,
                                     navigationAllowed: true)
+                    .onTapGesture {
+                        self.activeModal = .selectOrganization
+                    }
                     
                     Spacer()
                 } else {
@@ -48,7 +59,36 @@ public struct ProfileView: View {
 
         }
         .task {
-            viewModel.checkForUser()
+            await viewModel.checkForUser()
+        }
+        .sheet(item: $activeModal) { modalRoute in
+            // Wrap inside a new NavigationStack to allow navigation INSIDE the modal sheet
+            NavigationStack {
+                switch modalRoute {
+                case .selectOrganization:
+                    GenericSelectionView(
+                        items: viewModel.assignedOrganizations,
+                        onSelect: { organization in
+                            Task {
+                                await viewModel.updateSelectedOrganization(
+                                    orgSnapshot: organization
+                                )
+                                self.activeModal = nil
+                            }
+                        }
+                    ) { organization in
+                        LabelView(text: organization.name)
+                            .padding(.vertical, 4)
+                    }
+                    .navigationTitle("Select Organization")
+                }
+            
+            }
+        }
+        .alert("", isPresented: $viewModel.showAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(viewModel.alertMessage)
         }
     }
 }

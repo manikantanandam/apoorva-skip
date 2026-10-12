@@ -29,6 +29,7 @@ public struct AppUser: Codable, Sendable {
     public let createdAt: Date
     public let selectedOrganization: OrganizationSnapshot?
     public let url: String
+    public let updatedTimestamp: TimeInterval
     
     public var updatedAt: Date
     public var isDeleted: Bool
@@ -44,7 +45,8 @@ public struct AppUser: Codable, Sendable {
              updatedAt,
              isDeleted,
              selectedOrganization,
-             url
+             url,
+             updatedTimestamp
     }
     
     public init(from decoder: Decoder) throws {
@@ -82,6 +84,7 @@ public struct AppUser: Codable, Sendable {
         self.isDeleted = (try? container.decodeIfPresent(Bool.self, forKey: .isDeleted)) ?? false
         self.selectedOrganization = try? container.decodeIfPresent(OrganizationSnapshot.self, forKey: .selectedOrganization)
         self.url = (try? container.decodeIfPresent(String.self, forKey: .url)) ?? ""
+        self.updatedTimestamp = (try? container.decodeIfPresent(TimeInterval.self, forKey: .url)) ?? 0
     }
     
     public init(id: String,
@@ -94,7 +97,8 @@ public struct AppUser: Codable, Sendable {
                 updatedAt: Date = Date(),
                 isDeleted: Bool = false,
                 selectedOrganization: OrganizationSnapshot? = nil,
-                url: String = "") {
+                url: String = "",
+                updatedTimestamp: TimeInterval = 0) {
         self.id = id
         self.name = name
         self.email = email
@@ -106,6 +110,7 @@ public struct AppUser: Codable, Sendable {
         self.isDeleted = isDeleted
         self.selectedOrganization = selectedOrganization
         self.url = url
+        self.updatedTimestamp = updatedTimestamp
     }
 }
 
@@ -114,4 +119,33 @@ public extension AppUser {
     var imageURL: URL? {
         URL(string: url)
     }
+
+    func copyWith(
+        id: String? = nil,
+        name: String? = nil,
+        email: String? = nil,
+        role: AppUserRole? = nil,
+        status: String? = nil,
+        assignedOrgs: [OrganizationSnapshot]? = nil,
+        createdAt: Date? = nil,
+        updatedAt: Date? = nil,
+        isDeleted: Bool? = nil,
+        selectedOrganization: OrganizationSnapshot? = nil,
+        url: String? = nil,
+        updatedTimestamp: TimeInterval? = nil) -> AppUser {
+            return AppUser(
+                id: id ?? self.id,
+                name: name ?? self.name,
+                email: email ?? self.email,
+                role: role ?? self.role,
+                status: status ?? self.status,
+                assignedOrgs: assignedOrgs ?? self.assignedOrgs,
+                createdAt: createdAt ?? self.createdAt,
+                updatedAt: updatedAt ?? self.updatedAt,
+                isDeleted: isDeleted ?? self.isDeleted,
+                selectedOrganization: selectedOrganization ?? self.selectedOrganization,
+                url: url ?? self.url,
+                updatedTimestamp: updatedTimestamp ?? self.updatedTimestamp
+            )
+        }
 }

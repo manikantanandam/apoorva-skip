@@ -26,6 +26,11 @@ public protocol UserRepositoryProtocol: Sendable {
     func updateUser(user: AppUser) throws
     
     func deleteUser(id: String)
+    
+    func updateSelectedOrganization(
+        for user: AppUser,
+        organization: OrganizationSnapshot
+    ) async throws
 }
 
 
@@ -74,6 +79,21 @@ public final class UserRepository: UserRepositoryProtocol {
         userDefaults.remove(forKey: key(for: id))
     }
     
+    public func updateSelectedOrganization(
+        for user: AppUser,
+        organization: OrganizationSnapshot
+    ) async throws {
+        try await userService.updateSelectedOrganization(
+            for: user,
+            organization: organization
+        )
+        print("Remote update successful")
+        let updatedUser = user.copyWith(selectedOrganization: organization)
+        try userDefaults.set(updatedUser, forKey: key(for: user.id))
+    }
+}
+
+private extension UserRepository {
     func key(for id: String) -> String {
         return "user_\(id)"
     }
