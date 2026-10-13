@@ -3,7 +3,7 @@ import ApoorvaOfflineStorage
 import ApoorvaServices
 import ApoorvaModels
 
-public typealias Category = ApoorvaModels.Category
+public typealias Category = ApoorvaModels.InventoryItem
 
 public final class SalesRepository {
     public let localDB: AppDatabase

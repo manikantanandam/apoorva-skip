@@ -10,12 +10,12 @@ import ApoorvaModels
 
 public struct QuickItemsView: View {
     // 1. Flattened data list (Supports infinite items)
-    let items: [ApoorvaModels.Category]
+    let items: [ApoorvaModels.InventoryItem]
     let rowCount: Int
     let cardHeight: CGFloat
     let spacing: CGFloat
 
-    public init(items: [ApoorvaModels.Category],
+    public init(items: [ApoorvaModels.InventoryItem],
                 rowCount: Int = 2,
                 cardHeight: CGFloat = 85,
                 spacing: CGFloat = 4) {

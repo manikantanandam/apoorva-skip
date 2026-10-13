@@ -9,7 +9,7 @@ import Foundation
 import ApoorvaModels
 import GRDB
 
-extension ApoorvaModels.Category: @retroactive FetchableRecord, @retroactive MutablePersistableRecord, DatabaseMigratable {
+extension ApoorvaModels.InventoryItem: @retroactive FetchableRecord, @retroactive MutablePersistableRecord, DatabaseMigratable {
     public static let databaseTableName = "Category"
     
     public static func createTable(in db: Database) throws {

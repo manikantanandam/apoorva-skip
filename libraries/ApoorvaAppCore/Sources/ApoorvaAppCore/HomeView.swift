@@ -4,10 +4,10 @@ import ApoorvaModules
 enum HomeViewTab: Int, CaseIterable, Identifiable {
     case pos
     case profile
+    case inventory
     case dashboard
     case reports
     case cashflow
-    case inventory
     
     var id: Int { rawValue }
     
@@ -47,7 +47,7 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
         case .cashflow:
             Text("Cashflow Screen")
         case .inventory:
-            Text("Inventory Screen")
+            InventoryView(viewModel: container.modulesContainer.makeInventoryViewModel())
         case .profile:
             ProfileView(viewModel: container.modulesContainer.makeProfileViewModel())
         }
@@ -55,7 +55,7 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
 }
 
 struct HomeView: View {
-    @State private var selectedTab: HomeViewTab = .profile
+    @State private var selectedTab: HomeViewTab = .inventory
     
     // Pass or initialize your AppContainer here
     let container: AppContainer

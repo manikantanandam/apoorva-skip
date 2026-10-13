@@ -1,7 +1,6 @@
 import Foundation
 
-public struct Category: Codable, Sendable, Identifiable {
-    // 1. Changed to 'var' so the network layer can inject the Firebase Document ID
+public struct InventoryItem: Codable, Sendable, Identifiable {
     public var id: String
     
     public let name: String
@@ -10,7 +9,7 @@ public struct Category: Codable, Sendable, Identifiable {
     public let lastSoldDate: Date?
     public let isHotkey: Bool
     
-    public var updatedAt: Date
+    public var updatedAt: Date?
     public var isDeleted: Bool
     
     // 2. Define standard CodingKeys
@@ -25,7 +24,7 @@ public struct Category: Codable, Sendable, Identifiable {
                 billMachineNumber: Int = 0,
                 lastSoldDate: Date? = nil,
                 isHotkey: Bool = false,
-                updatedAt: Date = Date(),
+                updatedAt: Date? = nil,
                 isDeleted: Bool = false) {
         self.id = id
         self.name = name
@@ -44,7 +43,6 @@ public struct Category: Codable, Sendable, Identifiable {
         // Strings
         self.id = (try? container.decodeIfPresent(String.self, forKey: .id)) ?? ""
         self.name = (try? container.decodeIfPresent(String.self, forKey: .name)) ?? "Unknown Category"
-        
         // Numbers
         self.currentStock = (try? container.decodeIfPresent(Int.self, forKey: .currentStock)) ?? 0
         self.billMachineNumber = (try? container.decodeIfPresent(Int.self, forKey: .billMachineNumber)) ?? 0

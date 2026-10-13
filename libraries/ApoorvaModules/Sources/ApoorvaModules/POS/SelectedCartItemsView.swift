@@ -10,7 +10,7 @@ import ApoorvaModels
 import SwiftUI
 
 struct SelectedCartItemsView: View {
-    let items: [Category]
+    let items: [InventoryItem]
     var body: some View {
         LazyVStack {
             ForEach(items, id: \.self.id) { item in

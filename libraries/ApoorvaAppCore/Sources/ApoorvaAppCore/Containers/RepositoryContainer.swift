@@ -26,4 +26,11 @@ public class RepositoryContainer {
         authService: servicesContainer.authService,
         userService: servicesContainer.userService
     )
+    
+    public lazy var inventoryRepository: InventoryItemRepositoryProtocol = InventoryItemRepository(
+        storage: offlineStorageContainer.inventoryItemsLocalStorage,
+        service: servicesContainer.inventoryService,
+        userRepository: userRepository,
+        syncStorage: offlineStorageContainer.syncStorage
+    )
 }

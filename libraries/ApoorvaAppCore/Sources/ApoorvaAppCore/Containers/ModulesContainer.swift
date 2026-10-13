@@ -40,6 +40,14 @@ public class ModulesContainer {
     }
     
     public func makeProfileViewModel() -> ProfileViewModel {
-        return ProfileViewModel(userRepository: repositoryContainer.userRepository)
+        return ProfileViewModel(
+            userRepository: repositoryContainer.userRepository
+        )
+    }
+    
+    public func makeInventoryViewModel() -> InventoryViewModel {
+        return InventoryViewModel(
+            repository: repositoryContainer.inventoryRepository
+        )
     }
 }

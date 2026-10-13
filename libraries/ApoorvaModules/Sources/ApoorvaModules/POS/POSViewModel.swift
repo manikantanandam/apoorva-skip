@@ -9,8 +9,6 @@ import Foundation
 import ApoorvaServices
 import ApoorvaModels
 
-typealias Category = ApoorvaModels.Category
-
 @MainActor
 @Observable
 public class POSViewModel {
@@ -18,19 +16,19 @@ public class POSViewModel {
     var customerName: String = ""
     var customerPhoneNumber: String = ""
     
-    var items: [Category] = [
-        Category(name: "Bangles 12"),
-        Category(name: "Black Beads"),
-        Category(name: "Earrings"),
-        Category(name: "Rubber Bands"),
-        Category(name: "Necklace"),
-        Category(name: "Thadu"),
-        Category(name: "Rings"),
-        Category(name: "Stickers"),
-        Category(name: "Bracelets"),
-        Category(name: "Anklets"),
-        Category(name: "Watches"),
-        Category(name: "Pins")
+    var items: [InventoryItem] = [
+        InventoryItem(name: "Bangles 12"),
+        InventoryItem(name: "Black Beads"),
+        InventoryItem(name: "Earrings"),
+        InventoryItem(name: "Rubber Bands"),
+        InventoryItem(name: "Necklace"),
+        InventoryItem(name: "Thadu"),
+        InventoryItem(name: "Rings"),
+        InventoryItem(name: "Stickers"),
+        InventoryItem(name: "Bracelets"),
+        InventoryItem(name: "Anklets"),
+        InventoryItem(name: "Watches"),
+        InventoryItem(name: "Pins")
 
     ]
     

@@ -9,7 +9,7 @@ import GRDB
 import ApoorvaModels
 import Foundation
 
-public typealias Category = ApoorvaModels.Category
+public typealias Category = ApoorvaModels.InventoryItem
 
 public extension AppDatabase {
     
@@ -48,7 +48,7 @@ public extension AppDatabase {
             }
         }
         
-    func upsertInventory(_ items: [ApoorvaModels.Category]) async throws {
+    func upsertInventory(_ items: [ApoorvaModels.InventoryItem]) async throws {
             try await dbPool.write { db in
                 for var item in items {
                     if item.isDeleted { try item.delete(db) }

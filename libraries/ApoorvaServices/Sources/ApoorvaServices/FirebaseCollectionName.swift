@@ -9,4 +9,6 @@ import Foundation
 
 internal extension String {
     static let users = "users"
+    static let inventory = "inventory"
+    static let organizations = "organizations"
 }

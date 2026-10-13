@@ -19,5 +19,7 @@ public class ServicesContainer {
     
     public lazy var userService: UserServiceProtocol = UserService(authService: authService)
     
+    public lazy var inventoryService: InventoryItemServiceProtocol = InventoryItemService()
+    
     public init() {}
 }
