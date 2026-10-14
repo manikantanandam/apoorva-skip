@@ -16,8 +16,16 @@ public final class InventoryItemLocalStorage: InventoryItemLocalStorageProtocol 
     }
     
     public func getInventoryItems() throws -> [InventoryItem] {
-        let allCategories: [InventoryItem] = try database.context.fetchAll(InventoryItem.self)
-        return allCategories.sorted { $0.name < $1.name }
+        do {
+            let allCategories: [InventoryItem] = try database.context.fetchAll(InventoryItem.self)
+            return allCategories.sorted { $0.name < $1.name }
+        } catch let error {
+            if let error = error as? SQLError {
+                print("SQL Error \(error.localizedDescription)")
+            }
+            
+            return []
+        }
     }
     
     public func getInventoryItem(id: String) throws -> InventoryItem? {

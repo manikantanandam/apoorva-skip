@@ -52,15 +52,10 @@ public final class UserRepository: UserRepositoryProtocol {
     }
     
     public func getCurrentUser() async throws -> AppUser {
-        for await user in await userService.userSessionStream {
-            print("user is received in repository")
-            guard let user else {
-                break
-            }
-            return user
+        guard let user = await userService.currentUser else {
+            throw UserError.userNotFound
         }
-        
-        throw UserError.userNotFound
+        return user
     }
     
     public func getUser(id: String) throws -> AppUser? {

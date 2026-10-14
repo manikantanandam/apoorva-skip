@@ -37,6 +37,17 @@ public struct InventoryView: View {
                 }
             }
         }
+        .toolbar{
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    Task {
+                        await viewModel.forceSync()
+                    }
+                }) {
+                    Label("Sync", systemImage: "arrow.clockwise")
+                }
+            }
+        }
         .task {
             await viewModel.prepareDate()
         }

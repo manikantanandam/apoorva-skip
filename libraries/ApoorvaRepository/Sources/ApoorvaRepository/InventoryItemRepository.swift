@@ -16,7 +16,7 @@ public protocol InventoryItemRepositoryProtocol: Sendable {
     func updateInventoryItem(_ item: InventoryItem) async throws
     func deleteInventoryItem(id: String) async throws // Hard delete
     func markAsDeleted(id: String) async throws  // Soft delete
-    func sync() async throws
+    func sync(force: Bool) async throws
 }
 
 
@@ -57,18 +57,21 @@ public final class InventoryItemRepository: InventoryItemRepositoryProtocol {
         try storage.markAsDeleted(id: id)
     }
     
-    public func sync() async throws {
+    public func sync(force: Bool) async throws {
         print("Started sync")
         let user = try await userRepository.getCurrentUser()
         print("Received used")
-        let lastUpdatedDate = try syncStorage.getLastSyncTimestamp(for: InventoryItem.table.name)
-        print("Last updted date \(lastUpdatedDate)")
+
         guard let orgId = user.selectedOrganization?.orgId else {
             return
         }
         
         let items: [InventoryItem]
-        if let lastUpdatedDate {
+        
+        let lastUpdatedDate = try? syncStorage.getLastSyncTimestamp(for: InventoryItem.table.name)
+        print("Last updted date \(lastUpdatedDate)")
+        
+        if let lastUpdatedDate, !force {
             print("Fetching inventory items since \(Date(timeIntervalSince1970: lastUpdatedDate)) for \(orgId)")
             items = try await service.getInventoryItems(since: Date(timeIntervalSince1970: lastUpdatedDate), for: orgId)
             print("Received items")

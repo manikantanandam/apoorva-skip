@@ -8,6 +8,8 @@ public protocol UserServiceProtocol: Sendable {
     // Expose the fully populated user session
     var userSessionStream: AsyncStream<AppUser?> { get }
     
+    var currentUser: AppUser? { get }
+    
     func updateSelectedOrganization(
         for user: AppUser,
         organization: OrganizationSnapshot
@@ -24,11 +26,16 @@ public class UserService: UserServiceProtocol {
     public let userSessionStream: AsyncStream<AppUser?>
     private let sessionContinuation: AsyncStream<AppUser?>.Continuation
     
+    public private(set) var currentUser: AppUser?
+    
     // 1. Dependency Injection (Replaces the Singleton)
     public init(authService: AuthServicing) {
         self.authService = authService
         
-        let (stream, continuation) = AsyncStream.makeStream(of: AppUser?.self)
+        let (stream, continuation) = AsyncStream.makeStream(
+            of: AppUser?.self,
+            bufferingPolicy: .bufferingOldest(1)
+        )
         self.userSessionStream = stream
         self.sessionContinuation = continuation
         
@@ -47,14 +54,17 @@ public class UserService: UserServiceProtocol {
                         print("Fetching the User details using user service")
                         let fullUser = try await self.fetchUserProfile(uid: uid)
                         print("Got the full user")
+                        self.currentUser = fullUser
                         self.sessionContinuation.yield(fullUser)
                     } catch {
                         print("❌ Failed to fetch full user profile: \(error)")
+                        self.currentUser = nil
                         // Route back to login if the Firestore document is missing/corrupted
                         self.sessionContinuation.yield(nil)
                     }
                 } else {
                     // Firebase logged out
+                    self.currentUser = nil
                     self.sessionContinuation.yield(nil)
                 }
             }

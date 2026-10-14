@@ -26,11 +26,22 @@ public class InventoryViewModel {
         print("Preparing data for inventory view")
         do {
             print("get inventory items")
-            self.items = try await repository.getInventoryItems()
+            self.items = try await repository.getInventoryItems().sorted()
             print("sync inventory items")
-            try await repository.sync()
+            try await repository.sync(force: false)
             print("get inventory items")
-            self.items = try await repository.getInventoryItems()
+            self.items = try await repository.getInventoryItems().sorted()
+            
+        } catch {
+            print("Inventory items failed \(error.localizedDescription)")
+        }
+    }
+    
+    func forceSync() async {
+        do {
+            try await repository.sync(force: true)
+            print("get inventory items")
+            self.items = try await repository.getInventoryItems().sorted()
             
         } catch {
             print("Inventory items failed \(error.localizedDescription)")

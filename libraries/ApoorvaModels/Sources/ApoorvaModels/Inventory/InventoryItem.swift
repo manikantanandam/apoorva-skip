@@ -56,3 +56,9 @@ public struct InventoryItem: Codable, Sendable, Identifiable {
         self.updatedAt = (try? container.decodeIfPresent(Date.self, forKey: .updatedAt)) ?? Date()
     }
 }
+
+extension InventoryItem: Comparable {
+    public static func < (lhs: InventoryItem, rhs: InventoryItem) -> Bool {
+        return lhs.name < rhs.name
+    }
+}

@@ -33,13 +33,22 @@ public final class InventoryItemService: InventoryItemServiceProtocol {
 
 private extension InventoryItemService {
     func inventoryItems(since lastSync: Date? = nil, for orgId: String) async throws -> [InventoryItem] {
-        var query: Query = db
-            .collection(.organizations)
-            .document(orgId)
-            .collection(.inventory)
+        let baseCollection = db
+                .collection(.organizations)
+                .document(orgId)
+                .collection(.inventory)
+                
+        var query: Query = baseCollection
             
-            if let lastSync = lastSync {
-                query = query.whereField("updatedAt", isGreaterThan: Timestamp(date: lastSync))
+        if let lastSync = lastSync {
+                let timestamp = Timestamp(date: lastSync)
+                
+                query = baseCollection.whereFilter(
+                    Filter.orFilter([
+                        Filter.whereField("updatedAt", isGreaterThan: timestamp),
+                        Filter.whereField("lastSoldDate", isGreaterThan: timestamp)
+                    ])
+                )
             }
             
             print("🌐 Fetching Categories for Org: \(orgId)...")
