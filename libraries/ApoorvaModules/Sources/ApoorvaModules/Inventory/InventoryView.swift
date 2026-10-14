@@ -39,6 +39,18 @@ public struct InventoryView: View {
         }
         .toolbar{
             ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Picker("Sort By", selection: $viewModel.sortOption) {
+                        ForEach(InventorySortOption.allCases, id: \.self) { option in
+                            Text(option.rawValue).tag(option)
+                        }
+                    }
+                } label: {
+                    Label("Sort", systemImage: "arrow.up.arrow.down")
+                }
+            }
+            
+            ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
                     Task {
                         await viewModel.forceSync()

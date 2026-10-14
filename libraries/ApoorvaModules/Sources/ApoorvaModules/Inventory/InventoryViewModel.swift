@@ -9,6 +9,12 @@ import Foundation
 import ApoorvaRepository
 import ApoorvaModels
 
+public enum InventorySortOption: String, CaseIterable {
+    case name = "Name"
+    case stock = "Stock"
+    case lastSoldDate = "Last Sold Date"
+}
+
 @MainActor
 @Observable
 public class InventoryViewModel {
@@ -16,6 +22,12 @@ public class InventoryViewModel {
     var items: [InventoryItem] = []
     
     let repository: InventoryItemRepositoryProtocol
+    
+    var sortOption: InventorySortOption = .name {
+        didSet {
+            sortItems()
+        }
+    }
     
     
     public init(repository: InventoryItemRepositoryProtocol) {
@@ -47,4 +59,21 @@ public class InventoryViewModel {
             print("Inventory items failed \(error.localizedDescription)")
         }
     }
+    
+    func sortItems() {
+            switch sortOption {
+            case .name:
+                items.sort() // Uses the default Comparable conformance (<) from InventoryItem
+            case .stock:
+                // Sorting descending by default to show highest stock first
+                items.sort { $0.currentStock > $1.currentStock }
+            case .lastSoldDate:
+                // Sorting descending to show most recently sold first. Nil dates go to the bottom.
+                items.sort {
+                    let date1 = $0.lastSoldDate ?? Date.distantPast
+                    let date2 = $1.lastSoldDate ?? Date.distantPast
+                    return date1 > date2
+                }
+            }
+        }
 }
