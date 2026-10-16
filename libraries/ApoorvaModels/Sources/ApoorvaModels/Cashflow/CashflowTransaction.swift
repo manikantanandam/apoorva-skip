@@ -16,11 +16,13 @@ public struct CashflowTransaction: Identifiable, Codable, Hashable, Sendable {
     public enum TransactionType: String, Codable, Sendable {
         case credit
         case debit
+        case unknown
     }
     
     public enum PaymentMode: String, Codable, Sendable {
         case cash
         case upi
+        case unknown
     }
     
     public init(id: String = UUID().uuidString, timestamp: Date, particulars: String, amount: Double, transactionType: TransactionType, paymentMode: PaymentMode, category: String, subCategory: String? = nil, person: String? = nil, isDeleted: Bool = false, updatedAt: Date = Date()) {
@@ -35,5 +37,19 @@ public struct CashflowTransaction: Identifiable, Codable, Hashable, Sendable {
         self.person = person
         self.isDeleted = isDeleted
         self.updatedAt = updatedAt
+    }
+}
+
+extension CashflowTransaction: Comparable {
+    public static func == (lhs: borrowing CashflowTransaction, rhs: borrowing CashflowTransaction) -> Bool {
+        return lhs.id == rhs.id
+    }
+    
+    public static func < (lhs: CashflowTransaction, rhs: CashflowTransaction) -> Bool {
+        return lhs.timestamp < rhs.timestamp
+    }
+    
+    public static func > (lhs: CashflowTransaction, rhs: CashflowTransaction) -> Bool {
+        return lhs.timestamp > rhs.timestamp
     }
 }

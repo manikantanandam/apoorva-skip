@@ -25,5 +25,7 @@ public class ServicesContainer {
     
     public lazy var saleService: SaleServiceProtocol = SaleService()
     
+    public lazy var cashflowService: CashflowTransactionServiceProtocol = CashflowTransactionService()
+    
     public init() {}
 }

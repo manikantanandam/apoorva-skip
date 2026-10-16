@@ -47,4 +47,11 @@ public class RepositoryContainer {
         userRepository: userRepository,
         syncStorage: offlineStorageContainer.syncStorage
     )
+    
+    public lazy var cashflowRepository: CashflowTransactionRepositoryProtocol = CashflowTransactionRepository(
+        storage: offlineStorageContainer.cashflowLocalStorage,
+        service: servicesContainer.cashflowService,
+        userRepository: userRepository,
+        syncStorage: offlineStorageContainer.syncStorage
+    )
 }

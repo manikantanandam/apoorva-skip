@@ -62,4 +62,10 @@ public class ModulesContainer {
             repository: repositoryContainer.saleRepository
         )
     }
+    
+    public func makeCashflowTransactionListViewModel() -> CashflowTransactionListViewModel {
+        return CashflowTransactionListViewModel(
+            repository: repositoryContainer.cashflowRepository
+        )
+    }
 }

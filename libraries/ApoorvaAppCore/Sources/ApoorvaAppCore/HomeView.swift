@@ -51,7 +51,9 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
         case .reports:
             Text("Reports Screen")
         case .cashflow:
-            Text("Cashflow Screen")
+            CashflowTransactionListView(
+                viewModel: container.modulesContainer.makeCashflowTransactionListViewModel()
+            )
         case .inventory:
             InventoryView(viewModel: container.modulesContainer.makeInventoryViewModel())
         case .profile:

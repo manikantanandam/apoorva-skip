@@ -45,6 +45,10 @@ public class OfflineStorageContainer {
         database: skipSqlDatabase
     )
     
+    public lazy var cashflowLocalStorage: CashflowTransactionStorageProtocol = CashflowTransactionLocalStorage(
+        database: skipSqlDatabase
+    )
+    
     public lazy var syncStorage: SyncStorage = SyncStorage(db: skipSqlDatabase)
     
     public init() {}

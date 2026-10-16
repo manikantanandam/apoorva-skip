@@ -28,6 +28,7 @@ public final class SkipSqlDatabase: @unchecked Sendable {
             try context.createTableIfNotExists(SyncState.self)
             try context.createTableIfNotExists(Customer.self)
             try context.createTableIfNotExists(Sale.self)
+            try context.createTableIfNotExists(CashflowTransaction.self)
 
             // Add other models here:
             // try context.createTableIfNotExists(Account.self)
