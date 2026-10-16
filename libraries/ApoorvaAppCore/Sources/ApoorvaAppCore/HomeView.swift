@@ -8,6 +8,8 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
     case dashboard
     case reports
     case cashflow
+    case customers
+    case sales
     
     var id: Int { rawValue }
     
@@ -19,19 +21,23 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
         case .cashflow: return "Cashflow"
         case .inventory: return "Inventory"
         case .profile: return "Profile"
+        case .customers: return "Customers"
+        case .sales: return "Sales"
         }
     }
     
     var systemImage: String {
-            switch self {
-            case .pos: return "cart.fill"
-            case .dashboard: return "chart.bar.fill"
-            case .reports: return "doc.text.fill"
-            case .cashflow: return "dollarsign.circle.fill"
-            case .inventory: return "cube.box.fill"
-            case .profile: return "person.fill"
-            }
+        switch self {
+        case .pos: return "cart.fill"
+        case .dashboard: return "chart.bar.fill"
+        case .reports: return "doc.text.fill"
+        case .cashflow: return "dollarsign.circle.fill"
+        case .inventory: return "cube.box.fill"
+        case .profile: return "person.fill"
+        case .customers: return "person.3.fill"
+        case .sales: return "indianrupeesign.bank.building"
         }
+    }
     
     @MainActor
     @ViewBuilder
@@ -50,6 +56,10 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
             InventoryView(viewModel: container.modulesContainer.makeInventoryViewModel())
         case .profile:
             ProfileView(viewModel: container.modulesContainer.makeProfileViewModel())
+        case .customers:
+            CustomerListView(viewModel: container.modulesContainer.makeCustomerListViewModel())
+        case .sales:
+            SaleListView(viewModel: container.modulesContainer.makeSaleListViewModel())
         }
     }
 }

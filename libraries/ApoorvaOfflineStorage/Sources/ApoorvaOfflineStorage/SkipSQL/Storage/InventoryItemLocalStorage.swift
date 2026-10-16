@@ -88,7 +88,7 @@ public final class InventoryItemLocalStorage: InventoryItemLocalStorageProtocol 
             guard !items.isEmpty else { return }
             
             let query = """
-            INSERT OR REPLACE INTO ItemCategory (
+            INSERT OR REPLACE INTO \(InventoryItem.table.name) (
                 id, name, currentStock, billMachineNumber, lastSoldDate, isHotkey, updatedAt, isDeleted
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
             """

@@ -36,6 +36,15 @@ public class OfflineStorageContainer {
         database: skipSqlDatabase
     )
     
+    
+    public lazy var customersLocalStorage: CustomerStorageProtocol = CustomerLocalStorage(
+        database: skipSqlDatabase
+    )
+    
+    public lazy var salesLocalStorage: SaleStorageProtocol = SaleLocalStorage(
+        database: skipSqlDatabase
+    )
+    
     public lazy var syncStorage: SyncStorage = SyncStorage(db: skipSqlDatabase)
     
     public init() {}

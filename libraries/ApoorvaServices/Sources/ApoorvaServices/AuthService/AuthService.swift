@@ -25,7 +25,7 @@ public protocol AuthServicing: Sendable {
 final public class AuthService: AuthServicing {
     
     public init() {
-        
+        print("AuthService init")
     }
     
     public func login(email: String, password: String) async throws {

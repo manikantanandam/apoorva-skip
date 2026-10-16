@@ -39,9 +39,10 @@ public class InventoryViewModel {
         do {
             print("get inventory items")
             self.items = try await repository.getInventoryItems().sorted()
+            print("Received items \(self.items.count)")
             print("sync inventory items")
             try await repository.sync(force: false)
-            print("get inventory items")
+            print("sync completed for inventory data")
             self.items = try await repository.getInventoryItems().sorted()
             
         } catch {
@@ -52,11 +53,11 @@ public class InventoryViewModel {
     func forceSync() async {
         do {
             try await repository.sync(force: true)
-            print("get inventory items")
+            print("get inventory items in force sync")
             self.items = try await repository.getInventoryItems().sorted()
             
         } catch {
-            print("Inventory items failed \(error.localizedDescription)")
+            print("Inventory items failed force sync \(error.localizedDescription)")
         }
     }
     

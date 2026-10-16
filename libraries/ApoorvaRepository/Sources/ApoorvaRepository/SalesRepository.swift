@@ -1,91 +1,110 @@
+//
+//  File.swift
+//  ApoorvaRepository
+//
+//  Created by Manikanta Nandam on 12/10/26.
+//
+
 import Foundation
 import ApoorvaOfflineStorage
-import ApoorvaServices
 import ApoorvaModels
+import ApoorvaServices
 
-public typealias Category = ApoorvaModels.InventoryItem
+public protocol SaleRepositoryProtocol: Sendable {
+    func getSales() async throws -> [Sale]
+    func saveSale(sale: Sale) async throws
+    func updateSale(_ sale: Sale) async throws
+    func deleteSale(id: String) async throws // Hard delete
+    func markAsDeleted(id: String) async throws  // Soft delete
+    func sync(force: Bool) async throws
+}
 
-public final class SalesRepository {
-    public let localDB: AppDatabase
-    private let remoteAPI: FirestoreSyncService
+
+public final class SaleRepository: SaleRepositoryProtocol {
+
+    let storage: SaleStorageProtocol
+    let service: SaleServiceProtocol
+    let userRepository: UserRepositoryProtocol
+    let syncStorage: SyncStorage
     
-    public init(databaseURL: URL) throws {
-        self.localDB = try AppDatabase(databaseURL: databaseURL)
-        self.remoteAPI = FirestoreSyncService()
+    public init(storage: SaleStorageProtocol,
+                service: SaleServiceProtocol,
+                userRepository: UserRepositoryProtocol,
+                syncStorage: SyncStorage) {
+        self.storage = storage
+        self.service = service
+        self.userRepository = userRepository
+        self.syncStorage = syncStorage
     }
     
-    // MARK: - Orchestration Logic
-    
-    // Pass the orgId into the sync method
-    // MARK: - Orchestration Logic
-        public func performFullSync(for orgId: String) async throws {
-            
-            // 👉 THE FIX: We removed 'let syncTimestamp = Date()'
-            // We will only advance cursors based on actual received data.
-            
-            // 1. Sync Sales
-            let lastSaleSync = try await localDB.getLastSyncDate(for: "sales_\(orgId)")
-            let modifiedSales = try await remoteAPI.fetchSaleDeltas(for: orgId, since: lastSaleSync)
-            
-            if !modifiedSales.isEmpty {
-                try await localDB.upsertSales(modifiedSales)
-                
-                // Extract the newest timestamp from the payload to use as our next cursor
-                if let latestSaleDate = modifiedSales.map({ $0.timestamp }).max() {
-                    try await localDB.updateSyncDate(latestSaleDate, for: "sales_\(orgId)")
-                }
-            }
-            // Notice: If modifiedSales is empty, we do NOT update the sync date!
-            
-            
-            // 2. Sync Customers
-            let lastCustomerSync = try await localDB.getLastSyncDate(for: "customers_\(orgId)")
-            let modifiedCustomers = try await remoteAPI.fetchCustomerDeltas(for: orgId, since: lastCustomerSync)
-            if !modifiedCustomers.isEmpty {
-                try await localDB.upsertCustomers(modifiedCustomers)
-                // (Assuming your Customer model uses 'updatedAt'. Adjust if needed)
-                // if let latestCustomerDate = modifiedCustomers.map({ $0.updatedAt }).max() {
-                //     try await localDB.updateSyncDate(latestCustomerDate, for: "customers_\(orgId)")
-                // }
-                // If you can't easily map the date, the safest fallback is just skipping the cursor
-                // advancement until you implement it, rather than using local Date().
-            }
-            
-            
-            // 3. Sync Inventory
-            let lastInventorySync = try await localDB.getLastSyncDate(for: "inventory_\(orgId)")
-            let modifiedInventory = try await remoteAPI.fetchInventoryDeltas(for: orgId, since: lastInventorySync)
-            if !modifiedInventory.isEmpty {
-                try await localDB.upsertInventory(modifiedInventory)
-            }
-            
-            
-            // 4. Sync Categories
-            print("🔄 Syncing Categories...")
-            let lastCatSync = try await localDB.getLastSyncDate(for: "categories_\(orgId)")
-            let modifiedCategories = try await remoteAPI.fetchCategoryDeltas(for: orgId, since: lastCatSync)
-            if !modifiedCategories.isEmpty {
-                try await localDB.upsertCategories(modifiedCategories)
-            }
-            
-            print("✅ Full Delta Sync Completed for \(orgId)!")
-        }
-    
-    // MARK: - Data Reads
-    
-    public func getTodayRevenue() async throws -> Double {
-        return try await localDB.getTotalRevenueForToday()
+    public func getSales() async throws -> [Sale] {
+        try storage.getSales()
     }
     
-    public func getAllSales() async throws -> [Sale] {
-            return try await localDB.getAllSales()
-        }
+    public func saveSale(sale: Sale) async throws {
+        try storage.saveSale(sale: sale)
+    }
     
-    public func getAllCustomers() async throws -> [Customer] {
-            return try await localDB.getAllCustomers()
+    public func updateSale(_ sale: Sale) async throws {
+        try storage.updateSale(sale: sale)
+    }
+    
+    public func deleteSale(id: String) async throws {
+        try storage.deleteSale(id: id)
+    }
+    
+    public func markAsDeleted(id: String) async throws {
+        try storage.markAsDeleted(id: id)
+    }
+    
+    public func sync(force: Bool) async throws {
+        print("Started sync")
+        let user = try await userRepository.getCurrentUser()
+        print("Received used")
+
+        guard let orgId = user.selectedOrganization?.orgId else {
+            return
         }
         
-        public func getAllCategories() async throws -> [Category] {
-            return try await localDB.getAllCategories()
+        let sales: [Sale]
+        
+        let lastUpdatedDate = try? syncStorage.getLastSyncTimestamp(for: Sale.table.name)
+        print("Last updted date \(lastUpdatedDate)")
+        
+        if let lastUpdatedDate, !force {
+            print("Fetching inventory sales since \(Date(timeIntervalSince1970: lastUpdatedDate)) for \(orgId)")
+            sales = try await service.getSales(since: Date(timeIntervalSince1970: lastUpdatedDate), for: orgId)
+            print("Received sales")
+        } else {
+            print("Fetch all inventiry sales \(orgId)")
+            sales = try await service.getSales(for: orgId)
         }
+        print("Saving sales")
+        try storage.saveSales(sales: sales)
+        
+        guard
+            let saleWithMinUpdatedAt = sales.saleWithMaxDate
+        else { return }
+        
+        print("sale with min update \(saleWithMinUpdatedAt)")
+        
+        guard let lastUpdatedDate = saleWithMinUpdatedAt.updatedAt else { return }
+        print("saving lastUpdatedDate \(lastUpdatedDate)")
+
+        try syncStorage.updateSyncTimestamp(for: Sale.table.name, timestamp: lastUpdatedDate.timeIntervalSince1970)
+    }
+}
+
+
+private extension Array where Element == Sale {
+    var saleWithMaxDate: Sale? {
+        self.max(by: {
+            guard
+                let lastUpdatedDateItem1 = $0.updatedAt,
+                let lastUpdatedDateItem2 = $1.updatedAt
+            else { return false }
+            
+            return lastUpdatedDateItem1 > lastUpdatedDateItem2
+        })
+    }
 }

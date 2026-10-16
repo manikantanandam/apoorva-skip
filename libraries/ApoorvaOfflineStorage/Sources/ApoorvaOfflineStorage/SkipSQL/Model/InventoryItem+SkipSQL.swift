@@ -50,8 +50,6 @@ extension ApoorvaModels.InventoryItem: @retroactive SQLCodable {
     
     public func encode(row: inout SkipSQLCore.SQLRow) throws {
         row[Self.idCol] = SQLValue(self.id)
-        print("Encoding \(self.id)")
-        print("idCol \(Self.idCol)")
         row[Self.nameCol] = SQLValue(self.name)
         row[Self.currentStockCol] = SQLValue(self.currentStock)
         row[Self.billMachineNumberCol] = SQLValue(self.billMachineNumber)

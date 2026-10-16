@@ -26,6 +26,8 @@ public final class SkipSqlDatabase: @unchecked Sendable {
             // Skip-SQL uses the SQLCodable conformance to automatically generate the schema
             try context.createTableIfNotExists(InventoryItem.self)
             try context.createTableIfNotExists(SyncState.self)
+            try context.createTableIfNotExists(Customer.self)
+            try context.createTableIfNotExists(Sale.self)
 
             // Add other models here:
             // try context.createTableIfNotExists(Account.self)

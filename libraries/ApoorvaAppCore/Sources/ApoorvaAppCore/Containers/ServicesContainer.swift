@@ -21,5 +21,9 @@ public class ServicesContainer {
     
     public lazy var inventoryService: InventoryItemServiceProtocol = InventoryItemService()
     
+    public lazy var customerService: CustomerServiceProtocol = CustomerService()
+    
+    public lazy var saleService: SaleServiceProtocol = SaleService()
+    
     public init() {}
 }

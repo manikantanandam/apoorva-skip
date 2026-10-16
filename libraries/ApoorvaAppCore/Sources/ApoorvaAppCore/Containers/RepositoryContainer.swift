@@ -33,4 +33,18 @@ public class RepositoryContainer {
         userRepository: userRepository,
         syncStorage: offlineStorageContainer.syncStorage
     )
+    
+    public lazy var customerRepository: CustomerRepositoryProtocol = CustomerRepository(
+        storage: offlineStorageContainer.customersLocalStorage,
+        service: servicesContainer.customerService,
+        userRepository: userRepository,
+        syncStorage: offlineStorageContainer.syncStorage
+    )
+    
+    public lazy var saleRepository: SaleRepositoryProtocol = SaleRepository(
+        storage: offlineStorageContainer.salesLocalStorage,
+        service: servicesContainer.saleService,
+        userRepository: userRepository,
+        syncStorage: offlineStorageContainer.syncStorage
+    )
 }

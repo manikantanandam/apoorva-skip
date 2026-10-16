@@ -29,8 +29,8 @@ class MainViewModel {
     }
     
     func checkForLoggedInUser() async {
-        let authService = appContainer.servicesContainer.authService
-        for await user in authService.currentUserStream {
+        let userService = appContainer.servicesContainer.userService
+        for await user in userService.userSessionStream {
             if user == nil {
                 state = .login(appContainer.modulesContainer.makeLoginViewModel())
                 print("No User logged in")

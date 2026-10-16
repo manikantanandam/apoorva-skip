@@ -14,4 +14,15 @@ public extension Bool {
         case false: "false"
         }
     }
+    
+    var intValue: Int {
+        switch self {
+        case true: 1
+        case false: 0
+        }
+    }
+    
+    var int64Value: Int64 {
+        Int64(intValue)
+    }
 }
