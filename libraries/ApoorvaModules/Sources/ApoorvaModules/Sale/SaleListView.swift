@@ -36,6 +36,17 @@ public struct SaleListView: View {
             
             ScrollView {
                 LazyVStack {
+                    VStack {
+                        HStack {
+                            CardStatView(title: "Total Sales", value: viewModel.totalSalesCount.string)
+                            CardStatView(title: "Revenue", value: viewModel.totalSubtotal.string)
+                        }
+                        HStack {
+                            CardStatView(title: "Received", value: viewModel.totalNetPayable.string)
+                            CardStatView(title: "Total Discount", value: viewModel.totalDiscount.string)
+                        }
+                    }
+                    .padding(.bottom, 8)
                     if viewModel.sales.isEmpty {
                         Text("No sales found for this period.")
                             .foregroundColor(.secondary)
