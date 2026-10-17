@@ -61,6 +61,16 @@ public class CashflowTransactionListViewModel {
         }
     }
     
+    func update() async {
+        do {
+            for transaction in transactions {
+                try await repository.saveCashflowTransaction(transaction: transaction)
+            }
+        } catch {
+            print("Cashflow Update failed")
+        }
+    }
+    
     func sortItems() {
             switch sortOption {
             case .oldest:

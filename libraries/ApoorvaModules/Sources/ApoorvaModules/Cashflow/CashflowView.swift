@@ -57,6 +57,17 @@ public struct CashflowTransactionListView: View {
             }
         }
         .toolbar{
+            
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    Task {
+                        await viewModel.update()
+                    }
+                }) {
+                    Label("Update", systemImage: "arrow.up")
+                }
+            }
+            
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
                     Task {

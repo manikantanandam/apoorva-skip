@@ -13,6 +13,7 @@ public protocol CashflowTransactionServiceProtocol: Sendable {
     
     func getCashflowTransactions(for orgId: String) async throws -> [CashflowTransaction]
     func getCashflowTransactions(since lastSync: Date, for orgId: String) async throws -> [CashflowTransaction]
+    func addCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws
 }
 
 
@@ -79,8 +80,7 @@ private extension CashflowTransactionService {
     func cashflowTransactions(since lastSync: Date? = nil, for orgId: String) async throws -> [CashflowTransaction] {
         let baseCollection = db
             .collection(.organizations)
-//            .document(orgId)
-            .document("YOUR_ORG_ID")
+            .document(orgId)
             .collection(.cashflow)
         
         var query: Query = baseCollection
@@ -88,14 +88,11 @@ private extension CashflowTransactionService {
         if let lastSync = lastSync {
             let timestamp = Timestamp(date: lastSync)
             
-            query = baseCollection.whereFilter(
-                Filter.orFilter([
-                    Filter.whereField("updatedAt", isGreaterThan: timestamp),
-                    Filter.whereField("timestamp", isGreaterThan: timestamp)
-                ])
-            )
+            query = baseCollection.whereField("updatedAt", isGreaterThan: timestamp)
+            print("🌐 Fetching Cashflow Transactions for Org: \(orgId)... for last sync \(lastSync)")
+
         }
-        
+//        query = query.limit(to: 10)
         print("🌐 Fetching Cashflow Transactions for Org: \(orgId)...")
         let snapshot = try await query.getDocuments()
         

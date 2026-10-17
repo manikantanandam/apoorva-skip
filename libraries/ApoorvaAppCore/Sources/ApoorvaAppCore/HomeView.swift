@@ -3,13 +3,14 @@ import ApoorvaModules
 
 enum HomeViewTab: Int, CaseIterable, Identifiable {
     case pos
-    case profile
-    case inventory
     case dashboard
+    case inventory
+    case sales
+    case profile
+
     case reports
     case cashflow
     case customers
-    case sales
     
     var id: Int { rawValue }
     
@@ -72,9 +73,17 @@ struct HomeView: View {
     // Pass or initialize your AppContainer here
     let container: AppContainer
     
+    let tabs: [HomeViewTab] = [
+        .dashboard,
+        .inventory,
+        .sales,
+        .cashflow,
+        .profile
+    ]
+    
     var body: some View {
         TabView(selection: $selectedTab) {
-            ForEach(HomeViewTab.allCases) { tab in
+            ForEach(tabs) { tab in
                 NavigationStack {
                     tab.viewContent(container: container)
                         .font(.largeTitle)

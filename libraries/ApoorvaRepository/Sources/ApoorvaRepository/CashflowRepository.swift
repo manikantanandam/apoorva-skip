@@ -42,7 +42,10 @@ public final class CashflowTransactionRepository: CashflowTransactionRepositoryP
     }
     
     public func saveCashflowTransaction(transaction: CashflowTransaction) async throws {
-        try storage.saveCashflowTransaction(transaction: transaction)
+        let user = try await userRepository.getCurrentUser()
+        guard let orgId = user.selectedOrganization?.orgId else { return }
+        try await service.addCashflowTransaction(transaction, for: orgId)
+//        try storage.saveCashflowTransaction(transaction: transaction)
     }
     
     public func updateCashflowTransaction(_ transaction: CashflowTransaction) async throws {
@@ -99,7 +102,7 @@ public final class CashflowTransactionRepository: CashflowTransactionRepositoryP
 private extension Array where Element == CashflowTransaction {
     var transactionWithMaxDate: CashflowTransaction? {
         self.max(by: {
-            return $0.updatedAt > $1.updatedAt
+            return $0.updatedAt < $1.updatedAt
         })
     }
 }
