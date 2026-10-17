@@ -12,29 +12,47 @@ public struct InventoryView: View {
     
     @Bindable var viewModel: InventoryViewModel
     
+    // Grid layout for top stats
+    private let columns = [
+        GridItem(.flexible()),
+        GridItem(.flexible())
+    ]
+    
     public init(viewModel: InventoryViewModel) {
         self.viewModel = viewModel
     }
     
     public var body: some View {
-        ScrollView {
-            LazyVStack {
-                VStack {
-                    HStack {
-                        CardStatView(title: "Total", value: viewModel.itemsCount.string)
-                        CardStatView(title: "Hot Items", value: viewModel.hotItemsCount.string)
+        VStack(spacing: 0) {
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    
+                    // Modernized Stats Section
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        InventoryStatBox(title: "Total Items", value: viewModel.itemsCount.string)
+                        InventoryStatBox(title: "Hot Items", value: viewModel.hotItemsCount.string)
+                        InventoryStatBox(title: "Items Sold", value: viewModel.totalItemsSold.string)
+                        InventoryStatBox(title: "Amount Sold", value: viewModel.totalSoldAmount.string)
                     }
-                    HStack {
-                        CardStatView(title: "Items Sold", value: viewModel.totalItemsSold.string)
-                        CardStatView(title: "Amount Sold", value: viewModel.totalSoldAmount.string)
+                    .padding(.horizontal)
+                    .padding(.top, 16)
+                    .padding(.bottom, 8)
+                    
+                    if viewModel.rows.isEmpty {
+                        Text("No inventory items found.")
+                            .foregroundColor(.secondary)
+                            .padding(.top, 40)
+                    } else {
+                        ForEach(viewModel.rows) { row in
+                            InventoryItemCardRowView(row: row)
+                        }
                     }
                 }
-                ForEach(viewModel.rows) { row in
-                    InventoryItemCardRowView(row: row)
-                }
+                .padding(.bottom, 16)
             }
         }
-        .toolbar{
+        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+        .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Picker("Sort By", selection: $viewModel.sortOption) {
@@ -63,44 +81,118 @@ public struct InventoryView: View {
     }
 }
 
+// MARK: - Modern Subviews
+
+struct InventoryStatBox: View {
+    let title: String
+    let value: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+            
+            Text(value)
+                .font(.title3)
+                .fontWeight(.semibold)
+                .foregroundStyle(.primary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
+    }
+}
 
 struct InventoryItemCardRowView: View {
     
     let row: InventoryItemRow
     
     var body: some View {
-        CardView {
-            VStack {
-                HStack {
-                    LabelView(text: row.item.name)
-                    Spacer()
-                    if row.item.isHotkey {
-                        IconView(icon: .star, iconSize: 24, color: .red)
-                    }
+        VStack(alignment: .leading, spacing: 16) {
+            // Header: Item Name & Hotkey Indicator
+            HStack(alignment: .top) {
+                Text(row.item.name)
+                    .font(.headline)
+                
+                Spacer()
+                
+                if row.item.isHotkey {
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.red)
+                        .font(.body)
                 }
-                HStack {
-                    CardStatView(title: "Stock", value: row.item.currentStock.string, style: .info)
-                    CardStatView(title: "Items Sold", value: row.itemsSold.string, style: .info)
-                    CardStatView(title: "Sold Amount", value: row.soldValue.string, style: .info)
-                    Spacer()
-                }
-                HStack {
-                    LabelView(text: "Last Sold", style: .caption)
-                    Spacer()
-                    LabelView(text: row.item.lastSoldDateString,
-                              style: .caption)
+            }
+            
+            Divider()
+            
+            // Middle: Core Metrics
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Stock")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(row.item.currentStock.string)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
                 }
                 
-                HStack {
-                    LabelView(text: "Updated at", style: .caption)
-                    Spacer()
-                    LabelView(text: row.item.updatedAtString,
-                              style: .caption)
+                Spacer()
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Items Sold")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(row.itemsSold.string)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
                 }
                 
+                Spacer()
                 
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("Sold Amount")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(row.soldValue.string)
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.green)
+                }
+            }
+            
+            Divider()
+            
+            // Footer: Dates
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Last Sold")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(row.item.lastSoldDateString)
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Updated At")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(row.item.updatedAtString)
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                }
             }
         }
-        
+        .padding(16)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.04), radius: 5, x: 0, y: 2)
+        .padding(.horizontal)
     }
 }

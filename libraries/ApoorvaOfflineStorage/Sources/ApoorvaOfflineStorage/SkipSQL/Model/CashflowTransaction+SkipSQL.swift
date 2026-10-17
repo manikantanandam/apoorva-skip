@@ -40,7 +40,13 @@ extension CashflowTransaction: @retroactive SQLCodable {
         let paymentModeRaw = try Self.paymentModeCol.textValueRequired(in: row)
         
         let category = try Self.categoryCol.textValueRequired(in: row)
-        let subCategory = Self.subCategoryCol.textValue(in: row) // Optional
+        let subCategoryRaw = Self.subCategoryCol.textValue(in: row) // Optional
+        let subCategory: CashflowSubCategory
+        if let subCategoryRaw {
+            subCategory = CashflowSubCategory(rawValue: subCategoryRaw) ?? .unknown
+        } else {
+            subCategory = .unknown
+        }
         let person = Self.personCol.textValue(in: row) // Optional
         
         let isDeleted = try Self.isDeletedCol.longValueRequired(in: row)
@@ -52,7 +58,7 @@ extension CashflowTransaction: @retroactive SQLCodable {
                   amount: amount,
                   transactionType: TransactionType(rawValue: transactionTypeRaw) ?? .unknown,
                   paymentMode: PaymentMode(rawValue: paymentModeRaw) ?? .unknown,
-                  category: category,
+                  category: CashflowCategory(rawValue: category) ?? .unknown,
                   subCategory: subCategory,
                   person: person,
                   isDeleted: isDeleted.boolValue,
@@ -68,10 +74,10 @@ extension CashflowTransaction: @retroactive SQLCodable {
         row[Self.transactionTypeCol] = SQLValue(self.transactionType.rawValue)
         row[Self.paymentModeCol] = SQLValue(self.paymentMode.rawValue)
         
-        row[Self.categoryCol] = SQLValue(self.category)
+        row[Self.categoryCol] = SQLValue(self.category.rawValue)
         
         // Optional Bindings
-        if let subCat = self.subCategory {
+        if let subCat = self.subCategory?.rawValue {
             row[Self.subCategoryCol] = .text(subCat)
         } else {
             row[Self.subCategoryCol] = .null

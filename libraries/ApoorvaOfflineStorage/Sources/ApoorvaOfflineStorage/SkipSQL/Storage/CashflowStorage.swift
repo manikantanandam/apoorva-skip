@@ -48,7 +48,7 @@ public final class CashflowTransactionLocalStorage: CashflowTransactionStoragePr
         
         let subCategory: SQLValue
         if let _subCategory = transaction.subCategory {
-            subCategory = .text(_subCategory)
+            subCategory = .text(_subCategory.rawValue)
         } else {
             subCategory = .null
         }
@@ -67,7 +67,7 @@ public final class CashflowTransactionLocalStorage: CashflowTransactionStoragePr
             .real(transaction.amount),
             .text(transaction.transactionType.rawValue),
             .text(transaction.paymentMode.rawValue),
-            .text(transaction.category),
+            .text(transaction.category.rawValue),
             subCategory,
             person,
             .long(transaction.isDeleted.int64Value),
@@ -111,8 +111,8 @@ public final class CashflowTransactionLocalStorage: CashflowTransactionStoragePr
                     .real(transaction.amount),
                     .text(transaction.transactionType.rawValue),
                     .text(transaction.paymentMode.rawValue),
-                    .text(transaction.category),
-                    transaction.subCategory != nil ? .text(transaction.subCategory!) : .null,
+                    .text(transaction.category.rawValue),
+                    transaction.subCategory != nil ? .text(transaction.subCategory!.rawValue) : .null,
                     transaction.person != nil ? .text(transaction.person!) : .null,
                     .long(transaction.isDeleted ? 1 : 0),
                     .real(transaction.updatedAt.timeIntervalSince1970)

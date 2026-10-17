@@ -8,10 +8,17 @@
 import Foundation
 import SwiftUI
 import ApoorvaModels
+struct ExportItem: Identifiable {
+    let id = UUID()
+    let url: URL
+}
 
 public struct CashflowTransactionListView: View {
     
     @Bindable var viewModel: CashflowTransactionListViewModel
+    
+    // State for CSV Export
+    @State private var exportItem: ExportItem?
     
     // Grid layout for top stats
     private let columns = [
@@ -119,6 +126,16 @@ public struct CashflowTransactionListView: View {
 //                    Label("Update", systemImage: "arrow.up")
 //                }
 //            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    if let url = viewModel.generateCSV() {
+                        // FIX: Assign directly to the new ExportItem struct to trigger the sheet
+                        exportItem = ExportItem(url: url)
+                    }
+                }) {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                }
+            }
             
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -157,6 +174,9 @@ public struct CashflowTransactionListView: View {
         .task {
             await viewModel.prepareDate()
         }
+        .sheet(item: $exportItem) { item in
+            ShareSheet(activityItems: [item.url])
+        }
     }
 }
 
@@ -171,10 +191,10 @@ struct CashflowCardRowView: View {
             // Header: Category & Date
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(item.category)
+                    Text(item.category.rawValue)
                         .font(.headline)
                     
-                    if let subCategory = item.subCategory, !subCategory.isEmpty {
+                    if let subCategory = item.subCategory?.rawValue, !subCategory.isEmpty {
                         Text(subCategory)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)

@@ -111,10 +111,14 @@ public class CashflowTransactionListViewModel {
     private func extractDynamicFilters() {
             // Extract unique categories
             let cats = Set(allTransactions.map { $0.category })
-            availableCategories = ["All"] + cats.sorted()
+        availableCategories = ["All"] + cats.map{ $0.rawValue }.sorted()
             
             // Extract unique subcategories
-            let subCats = Set(allTransactions.compactMap { $0.subCategory }.filter { !$0.isEmpty })
+            let subCats = Set(
+                allTransactions
+                    .compactMap { $0.subCategory?.rawValue }
+                    .filter { !$0.isEmpty }
+            )
             availableSubCategories = ["All"] + subCats.sorted()
             
             // Reset selected filters if the old selection no longer exists in the newly fetched data
@@ -163,10 +167,10 @@ public class CashflowTransactionListViewModel {
                 if paymentModeFilter == .upi && item.paymentMode != .upi { return false }
                 
                 // 4. Category Filter
-                if categoryFilter != "All" && item.category != categoryFilter { return false }
+                if categoryFilter != "All" && item.category.rawValue != categoryFilter { return false }
                 
                 // 5. SubCategory Filter
-                if subCategoryFilter != "All" && (item.subCategory ?? "") != subCategoryFilter { return false }
+                if subCategoryFilter != "All" && (item.subCategory?.rawValue ?? "") != subCategoryFilter { return false }
                 
                 return true
             }
@@ -204,6 +208,49 @@ public class CashflowTransactionListViewModel {
             case .newest:
                 transactions.sort { $0.timestamp > $1.timestamp }
             }
+        }
+    
+    // MARK: - Export Logic
+        
+        func generateCSV() -> URL? {
+            let fileName = "Cashflow_Export_\(Int(Date().timeIntervalSince1970)).csv"
+            let path = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+            
+            var csvText = "Date,Category,Sub Category,Particulars,Type,Payment Mode,Person,Amount\n"
+            
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "dd-MM-yyyy HH:mm"
+            
+            for item in transactions {
+                let dateStr = escapeCSV(dateFormatter.string(from: item.timestamp))
+                let categoryStr = escapeCSV(item.category.rawValue)
+                let subCatStr = escapeCSV(item.subCategory?.rawValue ?? "")
+                let partStr = escapeCSV(item.particulars)
+                let typeStr = escapeCSV(item.transactionType.rawValue.capitalized)
+                let modeStr = escapeCSV(item.paymentMode.rawValue.capitalized)
+                let personStr = escapeCSV(item.person ?? "")
+                let amtStr = escapeCSV(item.amount.description)
+                
+                let row = "\(dateStr),\(categoryStr),\(subCatStr),\(partStr),\(typeStr),\(modeStr),\(personStr),\(amtStr)\n"
+                csvText.append(row)
+            }
+            
+            do {
+                try csvText.write(to: path, atomically: true, encoding: .utf8)
+                return path
+            } catch {
+                print("Failed to generate CSV: \(error)")
+                return nil
+            }
+        }
+        
+        private func escapeCSV(_ text: String) -> String {
+            // Wrap the string in quotes if it contains a comma, quote, or newline to prevent breaking the CSV format
+            if text.contains(",") || text.contains("\"") || text.contains("\n") {
+                let escaped = text.replacingOccurrences(of: "\"", with: "\"\"")
+                return "\"\(escaped)\""
+            }
+            return text
         }
 }
 
