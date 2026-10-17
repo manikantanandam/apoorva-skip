@@ -69,4 +69,12 @@ public class ModulesContainer {
             repository: repositoryContainer.cashflowRepository
         )
     }
+    
+    public func makeDailyCashflowViewModel() -> DailyCashFlowViewModel {
+        return DailyCashFlowViewModel(
+            manager: DailyCashflowManager(
+                repository: repositoryContainer.cashflowRepository
+            )
+        )
+    }
 }

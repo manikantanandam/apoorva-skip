@@ -9,6 +9,7 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
     case profile
 
     case reports
+    case dailyCashflow
     case cashflow
     case customers
     
@@ -24,6 +25,7 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
         case .profile: return "Profile"
         case .customers: return "Customers"
         case .sales: return "Sales"
+        case .dailyCashflow: return "Daily Cashflow"
         }
     }
     
@@ -33,6 +35,7 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
         case .dashboard: return "chart.bar.fill"
         case .reports: return "doc.text.fill"
         case .cashflow: return "dollarsign.circle.fill"
+        case .dailyCashflow: return "dollarsign.circle.fill"
         case .inventory: return "cube.box.fill"
         case .profile: return "person.fill"
         case .customers: return "person.3.fill"
@@ -51,6 +54,10 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
             Text("Dashboard Screen")
         case .reports:
             Text("Reports Screen")
+        case .dailyCashflow:
+            DailyCashFlowView(
+                viewModel: container.modulesContainer.makeDailyCashflowViewModel()
+            )
         case .cashflow:
             CashflowTransactionListView(
                 viewModel: container.modulesContainer.makeCashflowTransactionListViewModel()
@@ -68,13 +75,13 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
 }
 
 struct HomeView: View {
-    @State private var selectedTab: HomeViewTab = .inventory
+    @State private var selectedTab: HomeViewTab = .dailyCashflow
     
     // Pass or initialize your AppContainer here
     let container: AppContainer
     
     let tabs: [HomeViewTab] = [
-        .dashboard,
+        .dailyCashflow,
         .inventory,
         .sales,
         .cashflow,
