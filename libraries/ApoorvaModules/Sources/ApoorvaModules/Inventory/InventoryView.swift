@@ -19,9 +19,15 @@ public struct InventoryView: View {
     public var body: some View {
         ScrollView {
             LazyVStack {
-                HStack {
-                    CardStatView(title: "Total", value: viewModel.itemsCount.string)
-                    CardStatView(title: "Hot Items", value: viewModel.hotItemsCount.string)
+                VStack {
+                    HStack {
+                        CardStatView(title: "Total", value: viewModel.itemsCount.string)
+                        CardStatView(title: "Hot Items", value: viewModel.hotItemsCount.string)
+                    }
+                    HStack {
+                        CardStatView(title: "Items Sold", value: viewModel.totalItemsSold.string)
+                        CardStatView(title: "Amount Sold", value: viewModel.totalSoldAmount.string)
+                    }
                 }
                 ForEach(viewModel.rows) { row in
                     InventoryItemCardRowView(row: row)

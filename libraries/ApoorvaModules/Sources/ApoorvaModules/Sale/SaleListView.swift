@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import ApoorvaModels
 
 public struct SaleListView: View {
     
@@ -19,34 +20,8 @@ public struct SaleListView: View {
     public var body: some View {
         ScrollView {
             LazyVStack {
-                ForEach(viewModel.sales) { item in
-                    CardView {
-                        VStack {
-                            LabelView(text: item.customerName)
-                            LabelView(text: item.customerPhone)
-                            LabelView(text: item.status)
-                            DescriptionView(
-                                title: "Sub Total",
-                                value: "\(item.subtotal)"
-                            )
-                            DescriptionView(
-                                title: "Discount Amount",
-                                value: "\(item.overallDiscountAmount)"
-                            )
-                            DescriptionView(
-                                title: "Discount Percent",
-                                value: "\(item.overallDiscountPercent)"
-                            )
-                            DescriptionView(
-                                title: "Net Payable",
-                                value: "\(item.netPayable)"
-                            )
-                            DescriptionView(
-                                title: "Sale Date",
-                                value: item.timestamp.toString(format: "dd-MM-yyyy")
-                            )
-                        }
-                    }
+                ForEach(viewModel.sales) { sale in
+                    SaleCardRowView(sale: sale)
                 }
             }
         }
@@ -75,6 +50,47 @@ public struct SaleListView: View {
         }
         .task {
             await viewModel.prepareDate()
+        }
+    }
+}
+
+
+struct SaleCardRowView: View {
+    
+    let sale: Sale
+    
+    var body: some View {
+        CardView {
+            VStack(alignment: .leading) {
+                HStack {
+                    VStack {
+                        LabelView(text: sale.customerName, style: .caption)
+                        LabelView(text: sale.customerPhone, style: .caption)
+                    }
+                    Spacer()
+                    LabelView(text: sale.timestamp.formatted(date: .abbreviated, time: .shortened),
+                              style: .caption)
+                }
+                
+                HStack {
+                    CardStatView(
+                        title: "Sub Total",
+                        value: sale.subtotal.string,
+                        style: .info
+                    )
+                    CardStatView(
+                        title: "Discount",
+                        value: sale.overallDiscountAmount.string,
+                        style: .info
+                    )
+                    CardStatView(
+                        title: "Net Pay",
+                        value: sale.netPayable.string,
+                        style: .info
+                    )
+                    Spacer()
+                }
+            }
         }
     }
 }

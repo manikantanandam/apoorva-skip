@@ -47,7 +47,7 @@ struct CardStatView: View {
     
     let style: CardStatStyle
     
-    init(title: String, value: String, style: CardStatStyle = .headline) {
+    init(title: String, value: String, style: CardStatStyle = .info) {
         self.title = title
         self.value = value
         self.style = style
@@ -60,6 +60,7 @@ struct CardStatView: View {
                 Spacer()
                 LabelView(text: value, style: style.valueFont)
             }
+            .frame(maxWidth: .infinity)
         }
     }
 }

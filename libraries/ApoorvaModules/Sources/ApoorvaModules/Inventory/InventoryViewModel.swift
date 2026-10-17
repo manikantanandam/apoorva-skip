@@ -37,6 +37,8 @@ public class InventoryViewModel {
     
     var itemsCount: Int = 0
     var hotItemsCount: Int = 0
+    var totalItemsSold: Int = 0
+    var totalSoldAmount: Double = 0
     
     let inventoryRepository: InventoryItemRepositoryProtocol
     let saleRepository: SaleRepositoryProtocol
@@ -80,6 +82,9 @@ public class InventoryViewModel {
         
         let saleItems = sales.flatMap { $0.items }
         var itemsDict: [String: InventoryItemRow] = [:]
+        
+        var totalItemsSoldCount = 0
+        var totalItemsSoldAmount: Double = 0
         for saleItem in saleItems {
             
             
@@ -103,8 +108,13 @@ public class InventoryViewModel {
             
             
             itemsDict[saleItem.categoryId] = finalRow
+            
+            totalItemsSoldCount += saleItem.qty
+            totalItemsSoldAmount += (Double(saleItem.qty) * saleItem.finalPrice)
         }
         self.rows = itemsDict.values.map { $0 }
+        self.totalItemsSold = totalItemsSoldCount
+        self.totalSoldAmount = totalItemsSoldAmount
     }
     
     func forceSync() async {
