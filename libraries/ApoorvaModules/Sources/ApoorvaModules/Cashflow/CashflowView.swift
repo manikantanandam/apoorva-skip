@@ -7,10 +7,17 @@
 
 import Foundation
 import SwiftUI
+import ApoorvaModels
 
 public struct CashflowTransactionListView: View {
     
     @Bindable var viewModel: CashflowTransactionListViewModel
+    
+    // Grid layout for top stats
+    private let columns = [
+        GridItem(.flexible()),
+        GridItem(.flexible())
+    ]
         
     public init(viewModel: CashflowTransactionListViewModel) {
         self.viewModel = viewModel
@@ -34,54 +41,23 @@ public struct CashflowTransactionListView: View {
             }
             
             ScrollView {
-                LazyVStack {
+                LazyVStack(spacing: 12) {
+                    
                     if viewModel.transactions.isEmpty {
                         Text("No transactions found for this period.")
                             .foregroundColor(.secondary)
                             .padding(.top, 40)
                     } else {
-                        
                         ForEach(viewModel.transactions) { item in
-                            CardView {
-                                VStack {
-
-                                    DescriptionView(
-                                        title: "Category",
-                                        value: "\(item.category)"
-                                    )
-                                    DescriptionView(
-                                        title: "Sub Category",
-                                        value: "\(item.subCategory ?? "")"
-                                    )
-                                    DescriptionView(
-                                        title: "Transaction Type",
-                                        value: "\(item.transactionType.rawValue)"
-                                    )
-                                    DescriptionView(
-                                        title: "Payment Mode",
-                                        value: "\(item.paymentMode.rawValue)"
-                                    )
-                                    DescriptionView(
-                                        title: "Person",
-                                        value: "\(item.person)"
-                                    )
-                                    DescriptionView(
-                                        title: "Amount",
-                                        value: "\(item.amount)"
-                                    )
-                                    DescriptionView(
-                                        title: "Cashflow Date",
-                                        value: item.timestamp.toString(format: "dd-MM-yyyy")
-                                    )
-                                }
-                            }
+                            CashflowCardRowView(item: item)
                         }
                     }
                 }
+                .padding(.bottom, 16)
             }
         }
-        .toolbar{
-//            
+        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+        .toolbar {
 //            ToolbarItem(placement: .topBarTrailing) {
 //                Button(action: {
 //                    Task {
@@ -91,17 +67,18 @@ public struct CashflowTransactionListView: View {
 //                    Label("Update", systemImage: "arrow.up")
 //                }
 //            }
+            
             ToolbarItem(placement: .topBarTrailing) {
-                            Menu {
-                                Picker("Filter By", selection: $viewModel.dateFilter) {
-                                    ForEach(CashflowDateFilterOption.allCases, id: \.self) { option in
-                                        Text(option.rawValue).tag(option)
-                                    }
-                                }
-                            } label: {
-                                Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
-                            }
+                Menu {
+                    Picker("Filter By", selection: $viewModel.dateFilter) {
+                        ForEach(CashflowDateFilterOption.allCases, id: \.self) { option in
+                            Text(option.rawValue).tag(option)
                         }
+                    }
+                } label: {
+                    Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
+                }
+            }
             
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
@@ -128,5 +105,68 @@ public struct CashflowTransactionListView: View {
         .task {
             await viewModel.prepareDate()
         }
+    }
+}
+
+// MARK: - Modern Subviews
+
+struct CashflowCardRowView: View {
+    
+    let item: CashflowTransaction
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Header: Category & Date
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.category)
+                        .font(.headline)
+                    
+                    if let subCategory = item.subCategory, !subCategory.isEmpty {
+                        Text(subCategory)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                Text(item.timestamp.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            
+            Divider()
+            
+            // Footer: Details & Amount
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Type & Mode")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text("\(item.transactionType.rawValue) • \(item.paymentMode.rawValue)")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("Amount")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(item.amount.description)
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        // Optional: you can color code based on type (e.g., item.transactionType == .income ? .green : .primary)
+                        .foregroundStyle(Color.primary)
+                }
+            }
+        }
+        .padding(16)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.04), radius: 5, x: 0, y: 2)
+        .padding(.horizontal)
     }
 }
