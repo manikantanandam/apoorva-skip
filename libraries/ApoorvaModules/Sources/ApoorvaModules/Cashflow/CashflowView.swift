@@ -40,6 +40,58 @@ public struct CashflowTransactionListView: View {
                 .background(Color(UIColor.secondarySystemBackground))
             }
             
+            // Horizontal Filter Bar
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    // Type Filter
+                    Menu {
+                        Picker("Type", selection: $viewModel.typeFilter) {
+                            ForEach(CashflowTypeFilterOption.allCases, id: \.self) { option in
+                                Text(option.rawValue).tag(option)
+                            }
+                        }
+                    } label: {
+                        FilterChip(title: viewModel.typeFilter == .all ? "Type" : viewModel.typeFilter.rawValue)
+                    }
+                    
+                    // Payment Mode Filter
+                    Menu {
+                        Picker("Mode", selection: $viewModel.paymentModeFilter) {
+                            ForEach(CashflowPaymentModeFilterOption.allCases, id: \.self) { option in
+                                Text(option.rawValue).tag(option)
+                            }
+                        }
+                    } label: {
+                        FilterChip(title: viewModel.paymentModeFilter == .all ? "Mode" : viewModel.paymentModeFilter.rawValue)
+                    }
+                    
+                    // Category Filter
+                    Menu {
+                        Picker("Category", selection: $viewModel.categoryFilter) {
+                            ForEach(viewModel.availableCategories, id: \.self) { option in
+                                Text(option).tag(option)
+                            }
+                        }
+                    } label: {
+                        FilterChip(title: viewModel.categoryFilter == "All" ? "Category" : viewModel.categoryFilter)
+                    }
+                    
+                    // SubCategory Filter
+                    Menu {
+                        Picker("Subcategory", selection: $viewModel.subCategoryFilter) {
+                            ForEach(viewModel.availableSubCategories, id: \.self) { option in
+                                Text(option).tag(option)
+                            }
+                        }
+                    } label: {
+                        FilterChip(title: viewModel.subCategoryFilter == "All" ? "Subcategory" : viewModel.subCategoryFilter)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+            }
+            .background(Color(UIColor.systemGroupedBackground))
+            
             ScrollView {
                 LazyVStack(spacing: 12) {
                     
@@ -168,5 +220,24 @@ struct CashflowCardRowView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: Color.black.opacity(0.04), radius: 5, x: 0, y: 2)
         .padding(.horizontal)
+    }
+}
+
+struct FilterChip: View {
+    let title: String
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(title)
+            Image(systemName: "chevron.down")
+                .font(.caption2)
+        }
+        .font(.subheadline)
+        .foregroundColor(.primary)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .clipShape(Capsule())
+        .shadow(color: Color.black.opacity(0.04), radius: 2, x: 0, y: 1)
     }
 }

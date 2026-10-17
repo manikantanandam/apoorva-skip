@@ -24,6 +24,18 @@ public enum CashflowDateFilterOption: String, CaseIterable {
     case custom = "Custom"
 }
 
+public enum CashflowTypeFilterOption: String, CaseIterable {
+    case all = "All"
+    case credit = "Credit"
+    case debit = "Debit"
+}
+
+public enum CashflowPaymentModeFilterOption: String, CaseIterable {
+    case all = "All"
+    case cash = "Cash"
+    case upi = "UPI"
+}
+
 @MainActor
 @Observable
 public class CashflowTransactionListViewModel {
@@ -56,6 +68,23 @@ public class CashflowTransactionListViewModel {
             didSet { if dateFilter == .custom { applyFilterAndSort() } }
         }
     
+    var typeFilter: CashflowTypeFilterOption = .all {
+            didSet { applyFilterAndSort() }
+        }
+        var paymentModeFilter: CashflowPaymentModeFilterOption = .all {
+            didSet { applyFilterAndSort() }
+        }
+        var categoryFilter: String = "All" {
+            didSet { applyFilterAndSort() }
+        }
+        var subCategoryFilter: String = "All" {
+            didSet { applyFilterAndSort() }
+        }
+        
+        // Dynamic Filter Data
+        var availableCategories: [String] = ["All"]
+        var availableSubCategories: [String] = ["All"]
+    
     
     public init(repository: CashflowTransactionRepositoryProtocol) {
         self.repository = repository
@@ -71,6 +100,7 @@ public class CashflowTransactionListViewModel {
             print("get transactions")
             self.allTransactions = try await repository.getCashflowTransactions().sorted()
             print("got transactions after sync \(self.transactions.count)")
+            extractDynamicFilters()
             applyFilterAndSort()
             
         } catch {
@@ -78,37 +108,67 @@ public class CashflowTransactionListViewModel {
         }
     }
     
+    private func extractDynamicFilters() {
+            // Extract unique categories
+            let cats = Set(allTransactions.map { $0.category })
+            availableCategories = ["All"] + cats.sorted()
+            
+            // Extract unique subcategories
+            let subCats = Set(allTransactions.compactMap { $0.subCategory }.filter { !$0.isEmpty })
+            availableSubCategories = ["All"] + subCats.sorted()
+            
+            // Reset selected filters if the old selection no longer exists in the newly fetched data
+            if !availableCategories.contains(categoryFilter) { categoryFilter = "All" }
+            if !availableSubCategories.contains(subCategoryFilter) { subCategoryFilter = "All" }
+        }
+    
     private func applyFilterAndSort() {
             let calendar = Calendar.current
             let now = Date()
             
             let filteredTransactions = allTransactions.filter { item in
+                // 1. Date Filter
+                var dateMatches = false
                 switch dateFilter {
                 case .today:
-                    return calendar.isDateInToday(item.timestamp)
-                    
+                    dateMatches = calendar.isDateInToday(item.timestamp)
                 case .last7Days:
-                    guard let pastDate = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) else { return true }
-                    return item.timestamp >= pastDate
-                    
+                    if let pastDate = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) {
+                        dateMatches = item.timestamp >= pastDate
+                    } else { dateMatches = true }
                 case .thisMonth:
-                    return calendar.isDate(item.timestamp, equalTo: now, toGranularity: .month)
-                    
+                    dateMatches = calendar.isDate(item.timestamp, equalTo: now, toGranularity: .month)
                 case .last3Months:
-                    guard let pastDate = calendar.date(byAdding: .month, value: -3, to: now) else { return true }
-                    return item.timestamp >= pastDate
-                    
+                    if let pastDate = calendar.date(byAdding: .month, value: -3, to: now) {
+                        dateMatches = item.timestamp >= pastDate
+                    } else { dateMatches = true }
                 case .thisYear:
-                    return calendar.isDate(item.timestamp, equalTo: now, toGranularity: .year)
-                    
+                    dateMatches = calendar.isDate(item.timestamp, equalTo: now, toGranularity: .year)
                 case .all:
-                    return true
-                    
+                    dateMatches = true
                 case .custom:
                     let startOfDay = calendar.startOfDay(for: customStartDate)
                     let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: customEndDate) ?? customEndDate
-                    return item.timestamp >= startOfDay && item.timestamp <= endOfDay
+                    dateMatches = item.timestamp >= startOfDay && item.timestamp <= endOfDay
                 }
+                
+                guard dateMatches else { return false }
+                
+                // 2. Type Filter
+                if typeFilter == .credit && item.transactionType != .credit { return false }
+                if typeFilter == .debit && item.transactionType != .debit { return false }
+                
+                // 3. Payment Mode Filter
+                if paymentModeFilter == .cash && item.paymentMode != .cash { return false }
+                if paymentModeFilter == .upi && item.paymentMode != .upi { return false }
+                
+                // 4. Category Filter
+                if categoryFilter != "All" && item.category != categoryFilter { return false }
+                
+                // 5. SubCategory Filter
+                if subCategoryFilter != "All" && (item.subCategory ?? "") != subCategoryFilter { return false }
+                
+                return true
             }
             
             self.transactions = filteredTransactions
