@@ -19,8 +19,12 @@ public struct InventoryView: View {
     public var body: some View {
         ScrollView {
             LazyVStack {
-                ForEach(viewModel.items) { item in
-                    InventoryItemCardView(item: item)
+                HStack {
+                    CardStatView(title: "Total", value: viewModel.itemsCount.string)
+                    CardStatView(title: "Hot Items", value: viewModel.hotItemsCount.string)
+                }
+                ForEach(viewModel.rows) { row in
+                    InventoryItemCardRowView(row: row)
                 }
             }
         }
@@ -54,30 +58,37 @@ public struct InventoryView: View {
 }
 
 
-struct InventoryItemCardView: View {
+struct InventoryItemCardRowView: View {
     
-    let item: InventoryItem
+    let row: InventoryItemRow
     
     var body: some View {
         CardView {
             VStack {
                 HStack {
-                    LabelView(text: item.name)
+                    LabelView(text: row.item.name)
                     Spacer()
-                    LabelView(text: item.currentStock.string,
-                              style: .footnote)
+                    if row.item.isHotkey {
+                        IconView(icon: .star, iconSize: 24, color: .red)
+                    }
+                }
+                HStack {
+                    CardStatView(title: "Stock", value: row.item.currentStock.string, style: .info)
+                    CardStatView(title: "Items Sold", value: row.itemsSold.string, style: .info)
+                    CardStatView(title: "Sold Amount", value: row.soldValue.string, style: .info)
+                    Spacer()
                 }
                 HStack {
                     LabelView(text: "Last Sold", style: .caption)
                     Spacer()
-                    LabelView(text: item.lastSoldDateString,
+                    LabelView(text: row.item.lastSoldDateString,
                               style: .caption)
                 }
                 
                 HStack {
                     LabelView(text: "Updated at", style: .caption)
                     Spacer()
-                    LabelView(text: item.updatedAtString,
+                    LabelView(text: row.item.updatedAtString,
                               style: .caption)
                 }
                 

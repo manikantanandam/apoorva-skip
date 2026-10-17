@@ -47,7 +47,8 @@ public class ModulesContainer {
     
     public func makeInventoryViewModel() -> InventoryViewModel {
         return InventoryViewModel(
-            repository: repositoryContainer.inventoryRepository
+            inventoryRepository: repositoryContainer.inventoryRepository,
+            saleRepository: repositoryContainer.saleRepository
         )
     }
     

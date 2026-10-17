@@ -127,4 +127,8 @@ public extension Array where Element == InventoryItem {
             }
         }
     }
+    
+    var hotItems: [InventoryItem] {
+        filter { $0.isHotkey }
+    }
 }

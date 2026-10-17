@@ -12,4 +12,5 @@ public enum ApoorvaIcon: String {
     case phone = "iphone.gen1"
     case search = "magnifyingglass"
     case rightArrow = "chevron.right"
+    case star = "star.fill"
 }

@@ -21,7 +21,6 @@ public extension String {
     }
     
     func decodeJSON<T: Decodable>(as type: T.Type = T.self) -> T? {
-        print("Decoding JSON \(self)")
         guard let data = self.data(using: .utf8) else { return nil }
         return try? JSONDecoder().decode(T.self, from: data)
     }

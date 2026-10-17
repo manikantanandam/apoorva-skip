@@ -36,7 +36,6 @@ extension Sale: @retroactive SQLCodable {
     }
     
     public init(row: SQLRow, context: SQLContext) throws {
-        print("Sale Decoding")
         let id = try Self.idCol.textValueRequired(in: row)
         let staffId = try Self.staffIdCol.textValueRequired(in: row)
         let customerPhone = try Self.customerPhoneCol.textValueRequired(in: row)
