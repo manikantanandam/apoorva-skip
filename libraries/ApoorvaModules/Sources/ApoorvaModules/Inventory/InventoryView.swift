@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ApoorvaModels
 
 public struct InventoryView: View {
     
@@ -19,21 +20,7 @@ public struct InventoryView: View {
         ScrollView {
             LazyVStack {
                 ForEach(viewModel.items) { item in
-                    CardView {
-                        VStack {
-                            LabelView(text: item.name)
-                            LabelView(text: "\(item.billMachineNumber)")
-                            LabelView(text: "\(item.currentStock)")
-                            DescriptionView(
-                                title: "Last Sold Date",
-                                value: item.lastSoldDate?.toString(format: "dd-MM-yyyy") ?? ""
-                            )
-                            DescriptionView(
-                                title: "Last Updated Date",
-                                value: item.updatedAt?.toString(format: "dd-MM-yyyy") ?? ""
-                            )
-                        }
-                    }
+                    InventoryItemCardView(item: item)
                 }
             }
         }
@@ -63,5 +50,40 @@ public struct InventoryView: View {
         .task {
             await viewModel.prepareDate()
         }
+    }
+}
+
+
+struct InventoryItemCardView: View {
+    
+    let item: InventoryItem
+    
+    var body: some View {
+        CardView {
+            VStack {
+                HStack {
+                    LabelView(text: item.name)
+                    Spacer()
+                    LabelView(text: item.currentStock.string,
+                              style: .footnote)
+                }
+                HStack {
+                    LabelView(text: "Last Sold", style: .caption)
+                    Spacer()
+                    LabelView(text: item.lastSoldDateString,
+                              style: .caption)
+                }
+                
+                HStack {
+                    LabelView(text: "Updated at", style: .caption)
+                    Spacer()
+                    LabelView(text: item.updatedAtString,
+                              style: .caption)
+                }
+                
+                
+            }
+        }
+        
     }
 }

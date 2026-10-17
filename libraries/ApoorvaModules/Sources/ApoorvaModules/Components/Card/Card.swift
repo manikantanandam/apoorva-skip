@@ -9,14 +9,14 @@ import Foundation
 import SwiftUI
 
 struct CardView<Content: View>: View {
-    let backgroundColor: Color
+    let backgroundColor: ApoorvaColor
     let cornerRadius: CGFloat
     let shadowRadius: CGFloat
     let content: () -> Content
     
     // Provide sensible default parameters
     init(
-        backgroundColor: Color = .white,
+        backgroundColor: ApoorvaColor = .systemBackGround,
         cornerRadius: CGFloat = 16,
         shadowRadius: CGFloat = 6,
         @ViewBuilder content: @escaping () -> Content
@@ -30,7 +30,7 @@ struct CardView<Content: View>: View {
     var body: some View {
         content()
             .padding()
-            .background(backgroundColor)
+            .background(backgroundColor.color)
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
             .shadow(color: Color.black.opacity(0.1), radius: shadowRadius, x: 0, y: 4)
     }

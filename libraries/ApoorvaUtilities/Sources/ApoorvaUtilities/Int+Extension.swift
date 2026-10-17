@@ -24,4 +24,8 @@ public extension Int {
     var int64Value: Int64 {
         Int64(self)
     }
+    
+    var string: String {
+        return String(describing: self)
+    }
 }

@@ -8,11 +8,13 @@
 import Foundation
 import ApoorvaRepository
 import ApoorvaModels
+import ApoorvaUtilities
 
 public enum InventorySortOption: String, CaseIterable {
     case name = "Name"
     case stock = "Stock"
     case lastSoldDate = "Last Sold Date"
+    case updatedAt = "Updated At"
 }
 
 @MainActor
@@ -25,9 +27,15 @@ public class InventoryViewModel {
     
     var sortOption: InventorySortOption = .name {
         didSet {
-            sortItems()
+            if sortOption == oldValue {
+                sortType = sortType.togglevalue
+            }
+            
+            sortItems(by: sortType)
         }
     }
+    
+    var sortType: SortType = .ascending
     
     
     public init(repository: InventoryItemRepositoryProtocol) {
@@ -61,20 +69,16 @@ public class InventoryViewModel {
         }
     }
     
-    func sortItems() {
+    func sortItems(by type: SortType) {
             switch sortOption {
             case .name:
-                items.sort() // Uses the default Comparable conformance (<) from InventoryItem
+                items.sortByName(type: sortType)
             case .stock:
-                // Sorting descending by default to show highest stock first
-                items.sort { $0.currentStock > $1.currentStock }
+                items.sortByStockLevel(type: sortType)
             case .lastSoldDate:
-                // Sorting descending to show most recently sold first. Nil dates go to the bottom.
-                items.sort {
-                    let date1 = $0.lastSoldDate ?? Date.distantPast
-                    let date2 = $1.lastSoldDate ?? Date.distantPast
-                    return date1 > date2
-                }
+                items.sortByLastSoldDate(type: sortType)
+            case .updatedAt:
+                items.sortByUpdatedAt(type: sortType)
             }
         }
 }
