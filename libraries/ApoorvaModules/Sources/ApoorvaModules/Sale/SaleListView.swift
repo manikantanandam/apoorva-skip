@@ -12,20 +12,43 @@ import ApoorvaModels
 public struct SaleListView: View {
     
     @Bindable var viewModel: SaleListViewModel
-        
+    
     public init(viewModel: SaleListViewModel) {
         self.viewModel = viewModel
     }
     
     public var body: some View {
-        ScrollView {
-            LazyVStack {
-                ForEach(viewModel.sales) { sale in
-                    SaleCardRowView(sale: sale)
+        VStack(spacing: 0) {
+            
+            // Custom Date Picker Section
+            if viewModel.dateFilter == .custom {
+                HStack {
+                    DatePicker("Start", selection: $viewModel.customStartDate, displayedComponents: .date)
+                        .labelsHidden()
+                    Text("to")
+                        .foregroundColor(.secondary)
+                    DatePicker("End", selection: $viewModel.customEndDate, displayedComponents: .date)
+                        .labelsHidden()
+                }
+                .padding()
+                .background(Color(UIColor.secondarySystemBackground))
+            }
+            
+            ScrollView {
+                LazyVStack {
+                    if viewModel.sales.isEmpty {
+                        Text("No sales found for this period.")
+                            .foregroundColor(.secondary)
+                            .padding(.top, 40)
+                    } else {
+                        ForEach(viewModel.sales) { sale in
+                            SaleCardRowView(sale: sale)
+                        }
+                    }
                 }
             }
         }
-        .toolbar{
+        .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
                     Task {
@@ -33,6 +56,18 @@ public struct SaleListView: View {
                     }
                 }) {
                     Label("Sync", systemImage: "arrow.clockwise")
+                }
+            }
+            
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Picker("Filter By", selection: $viewModel.dateFilter) {
+                        ForEach(SaleDateFilterOption.allCases, id: \.self) { option in
+                            Text(option.rawValue).tag(option)
+                        }
+                    }
+                } label: {
+                    Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
                 }
             }
             

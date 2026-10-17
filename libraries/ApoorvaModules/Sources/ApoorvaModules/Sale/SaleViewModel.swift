@@ -16,12 +16,26 @@ public enum SaleSortOption: String, CaseIterable {
     case newest = "Newest"
 }
 
+public enum SaleDateFilterOption: String, CaseIterable {
+    case today = "Today"
+    case last7Days = "Last 7 Days"
+    case thisMonth = "This Month"
+    case last3Months = "Last 3 Months"
+    case thisYear = "This Year"
+    case all = "All"
+    case custom = "Custom"
+}
+
 
 @MainActor
 @Observable
 public class SaleListViewModel {
     
+    // Holds the currently filtered and sorted sales for the view
     var sales: [Sale] = []
+    
+    // Holds all fetched sales from the repository
+        private var allSales: [Sale] = []
     
     let repository: SaleRepositoryProtocol
     
@@ -30,6 +44,20 @@ public class SaleListViewModel {
             sortItems()
         }
     }
+    
+    var dateFilter: SaleDateFilterOption = .today {
+            didSet {
+                applyFilterAndSort()
+            }
+        }
+    
+    var customStartDate: Date = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date() {
+            didSet { if dateFilter == .custom { applyFilterAndSort() } }
+        }
+        
+        var customEndDate: Date = Date() {
+            didSet { if dateFilter == .custom { applyFilterAndSort() } }
+        }
     
     
     public init(repository: SaleRepositoryProtocol) {
@@ -40,12 +68,13 @@ public class SaleListViewModel {
         print("Preparing data for customer view")
         do {
             print("get sales")
-            self.sales = try await repository.getSales().sorted()
+            self.allSales = try await repository.getSales().sorted()
             print("sync sales")
             try await repository.sync(force: false)
             print("get sales")
-            self.sales = try await repository.getSales().sorted()
+            self.allSales = try await repository.getSales().sorted()
             print("got sales after sync \(self.sales.count)")
+            applyFilterAndSort()
             
         } catch {
             print("Sale items failed \(error.localizedDescription)")
@@ -62,6 +91,44 @@ public class SaleListViewModel {
             print("Sale items failed \(error.localizedDescription)")
         }
     }
+    
+    private func applyFilterAndSort() {
+            let calendar = Calendar.current
+            let now = Date()
+            
+            let filteredSales = allSales.filter { sale in
+                switch dateFilter {
+                case .today:
+                    return calendar.isDateInToday(sale.timestamp)
+                    
+                case .last7Days:
+                    guard let pastDate = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) else { return true }
+                    return sale.timestamp >= pastDate
+                    
+                case .thisMonth:
+                    return calendar.isDate(sale.timestamp, equalTo: now, toGranularity: .month)
+                    
+                case .last3Months:
+                    guard let pastDate = calendar.date(byAdding: .month, value: -3, to: now) else { return true }
+                    return sale.timestamp >= pastDate
+                    
+                case .thisYear:
+                    return calendar.isDate(sale.timestamp, equalTo: now, toGranularity: .year)
+                    
+                case .all:
+                    return true
+                    
+                case .custom:
+                    let startOfDay = calendar.startOfDay(for: customStartDate)
+                    // Ensure the end date covers the very end of the selected day
+                    let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: customEndDate) ?? customEndDate
+                    return sale.timestamp >= startOfDay && sale.timestamp <= endOfDay
+                }
+            }
+            
+            self.sales = filteredSales
+            sortItems()
+        }
     
     func sortItems() {
             switch sortOption {
