@@ -17,6 +17,12 @@ public struct SaleListView: View {
         self.viewModel = viewModel
     }
     
+    // Grid layout for top stats
+    private let columns = [
+        GridItem(.flexible()),
+        GridItem(.flexible())
+    ]
+    
     public var body: some View {
         VStack(spacing: 0) {
             
@@ -35,18 +41,18 @@ public struct SaleListView: View {
             }
             
             ScrollView {
-                LazyVStack {
-                    VStack {
-                        HStack {
-                            CardStatView(title: "Total Sales", value: viewModel.totalSalesCount.string)
-                            CardStatView(title: "Revenue", value: viewModel.totalSubtotal.string)
-                        }
-                        HStack {
-                            CardStatView(title: "Received", value: viewModel.totalNetPayable.string)
-                            CardStatView(title: "Total Discount", value: viewModel.totalDiscount.string)
-                        }
+                LazyVStack(spacing: 12) {
+                    // Modernized Stats Section
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        ModernStatBox(title: "Total Sales", value: viewModel.totalSalesCount.string)
+                        ModernStatBox(title: "Revenue", value: viewModel.totalSubtotal.string)
+                        ModernStatBox(title: "Received", value: viewModel.totalNetPayable.string)
+                        ModernStatBox(title: "Total Discount", value: viewModel.totalDiscount.string)
                     }
+                    .padding(.horizontal)
+                    .padding(.top, 16)
                     .padding(.bottom, 8)
+                    
                     if viewModel.sales.isEmpty {
                         Text("No sales found for this period.")
                             .foregroundColor(.secondary)
@@ -57,8 +63,10 @@ public struct SaleListView: View {
                         }
                     }
                 }
+                .padding(.bottom, 16)
             }
         }
+        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
@@ -100,43 +108,99 @@ public struct SaleListView: View {
     }
 }
 
+// MARK: - Modern Subviews
+
+struct ModernStatBox: View {
+    let title: String
+    let value: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+            
+            Text(value)
+                .font(.title3)
+                .fontWeight(.semibold)
+                .foregroundStyle(.primary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
+    }
+}
 
 struct SaleCardRowView: View {
     
     let sale: Sale
     
     var body: some View {
-        CardView {
-            VStack(alignment: .leading) {
-                HStack {
-                    VStack {
-                        LabelView(text: sale.customerName, style: .caption)
-                        LabelView(text: sale.customerPhone, style: .caption)
+        VStack(alignment: .leading, spacing: 16) {
+            // Header: Customer & Date
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(sale.customerName.isEmpty ? "Unknown" : sale.customerName)
+                        .font(.headline)
+                    
+                    if !sale.customerPhone.isEmpty {
+                        Text(sale.customerPhone)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
-                    Spacer()
-                    LabelView(text: sale.timestamp.formatted(date: .abbreviated, time: .shortened),
-                              style: .caption)
                 }
                 
-                HStack {
-                    CardStatView(
-                        title: "Sub Total",
-                        value: sale.subtotal.string,
-                        style: .info
-                    )
-                    CardStatView(
-                        title: "Discount",
-                        value: sale.overallDiscountAmount.string,
-                        style: .info
-                    )
-                    CardStatView(
-                        title: "Net Pay",
-                        value: sale.netPayable.string,
-                        style: .info
-                    )
-                    Spacer()
+                Spacer()
+                
+                Text(sale.timestamp.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            
+            Divider()
+            
+            // Footer: Financials
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Sub Total")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(sale.subtotal.string)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Discount")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(sale.overallDiscountAmount.string)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("Net Pay")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(sale.netPayable.string)
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.green)
                 }
             }
         }
+        .padding(16)
+        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .shadow(color: Color.black.opacity(0.04), radius: 5, x: 0, y: 2)
+        .padding(.horizontal)
     }
 }
