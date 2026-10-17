@@ -41,14 +41,10 @@ private extension SaleService {
         var query: Query = baseCollection
             
         if let lastSync = lastSync {
+            print("Fetching Sales in sale service \(lastSync)")
                 let timestamp = Timestamp(date: lastSync)
                 
-                query = baseCollection.whereFilter(
-                    Filter.orFilter([
-                        Filter.whereField("timestamp", isGreaterThan: timestamp),
-                        Filter.whereField("updatedAt", isGreaterThan: timestamp)
-                    ])
-                )
+            query = baseCollection.whereField("timestamp", isGreaterThan: timestamp)
             }
             print("🌐 Fetching Sales for Org: \(orgId)...")
             let snapshot = try await query.getDocuments()
