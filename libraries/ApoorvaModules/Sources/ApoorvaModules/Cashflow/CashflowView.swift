@@ -17,56 +17,91 @@ public struct CashflowTransactionListView: View {
     }
     
     public var body: some View {
-        ScrollView {
-            LazyVStack {
-                ForEach(viewModel.transactions) { item in
-                    CardView {
-                        VStack {
+        VStack(spacing: 0) {
+            
+            // Custom Date Picker Section
+            if viewModel.dateFilter == .custom {
+                HStack {
+                    DatePicker("Start", selection: $viewModel.customStartDate, displayedComponents: .date)
+                        .labelsHidden()
+                    Text("to")
+                        .foregroundColor(.secondary)
+                    DatePicker("End", selection: $viewModel.customEndDate, displayedComponents: .date)
+                        .labelsHidden()
+                }
+                .padding()
+                .background(Color(UIColor.secondarySystemBackground))
+            }
+            
+            ScrollView {
+                LazyVStack {
+                    if viewModel.transactions.isEmpty {
+                        Text("No transactions found for this period.")
+                            .foregroundColor(.secondary)
+                            .padding(.top, 40)
+                    } else {
+                        
+                        ForEach(viewModel.transactions) { item in
+                            CardView {
+                                VStack {
 
-                            DescriptionView(
-                                title: "Category",
-                                value: "\(item.category)"
-                            )
-                            DescriptionView(
-                                title: "Sub Category",
-                                value: "\(item.subCategory ?? "")"
-                            )
-                            DescriptionView(
-                                title: "Transaction Type",
-                                value: "\(item.transactionType.rawValue)"
-                            )
-                            DescriptionView(
-                                title: "Payment Mode",
-                                value: "\(item.paymentMode.rawValue)"
-                            )
-                            DescriptionView(
-                                title: "Person",
-                                value: "\(item.person)"
-                            )
-                            DescriptionView(
-                                title: "Amount",
-                                value: "\(item.amount)"
-                            )
-                            DescriptionView(
-                                title: "Cashflow Date",
-                                value: item.timestamp.toString(format: "dd-MM-yyyy")
-                            )
+                                    DescriptionView(
+                                        title: "Category",
+                                        value: "\(item.category)"
+                                    )
+                                    DescriptionView(
+                                        title: "Sub Category",
+                                        value: "\(item.subCategory ?? "")"
+                                    )
+                                    DescriptionView(
+                                        title: "Transaction Type",
+                                        value: "\(item.transactionType.rawValue)"
+                                    )
+                                    DescriptionView(
+                                        title: "Payment Mode",
+                                        value: "\(item.paymentMode.rawValue)"
+                                    )
+                                    DescriptionView(
+                                        title: "Person",
+                                        value: "\(item.person)"
+                                    )
+                                    DescriptionView(
+                                        title: "Amount",
+                                        value: "\(item.amount)"
+                                    )
+                                    DescriptionView(
+                                        title: "Cashflow Date",
+                                        value: item.timestamp.toString(format: "dd-MM-yyyy")
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
         }
         .toolbar{
-            
+//            
+//            ToolbarItem(placement: .topBarTrailing) {
+//                Button(action: {
+//                    Task {
+//                        await viewModel.update()
+//                    }
+//                }) {
+//                    Label("Update", systemImage: "arrow.up")
+//                }
+//            }
             ToolbarItem(placement: .topBarTrailing) {
-                Button(action: {
-                    Task {
-                        await viewModel.update()
-                    }
-                }) {
-                    Label("Update", systemImage: "arrow.up")
-                }
-            }
+                            Menu {
+                                Picker("Filter By", selection: $viewModel.dateFilter) {
+                                    ForEach(CashflowDateFilterOption.allCases, id: \.self) { option in
+                                        Text(option.rawValue).tag(option)
+                                    }
+                                }
+                            } label: {
+                                Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
+                            }
+                        }
             
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
