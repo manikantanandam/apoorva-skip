@@ -70,8 +70,7 @@ public final class DailyCashflowManager: DailyCashflowManagerProtocol {
             openingCash: openingCash,
             openingUpi: openingUpi,
             closingCash: closingCash,
-            closingUpi: closingUpi,
-            transactions: todayTransactions
+            closingUpi: closingUpi
         )
     }
 }

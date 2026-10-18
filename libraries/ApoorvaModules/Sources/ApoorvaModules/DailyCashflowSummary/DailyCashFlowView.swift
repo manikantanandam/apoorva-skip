@@ -76,17 +76,17 @@ public struct DailyCashFlowView: View {
                                 .padding(.horizontal)
                                 .padding(.top, 8)
                             
-                            if summary.transactions.isEmpty {
-                                Text("No transactions recorded on this date.")
-                                    .foregroundStyle(.tertiary)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                    .padding(.vertical, 32)
-                            } else {
-                                ForEach(summary.transactions) { item in
-                                    // Reusing the modern card layout from CashflowListView
-                                    DailyCashflowCardRowView(item: item)
-                                }
-                            }
+//                            if summary.transactions.isEmpty {
+//                                Text("No transactions recorded on this date.")
+//                                    .foregroundStyle(.tertiary)
+//                                    .frame(maxWidth: .infinity, alignment: .center)
+//                                    .padding(.vertical, 32)
+//                            } else {
+//                                ForEach(summary.transactions) { item in
+//                                    // Reusing the modern card layout from CashflowListView
+//                                    DailyCashflowCardRowView(item: item)
+//                                }
+//                            }
                         }
                         
                         // Closing Balance Section
