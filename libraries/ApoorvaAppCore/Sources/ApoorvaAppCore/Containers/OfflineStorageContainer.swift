@@ -49,6 +49,14 @@ public class OfflineStorageContainer {
         database: skipSqlDatabase
     )
     
+    public lazy var dailyCashflowStorage: DailyCashflowSummaryStorageProtocol = DailyCashflowSummaryLocalStorage(
+        database: skipSqlDatabase
+    )
+    
+    public lazy var organizationStorage: OrganizationStorageProtocol = OrganizationLocalStorage(
+        database: skipSqlDatabase
+    )
+    
     public lazy var syncStorage: SyncStorage = SyncStorage(db: skipSqlDatabase)
     
     public init() {}

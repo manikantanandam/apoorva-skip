@@ -7,28 +7,38 @@
 
 import Foundation
 
-public struct DailyCashflowSummary: Sendable {
+public struct AccountBalance: Codable, Sendable, Identifiable {
+    
+    public let id: String
+    public var balance: Double
+    
+    public init(id: String, balance: Double) {
+        self.id = id
+        self.balance = balance
+    }
+}
+
+public struct DailyCashflowSummary: Sendable, Codable {
     public var id: String {
         date.toString(format: "dd-MM-yyyy")
     }
     public let date: Date
-    public let openingCash: Double
-    public let openingUpi: Double
-    public let closingCash: Double
-    public let closingUpi: Double
+    public let openingBalances: [AccountBalance]
+    public let closingBalances: [AccountBalance]
     
-    public var totalOpening: Double { openingCash + openingUpi }
-    public var totalClosing: Double { closingCash + closingUpi }
+    // Update the reduce functions to sum the 'balance' property
+    public var totalOpening: Double {
+        openingBalances.reduce(0) { $0 + $1.balance }
+    }
+    public var totalClosing: Double {
+        closingBalances.reduce(0) { $0 + $1.balance }
+    }
     
     public init(date: Date,
-                openingCash: Double,
-                openingUpi: Double,
-                closingCash: Double,
-                closingUpi: Double) {
+                openingBalances: [AccountBalance],
+                closingBalances: [AccountBalance]) {
         self.date = date
-        self.openingCash = openingCash
-        self.openingUpi = openingUpi
-        self.closingCash = closingCash
-        self.closingUpi = closingUpi
+        self.openingBalances = openingBalances
+        self.closingBalances = closingBalances
     }
 }

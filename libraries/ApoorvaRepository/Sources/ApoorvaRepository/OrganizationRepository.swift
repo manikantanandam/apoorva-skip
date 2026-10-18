@@ -37,11 +37,25 @@ public final class OrganizationRepository: OrganizationRepositoryProtocol {
     }
     
     public func getOrganizations() async throws -> [Organization] {
-        try storage.getOrganizations()
+        let organizations = try storage.getOrganizations()
+        if organizations.isEmpty {
+            try await sync(force: false)
+            
+            return try storage.getOrganizations()
+        }
+        
+        return organizations
     }
     
     public func getOrganization(orgId: String) async throws -> Organization? {
-        try storage.getOrganization(orgId: orgId)
+        var organizations = try storage.getOrganizations()
+        if organizations.isEmpty {
+            try await sync(force: false)
+            
+            organizations = try storage.getOrganizations()
+        }
+        
+        return organizations.first(where: { $0.id == orgId })
     }
     
     public func saveOrganization(organization: Organization) async throws {
@@ -98,7 +112,7 @@ public final class OrganizationRepository: OrganizationRepositoryProtocol {
         
         // Update Sync Timestamp
         guard let orgWithMaxDate = fetchedOrganizations.max(by: { $0.updatedAt < $1.updatedAt }) else { return }
-        
+        print("Last updated organization date = \(orgWithMaxDate)")
         try syncStorage.updateSyncTimestamp(
             for: Organization.table.name,
             timestamp: orgWithMaxDate.updatedAt.timeIntervalSince1970

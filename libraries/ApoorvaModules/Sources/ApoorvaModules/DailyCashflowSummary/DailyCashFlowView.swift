@@ -13,13 +13,19 @@ public struct DailyCashFlowView: View {
     
     @Bindable var viewModel: DailyCashFlowViewModel
     
+    @State private var showAddUpdateSheet = false
+    
+    var makeAddUpdateViewModel: (Date, DailyCashflowSummary?) -> AddUpdateDailyCashflowSummaryViewModel
+    
     private let columns = [
         GridItem(.flexible()),
         GridItem(.flexible())
     ]
     
-    public init(viewModel: DailyCashFlowViewModel) {
+    public init(viewModel: DailyCashFlowViewModel,
+                makeAddUpdateViewModel: @escaping (Date, DailyCashflowSummary?) -> AddUpdateDailyCashflowSummaryViewModel) {
         self.viewModel = viewModel
+        self.makeAddUpdateViewModel = makeAddUpdateViewModel
     }
     
     public var body: some View {
@@ -61,8 +67,9 @@ public struct DailyCashFlowView: View {
                                 .padding(.horizontal)
                             
                             LazyVGrid(columns: columns, spacing: 12) {
-                                ModernDailyStatBox(title: "Cash", value: summary.openingCash.description, color: .primary)
-                                ModernDailyStatBox(title: "UPI", value: summary.openingUpi.description, color: .primary)
+                                ForEach(summary.openingBalances) { accountBalance in
+                                    ModernDailyStatBox(title: accountBalance.id, value: accountBalance.balance.description, color: .primary)
+                                }
                             }
                             .padding(.horizontal)
                         }
@@ -98,8 +105,9 @@ public struct DailyCashFlowView: View {
                                 .padding(.top, 8)
                             
                             LazyVGrid(columns: columns, spacing: 12) {
-                                ModernDailyStatBox(title: "Cash", value: summary.closingCash.description, color: summary.closingCash >= 0 ? .green : .red)
-                                ModernDailyStatBox(title: "UPI", value: summary.closingUpi.description, color: summary.closingUpi >= 0 ? .green : .red)
+                                ForEach(summary.closingBalances) { accountBalance in
+                                    ModernDailyStatBox(title: accountBalance.id, value: accountBalance.balance.description, color: .primary)
+                                }
                             }
                             .padding(.horizontal)
                         }
@@ -113,6 +121,24 @@ public struct DailyCashFlowView: View {
             }
         }
         .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+        .toolbar {
+            // Because HomeView wraps this in a NavigationStack, this toolbar will automatically attach to the top bar.
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: { showAddUpdateSheet = true }) {
+                    // Show a pencil if updating, a plus if adding
+                    Image(systemName: viewModel.summary == nil ? "plus" : "pencil")
+                }
+            }
+        }
+        .sheet(isPresented: $showAddUpdateSheet, onDismiss: {
+            // Refresh the screen automatically when the sheet is dismissed
+            Task { await viewModel.fetchSummary() }
+        }) {
+            // Present the sheet using the injected factory closure
+            AddUpdateDailyCashflowSummaryView(
+                viewModel: makeAddUpdateViewModel(viewModel.selectedDate, viewModel.summary)
+            )
+        }
         .task {
             await viewModel.fetchSummary()
         }

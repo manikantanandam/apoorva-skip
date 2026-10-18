@@ -56,7 +56,10 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
             Text("Reports Screen")
         case .dailyCashflow:
             DailyCashFlowView(
-                viewModel: container.modulesContainer.makeDailyCashflowViewModel()
+                viewModel: container.modulesContainer.makeDailyCashflowViewModel(),
+                makeAddUpdateViewModel: { date, summary in
+                    container.modulesContainer.makeAddUpdateDailyCashflowViewModel()
+                }
             )
         case .cashflow:
             CashflowTransactionListView(

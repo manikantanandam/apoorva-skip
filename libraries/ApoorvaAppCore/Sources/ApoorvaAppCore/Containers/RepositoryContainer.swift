@@ -54,4 +54,18 @@ public class RepositoryContainer {
         userRepository: userRepository,
         syncStorage: offlineStorageContainer.syncStorage
     )
+    
+    public lazy var dailyCashflowRepository: DailyCashflowSummaryRepositoryProtocol = DailyCashflowSummaryRepository(
+        storage: offlineStorageContainer.dailyCashflowStorage,
+        service: servicesContainer.dailyCashflowService,
+        userRepository: userRepository,
+        syncStorage: offlineStorageContainer.syncStorage
+    )
+    
+    public lazy var organizationRepository: OrganizationRepositoryProtocol = OrganizationRepository(
+        storage: offlineStorageContainer.organizationStorage,
+        service: servicesContainer.organizationService,
+        userRepository: userRepository,
+        syncStorage: offlineStorageContainer.syncStorage
+    )
 }

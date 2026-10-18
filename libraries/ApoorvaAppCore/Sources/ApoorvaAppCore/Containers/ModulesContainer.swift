@@ -72,9 +72,15 @@ public class ModulesContainer {
     
     public func makeDailyCashflowViewModel() -> DailyCashFlowViewModel {
         return DailyCashFlowViewModel(
-            manager: DailyCashflowManager(
-                repository: repositoryContainer.cashflowRepository
-            )
+            repository: repositoryContainer.dailyCashflowRepository
+        )
+    }
+    
+    public func makeAddUpdateDailyCashflowViewModel() -> AddUpdateDailyCashflowSummaryViewModel {
+        return AddUpdateDailyCashflowSummaryViewModel(
+            repository: repositoryContainer.dailyCashflowRepository,
+            userRepository: repositoryContainer.userRepository,
+            organizationRepository: repositoryContainer.organizationRepository
         )
     }
 }

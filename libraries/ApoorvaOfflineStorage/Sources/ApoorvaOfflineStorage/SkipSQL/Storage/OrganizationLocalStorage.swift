@@ -30,7 +30,15 @@ public final class OrganizationLocalStorage: OrganizationStorageProtocol {
     }
     
     public func getOrganization(orgId: String) throws -> Organization? {
-        return try database.context.fetch(Organization.self, primaryKeys: [.text(orgId)])
+        do {
+            return try database.context.fetch(Organization.self, primaryKeys: [.text(orgId)])
+        } catch {
+            if let error = error as? SQLError {
+                print(error.msg)
+            }
+            throw error
+        }
+        
     }
     
     public func saveOrganization(organization: Organization) throws {

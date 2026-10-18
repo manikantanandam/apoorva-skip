@@ -7,6 +7,7 @@
 
 import Foundation
 import ApoorvaModels
+import ApoorvaRepository
 
 @MainActor
 @Observable
@@ -21,16 +22,16 @@ public class DailyCashFlowViewModel {
     public var summary: DailyCashflowSummary?
     public var isLoading: Bool = false
     
-    let manager: DailyCashflowManagerProtocol
+    let repository: DailyCashflowSummaryRepositoryProtocol
     
-    public init(manager: DailyCashflowManagerProtocol) {
-        self.manager = manager
+    public init(repository: DailyCashflowSummaryRepositoryProtocol) {
+        self.repository = repository
     }
     
     public func fetchSummary() async {
         isLoading = true
         do {
-            self.summary = try await manager.getDailySummary(for: selectedDate)
+            self.summary = try await repository.getDailyCashflowSummary(id: selectedDate.toString(format: "dd-MM-yyyy"))
         } catch {
             print("Failed to fetch daily summary: \(error.localizedDescription)")
         }
