@@ -1,10 +1,4 @@
-//
-//  File.swift
-//  ApoorvaModules
-//
-//  Created by Manikanta Nandam on 17/10/26.
-//
-
+// DailyCashFlowViewModel.swift
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
@@ -15,30 +9,62 @@ public class DailyCashFlowViewModel {
     
     public var selectedDate: Date = Date() {
         didSet {
-            Task { await fetchSummary() }
+            Task { await fetchData() }
         }
     }
     
     public var summary: DailyCashflowSummary?
+    public var transactions: [CashflowTransaction] = [] // Holds the daily transactions
     public var isLoading: Bool = false
     
-    let repository: DailyCashflowSummaryRepositoryProtocol
+    private let repository: DailyCashflowSummaryRepositoryProtocol
+    private let cashflowRepository: CashflowTransactionRepositoryProtocol
     
-    public init(repository: DailyCashflowSummaryRepositoryProtocol) {
+    public init(repository: DailyCashflowSummaryRepositoryProtocol,
+                cashflowRepository: CashflowTransactionRepositoryProtocol) {
         self.repository = repository
+        self.cashflowRepository = cashflowRepository
     }
     
-    public func fetchSummary() async {
+    // Renamed from fetchSummary to fetchData to reflect it grabs both
+    public func fetchData() async {
         isLoading = true
+        
+        // 1. Fetch Summary
         do {
             self.summary = try await repository.getDailyCashflowSummary(id: selectedDate.toString(format: "dd-MM-yyyy"))
             try await repository.sync(force: true)
             self.summary = try await repository.getDailyCashflowSummary(id: selectedDate.toString(format: "dd-MM-yyyy"))
-            print("daily summary is \(self.summary)")
         } catch {
             print("Failed to fetch daily summary: \(error.localizedDescription)")
         }
+        
+        // 2. Fetch Transactions for Selected Date
+        do {
+            let allTransactions = try await cashflowRepository.getCashflowTransactions()
+            
+            let calendar = Calendar.current
+            let startOfDay = calendar.startOfDay(for: selectedDate)
+            let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: selectedDate) ?? selectedDate
+            
+            self.transactions = allTransactions.filter { tx in
+                !tx.isDeleted && tx.timestamp >= startOfDay && tx.timestamp <= endOfDay
+            }.sorted(by: { $0.timestamp < $1.timestamp })
+            
+        } catch {
+            print("Failed to fetch transactions: \(error.localizedDescription)")
+        }
+        
         isLoading = false
+    }
+    
+    public func deleteTransaction(id: String) async {
+        do {
+            try await cashflowRepository.markAsDeleted(id: id)
+            await fetchData() // Refresh the list after soft delete
+        } catch {
+            print("Failed to delete transaction: \(error.localizedDescription)")
+        }
     }
     
     public func nextDate() {

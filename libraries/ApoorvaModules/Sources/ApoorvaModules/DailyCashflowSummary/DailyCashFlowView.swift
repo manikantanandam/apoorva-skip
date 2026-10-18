@@ -7,9 +7,17 @@ public struct DailyCashFlowView: View {
     
     @Bindable var viewModel: DailyCashFlowViewModel
     
-    @State private var showAddUpdateSheet = false
+    // Summary Sheet State
+    @State private var showSummarySheet = false
     
-    var makeAddUpdateViewModel: (Date, DailyCashflowSummary?) -> AddUpdateDailyCashflowSummaryViewModel
+    // Transaction Sheet State
+    @State private var showTransactionSheet = false
+    @State private var transactionToEdit: CashflowTransaction? = nil
+    
+    var makeAddUpdateSummaryViewModel: (Date, DailyCashflowSummary?) -> AddUpdateDailyCashflowSummaryViewModel
+    
+    // A closure to inject your Add/Update Transaction View from the ModulesContainer
+    var makeAddUpdateTransactionView: (Date, CashflowTransaction?) -> AddUpdateCashflowTransactionViewModel
     
     private let columns = [
         GridItem(.flexible()),
@@ -17,9 +25,11 @@ public struct DailyCashFlowView: View {
     ]
     
     public init(viewModel: DailyCashFlowViewModel,
-                makeAddUpdateViewModel: @escaping (Date, DailyCashflowSummary?) -> AddUpdateDailyCashflowSummaryViewModel) {
+                makeAddUpdateSummaryViewModel: @escaping (Date, DailyCashflowSummary?) -> AddUpdateDailyCashflowSummaryViewModel,
+                makeAddUpdateTransactionViewModel: @escaping (Date, CashflowTransaction?) -> AddUpdateCashflowTransactionViewModel) {
         self.viewModel = viewModel
-        self.makeAddUpdateViewModel = makeAddUpdateViewModel
+        self.makeAddUpdateSummaryViewModel = makeAddUpdateSummaryViewModel
+        self.makeAddUpdateTransactionView = makeAddUpdateTransactionViewModel
     }
     
     public var body: some View {
@@ -37,7 +47,6 @@ public struct DailyCashFlowView: View {
                 DatePicker("Selected Date", selection: $viewModel.selectedDate, displayedComponents: .date)
                     .labelsHidden()
                     .datePickerStyle(.compact)
-                    // Resetting font to ensure DatePicker text isn't massive from HomeView
                     .font(.body)
                 
                 Spacer()
@@ -55,9 +64,9 @@ public struct DailyCashFlowView: View {
             // MARK: - Daily Content
             ScrollView {
                 LazyVStack(spacing: 24) {
+                    
+                    // MARK: - Opening Balance Section
                     if let summary = viewModel.summary {
-                        
-                        // Opening Balance Section
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Opening Balance")
                                 .font(.subheadline)
@@ -74,18 +83,62 @@ public struct DailyCashFlowView: View {
                             .padding(.horizontal)
                         }
                         .padding(.top, 24)
-                        
-                        // Transactions Section
-                        VStack(alignment: .leading, spacing: 12) {
+                    }
+                    
+                    // MARK: - Transactions Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
                             Text("Transactions")
                                 .font(.subheadline)
                                 .fontWeight(.bold)
                                 .foregroundColor(.secondary)
                                 .textCase(.uppercase)
-                                .padding(.horizontal)
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                transactionToEdit = nil
+                                showTransactionSheet = true
+                            }) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.body)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(Color.accentColor)
+                            }
                         }
+                        .padding(.horizontal)
                         
-                        // Closing Balance Section
+                        if viewModel.transactions.isEmpty {
+                            Text("No transactions recorded on this date.")
+                                .font(.subheadline)
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal)
+                        } else {
+                            ForEach(viewModel.transactions) { item in
+                                CashflowCardRowView(item: item)
+                                    .contextMenu {
+                                        Button {
+                                            transactionToEdit = item
+                                            showTransactionSheet = true
+                                        } label: {
+                                            Label("Edit", systemImage: "pencil")
+                                        }
+                                        
+                                        Button(role: .destructive) {
+                                            Task {
+                                                await viewModel.deleteTransaction(id: item.id)
+                                            }
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+                                    }
+                            }
+                        }
+                    }
+                    .padding(.top, viewModel.summary == nil ? 24 : 0)
+                    
+                    // MARK: - Closing Balance Section
+                    if let summary = viewModel.summary {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Closing Balance")
                                 .font(.subheadline)
@@ -102,11 +155,7 @@ public struct DailyCashFlowView: View {
                             .padding(.horizontal)
                         }
                         .padding(.bottom, 32)
-                        
-                    } else if viewModel.isLoading {
-                        ProgressView()
-                            .padding(.top, 60)
-                    } else {
+                    } else if !viewModel.isLoading {
                         VStack(spacing: 12) {
                             Image(systemName: "doc.text.magnifyingglass")
                                 .font(.system(size: 48))
@@ -115,7 +164,12 @@ public struct DailyCashFlowView: View {
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
                         }
-                        .padding(.top, 80)
+                        .padding(.top, 40)
+                    }
+                    
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .padding(.top, 40)
                     }
                 }
             }
@@ -123,24 +177,31 @@ public struct DailyCashFlowView: View {
         .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(action: { showAddUpdateSheet = true }) {
-                    // Explicitly setting the font to .body overrides the .largeTitle cascading from HomeView[cite: 43]
-                    Image(systemName: viewModel.summary == nil ? "plus.circle.fill" : "pencil.circle.fill")
-                        .font(.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(Color.accentColor)
+                Button(action: { showSummarySheet = true }) {
+                    Image(systemName: viewModel.summary == nil ? "plus.square.dashed" : "pencil.and.list.clipboard")
                 }
+                .font(.system(size: 17, weight: .semibold))
             }
         }
-        .sheet(isPresented: $showAddUpdateSheet, onDismiss: {
-            Task { await viewModel.fetchSummary() }
+        // Summary Sheet
+        .sheet(isPresented: $showSummarySheet, onDismiss: {
+            Task { await viewModel.fetchData() }
         }) {
             AddUpdateDailyCashflowSummaryView(
-                viewModel: makeAddUpdateViewModel(viewModel.selectedDate, viewModel.summary)
+                viewModel: makeAddUpdateSummaryViewModel(viewModel.selectedDate, viewModel.summary)
+            )
+        }
+        // Transaction Sheet
+        .sheet(isPresented: $showTransactionSheet, onDismiss: {
+            Task { await viewModel.fetchData() }
+        }) {
+            AddUpdateCashflowTransactionView(
+                viewModel: makeAddUpdateTransactionView(viewModel.selectedDate, transactionToEdit)
+
             )
         }
         .task {
-            await viewModel.fetchSummary()
+            await viewModel.fetchData()
         }
     }
 }
@@ -178,7 +239,6 @@ struct ModernDailyStatBox: View {
         .shadow(color: Color.black.opacity(0.02), radius: 6, x: 0, y: 3)
     }
     
-    // Auto-selects a relevant SF Symbol based on the account name (shared logic with Add/Update view)[cite: 42]
     private func iconName(for name: String) -> String {
         let lowercased = name.lowercased()
         if lowercased.contains("cash") { return "banknote" }

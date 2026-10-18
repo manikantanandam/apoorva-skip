@@ -9,6 +9,7 @@ import Foundation
 import ApoorvaModules
 import ApoorvaServices
 import ApoorvaRepository
+import ApoorvaModels
 
 // In ApoorvaPOS Module
 @MainActor
@@ -72,15 +73,27 @@ public class ModulesContainer {
     
     public func makeDailyCashflowViewModel() -> DailyCashFlowViewModel {
         return DailyCashFlowViewModel(
-            repository: repositoryContainer.dailyCashflowRepository
+            repository: repositoryContainer.dailyCashflowRepository,
+            cashflowRepository: repositoryContainer.cashflowRepository
         )
     }
     
-    public func makeAddUpdateDailyCashflowViewModel() -> AddUpdateDailyCashflowSummaryViewModel {
+    public func makeAddUpdateDailyCashflowViewModel(existingSummary: DailyCashflowSummary?, date: Date) -> AddUpdateDailyCashflowSummaryViewModel {
         return AddUpdateDailyCashflowSummaryViewModel(
             repository: repositoryContainer.dailyCashflowRepository,
             userRepository: repositoryContainer.userRepository,
-            organizationRepository: repositoryContainer.organizationRepository
+            organizationRepository: repositoryContainer.organizationRepository,
+            existingSummary: existingSummary,
+            date: date
+        )
+    }
+    
+    public func makeAddUpdateCashflowTransactionViewModel(existingTransaction: CashflowTransaction?,
+                                                          defaultDate: Date) -> AddUpdateCashflowTransactionViewModel {
+        return AddUpdateCashflowTransactionViewModel(
+            repository: repositoryContainer.cashflowRepository,
+            existingTransaction: existingTransaction,
+            defaultDate: defaultDate
         )
     }
 }

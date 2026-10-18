@@ -57,8 +57,11 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
         case .dailyCashflow:
             DailyCashFlowView(
                 viewModel: container.modulesContainer.makeDailyCashflowViewModel(),
-                makeAddUpdateViewModel: { date, summary in
-                    container.modulesContainer.makeAddUpdateDailyCashflowViewModel()
+                makeAddUpdateSummaryViewModel: { date, summary in
+                    container.modulesContainer.makeAddUpdateDailyCashflowViewModel(existingSummary: summary, date: date)
+                },
+                makeAddUpdateTransactionViewModel: { date, transaction in
+                    container.modulesContainer.makeAddUpdateCashflowTransactionViewModel(existingTransaction: transaction, defaultDate: date)
                 }
             )
         case .cashflow:
