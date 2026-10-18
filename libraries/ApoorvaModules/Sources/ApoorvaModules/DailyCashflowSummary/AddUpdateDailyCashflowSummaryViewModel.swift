@@ -101,10 +101,12 @@ public class AddUpdateDailyCashflowSummaryViewModel {
         let summary = DailyCashflowSummary(
             date: date,
             openingBalances: finalOpeningBalances,
-            closingBalances: finalClosingBalances
+            closingBalances: finalClosingBalances,
+            updatedAt: Date.now.timeIntervalSince1970
         )
         
         do {
+            print("Saving summary \(summary)")
             try await repository.saveDailyCashflowSummary(summary: summary)
             return true
         } catch {

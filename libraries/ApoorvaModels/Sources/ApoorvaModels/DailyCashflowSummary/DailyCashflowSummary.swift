@@ -25,6 +25,7 @@ public struct DailyCashflowSummary: Sendable, Codable {
     public let date: Date
     public let openingBalances: [AccountBalance]
     public let closingBalances: [AccountBalance]
+    public let updatedAt: TimeInterval
     
     // Update the reduce functions to sum the 'balance' property
     public var totalOpening: Double {
@@ -36,9 +37,11 @@ public struct DailyCashflowSummary: Sendable, Codable {
     
     public init(date: Date,
                 openingBalances: [AccountBalance],
-                closingBalances: [AccountBalance]) {
+                closingBalances: [AccountBalance],
+                updatedAt: TimeInterval) {
         self.date = date
         self.openingBalances = openingBalances
         self.closingBalances = closingBalances
+        self.updatedAt = updatedAt
     }
 }

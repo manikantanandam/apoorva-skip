@@ -32,6 +32,9 @@ public class DailyCashFlowViewModel {
         isLoading = true
         do {
             self.summary = try await repository.getDailyCashflowSummary(id: selectedDate.toString(format: "dd-MM-yyyy"))
+            try await repository.sync(force: true)
+            self.summary = try await repository.getDailyCashflowSummary(id: selectedDate.toString(format: "dd-MM-yyyy"))
+            print("daily summary is \(self.summary)")
         } catch {
             print("Failed to fetch daily summary: \(error.localizedDescription)")
         }

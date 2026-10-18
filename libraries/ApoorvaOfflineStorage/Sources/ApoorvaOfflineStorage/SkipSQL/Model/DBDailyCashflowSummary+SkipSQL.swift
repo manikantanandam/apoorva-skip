@@ -28,6 +28,7 @@ extension DailyCashflowSummary: @retroactive SQLCodable {
         let dateVal = try Self.dateCol.realValueRequired(in: row)
         let openingBalancesRaw = try Self.openingBalancesCol.textValueRequired(in: row)
         let closingBalancesRaw = try Self.closingBalancesCol.textValueRequired(in: row)
+        let updatedAt = Self.updatedAtCol.realValue(in: row) ?? 0
         
         let openingBalanceValue = openingBalancesRaw.decodeJSON(as: [AccountBalance].self) ?? []
         let closingBalanceValue = closingBalancesRaw.decodeJSON(as: [AccountBalance].self) ?? []
@@ -35,7 +36,8 @@ extension DailyCashflowSummary: @retroactive SQLCodable {
         self.init(
             date: dateVal.date,
             openingBalances: openingBalanceValue,
-            closingBalances: closingBalanceValue
+            closingBalances: closingBalanceValue,
+            updatedAt: updatedAt
         )
     }
     
@@ -50,4 +52,5 @@ extension DailyCashflowSummary: @retroactive SQLCodable {
     public static let dateCol = SQLColumn(name: "date", type: .real)
     public static let openingBalancesCol = SQLColumn(name: "openingBalances", type: .text)
     public static let closingBalancesCol = SQLColumn(name: "closingBalances", type: .text)
+    public static let updatedAtCol = SQLColumn(name: "updatedAt", type: .real)
 }

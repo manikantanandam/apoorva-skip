@@ -18,6 +18,7 @@ public final class DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
     }
     
     public func getDailyCashflowSummaries() throws -> [DailyCashflowSummary] {
+        print("get all summaries")
         do {
             // Fetch all summaries using SkipSQL's native context fetchAll[cite: 10, 11]
             let allSummaries: [DailyCashflowSummary] = try database.context.fetchAll(DailyCashflowSummary.self)
@@ -31,13 +32,21 @@ public final class DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
     }
     
     public func getDailyCashflowSummary(id: String) throws -> DailyCashflowSummary? {
-        // Fetch a specific summary by its primary key[cite: 10, 11]
-        return try database.context.fetch(DailyCashflowSummary.self, primaryKeys: [.text(id)])
+        print("cashflow id fetch")
+        do {
+            return try database.context.fetch(DailyCashflowSummary.self, primaryKeys: [.text(id)])
+        } catch {
+            if let error = error as? SQLError {
+                print(error.msg)
+            }
+            throw error
+        }
+        
     }
     
     public func saveDailyCashflowSummary(summary: DailyCashflowSummary) throws {
-        // Skip-SQL natively handles inserting SQLCodable types[cite: 10]
         try database.context.insert(summary)
+
     }
     
     public func updateDailyCashflowSummary(summary: DailyCashflowSummary) throws {
