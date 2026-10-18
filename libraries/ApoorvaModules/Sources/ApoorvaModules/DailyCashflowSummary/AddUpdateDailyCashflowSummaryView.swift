@@ -18,13 +18,19 @@ public struct AddUpdateDailyCashflowSummaryView: View {
                     // MARK: - Date Section
                     ModernFormCard(title: "Summary Date") {
                         HStack {
-                            Image(systemName: "calendar")
-                                .foregroundStyle(.blue)
-                                .font(.title3)
+                            ZStack {
+                                Circle()
+                                    .fill(Color.blue.opacity(0.15))
+                                    .frame(width: 32, height: 32)
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundStyle(.blue)
+                            }
                             
                             DatePicker("Select Date", selection: $viewModel.date, displayedComponents: .date)
                                 .labelsHidden()
                                 .datePickerStyle(.compact)
+                                .font(.body) // Prevents cascading large fonts
                             Spacer()
                         }
                     }
@@ -83,6 +89,8 @@ public struct AddUpdateDailyCashflowSummaryView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                        // Explicitly restrict the size to block the HomeView font cascade
+                        .font(.system(size: 17, weight: .regular))
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
@@ -91,7 +99,8 @@ public struct AddUpdateDailyCashflowSummaryView: View {
                             if success { dismiss() }
                         }
                     }
-                    .fontWeight(.bold)
+                    // Explicitly restrict the size and keep it bold
+                    .font(.system(size: 17, weight: .bold))
                     .disabled(viewModel.isSaving || viewModel.accounts.isEmpty)
                 }
             }
@@ -141,8 +150,7 @@ struct ModernFormCard<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(title)
-                .font(.caption)
-                .fontWeight(.bold)
+                .font(.system(size: 12, weight: .bold)) // Fixed font size
                 .foregroundColor(.secondary)
                 .textCase(.uppercase)
             
@@ -160,15 +168,20 @@ struct AccountBalanceInputRow: View {
     @Binding var text: String
     
     var body: some View {
-        HStack {
-            // Contextual icon based on common account names
-            Image(systemName: iconName(for: accountName))
-                .foregroundColor(.secondary)
-                .frame(width: 24)
+        HStack(spacing: 12) {
+            // Contextual icon with a modern circular background badge
+            ZStack {
+                Circle()
+                    .fill(Color(UIColor.tertiarySystemGroupedBackground))
+                    .frame(width: 32, height: 32)
+                
+                Image(systemName: iconName(for: accountName))
+                    .font(.system(size: 14, weight: .medium)) // Fixed size instead of flexible frame
+                    .foregroundColor(.primary.opacity(0.7))
+            }
             
             Text(accountName)
-                .font(.callout)
-                .fontWeight(.medium)
+                .font(.system(size: 16, weight: .medium)) // Fixed size to block cascade
                 .foregroundColor(.primary)
             
             Spacer()
@@ -185,12 +198,12 @@ struct AccountBalanceInputRow: View {
         }
     }
     
-    // Auto-selects a relevant SF Symbol based on the account name
+    // Auto-selects a relevant SF Symbol (using filled variants for better contrast inside the circular badge)
     private func iconName(for name: String) -> String {
         let lowercased = name.lowercased()
-        if lowercased.contains("cash") { return "banknote" }
+        if lowercased.contains("cash") { return "banknote.fill" }
         if lowercased.contains("upi") || lowercased.contains("pay") { return "qrcode.viewfinder" }
-        if lowercased.contains("card") { return "creditcard" }
-        return "building.columns"
+        if lowercased.contains("card") { return "creditcard.fill" }
+        return "building.columns.fill"
     }
 }
