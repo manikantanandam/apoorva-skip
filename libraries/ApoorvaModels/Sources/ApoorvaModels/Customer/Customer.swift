@@ -108,7 +108,7 @@ public extension Array where Element == Customer {
             // Wraps the name in quotes if it contains a comma to prevent CSV column breaking
             let escapedName = customer.name.contains(",") ? "\"\(customer.name) Apoorva Customer\"" : customer.name
             
-            // Appends the name and phone properties from Customer.swift[cite: 1]
+            // Appends the name and phone properties from Customer.swift
             csvString += "\(escapedName),\(customer.phone)\n"
         }
         return csvString

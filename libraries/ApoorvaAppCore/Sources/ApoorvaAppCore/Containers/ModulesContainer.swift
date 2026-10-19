@@ -92,6 +92,8 @@ public class ModulesContainer {
                                                           defaultDate: Date) -> AddUpdateCashflowTransactionViewModel {
         return AddUpdateCashflowTransactionViewModel(
             repository: repositoryContainer.cashflowRepository,
+            userRepository: repositoryContainer.userRepository,
+            organizationRepository: repositoryContainer.organizationRepository,
             existingTransaction: existingTransaction,
             defaultDate: defaultDate
         )

@@ -20,7 +20,7 @@ public final class DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
     public func getDailyCashflowSummaries() throws -> [DailyCashflowSummary] {
         print("get all summaries")
         do {
-            // Fetch all summaries using SkipSQL's native context fetchAll[cite: 10, 11]
+            // Fetch all summaries using SkipSQL's native context fetchAll
             let allSummaries: [DailyCashflowSummary] = try database.context.fetchAll(DailyCashflowSummary.self)
             return allSummaries.sorted { $0.date < $1.date }
         } catch let error {
@@ -56,7 +56,7 @@ public final class DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
         WHERE id = ?;
         """
         
-        // Execute the update query passing parameters that map to the SQL table definitions[cite: 12]
+        // Execute the update query passing parameters that map to the SQL table definitions
         try database.context.exec(sql: query, parameters: [
             .real(summary.date.timeIntervalSince1970),
             .text(summary.openingBalances.string),

@@ -23,9 +23,13 @@ extension CashflowTransaction: @retroactive SQLCodable {
                 paymentModeCol,
                 categoryCol,
                 subCategoryCol,
+                fromAccountIdCol,
+                toAccountIdCol,
                 personCol,
                 isDeletedCol,
-                updatedAtCol
+                updatedAtCol,
+                timestampInMsCol,
+                updatedAtInMsCol
             ]
         )
     }
@@ -51,6 +55,11 @@ extension CashflowTransaction: @retroactive SQLCodable {
         
         let isDeleted = try Self.isDeletedCol.longValueRequired(in: row)
         let updatedAt = try Self.updatedAtCol.realValueRequired(in: row)
+        let fromAccountId = Self.updatedAtCol.textValue(in: row) ?? ""
+        let toAccountId = Self.updatedAtCol.textValue(in: row) ?? ""
+        
+        let timestampInMs = Self.timestampInMsCol.realValue(in: row) ?? 0
+        let updatedAtInMs = Self.updatedAtInMsCol.realValue(in: row) ?? 0
         
         self.init(id: id,
                   timestamp: Date(timeIntervalSince1970: timestamp),
@@ -60,9 +69,13 @@ extension CashflowTransaction: @retroactive SQLCodable {
                   paymentMode: PaymentMode(rawValue: paymentModeRaw) ?? .unknown,
                   category: CashflowCategory(rawValue: category) ?? .unknown,
                   subCategory: subCategory,
+                  fromAccountId: fromAccountId,
+                  toAccountId: toAccountId,
                   person: person,
                   isDeleted: isDeleted.boolValue,
-                  updatedAt: updatedAt.date)
+                  updatedAt: updatedAt.date,
+                  timestampInMs: timestampInMs,
+                  updatedAtInMs: updatedAtInMs)
     }
     
     public func encode(row: inout SkipSQLCore.SQLRow) throws {
@@ -91,6 +104,11 @@ extension CashflowTransaction: @retroactive SQLCodable {
         
         row[Self.isDeletedCol] = SQLValue(self.isDeleted.int64Value)
         row[Self.updatedAtCol] = SQLValue(self.updatedAt.timeIntervalSince1970)
+        
+        row[Self.fromAccountIdCol] = SQLValue(self.fromAccountId)
+        row[Self.toAccountIdCol] = SQLValue(self.toAccountId)
+        row[Self.timestampInMsCol] = SQLValue(self.timestampInMs)
+        row[Self.updatedAtInMsCol] = SQLValue(self.updatedAtInMs)
     }
     
     public static let idCol = SQLColumn(name: "id", type: .text, primaryKey: true)
@@ -104,4 +122,9 @@ extension CashflowTransaction: @retroactive SQLCodable {
     public static let personCol = SQLColumn(name: "person", type: .text)
     public static let isDeletedCol = SQLColumn(name: "isDeleted", type: .long)
     public static let updatedAtCol = SQLColumn(name: "updatedAt", type: .real)
+    public static let fromAccountIdCol = SQLColumn(name: "fromAccountId", type: .text)
+    public static let toAccountIdCol = SQLColumn(name: "toAccountId", type: .text)
+    
+    public static let timestampInMsCol = SQLColumn(name: "timestampInMs", type: .real)
+    public static let updatedAtInMsCol = SQLColumn(name: "updatedAtInMs", type: .real)
 }

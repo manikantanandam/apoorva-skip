@@ -1,3 +1,4 @@
+// AddUpdateCashflowTransactionViewModel.swift
 import Foundation
 import SwiftUI
 import ApoorvaModels
@@ -16,17 +17,28 @@ public class AddUpdateCashflowTransactionViewModel {
     public var particulars: String = ""
     public var person: String = ""
     
+    public var fromAccountId = ""
+    public var toAccountId = ""
+    
+    public var accounts: [Account] = []
+    
     public var isSaving: Bool = false
     public var errorMessage: String?
     
     public let isUpdating: Bool
     
     private let repository: CashflowTransactionRepositoryProtocol
+    private let userRepository: UserRepositoryProtocol
+    private let organizationRepository: OrganizationRepositoryProtocol
     
     public init(repository: CashflowTransactionRepositoryProtocol,
+                userRepository: UserRepositoryProtocol,
+                organizationRepository: OrganizationRepositoryProtocol,
                 existingTransaction: CashflowTransaction? = nil,
                 defaultDate: Date = Date()) {
         self.repository = repository
+        self.userRepository = userRepository
+        self.organizationRepository = organizationRepository
         
         if let tx = existingTransaction {
             self.id = tx.id
@@ -38,11 +50,39 @@ public class AddUpdateCashflowTransactionViewModel {
             self.subCategory = tx.subCategory ?? .unknown
             self.particulars = tx.particulars
             self.person = tx.person ?? ""
+            // We use optional binding with ?? "" to safely handle if the model has nil for these ids
+            // Note: Update CashflowTransaction to include fromAccountId/toAccountId if you haven't already.
+            // self.fromAccountId = tx.fromAccountId ?? ""
+            // self.toAccountId = tx.toAccountId ?? ""
             self.isUpdating = true
         } else {
             self.id = UUID().uuidString
             self.timestamp = defaultDate
             self.isUpdating = false
+        }
+        
+        Task {
+            await fetchAccounts()
+        }
+    }
+    
+    private func fetchAccounts() async {
+        do {
+            let user = try await userRepository.getCurrentUser()
+            
+            guard let orgId = user.selectedOrganization?.orgId else {
+                self.errorMessage = "No organization selected."
+                return
+            }
+            
+            guard let fullOrganization = try await organizationRepository.getOrganization(orgId: orgId) else {
+                self.errorMessage = "Organization details not found."
+                return
+            }
+            
+            self.accounts = fullOrganization.accounts
+        } catch {
+            self.errorMessage = "Failed to load accounts: \(error.localizedDescription)"
         }
     }
     
@@ -66,9 +106,13 @@ public class AddUpdateCashflowTransactionViewModel {
             paymentMode: self.paymentMode,
             category: self.category,
             subCategory: self.subCategory == .unknown ? nil : self.subCategory,
-            person: self.person.isEmpty ? nil : self.person,
+            fromAccountId: fromAccountId,
+            toAccountId: toAccountId,
+            // person: self.person.isEmpty ? nil : self.person,
             isDeleted: false,
-            updatedAt: Date()
+            updatedAt: Date(),
+            timestampInMs: timestamp.timeIntervalSince1970,
+            updatedAtInMs: Date.now.timeIntervalSince1970
         )
         
         do {

@@ -9,9 +9,13 @@ public struct CashflowTransaction: Identifiable, Codable, Hashable, Sendable {
     public var paymentMode: PaymentMode
     public var category: CashflowCategory
     public var subCategory: CashflowSubCategory?
+    public var fromAccountId: String
+    public var toAccountId: String
     public var person: String?
     public var isDeleted: Bool
     public var updatedAt: Date
+    public var timestampInMs: TimeInterval
+    public var updatedAtInMs: TimeInterval
     
     public enum TransactionType: String, Codable, Sendable {
         case credit
@@ -33,9 +37,13 @@ public struct CashflowTransaction: Identifiable, Codable, Hashable, Sendable {
                 paymentMode: PaymentMode,
                 category: CashflowCategory,
                 subCategory: CashflowSubCategory? = nil,
+                fromAccountId: String,
+                toAccountId: String,
                 person: String? = nil,
                 isDeleted: Bool = false,
-                updatedAt: Date = Date()
+                updatedAt: Date = Date(),
+                timestampInMs: TimeInterval,
+                updatedAtInMs: TimeInterval
     ) {
         self.id = id
         self.timestamp = timestamp
@@ -48,6 +56,10 @@ public struct CashflowTransaction: Identifiable, Codable, Hashable, Sendable {
         self.person = person
         self.isDeleted = isDeleted
         self.updatedAt = updatedAt
+        self.fromAccountId = fromAccountId
+        self.toAccountId = toAccountId
+        self.timestampInMs = timestampInMs
+        self.updatedAtInMs = updatedAtInMs
     }
 }
 

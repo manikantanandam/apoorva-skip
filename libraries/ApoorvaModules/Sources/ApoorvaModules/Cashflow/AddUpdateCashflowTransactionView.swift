@@ -84,6 +84,46 @@ public struct AddUpdateCashflowTransactionView: View {
                         }
                     }
                     
+                    // MARK: - Account Selection Card
+                    ModernFormCard(title: "Accounts") {
+                        VStack(spacing: 16) {
+                            if viewModel.accounts.isEmpty {
+                                ProgressView("Loading accounts...")
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                            } else {
+                                HStack {
+                                    Text("From Account")
+                                        .font(.system(size: 16, weight: .medium))
+                                    Spacer()
+                                    Picker("From Account", selection: $viewModel.fromAccountId) {
+                                        Text("None").tag("")
+                                        ForEach(viewModel.accounts, id: \.id) { account in
+                                            Text(account.name).tag(account.id)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                    .tint(.secondary)
+                                }
+                                
+                                Divider().opacity(0.5)
+                                
+                                HStack {
+                                    Text("To Account")
+                                        .font(.system(size: 16, weight: .medium))
+                                    Spacer()
+                                    Picker("To Account", selection: $viewModel.toAccountId) {
+                                        Text("None").tag("")
+                                        ForEach(viewModel.accounts, id: \.id) { account in
+                                            Text(account.name).tag(account.id)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                    .tint(.secondary)
+                                }
+                            }
+                        }
+                    }
+                    
                     // MARK: - Categorization Card
                     ModernFormCard(title: "Categorization") {
                         VStack(spacing: 16) {
