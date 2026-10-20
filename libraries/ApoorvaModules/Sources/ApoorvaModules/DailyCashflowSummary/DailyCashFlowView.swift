@@ -121,6 +121,7 @@ public struct DailyCashFlowView: View {
                             ForEach(viewModel.transactions) { item in
                                 CashflowCardRowView(item: item)
                                     .onTapGesture {
+                                        print("Transaction tapped \(item)")
                                         transactionToEdit = item
                                         showTransactionSheet = true
                                     }
@@ -206,7 +207,6 @@ public struct DailyCashFlowView: View {
         }) {
             AddUpdateCashflowTransactionView(
                 viewModel: makeAddUpdateTransactionView(viewModel.selectedDate, transactionToEdit)
-
             )
         }
         .task {

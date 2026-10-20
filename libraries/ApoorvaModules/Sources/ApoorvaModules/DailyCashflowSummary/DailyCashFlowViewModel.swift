@@ -40,6 +40,7 @@ public class DailyCashFlowViewModel {
         // 2. Fetch Transactions for Selected Date
         do {
             let allTransactions = try await cashflowRepository.getCashflowTransactions()
+                .filter { $0.category != .shopSetup }
             
             let calendar = Calendar.current
             let startOfDay = calendar.startOfDay(for: selectedDate)
