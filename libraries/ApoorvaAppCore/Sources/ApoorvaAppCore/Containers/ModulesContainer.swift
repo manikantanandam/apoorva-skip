@@ -83,6 +83,7 @@ public class ModulesContainer {
             repository: repositoryContainer.dailyCashflowRepository,
             userRepository: repositoryContainer.userRepository,
             organizationRepository: repositoryContainer.organizationRepository,
+            cashflowRepository: repositoryContainer.cashflowRepository,
             existingSummary: existingSummary,
             date: date
         )

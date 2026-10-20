@@ -51,6 +51,41 @@ public struct AddUpdateDailyCashflowSummaryView: View {
                             }
                         }
                         
+                        ModernFormCard(title: "Day Transactions (\(viewModel.dayTransactions.count))") {
+                            if viewModel.dayTransactions.isEmpty {
+                                Text("No transactions recorded for this date.")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                    .padding(.vertical, 8)
+                            } else {
+                                VStack(spacing: 12) {
+                                    ForEach(viewModel.dayTransactions) { tx in
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 4) {
+                                                Text(tx.category.rawValue)
+                                                    .font(.subheadline)
+                                                    .fontWeight(.medium)
+                                                Text(tx.particulars)
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            
+                                            Spacer()
+                                            
+                                            Text(String(format: "%.2f", tx.amount))
+                                                .font(.subheadline)
+                                                .fontWeight(.bold)
+                                                .foregroundColor(tx.transactionType == .credit ? .green : .red)
+                                        }
+                                        
+                                        if tx.id != viewModel.dayTransactions.last?.id {
+                                            Divider().opacity(0.5)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
                         // MARK: - Closing Balances
                         ModernFormCard(title: "Closing Balance") {
                             VStack(spacing: 12) {
@@ -59,6 +94,8 @@ public struct AddUpdateDailyCashflowSummaryView: View {
                                         accountName: account.name,
                                         text: bindingForClosing(accountId: account.id)
                                     )
+                                    .disabled(true)
+                                    .opacity(0.6)
                                     if account.id != viewModel.accounts.last?.id {
                                         Divider().opacity(0.5)
                                     }
@@ -129,11 +166,11 @@ public struct AddUpdateDailyCashflowSummaryView: View {
     }
     
     private func bindingForClosing(accountId: String) -> Binding<String> {
-        Binding<String>(
-            get: { viewModel.closingBalanceInputs[accountId] ?? "" },
-            set: { viewModel.closingBalanceInputs[accountId] = $0 }
-        )
-    }
+            Binding<String>(
+                get: { viewModel.closingBalanceInputs[accountId] ?? "" },
+                set: { _ in } // Remain read-only so the user cannot override the calculated value
+            )
+        }
 }
 
 // MARK: - UI Components
