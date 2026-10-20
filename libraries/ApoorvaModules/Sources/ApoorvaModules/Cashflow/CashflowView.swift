@@ -232,7 +232,7 @@ struct CashflowCardRowView: View {
                         .font(.subheadline)
                         .fontWeight(.bold)
                         // Optional: you can color code based on type (e.g., item.transactionType == .income ? .green : .primary)
-                        .foregroundStyle(Color.primary)
+                        .foregroundStyle(item.transactionType == .credit ? Color.green : Color.red)
                 }
             }
         }

@@ -49,7 +49,6 @@ public struct DailyCashFlowView: View {
                     .datePickerStyle(.compact)
                     .font(.body)
                     .onChange(of: viewModel.selectedDate) { _, _ in
-                        print("DailyCashflow on change fired")
                         Task { await viewModel.fetchData() }
                     }
                 
@@ -70,7 +69,7 @@ public struct DailyCashFlowView: View {
                 LazyVStack(spacing: 24) {
                     
                     // MARK: - Opening Balance Section
-                    if let summary = viewModel.summary {
+                    if let summary = viewModel.currentSummary {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Opening Balance")
                                 .font(.subheadline)
@@ -81,7 +80,7 @@ public struct DailyCashFlowView: View {
                             
                             LazyVGrid(columns: columns, spacing: 16) {
                                 ForEach(summary.openingBalances) { accountBalance in
-                                    ModernDailyStatBox(title: accountBalance.id, value: accountBalance.balance.description, color: .primary)
+                                    ModernDailyStatBox(title: accountBalance.name, value: accountBalance.balance.description, color: .primary)
                                 }
                             }
                             .padding(.horizontal)
@@ -99,15 +98,16 @@ public struct DailyCashFlowView: View {
                                 .textCase(.uppercase)
                             
                             Spacer()
-                            
-                            Button(action: {
-                                transactionToEdit = nil
-                                showTransactionSheet = true
-                            }) {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.body)
-                                    .fontWeight(.bold)
-                                    .foregroundStyle(Color.accentColor)
+                            if viewModel.currentSummary?.locked != true {
+                                Button(action: {
+                                    transactionToEdit = nil
+                                    showTransactionSheet = true
+                                }) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.body)
+                                        .fontWeight(.bold)
+                                        .foregroundStyle(Color.accentColor)
+                                }
                             }
                         }
                         .padding(.horizontal)
@@ -121,9 +121,10 @@ public struct DailyCashFlowView: View {
                             ForEach(viewModel.transactions) { item in
                                 CashflowCardRowView(item: item)
                                     .onTapGesture {
-                                        print("Transaction tapped \(item)")
-                                        transactionToEdit = item
-                                        showTransactionSheet = true
+                                        if viewModel.currentSummary?.locked != true {
+                                            transactionToEdit = item
+                                            showTransactionSheet = true
+                                        }
                                     }
                                     .contextMenu {
                                         Button {
@@ -144,10 +145,10 @@ public struct DailyCashFlowView: View {
                             }
                         }
                     }
-                    .padding(.top, viewModel.summary == nil ? 24 : 0)
+                    .padding(.top, viewModel.currentSummary == nil ? 24 : 0)
                     
                     // MARK: - Closing Balance Section
-                    if let summary = viewModel.summary {
+                    if let summary = viewModel.currentSummary {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Closing Balance")
                                 .font(.subheadline)
@@ -158,7 +159,7 @@ public struct DailyCashFlowView: View {
                             
                             LazyVGrid(columns: columns, spacing: 16) {
                                 ForEach(summary.closingBalances) { accountBalance in
-                                    ModernDailyStatBox(title: accountBalance.id, value: accountBalance.balance.description, color: .primary)
+                                    ModernDailyStatBox(title: accountBalance.name, value: accountBalance.balance.description, color: .primary)
                                 }
                             }
                             .padding(.horizontal)
@@ -185,19 +186,36 @@ public struct DailyCashFlowView: View {
         }
         .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button(action: { showSummarySheet = true }) {
-                    Image(systemName: viewModel.summary == nil ? "plus.square.dashed" : "pencil.and.list.clipboard")
-                }
-                .font(.system(size: 17, weight: .semibold))
+            if let summary = viewModel.currentSummary, !summary.locked {
+                
+                ToolbarItem(placement: .primaryAction) {
+                    
+                    HStack(spacing: 16) {
+                        Button(action: {
+                            Task { await viewModel.toggleLockStatus() }
+                        }) {
+                            Image(systemName: summary.locked ? "lock.fill" : "lock.open")
+                                .foregroundStyle(summary.locked ? .red : .green)
+                                .font(.system(size: 17, weight: .semibold))
+
+                        }
+                        
+                        Button(action: { showSummarySheet = true }) {
+                            Image(systemName: viewModel.currentSummary == nil ? "plus.square.dashed" : "pencil.and.list.clipboard")
+                        }
+                    }
+                    
+                        
+                        .font(.system(size: 17, weight: .semibold))
             }
+        }
         }
         // Summary Sheet
         .sheet(isPresented: $showSummarySheet, onDismiss: {
             Task { await viewModel.fetchData() }
         }) {
             AddUpdateDailyCashflowSummaryView(
-                viewModel: makeAddUpdateSummaryViewModel(viewModel.selectedDate, viewModel.summary),
+                viewModel: makeAddUpdateSummaryViewModel(viewModel.selectedDate, viewModel.currentSummary),
                 makeAddUpdateTransactionViewModel: makeAddUpdateTransactionView
             )
         }
@@ -211,6 +229,9 @@ public struct DailyCashFlowView: View {
         }
         .task {
             await viewModel.fetchData()
+        }
+        .refreshable {
+            await viewModel.refreshData()
         }
     }
 }

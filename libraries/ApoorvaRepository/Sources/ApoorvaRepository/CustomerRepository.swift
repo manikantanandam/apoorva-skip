@@ -20,7 +20,7 @@ public protocol CustomerRepositoryProtocol: Sendable {
 }
 
 
-public final class CustomerRepository: CustomerRepositoryProtocol {
+public final actor CustomerRepository: CustomerRepositoryProtocol {
 
     let storage: CustomerStorageProtocol
     let service: CustomerServiceProtocol

@@ -33,12 +33,9 @@ public final class OrganizationService: OrganizationServiceProtocol {
         guard !assignedIds.isEmpty else { return [] }
         
         let baseCollection = db.collection(.organizations)
-        let timestamp = Timestamp(date: lastSync)
-        
-        // Use 'in' to strictly fetch only assigned orgs modified after last sync
         let query = baseCollection
-            .whereField(FieldPath.documentID(), in: assignedIds)
-            .whereField("updatedAt", isGreaterThan: timestamp)
+                    .whereField("id", in: assignedIds) // Querying a regular field instead of the Document ID
+                    .whereField("updatedAt", isGreaterThan: Timestamp(date: lastSync))
             
         let snapshot = try await query.getDocuments()
         
@@ -51,6 +48,7 @@ public final class OrganizationService: OrganizationServiceProtocol {
                 print("❌ Failed to decode Organization: \(document.documentID) - \(error)")
             }
         }
+        print("Fetched orgs from firestore \(updatedRecords.count)")
         return updatedRecords
     }
 }

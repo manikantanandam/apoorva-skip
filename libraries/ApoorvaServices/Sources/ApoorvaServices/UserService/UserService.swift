@@ -48,13 +48,9 @@ public class UserService: UserServiceProtocol {
             
             // 2. Listen to the base Firebase state from AuthService
             for await partialUser in self.authService.currentUserStream {
-                print("Received Auth service current stream")
                 if let uid = partialUser?.id {
                     do {
-                        // 3. Fetch full details and publish to the app
-                        print("Fetching the User details using user service")
                         let fullUser = try await self.fetchUserProfile(uid: uid)
-                        print("Got the full user \(fullUser)")
                         self.currentUser = fullUser
                         self.sessionContinuation.yield(fullUser)
                     } catch {

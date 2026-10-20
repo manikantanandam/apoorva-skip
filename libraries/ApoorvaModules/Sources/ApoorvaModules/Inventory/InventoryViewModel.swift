@@ -63,7 +63,6 @@ public class InventoryViewModel {
     }
     
     func prepareDate() async {
-        print("Preparing data for inventory view")
         do {
             try await prepareReport()
             try await inventoryRepository.sync(force: false)
@@ -120,7 +119,6 @@ public class InventoryViewModel {
     func forceSync() async {
         do {
             try await inventoryRepository.sync(force: true)
-            print("get inventory items in force sync")
             self.items = try await inventoryRepository.getInventoryItems().sorted()
             
         } catch {

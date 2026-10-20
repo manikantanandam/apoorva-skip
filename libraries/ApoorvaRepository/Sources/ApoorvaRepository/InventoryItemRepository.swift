@@ -20,7 +20,7 @@ public protocol InventoryItemRepositoryProtocol: Sendable {
 }
 
 
-public final class InventoryItemRepository: InventoryItemRepositoryProtocol {
+public final actor InventoryItemRepository: InventoryItemRepositoryProtocol {
 
     let storage: InventoryItemLocalStorageProtocol
     let service: InventoryItemServiceProtocol

@@ -19,13 +19,13 @@ public protocol UserRepositoryProtocol: Sendable {
     
     func getCurrentUser() async throws -> AppUser
     
-    func getUser(id: String) throws -> AppUser?
+    func getUser(id: String) async throws -> AppUser?
     
-    func setUser(user: AppUser) throws
+    func setUser(user: AppUser) async throws
     
-    func updateUser(user: AppUser) throws
+    func updateUser(user: AppUser) async throws
     
-    func deleteUser(id: String)
+    func deleteUser(id: String) async
     
     func updateSelectedOrganization(
         for user: AppUser,
@@ -34,7 +34,7 @@ public protocol UserRepositoryProtocol: Sendable {
 }
 
 
-public final class UserRepository: UserRepositoryProtocol {
+public final actor UserRepository: UserRepositoryProtocol {
     
     let userDefaults: UserDefaultsStorageProtocol
     let authService: AuthServicing
@@ -48,7 +48,6 @@ public final class UserRepository: UserRepositoryProtocol {
         self.userDefaults = userDefaults
         self.authService = authService
         self.userService = userService
-        print("Mani - user repository init")
     }
     
     public func getCurrentUser() async throws -> AppUser {
@@ -58,19 +57,19 @@ public final class UserRepository: UserRepositoryProtocol {
         return user
     }
     
-    public func getUser(id: String) throws -> AppUser? {
+    public func getUser(id: String) async throws -> AppUser? {
         try userDefaults.get(forKey: key(for: id), as: AppUser.self)
     }
     
-    public func setUser(user: AppUser) throws {
+    public func setUser(user: AppUser) async throws {
         try userDefaults.set(user, forKey: key(for: user.id))
     }
     
-    public func updateUser(user: AppUser) throws {
+    public func updateUser(user: AppUser) async throws {
         try userDefaults.set(user, forKey: key(for: user.id))
     }
     
-    public func deleteUser(id: String) {
+    public func deleteUser(id: String) async {
         userDefaults.remove(forKey: key(for: id))
     }
     

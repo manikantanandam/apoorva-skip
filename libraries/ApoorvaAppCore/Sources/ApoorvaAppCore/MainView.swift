@@ -33,17 +33,12 @@ class MainViewModel {
         for await user in userService.userSessionStream {
             if user == nil {
                 state = .login(appContainer.modulesContainer.makeLoginViewModel())
-                print("No User logged in")
             } else {
                 state = .home(appContainer)
-                print("Received: \(user!)")
             }
 
         }
-        print("Stream finished!")
-        
     }
-    
 }
 
 public struct MainView: View {

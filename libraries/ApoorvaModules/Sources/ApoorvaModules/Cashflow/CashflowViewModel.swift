@@ -91,15 +91,10 @@ public class CashflowTransactionListViewModel {
     }
     
     func prepareDate() async {
-        print("Preparing data for customer view")
         do {
-            print("get transactions")
             self.allTransactions = try await repository.getCashflowTransactions().sorted()
-            print("sync transactions")
             try await repository.sync(force: false)
-            print("get transactions")
             self.allTransactions = try await repository.getCashflowTransactions().sorted()
-            print("got transactions after sync \(self.transactions.count)")
             extractDynamicFilters()
             applyFilterAndSort()
             
@@ -182,7 +177,6 @@ public class CashflowTransactionListViewModel {
     func forceSync() async {
         do {
             try await repository.sync(force: true)
-            print("get transactions")
             self.transactions = try await repository.getCashflowTransactions().sorted()
             
         } catch {

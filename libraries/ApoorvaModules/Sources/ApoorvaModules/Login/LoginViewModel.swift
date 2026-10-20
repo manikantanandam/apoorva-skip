@@ -29,7 +29,6 @@ public class LoginViewModel {
     func loginPressed() {
         // Handle actual authentication logic here
         guard isLoginEnabled else { return }
-        print("Logging in with \(username)...")
         Task(name: "login task") {
             do {
                 try await authService.login(email: username, password: password)

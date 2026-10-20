@@ -169,12 +169,14 @@ public struct AddUpdateDailyCashflowSummaryView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .sheet(isPresented: $showTransactionSheet, onDismiss: {
-                // Re-fetch transactions so the Closing Balance recalculates if the user edited the amount
-                Task { await viewModel.fetchInitialData(existingSummary: nil) }
+                Task { await viewModel.fetchInitialData() }
             }) {
                 AddUpdateCashflowTransactionView(
                     viewModel: makeAddUpdateTransactionViewModel(viewModel.date, transactionToEdit)
                 )
+            }
+            .task {
+                await viewModel.fetchInitialData()
             }
         }
     }

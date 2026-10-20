@@ -228,5 +228,8 @@ public struct AddUpdateCashflowTransactionView: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
+        .task {
+            await viewModel.fetchAccounts()
+        }
     }
 }

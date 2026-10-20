@@ -17,7 +17,7 @@ public protocol OrganizationRepositoryProtocol: Sendable {
     func sync(force: Bool) async throws
 }
 
-public final class OrganizationRepository: OrganizationRepositoryProtocol {
+public final actor OrganizationRepository: OrganizationRepositoryProtocol {
     
     let storage: OrganizationStorageProtocol
     let service: OrganizationServiceProtocol
@@ -48,7 +48,7 @@ public final class OrganizationRepository: OrganizationRepositoryProtocol {
     }
     
     public func getOrganization(orgId: String) async throws -> Organization? {
-        try await sync(force: true)
+        try await sync(force: false)
         let organizations = try await storage.getOrganizations()
         return organizations.first(where: { $0.id == orgId })
     }
@@ -75,10 +75,15 @@ public final class OrganizationRepository: OrganizationRepositoryProtocol {
         if let lastUpdatedDate = lastUpdatedDate, !force {
             // Delta Sync: Only fetch the assigned orgs if they've changed
             print("Delta Syncing assigned Orgs since: \(Date(timeIntervalSince1970: lastUpdatedDate))")
-            fetchedOrganizations = try await service.getOrganizations(
-                since: Date(timeIntervalSince1970: lastUpdatedDate),
-                assignedIds: assignedOrgIds
-            )
+            do {
+                fetchedOrganizations = try await service.getOrganizations(
+                    since: Date(timeIntervalSince1970: lastUpdatedDate),
+                    assignedIds: assignedOrgIds
+                )
+            } catch {
+                print("Firestore organization repository error \(error.localizedDescription)")
+            }
+            
         } else {
             // Full Sync: Fetch each assigned org explicitly and in parallel
             print("Full Syncing assigned Orgs: \(assignedOrgIds)")

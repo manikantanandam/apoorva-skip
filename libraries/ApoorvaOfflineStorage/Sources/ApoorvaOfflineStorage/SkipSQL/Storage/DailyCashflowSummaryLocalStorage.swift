@@ -32,7 +32,7 @@ public final actor DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
     }
     
     public func getDailyCashflowSummary(id: String) throws -> DailyCashflowSummary? {
-        print("cashflow id fetch")
+        print("cashflow id fetch \(id)")
         do {
             return try database.context.fetch(DailyCashflowSummary.self, primaryKeys: [.text(id)])
         } catch {
@@ -52,15 +52,16 @@ public final actor DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
     public func updateDailyCashflowSummary(summary: DailyCashflowSummary) throws {
         let query = """
         UPDATE \(DailyCashflowSummary.table.name)
-        SET date = ?, openingBalances = ?, closingBalances = ?
+        SET date = ?, openingBalances = ?, closingBalances = ?, updatedAt = ?, locked = ?
         WHERE id = ?;
         """
         
-        // Execute the update query passing parameters that map to the SQL table definitions
         try database.context.exec(sql: query, parameters: [
             .real(summary.date.timeIntervalSince1970),
             .text(summary.openingBalances.string),
             .text(summary.closingBalances.string),
+            .real(summary.updatedAt),
+            .long(summary.locked.int64Value),
             .text(summary.id)
         ])
     }

@@ -41,7 +41,6 @@ public class AddUpdateCashflowTransactionViewModel {
         self.organizationRepository = organizationRepository
         
         if let tx = existingTransaction {
-            print("Existing cashflow transaction \(tx)")
             self.id = tx.id
             self.timestamp = tx.timestamp
             self.amountText = String(tx.amount)
@@ -61,13 +60,9 @@ public class AddUpdateCashflowTransactionViewModel {
             self.timestamp = defaultDate
             self.isUpdating = false
         }
-        
-        Task {
-            await fetchAccounts()
-        }
     }
     
-    private func fetchAccounts() async {
+    func fetchAccounts() async {
         do {
             let user = try await userRepository.getCurrentUser()
             
@@ -82,7 +77,6 @@ public class AddUpdateCashflowTransactionViewModel {
             }
             
             self.accounts = fullOrganization.accounts
-            print("Fetching accounts add update view model \(self.accounts)")
         } catch {
             self.errorMessage = "Failed to load accounts: \(error.localizedDescription)"
         }

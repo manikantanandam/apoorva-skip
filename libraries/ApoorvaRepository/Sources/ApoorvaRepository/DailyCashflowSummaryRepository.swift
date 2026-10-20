@@ -17,9 +17,10 @@ public protocol DailyCashflowSummaryRepositoryProtocol: Sendable {
     func updateDailyCashflowSummary(summary: DailyCashflowSummary) async throws
     func deleteDailyCashflowSummary(id: String) async throws
     func sync(force: Bool) async throws
+    func refresh(for date: String) async throws
 }
 
-public final class DailyCashflowSummaryRepository: DailyCashflowSummaryRepositoryProtocol {
+public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositoryProtocol {
 
     let storage: DailyCashflowSummaryStorageProtocol
     let service: DailyCashflowSummaryServiceProtocol
@@ -43,7 +44,8 @@ public final class DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
     }
     
     public func getDailyCashflowSummary(id: String) async throws -> DailyCashflowSummary? {
-        try await storage.getDailyCashflowSummary(id: id)
+        try await sync(force: false)
+        return try await storage.getDailyCashflowSummary(id: id)
     }
     
     public func saveDailyCashflowSummary(summary: DailyCashflowSummary) async throws {
@@ -66,24 +68,44 @@ public final class DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
     
     public func sync(force: Bool) async throws {
         print("Started DailyCashflowSummary sync")
-        let user = try await userRepository.getCurrentUser()
-        print("Received user")
-
-        guard let orgId = user.selectedOrganization?.orgId else {
+        guard let orgId = try await getOrganizationId() else {
             return
         }
         
-        // Note: Because the DailyCashflowSummary model lacks an `updatedAt` field, and the service lacks a delta fetch method, a full sync is performed every time.[cite: 19, 20]
-        print("Fetch all daily cashflow summaries for \(orgId)")
-        let summaries = try await service.getDailyCashflowSummaries(for: orgId)
+        let summaries: [DailyCashflowSummary]
         
-        print("Saving daily cashflow summaries")
+        let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: DailyCashflowSummary.table.name)
+        
+        if let lastUpdatedDate, !force {
+            summaries = try await service.getDailyCashflowSummaries(since: lastUpdatedDate.date, for: orgId)
+        } else {
+            summaries = try await service.getDailyCashflowSummaries(for: orgId)
+        }
+        
         try await storage.saveDailyCashflowSummaries(summaries: summaries)
-        
-        // Update the sync timestamp using the current time since we don't have a model-level updatedAt.
+
         try await syncStorage.updateSyncTimestamp(
             for: DailyCashflowSummary.table.name,
-            timestamp: Date().timeIntervalSince1970
+            timestamp: Date.now.timeIntervalSince1970
         )
+    }
+    
+    public func refresh(for date: String) async throws {
+        print("Refresh DailyCashflowSummary sync")
+        guard let orgId = try await getOrganizationId() else {
+            return
+        }
+
+        let summary = try await service.getDailyCashflowSummary(orgId: orgId, date: date)
+        try await storage.updateDailyCashflowSummary(summary: summary)
+        print("Refreshed daily summary for date \(date):  \(summary)")
+    }
+}
+
+private extension DailyCashflowSummaryRepository {
+    func getOrganizationId() async throws -> String? {
+        let user = try await userRepository.getCurrentUser()
+
+        return user.selectedOrganization?.orgId
     }
 }

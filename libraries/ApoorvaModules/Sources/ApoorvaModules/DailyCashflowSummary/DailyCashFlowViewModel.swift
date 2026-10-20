@@ -9,8 +9,9 @@ public class DailyCashFlowViewModel {
     
     public var selectedDate: Date
     
-    public var summary: DailyCashflowSummary?
-    public var transactions: [CashflowTransaction] = [] // Holds the daily transactions
+    public var currentSummary: DailyCashflowSummary?
+    private var previousSummary: DailyCashflowSummary? = nil
+    public var transactions: [CashflowTransaction] = []
     public var isLoading: Bool = false
     public var accounts: [Account] = []
     
@@ -32,85 +33,27 @@ public class DailyCashFlowViewModel {
     
     // Renamed from fetchSummary to fetchData to reflect it grabs both
     public func fetchData() async {
-        print("fetch data is called")
-        isLoading = true
-        
-        // 1. Fetch Summary
         do {
+            isLoading = true
             
+            self.currentSummary = try await repository.getDailyCashflowSummary(id: selectedDate.toString(format: "dd-MM-yyyy"))
+            print("Current summary in fetch data is \(self.currentSummary)")
+            self.accounts = try await getAccounts()
             
-            self.summary = try await repository.getDailyCashflowSummary(id: selectedDate.toString(format: "dd-MM-yyyy"))
-            try await repository.sync(force: false)
-            self.summary = try await repository.getDailyCashflowSummary(id: selectedDate.toString(format: "dd-MM-yyyy"))
-            let user = try await userRepository.getCurrentUser()
-            guard let orgId = user.selectedOrganization?.orgId else {
-                return
+            if currentSummary == nil {
+                try await createNewDailyCashFlowSummary()
             }
-            guard let fullOrganization = try await organizationRepository.getOrganization(orgId: orgId) else {
-                return
-            }
-            self.accounts = fullOrganization.accounts
-            
-            var previousSummary: DailyCashflowSummary? = nil
-            if summary == nil {
-                let allSummaries = try await repository.getDailyCashflowSummaries()
-                previousSummary = allSummaries
-                    .filter { $0.date < self.selectedDate }
-                    .sorted { $0.date > $1.date }
-                    .first
-                
-                
-                let openingBalances = accounts.map { account in
-                    
-                    guard
-                        let prev = previousSummary,
-                        let closingBalance = prev.closingBalances.first(where: { $0.id == account.id })
-                    else  {
-                        return AccountBalance(id: account.id, balance: 0)
-                    }
-                    
-                    return AccountBalance(id: account.id, balance: closingBalance.balance)
-                }
-                
-                self.summary = DailyCashflowSummary(
-                    date: selectedDate,
-                    openingBalances: openingBalances,
-                    closingBalances: [],
-                    updatedAt: Date.now.timeIntervalSince1970
-                )
-            }
-            
-
-            
-            
+            try await updateCashflowTransactions()
+            isLoading = false
         } catch {
-            print("Failed to fetch daily summary: \(error.localizedDescription)")
+            print("Unable to fetch the daily cashflow summary \(error.localizedDescription)")
         }
-        
-        // 2. Fetch Transactions for Selected Date
-        do {
-            let allTransactions = try await cashflowRepository.getCashflowTransactions()
-                .filter { $0.category != .shopSetup }
-            
-            let calendar = Calendar.current
-            let startOfDay = calendar.startOfDay(for: selectedDate)
-            let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: selectedDate) ?? selectedDate
-            
-            self.transactions = allTransactions.filter { tx in
-                !tx.isDeleted && tx.timestamp >= startOfDay && tx.timestamp <= endOfDay
-            }.sorted(by: { $0.timestamp < $1.timestamp })
-            
-        } catch {
-            print("Failed to fetch transactions: \(error.localizedDescription)")
-        }
-        
-        isLoading = false
     }
     
     public func deleteTransaction(id: String) async {
         do {
             try await cashflowRepository.markAsDeleted(id: id)
-            await fetchData() // Refresh the list after soft delete
+            try await fetchData()
         } catch {
             print("Failed to delete transaction: \(error.localizedDescription)")
         }
@@ -126,5 +69,107 @@ public class DailyCashFlowViewModel {
         if let prev = Calendar.current.date(byAdding: .day, value: -1, to: selectedDate) {
             selectedDate = prev
         }
+    }
+    
+    public func toggleLockStatus() async {
+        guard let currentSummary else { return }
+        isLoading = true
+        let updatedSummary = currentSummary.copyWith(
+            updatedAt: Date.now.timeIntervalSince1970,
+            locked: !currentSummary.locked
+        )
+        
+        do {
+            try await repository.updateDailyCashflowSummary(summary: updatedSummary)
+            try await fetchData()
+        } catch {
+            print("Failed to toggle lock status: \(error.localizedDescription)")
+            isLoading = false
+        }
+    }
+    
+    func refreshData() async {
+        do {
+            try await repository.refresh(for: selectedDate.toString(format: "dd-MM-yyyy"))
+            
+        } catch {
+            print("Force sync failed \(error.localizedDescription)")
+        }
+        
+    }
+    
+    func fetchSummary() {
+        
+    }
+    
+    func getAccounts() async throws -> [Account] {
+        
+        guard let orgId = try await getOrganizationId() else {
+            return []
+        }
+        
+        guard
+            let fullOrganization = try await organizationRepository.getOrganization(
+                orgId: orgId
+            )
+        else { return [] }
+        
+        return fullOrganization.accounts
+    }
+    
+    func getOrganizationId() async throws -> String? {
+        let user = try await userRepository.getCurrentUser()
+        guard let orgId = user.selectedOrganization?.orgId else {
+            return nil
+        }
+        
+        return orgId
+    }
+    
+    
+}
+
+
+private extension DailyCashFlowViewModel {
+    func createNewDailyCashFlowSummary() async throws {
+        let allSummaries = try await repository.getDailyCashflowSummaries()
+        self.previousSummary = allSummaries
+            .filter { $0.date < self.selectedDate }
+            .sorted { $0.date > $1.date }
+            .first
+        
+        let openingBalances = accounts.map { account in
+            guard
+                let prev = previousSummary,
+                let closingBalance = prev.closingBalances.first(where: { $0.id == account.id })
+            else {
+                return AccountBalance(id: account.id, name: account.name, balance: 0)
+            }
+            
+            return AccountBalance(id: account.id,
+                                  name: account.name,
+                                  balance: closingBalance.balance)
+        }
+        
+        self.currentSummary = DailyCashflowSummary(
+            date: selectedDate,
+            openingBalances: openingBalances,
+            closingBalances: [],
+            updatedAt: Date.now.timeIntervalSince1970,
+            locked: false
+        )
+    }
+    
+    func updateCashflowTransactions() async throws {
+        let allTransactions = try await cashflowRepository.getCashflowTransactions()
+            .filter { $0.category != .shopSetup }
+        
+        let calendar = Calendar.current
+        let startOfDay = calendar.startOfDay(for: selectedDate)
+        let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: selectedDate) ?? selectedDate
+        
+        self.transactions = allTransactions.filter { tx in
+            !tx.isDeleted && tx.timestamp >= startOfDay && tx.timestamp <= endOfDay
+        }.sorted(by: { $0.timestamp < $1.timestamp })
     }
 }

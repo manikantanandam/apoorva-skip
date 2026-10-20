@@ -51,13 +51,9 @@ public class CustomerListViewModel {
     }
     
     func prepareDate() async {
-        print("Preparing data for customer view")
         do {
-            print("get customer items")
             self.customers = try await repository.getCustomers().sorted()
-            print("sync customer items")
             try await repository.sync(force: false)
-            print("get customer items")
             self.customers = try await repository.getCustomers().sorted()
             
         } catch {
@@ -68,7 +64,6 @@ public class CustomerListViewModel {
     func forceSync() async {
         do {
             try await repository.sync(force: true)
-            print("get customer items")
             self.customers = try await repository.getCustomers().sorted()
             
         } catch {

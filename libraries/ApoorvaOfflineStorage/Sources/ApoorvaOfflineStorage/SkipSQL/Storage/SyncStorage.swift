@@ -19,7 +19,6 @@ public final actor SyncStorage: Sendable {
     public func getLastSyncTimestamp(for entityName: String) throws -> TimeInterval? {
         print("Getting last sync date for \(entityName)")
         let entity = try db.context.fetch(SyncState.self, primaryKeys: [.text(entityName)])
-        print("entity is \(entity)")
         return entity?.lastSyncTimestamp
     }
 

@@ -11,6 +11,8 @@ import ApoorvaModels
 
 public protocol DailyCashflowSummaryServiceProtocol: Sendable {
     func getDailyCashflowSummaries(for orgId: String) async throws -> [DailyCashflowSummary]
+    func getDailyCashflowSummaries(since lastSync: Date, for orgId: String) async throws -> [DailyCashflowSummary]
+    func getDailyCashflowSummary(orgId: String, date: String) async throws -> DailyCashflowSummary
     func addDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws
     func updateDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws
 }
@@ -25,27 +27,37 @@ public final class DailyCashflowSummaryService: DailyCashflowSummaryServiceProto
     public init() {}
     
     public func getDailyCashflowSummaries(for orgId: String) async throws -> [DailyCashflowSummary] {
-        let baseCollection = db
-            .collection("organizations")
+        try await dailyCashflowTransactions(for: orgId)
+    }
+    
+    public func getDailyCashflowSummary(orgId: String, date: String) async throws -> DailyCashflowSummary {
+        print("🌐 Fetching Daily Cashflow Transactions for Org: \(orgId) for date \(date) ...")
+        let query = db
+            .collection(.organizations)
             .document(orgId)
             .collection(collectionName)
+            .document(date)
         
-        print("🌐 Fetching Daily Cashflow Summaries for Org: \(orgId)...")
-        let snapshot = try await baseCollection.getDocuments()
-        
-        var successfulRecords: [DailyCashflowSummary] = []
-        for document in snapshot.documents {
-            do {
-                let record = try document.data(as: DailyCashflowSummary.self)
-                successfulRecords.append(record)
-            } catch {
-                print("❌ Failed to decode DailyCashflowSummary: \(document.documentID) - \(error)")
-            }
+        let snapshot = try await query.getDocument()
+        do {
+            let record = try snapshot.data(as: DailyCashflowSummary.self)
+            return record
+        } catch {
+            print("❌ Failed to decode Category: \(snapshot.documentID) - \(error)")
+            throw error
+        }
+    }
+    
+    public func getDailyCashflowSummaries(since lastSync: Date, for orgId: String) async throws -> [DailyCashflowSummary] {
+        do {
+            return try await dailyCashflowTransactions(since: lastSync, for: orgId)
+        } catch {
+            print("Eror in fething firestore \(error.localizedDescription)")
+            throw error
         }
         
-        print("✅ Fetched \(successfulRecords.count) Daily Cashflow Summaries.")
-        return successfulRecords
     }
+
     
     public func addDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws {
         let docRef = db
@@ -74,5 +86,39 @@ public final class DailyCashflowSummaryService: DailyCashflowSummaryServiceProto
         // Note: The DailyCashflowSummary model currently lacks an `updatedAt` field[cite: 6, 15],
         // so we write the data directly without injecting a new timestamp like we do for CashflowTransaction[cite: 14].
         try docRef.setData(from: summary, merge: true)
+    }
+}
+
+
+private extension DailyCashflowSummaryService {
+    func dailyCashflowTransactions(since lastSync: Date? = nil, for orgId: String) async throws -> [DailyCashflowSummary] {
+        let baseCollection = db
+            .collection(.organizations)
+            .document(orgId)
+            .collection(collectionName)
+        
+        var query: Query = baseCollection
+        
+        if let lastSync = lastSync {
+            let timestamp = Timestamp(date: lastSync)
+            
+            query = baseCollection.whereField("updatedAt", isGreaterThan: timestamp)
+            print("🌐 Fetching Daily Cashflow Transactions for Org: \(orgId)... for last sync \(lastSync)")
+
+        }
+//        query = query.limit(to: 10)
+        print("🌐 Fetching Daily Cashflow Transactions for Org: \(orgId)...")
+        let snapshot = try await query.getDocuments()
+        
+        var summaries: [DailyCashflowSummary] = []
+        for document in snapshot.documents {
+            do {
+                let record = try document.data(as: DailyCashflowSummary.self)
+                summaries.append(record)
+            } catch { print("❌ Failed to decode Category: \(document.documentID) - \(error)") }
+        }
+        
+        print("✅ Fetched \(summaries.count) Daily Cashflow Transactions.")
+        return summaries
     }
 }

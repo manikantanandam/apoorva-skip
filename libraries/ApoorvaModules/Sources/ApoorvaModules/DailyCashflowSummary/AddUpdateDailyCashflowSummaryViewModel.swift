@@ -4,6 +4,11 @@ import SwiftUI
 import ApoorvaModels
 import ApoorvaRepository
 
+enum DailyCashFlowSummaryContext {
+    case add
+    case update(DailyCashflowSummary)
+}
+
 @MainActor
 @Observable
 public class AddUpdateDailyCashflowSummaryViewModel {
@@ -20,6 +25,8 @@ public class AddUpdateDailyCashflowSummaryViewModel {
     public var closingBalanceInputs: [String: String] = [:]
     
     public var accounts: [Account] = []
+    
+    private let context: DailyCashFlowSummaryContext
     
     public var isSaving: Bool = false
     public var errorMessage: String?
@@ -43,13 +50,14 @@ public class AddUpdateDailyCashflowSummaryViewModel {
         self.organizationRepository = organizationRepository
         self.cashflowRepository = cashflowRepository
         self.date = existingSummary?.date ?? date
-        
-        Task {
-            await fetchInitialData(existingSummary: existingSummary)
+        if let existingSummary {
+            self.context = .update(existingSummary)
+        } else {
+            self.context = .add
         }
     }
     
-    func fetchInitialData(existingSummary: DailyCashflowSummary?) async {
+    func fetchInitialData() async {
         do {
             let user = try await userRepository.getCurrentUser()
             guard let orgId = user.selectedOrganization?.orgId else {
@@ -61,10 +69,7 @@ public class AddUpdateDailyCashflowSummaryViewModel {
                 return
             }
             
-            print("FUll organization \(fullOrganization)")
-            
             self.accounts = fullOrganization.accounts
-            print("Self account \(self.accounts)")
             
             // 1. Fetch Today's Transactions
             let allTx = try await cashflowRepository.getCashflowTransactions()
@@ -72,33 +77,33 @@ public class AddUpdateDailyCashflowSummaryViewModel {
             let startOfDay = Calendar.current.startOfDay(for: self.date)
             let endOfDay = Calendar.current.date(bySettingHour: 23, minute: 59, second: 59, of: self.date) ?? self.date
             self.dayTransactions = allTx.filter { !$0.isDeleted && $0.timestamp >= startOfDay && $0.timestamp <= endOfDay }
-            
-            // 2. Fetch Previous Summary
             var previousSummary: DailyCashflowSummary? = nil
-            if existingSummary == nil {
+            var initialOpening: [String: String] = [:]
+
+            switch context {
+            case .add:
+                
                 let allSummaries = try await repository.getDailyCashflowSummaries()
                 previousSummary = allSummaries
                     .filter { $0.date < self.date }
                     .sorted { $0.date > $1.date }
                     .first
                 
-                print("[revious summary \(previousSummary)")
-            }
-            
-            // 3. Pre-fill Opening Balances
-            var initialOpening: [String: String] = [:]
-            for account in self.accounts {
-                print("Setting initial opening for \(account.id)")
-                if let summary = existingSummary {
-                    let opBalance = summary.openingBalances.first(where: { $0.id == account.id })?.balance ?? 0.0
-                    initialOpening[account.id] = String(opBalance)
-                } else if let prev = previousSummary {
-                    let prevClose = prev.closingBalances.first(where: { $0.id == account.id })?.balance ?? 0.0
+                // 3. Pre-fill Opening Balances
+                for account in self.accounts {
+                    let prevClose = previousSummary?.closingBalances.first(where: { $0.id == account.id })?.balance ?? 00
                     initialOpening[account.id] = String(prevClose)
-                } else {
-                    initialOpening[account.id] = ""
+                }
+
+            case .update(let dailyCashflowSummary):
+                // 3. Pre-fill Opening Balances
+                for account in self.accounts {
+                    let opBalance = dailyCashflowSummary.openingBalances.first(where: { $0.id == account.id })?.balance ?? 0.0
+                    initialOpening[account.id] = String(opBalance)
                 }
             }
+            
+
             
             // Assigning this will trigger the didSet and calculate the closing balances immediately
             self.openingBalanceInputs = initialOpening
@@ -110,7 +115,6 @@ public class AddUpdateDailyCashflowSummaryViewModel {
     
     // Centralized calculation method updates the stored property directly
     private func calculateClosingBalances() {
-        print("calculating closing balance")
         for account in accounts {
             let opString = openingBalanceInputs[account.id] ?? "0"
             let opening = Double(opString) ?? 0.0
@@ -137,19 +141,34 @@ public class AddUpdateDailyCashflowSummaryViewModel {
             let opString = openingBalanceInputs[account.id] ?? "0"
             let clString = closingBalanceInputs[account.id] ?? "0"
             
-            finalOpeningBalances.append(AccountBalance(id: account.id, balance: Double(opString) ?? 0.0))
-            finalClosingBalances.append(AccountBalance(id: account.id, balance: Double(clString) ?? 0.0))
+            finalOpeningBalances.append(AccountBalance(id: account.id, name: account.name, balance: Double(opString) ?? 0.0))
+            finalClosingBalances.append(AccountBalance(id: account.id, name: account.name, balance: Double(clString) ?? 0.0))
         }
         
-        let summary = DailyCashflowSummary(
-            date: date,
-            openingBalances: finalOpeningBalances,
-            closingBalances: finalClosingBalances,
-            updatedAt: Date.now.timeIntervalSince1970
-        )
+
         
         do {
-            try await repository.saveDailyCashflowSummary(summary: summary)
+            switch context {
+            case .add:
+                let summary = DailyCashflowSummary(
+                    date: date,
+                    openingBalances: finalOpeningBalances,
+                    closingBalances: finalClosingBalances,
+                    updatedAt: Date.now.timeIntervalSince1970,
+                    locked: false
+                )
+                print("Saving daily transaction summary")
+                try await repository.saveDailyCashflowSummary(summary: summary)
+            case .update(let existingSummary):
+                
+                let summary = existingSummary.copyWith(
+                    openingBalances: finalOpeningBalances,
+                    closingBalances: finalClosingBalances,
+                    updatedAt: Date.now.timeIntervalSince1970
+                )
+                print("Update daily transaction summary")
+                try await repository.updateDailyCashflowSummary(summary: summary)
+            }
             return true
         } catch {
             self.errorMessage = error.localizedDescription

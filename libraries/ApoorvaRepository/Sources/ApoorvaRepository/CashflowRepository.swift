@@ -20,7 +20,7 @@ public protocol CashflowTransactionRepositoryProtocol: Sendable {
 }
 
 
-public final class CashflowTransactionRepository: CashflowTransactionRepositoryProtocol {
+public final actor CashflowTransactionRepository: CashflowTransactionRepositoryProtocol {
 
     let storage: CashflowTransactionStorageProtocol
     let service: CashflowTransactionServiceProtocol
@@ -39,7 +39,6 @@ public final class CashflowTransactionRepository: CashflowTransactionRepositoryP
     
     public func getCashflowTransactions() async throws -> [CashflowTransaction] {
         let transactions = try await storage.getCashflowTransactions()
-        print("Transactions from storage \(transactions)")
         return transactions
     }
     
@@ -80,14 +79,10 @@ public final class CashflowTransactionRepository: CashflowTransactionRepositoryP
         print("Last updted date \(lastUpdatedDate)")
         
         if let lastUpdatedDate, !force {
-            print("Fetching inventory transactions since \(Date(timeIntervalSince1970: lastUpdatedDate)) for \(orgId)")
             transactions = try await service.getCashflowTransactions(since: Date(timeIntervalSince1970: lastUpdatedDate), for: orgId)
-            print("Received transactions")
         } else {
-            print("Fetch all transactions \(orgId)")
             transactions = try await service.getCashflowTransactions(for: orgId)
         }
-        print("Saving inventory transactions")
         try await storage.saveCashflowTransactions(transactions: transactions)
         guard
             let transactionWithMinUpdatedAt = transactions.transactionWithMaxDate

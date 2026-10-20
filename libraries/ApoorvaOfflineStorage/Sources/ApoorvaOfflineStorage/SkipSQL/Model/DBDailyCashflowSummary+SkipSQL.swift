@@ -18,7 +18,9 @@ extension DailyCashflowSummary: @retroactive SQLCodable {
                 idCol,
                 dateCol,
                 closingBalancesCol,
-                openingBalancesCol
+                openingBalancesCol,
+                updatedAtCol,
+                lockedCol
             ]
         )
     }
@@ -29,6 +31,7 @@ extension DailyCashflowSummary: @retroactive SQLCodable {
         let openingBalancesRaw = try Self.openingBalancesCol.textValueRequired(in: row)
         let closingBalancesRaw = try Self.closingBalancesCol.textValueRequired(in: row)
         let updatedAt = Self.updatedAtCol.realValue(in: row) ?? 0
+        let locked = Self.lockedCol.longValue(in: row) ?? 0
         
         let openingBalanceValue = openingBalancesRaw.decodeJSON(as: [AccountBalance].self) ?? []
         let closingBalanceValue = closingBalancesRaw.decodeJSON(as: [AccountBalance].self) ?? []
@@ -37,7 +40,8 @@ extension DailyCashflowSummary: @retroactive SQLCodable {
             date: dateVal.date,
             openingBalances: openingBalanceValue,
             closingBalances: closingBalanceValue,
-            updatedAt: updatedAt
+            updatedAt: updatedAt,
+            locked: locked.boolValue
         )
     }
     
@@ -46,6 +50,8 @@ extension DailyCashflowSummary: @retroactive SQLCodable {
         row[Self.dateCol] = SQLValue(self.date.timeIntervalSince1970)
         row[Self.openingBalancesCol] = SQLValue(self.openingBalances.string)
         row[Self.closingBalancesCol] = SQLValue(self.closingBalances.string)
+        row[Self.updatedAtCol] = SQLValue(self.updatedAt)
+        row[Self.lockedCol] = SQLValue(self.locked.int64Value)
     }
     
     public static let idCol = SQLColumn(name: "id", type: .text, primaryKey: true)
@@ -53,4 +59,5 @@ extension DailyCashflowSummary: @retroactive SQLCodable {
     public static let openingBalancesCol = SQLColumn(name: "openingBalances", type: .text)
     public static let closingBalancesCol = SQLColumn(name: "closingBalances", type: .text)
     public static let updatedAtCol = SQLColumn(name: "updatedAt", type: .real)
+    public static let lockedCol = SQLColumn(name: "locked", type: .long)
 }

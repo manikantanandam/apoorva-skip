@@ -31,11 +31,8 @@ extension SyncState: SQLCodable {
     }
     
     public init(row: SkipSQLCore.SQLRow, context: SkipSQLCore.SQLContext) throws {
-        print("Decoding")
         let entityName = try Self.entityNameCol.textValueRequired(in: row)
-        print("entityname \(entityName)")
         let lastSyncTimestamp = try Self.lastSyncTimestampCol.realValueRequired(in: row)
-        print("lastSyncTimestamp \(lastSyncTimestamp)")
         
         self.init(
             entityName: entityName,

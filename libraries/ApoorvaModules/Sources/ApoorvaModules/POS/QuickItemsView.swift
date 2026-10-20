@@ -49,7 +49,6 @@ public struct QuickItemsView: View {
                         height: 85, width: 85
                     )
                         .onTapGesture {
-                            print("Selected \(item.name)")
                         }
                     
                 }
