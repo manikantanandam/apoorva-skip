@@ -7,11 +7,7 @@ import ApoorvaRepository
 @Observable
 public class DailyCashFlowViewModel {
     
-    public var selectedDate: Date = Date() {
-        didSet {
-            Task { await fetchData() }
-        }
-    }
+    public var selectedDate: Date
     
     public var summary: DailyCashflowSummary?
     public var transactions: [CashflowTransaction] = [] // Holds the daily transactions
@@ -24,16 +20,18 @@ public class DailyCashFlowViewModel {
                 cashflowRepository: CashflowTransactionRepositoryProtocol) {
         self.repository = repository
         self.cashflowRepository = cashflowRepository
+        self.selectedDate = Date.from(day: 17, month: 10, year: 2025) ?? Date()
     }
     
     // Renamed from fetchSummary to fetchData to reflect it grabs both
     public func fetchData() async {
+        print("fetch data is called")
         isLoading = true
         
         // 1. Fetch Summary
         do {
             self.summary = try await repository.getDailyCashflowSummary(id: selectedDate.toString(format: "dd-MM-yyyy"))
-            try await repository.sync(force: true)
+            try await repository.sync(force: false)
             self.summary = try await repository.getDailyCashflowSummary(id: selectedDate.toString(format: "dd-MM-yyyy"))
         } catch {
             print("Failed to fetch daily summary: \(error.localizedDescription)")

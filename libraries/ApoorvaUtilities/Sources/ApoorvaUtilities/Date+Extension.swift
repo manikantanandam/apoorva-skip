@@ -8,7 +8,7 @@
 import Foundation
 
 public extension Date {
-    public func toString(format: String) -> String {
+    func toString(format: String) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = format
         return formatter.string(from: self)
@@ -25,5 +25,13 @@ public extension Date {
         
         // Return only positive days passed (0 if today or in the future)
         return max(0, components.day ?? 0)
+    }
+    
+    static func from(day: Int, month: Int, year: Int) -> Date? {
+        var components = DateComponents()
+        components.year = year
+        components.month = month
+        components.day = day
+        return Calendar.current.date(from: components)
     }
 }

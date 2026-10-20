@@ -48,6 +48,10 @@ public struct DailyCashFlowView: View {
                     .labelsHidden()
                     .datePickerStyle(.compact)
                     .font(.body)
+                    .onChange(of: viewModel.selectedDate) { _, _ in
+                        print("DailyCashflow on change fired")
+                        Task { await viewModel.fetchData() }
+                    }
                 
                 Spacer()
                 
