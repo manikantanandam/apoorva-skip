@@ -10,17 +10,17 @@ import ApoorvaModels
 
 public protocol CashflowTransactionStorageProtocol: Sendable {
     
-    func getCashflowTransactions() throws -> [CashflowTransaction]
+    func getCashflowTransactions() async throws -> [CashflowTransaction]
     
-    func saveCashflowTransactions(transactions: [CashflowTransaction]) throws
+    func saveCashflowTransactions(transactions: [CashflowTransaction]) async throws
 
-    func saveCashflowTransaction(transaction: CashflowTransaction) throws
+    func saveCashflowTransaction(transaction: CashflowTransaction) async throws
         
-    func getCashflowTransaction(id: String) throws -> CashflowTransaction?
+    func getCashflowTransaction(id: String) async throws -> CashflowTransaction?
 
-    func updateCashflowTransaction(transaction: CashflowTransaction) throws
+    func updateCashflowTransaction(transaction: CashflowTransaction) async throws
     
-    func deleteCashflowTransaction(id: String) throws // Hard delete
+    func deleteCashflowTransaction(id: String) async throws // Hard delete
     
-    func markAsDeleted(id: String) throws  // Soft delete
+    func markAsDeleted(id: String) async throws  // Soft delete
 }

@@ -39,11 +39,11 @@ public final class DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
     }
     
     public func getDailyCashflowSummaries() async throws -> [DailyCashflowSummary] {
-        try storage.getDailyCashflowSummaries()
+        try await storage.getDailyCashflowSummaries()
     }
     
     public func getDailyCashflowSummary(id: String) async throws -> DailyCashflowSummary? {
-        try storage.getDailyCashflowSummary(id: id)
+        try await storage.getDailyCashflowSummary(id: id)
     }
     
     public func saveDailyCashflowSummary(summary: DailyCashflowSummary) async throws {
@@ -57,11 +57,11 @@ public final class DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
         let user = try await userRepository.getCurrentUser()
         guard let orgId = user.selectedOrganization?.orgId else { return }
         try await service.updateDailyCashflowSummary(summary, for: orgId)
-        try storage.updateDailyCashflowSummary(summary: summary)
+        try await storage.updateDailyCashflowSummary(summary: summary)
     }
     
     public func deleteDailyCashflowSummary(id: String) async throws {
-        try storage.deleteDailyCashflowSummary(id: id)
+        try await storage.deleteDailyCashflowSummary(id: id)
     }
     
     public func sync(force: Bool) async throws {
@@ -78,10 +78,10 @@ public final class DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
         let summaries = try await service.getDailyCashflowSummaries(for: orgId)
         
         print("Saving daily cashflow summaries")
-        try storage.saveDailyCashflowSummaries(summaries: summaries)
+        try await storage.saveDailyCashflowSummaries(summaries: summaries)
         
         // Update the sync timestamp using the current time since we don't have a model-level updatedAt.
-        try syncStorage.updateSyncTimestamp(
+        try await syncStorage.updateSyncTimestamp(
             for: DailyCashflowSummary.table.name,
             timestamp: Date().timeIntervalSince1970
         )

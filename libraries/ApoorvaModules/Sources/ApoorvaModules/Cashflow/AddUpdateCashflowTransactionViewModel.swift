@@ -41,6 +41,7 @@ public class AddUpdateCashflowTransactionViewModel {
         self.organizationRepository = organizationRepository
         
         if let tx = existingTransaction {
+            print("Existing cashflow transaction \(tx)")
             self.id = tx.id
             self.timestamp = tx.timestamp
             self.amountText = String(tx.amount)
@@ -52,8 +53,8 @@ public class AddUpdateCashflowTransactionViewModel {
             self.person = tx.person ?? ""
             // We use optional binding with ?? "" to safely handle if the model has nil for these ids
             // Note: Update CashflowTransaction to include fromAccountId/toAccountId if you haven't already.
-            // self.fromAccountId = tx.fromAccountId ?? ""
-            // self.toAccountId = tx.toAccountId ?? ""
+            self.fromAccountId = tx.fromAccountId
+            self.toAccountId = tx.toAccountId
             self.isUpdating = true
         } else {
             self.id = UUID().uuidString
@@ -81,6 +82,7 @@ public class AddUpdateCashflowTransactionViewModel {
             }
             
             self.accounts = fullOrganization.accounts
+            print("Fetching accounts add update view model \(self.accounts)")
         } catch {
             self.errorMessage = "Failed to load accounts: \(error.localizedDescription)"
         }

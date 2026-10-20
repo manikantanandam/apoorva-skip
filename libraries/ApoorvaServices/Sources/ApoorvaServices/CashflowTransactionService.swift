@@ -14,6 +14,7 @@ public protocol CashflowTransactionServiceProtocol: Sendable {
     func getCashflowTransactions(for orgId: String) async throws -> [CashflowTransaction]
     func getCashflowTransactions(since lastSync: Date, for orgId: String) async throws -> [CashflowTransaction]
     func addCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws
+    func updateCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws
 }
 
 
@@ -50,7 +51,9 @@ public final class CashflowTransactionService: CashflowTransactionServiceProtoco
     
     public func updateCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws {
         var updatedTransaction = transaction
-        updatedTransaction.updatedAt = Date() // Ensure timestamp updates on modification[cite: 14]
+        let now = Date.now
+        updatedTransaction.updatedAt = now
+        updatedTransaction.updatedAtInMs = now.timeIntervalSince1970
         
         let docRef = db
             .collection(.organizations)

@@ -9,7 +9,7 @@ import Foundation
 import ApoorvaModels
 import SkipSQL
 
-public final class OrganizationLocalStorage: OrganizationStorageProtocol {
+public final actor OrganizationLocalStorage: OrganizationStorageProtocol {
     
     private let database: SkipSqlDatabase
     

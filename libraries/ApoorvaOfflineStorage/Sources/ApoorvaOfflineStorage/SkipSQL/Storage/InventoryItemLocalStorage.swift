@@ -7,7 +7,7 @@ import Foundation
 import ApoorvaModels
 import SkipSQL
 
-public final class InventoryItemLocalStorage: InventoryItemLocalStorageProtocol {
+public final actor InventoryItemLocalStorage: InventoryItemLocalStorageProtocol {
     
     private let database: SkipSqlDatabase
     

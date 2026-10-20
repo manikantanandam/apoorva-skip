@@ -10,17 +10,17 @@ import ApoorvaModels
 
 public protocol SaleStorageProtocol: Sendable {
     
-    func getSales() throws -> [Sale]
+    func getSales() async throws -> [Sale]
     
-    func saveSales(sales: [Sale]) throws
+    func saveSales(sales: [Sale]) async throws
 
-    func saveSale(sale: Sale) throws
+    func saveSale(sale: Sale) async throws
         
-    func getSale(id: String) throws -> Sale?
+    func getSale(id: String) async throws -> Sale?
 
-    func updateSale(sale: Sale) throws
+    func updateSale(sale: Sale) async throws
     
-    func deleteSale(id: String) throws // Hard delete
+    func deleteSale(id: String) async throws // Hard delete
     
-    func markAsDeleted(id: String) throws  // Soft delete
+    func markAsDeleted(id: String) async throws  // Soft delete
 }

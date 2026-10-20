@@ -120,6 +120,10 @@ public struct DailyCashFlowView: View {
                         } else {
                             ForEach(viewModel.transactions) { item in
                                 CashflowCardRowView(item: item)
+                                    .onTapGesture {
+                                        transactionToEdit = item
+                                        showTransactionSheet = true
+                                    }
                                     .contextMenu {
                                         Button {
                                             transactionToEdit = item
@@ -192,7 +196,8 @@ public struct DailyCashFlowView: View {
             Task { await viewModel.fetchData() }
         }) {
             AddUpdateDailyCashflowSummaryView(
-                viewModel: makeAddUpdateSummaryViewModel(viewModel.selectedDate, viewModel.summary)
+                viewModel: makeAddUpdateSummaryViewModel(viewModel.selectedDate, viewModel.summary),
+                makeAddUpdateTransactionViewModel: makeAddUpdateTransactionView
             )
         }
         // Transaction Sheet

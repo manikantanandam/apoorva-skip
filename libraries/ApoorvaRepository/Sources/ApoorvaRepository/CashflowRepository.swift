@@ -38,26 +38,31 @@ public final class CashflowTransactionRepository: CashflowTransactionRepositoryP
     }
     
     public func getCashflowTransactions() async throws -> [CashflowTransaction] {
-        try storage.getCashflowTransactions()
+        let transactions = try await storage.getCashflowTransactions()
+        print("Transactions from storage \(transactions)")
+        return transactions
     }
     
     public func saveCashflowTransaction(transaction: CashflowTransaction) async throws {
         let user = try await userRepository.getCurrentUser()
         guard let orgId = user.selectedOrganization?.orgId else { return }
         try await service.addCashflowTransaction(transaction, for: orgId)
-//        try storage.saveCashflowTransaction(transaction: transaction)
+        try await sync(force: false)
     }
     
     public func updateCashflowTransaction(_ transaction: CashflowTransaction) async throws {
-        try storage.updateCashflowTransaction(transaction: transaction)
+        let user = try await userRepository.getCurrentUser()
+        guard let orgId = user.selectedOrganization?.orgId else { return }
+        try await service.updateCashflowTransaction(transaction, for: orgId)
+        try await sync(force: false)
     }
     
     public func deleteCashflowTransaction(id: String) async throws {
-        try storage.deleteCashflowTransaction(id: id)
+        try await storage.deleteCashflowTransaction(id: id)
     }
     
     public func markAsDeleted(id: String) async throws {
-        try storage.markAsDeleted(id: id)
+        try await storage.markAsDeleted(id: id)
     }
     
     public func sync(force: Bool) async throws {
@@ -71,7 +76,7 @@ public final class CashflowTransactionRepository: CashflowTransactionRepositoryP
         
         let transactions: [CashflowTransaction]
         
-        let lastUpdatedDate = try? syncStorage.getLastSyncTimestamp(for: CashflowTransaction.table.name)
+        let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: CashflowTransaction.table.name)
         print("Last updted date \(lastUpdatedDate)")
         
         if let lastUpdatedDate, !force {
@@ -83,7 +88,7 @@ public final class CashflowTransactionRepository: CashflowTransactionRepositoryP
             transactions = try await service.getCashflowTransactions(for: orgId)
         }
         print("Saving inventory transactions")
-        try storage.saveCashflowTransactions(transactions: transactions)
+        try await storage.saveCashflowTransactions(transactions: transactions)
         guard
             let transactionWithMinUpdatedAt = transactions.transactionWithMaxDate
         else { return }
@@ -91,7 +96,7 @@ public final class CashflowTransactionRepository: CashflowTransactionRepositoryP
         print("transaction with min update \(transactionWithMinUpdatedAt)")
         print("saving lastUpdatedDate \(transactionWithMinUpdatedAt.updatedAt)")
 
-        try syncStorage.updateSyncTimestamp(
+        try await syncStorage.updateSyncTimestamp(
             for: CashflowTransaction.table.name,
             timestamp: transactionWithMinUpdatedAt.updatedAt.timeIntervalSince1970
         )

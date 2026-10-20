@@ -38,23 +38,23 @@ public final class CustomerRepository: CustomerRepositoryProtocol {
     }
     
     public func getCustomers() async throws -> [Customer] {
-        try storage.getCustomers()
+        try await storage.getCustomers()
     }
     
     public func saveCustomer(customer: Customer) async throws {
-        try storage.saveCustomer(customer: customer)
+        try await storage.saveCustomer(customer: customer)
     }
     
     public func updateCustomer(_ customer: Customer) async throws {
-        try storage.updateCustomer(customer: customer)
+        try await storage.updateCustomer(customer: customer)
     }
     
     public func deleteCustomer(phoneNumber: String) async throws {
-        try storage.deleteCustomer(phoneNumber: phoneNumber)
+        try await storage.deleteCustomer(phoneNumber: phoneNumber)
     }
     
     public func markAsDeleted(id: String) async throws {
-        try storage.markAsDeleted(id: id)
+        try await storage.markAsDeleted(id: id)
     }
     
     public func sync(force: Bool) async throws {
@@ -68,7 +68,7 @@ public final class CustomerRepository: CustomerRepositoryProtocol {
         
         let customers: [Customer]
         
-        let lastUpdatedDate = try? syncStorage.getLastSyncTimestamp(for: Customer.table.name)
+        let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: Customer.table.name)
         print("Last updted date \(lastUpdatedDate)")
         
         if let lastUpdatedDate, !force {
@@ -80,7 +80,7 @@ public final class CustomerRepository: CustomerRepositoryProtocol {
             customers = try await service.getCustomers(for: orgId)
         }
         print("Saving inventory customers")
-        try storage.saveCustomers(customers: customers)
+        try await storage.saveCustomers(customers: customers)
         guard
             let customerWithMinUpdatedAt = customers.customerWithMaxDate
         else { return }
@@ -90,7 +90,7 @@ public final class CustomerRepository: CustomerRepositoryProtocol {
         guard let lastUpdatedDate = customerWithMinUpdatedAt.updatedAt else { return }
         print("saving lastUpdatedDate \(lastUpdatedDate)")
 
-        try syncStorage.updateSyncTimestamp(for: Customer.table.name, timestamp: lastUpdatedDate)
+        try await syncStorage.updateSyncTimestamp(for: Customer.table.name, timestamp: lastUpdatedDate)
     }
 }
 

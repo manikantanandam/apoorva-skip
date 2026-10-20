@@ -38,23 +38,23 @@ public final class SaleRepository: SaleRepositoryProtocol {
     }
     
     public func getSales() async throws -> [Sale] {
-        try storage.getSales()
+        try await storage.getSales()
     }
     
     public func saveSale(sale: Sale) async throws {
-        try storage.saveSale(sale: sale)
+        try await storage.saveSale(sale: sale)
     }
     
     public func updateSale(_ sale: Sale) async throws {
-        try storage.updateSale(sale: sale)
+        try await storage.updateSale(sale: sale)
     }
     
     public func deleteSale(id: String) async throws {
-        try storage.deleteSale(id: id)
+        try await storage.deleteSale(id: id)
     }
     
     public func markAsDeleted(id: String) async throws {
-        try storage.markAsDeleted(id: id)
+        try await storage.markAsDeleted(id: id)
     }
     
     public func sync(force: Bool) async throws {
@@ -68,7 +68,7 @@ public final class SaleRepository: SaleRepositoryProtocol {
         
         let sales: [Sale]
         
-        let lastUpdatedDate = try? syncStorage.getLastSyncTimestamp(for: Sale.table.name)
+        let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: Sale.table.name)
         print("Last updted date \(lastUpdatedDate)")
         
         if let lastUpdatedDate, !force {
@@ -80,7 +80,7 @@ public final class SaleRepository: SaleRepositoryProtocol {
             sales = try await service.getSales(for: orgId)
         }
         print("Saving sales")
-        try storage.saveSales(sales: sales)
+        try await storage.saveSales(sales: sales)
         
         guard
             let saleWithMinUpdatedAt = sales.saleWithMaxDate
@@ -91,7 +91,7 @@ public final class SaleRepository: SaleRepositoryProtocol {
         guard let lastUpdatedDate = saleWithMinUpdatedAt.updatedAt else { return }
         print("saving lastUpdatedDate \(lastUpdatedDate)")
 
-        try syncStorage.updateSyncTimestamp(for: Sale.table.name, timestamp: lastUpdatedDate.timeIntervalSince1970)
+        try await syncStorage.updateSyncTimestamp(for: Sale.table.name, timestamp: lastUpdatedDate.timeIntervalSince1970)
     }
 }
 

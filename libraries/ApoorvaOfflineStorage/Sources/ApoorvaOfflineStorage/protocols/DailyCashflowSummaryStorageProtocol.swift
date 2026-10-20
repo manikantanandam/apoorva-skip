@@ -9,10 +9,10 @@ import Foundation
 import ApoorvaModels
 
 public protocol DailyCashflowSummaryStorageProtocol: Sendable {
-    func getDailyCashflowSummaries() throws -> [DailyCashflowSummary]
-    func getDailyCashflowSummary(id: String) throws -> DailyCashflowSummary?
-    func saveDailyCashflowSummary(summary: DailyCashflowSummary) throws
-    func updateDailyCashflowSummary(summary: DailyCashflowSummary) throws
-    func deleteDailyCashflowSummary(id: String) throws
-    func saveDailyCashflowSummaries(summaries: [DailyCashflowSummary]) throws
+    func getDailyCashflowSummaries()async throws -> [DailyCashflowSummary]
+    func getDailyCashflowSummary(id: String)async throws -> DailyCashflowSummary?
+    func saveDailyCashflowSummary(summary: DailyCashflowSummary)async throws
+    func updateDailyCashflowSummary(summary: DailyCashflowSummary)async throws
+    func deleteDailyCashflowSummary(id: String)async throws
+    func saveDailyCashflowSummaries(summaries: [DailyCashflowSummary])async throws
 }

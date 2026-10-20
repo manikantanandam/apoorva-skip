@@ -101,6 +101,7 @@ public struct CashflowTransactionListView: View {
             
             ScrollView {
                 LazyVStack(spacing: 12) {
+                    ModernStatBox(title: "Total Transactions", value: viewModel.transactions.count.string)
                     
                     if viewModel.transactions.isEmpty {
                         Text("No transactions found for this period.")
@@ -117,15 +118,15 @@ public struct CashflowTransactionListView: View {
         }
         .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
         .toolbar {
-//            ToolbarItem(placement: .topBarTrailing) {
-//                Button(action: {
-//                    Task {
-//                        await viewModel.update()
-//                    }
-//                }) {
-//                    Label("Update", systemImage: "arrow.up")
-//                }
-//            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: {
+                    Task {
+                        await viewModel.update()
+                    }
+                }) {
+                    Label("Update", systemImage: "arrow.up")
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
                     if let url = viewModel.generateCSV() {

@@ -38,23 +38,23 @@ public final class InventoryItemRepository: InventoryItemRepositoryProtocol {
     }
     
     public func getInventoryItems() async throws -> [InventoryItem] {
-        try storage.getInventoryItems()
+        try await storage.getInventoryItems()
     }
     
     public func saveInventoryItem(item: InventoryItem) async throws {
-        try storage.saveInventoryItem(item: item)
+        try await storage.saveInventoryItem(item: item)
     }
     
     public func updateInventoryItem(_ item: InventoryItem) async throws {
-        try storage.updateInventoryItem(item: item)
+        try await storage.updateInventoryItem(item: item)
     }
     
     public func deleteInventoryItem(id: String) async throws {
-        try storage.deleteInventoryItem(id: id)
+        try await storage.deleteInventoryItem(id: id)
     }
     
     public func markAsDeleted(id: String) async throws {
-        try storage.markAsDeleted(id: id)
+        try await storage.markAsDeleted(id: id)
     }
     
     public func sync(force: Bool) async throws {
@@ -68,7 +68,7 @@ public final class InventoryItemRepository: InventoryItemRepositoryProtocol {
         
         let items: [InventoryItem]
         
-        let lastUpdatedDate = try? syncStorage.getLastSyncTimestamp(for: InventoryItem.table.name)
+        let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: InventoryItem.table.name)
         print("Last updted date \(lastUpdatedDate)")
         
         if let lastUpdatedDate, !force {
@@ -80,7 +80,7 @@ public final class InventoryItemRepository: InventoryItemRepositoryProtocol {
             items = try await service.getInventoryItems(for: orgId)
         }
         print("Saving inventory items")
-        try storage.saveInventoryItems(items: items)
+        try await storage.saveInventoryItems(items: items)
         guard
             let itemWithMinUpdatedAt = items.itemWithMaxDate
         else { return }
@@ -90,7 +90,7 @@ public final class InventoryItemRepository: InventoryItemRepositoryProtocol {
         guard let lastUpdatedDate = itemWithMinUpdatedAt.updatedAt else { return }
         print("saving lastUpdatedDate \(lastUpdatedDate)")
 
-        try syncStorage.updateSyncTimestamp(for: InventoryItem.table.name, timestamp: lastUpdatedDate.timeIntervalSince1970)
+        try await syncStorage.updateSyncTimestamp(for: InventoryItem.table.name, timestamp: lastUpdatedDate.timeIntervalSince1970)
     }
 }
 

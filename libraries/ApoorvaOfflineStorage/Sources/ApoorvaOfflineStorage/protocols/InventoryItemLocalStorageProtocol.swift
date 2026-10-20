@@ -10,17 +10,17 @@ import ApoorvaModels
 
 public protocol InventoryItemLocalStorageProtocol: Sendable {
     
-    func getInventoryItems() throws -> [InventoryItem]
+    func getInventoryItems() async throws -> [InventoryItem]
     
-    func saveInventoryItems(items: [InventoryItem]) throws 
+    func saveInventoryItems(items: [InventoryItem]) async throws
 
-    func saveInventoryItem(item: InventoryItem) throws
+    func saveInventoryItem(item: InventoryItem) async throws
     
-    func getInventoryItem(id: String) throws -> InventoryItem?
+    func getInventoryItem(id: String) async throws -> InventoryItem?
     
-    func updateInventoryItem(item: InventoryItem) throws
+    func updateInventoryItem(item: InventoryItem) async throws
     
-    func deleteInventoryItem(id: String) throws // Hard delete
+    func deleteInventoryItem(id: String) async throws // Hard delete
     
-    func markAsDeleted(id: String) throws  // Soft delete
+    func markAsDeleted(id: String) async throws  // Soft delete
 }

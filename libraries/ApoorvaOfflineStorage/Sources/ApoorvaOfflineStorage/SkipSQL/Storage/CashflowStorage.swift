@@ -9,7 +9,7 @@ import Foundation
 import ApoorvaModels
 import SkipSQL
 
-public final class CashflowTransactionLocalStorage: CashflowTransactionStorageProtocol {
+public final actor CashflowTransactionLocalStorage: CashflowTransactionStorageProtocol {
     
     private let database: SkipSqlDatabase
     
@@ -42,7 +42,7 @@ public final class CashflowTransactionLocalStorage: CashflowTransactionStoragePr
     public func updateCashflowTransaction(transaction: CashflowTransaction) throws {
         let query = """
         UPDATE \(CashflowTransaction.table.name)
-        SET timestamp = ?, particulars = ?, amount = ?, transactionType = ?, paymentMode = ?, category = ?, subCategory = ?, person = ?, isDeleted = ?, updatedAt = ?
+        SET timestamp = ?, particulars = ?, amount = ?, transactionType = ?, paymentMode = ?, category = ?, subCategory = ?, person = ?, isDeleted = ?, updatedAt = ?, fromAccountId = ?, toAccountId = ?, timestampInMs = ?, updatedAtInMs = ?
         WHERE id = ?;
         """
         
@@ -72,7 +72,11 @@ public final class CashflowTransactionLocalStorage: CashflowTransactionStoragePr
             person,
             .long(transaction.isDeleted.int64Value),
             .real(transaction.updatedAt.timeIntervalSince1970),
-            .text(transaction.id)
+            .text(transaction.id),
+            .text(transaction.fromAccountId),
+            .text(transaction.toAccountId),
+            .real(transaction.timestampInMs),
+            .real(transaction.updatedAtInMs),
         ])
     }
     
@@ -96,14 +100,15 @@ public final class CashflowTransactionLocalStorage: CashflowTransactionStoragePr
         
         let query = """
         INSERT OR REPLACE INTO \(CashflowTransaction.table.name) (
-            id, timestamp, particulars, amount, transactionType, paymentMode, category, subCategory, person, isDeleted, updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            id, timestamp, particulars, amount, transactionType, paymentMode, category, subCategory, person, isDeleted, updatedAt, fromAccountId, toAccountId, timestampInMs, updatedAtInMs
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """
         
         try database.context.exec(sql: "BEGIN TRANSACTION;")
         
         do {
             for transaction in transactions {
+                print("saving transaction locally \(transaction)")
                 try database.context.exec(sql: query, parameters: [
                     .text(transaction.id),
                     .real(transaction.timestamp.timeIntervalSince1970),
@@ -115,7 +120,11 @@ public final class CashflowTransactionLocalStorage: CashflowTransactionStoragePr
                     transaction.subCategory != nil ? .text(transaction.subCategory!.rawValue) : .null,
                     transaction.person != nil ? .text(transaction.person!) : .null,
                     .long(transaction.isDeleted ? 1 : 0),
-                    .real(transaction.updatedAt.timeIntervalSince1970)
+                    .real(transaction.updatedAt.timeIntervalSince1970),
+                    .text(transaction.fromAccountId),
+                    .text(transaction.toAccountId),
+                    .real(transaction.timestampInMs),
+                    .real(transaction.updatedAtInMs),
                 ])
             }
             try database.context.exec(sql: "COMMIT;")

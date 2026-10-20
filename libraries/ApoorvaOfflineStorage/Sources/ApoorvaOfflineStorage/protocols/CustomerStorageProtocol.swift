@@ -10,20 +10,20 @@ import ApoorvaModels
 
 public protocol CustomerStorageProtocol: Sendable {
     
-    func getCustomers() throws -> [Customer]
+    func getCustomers() async throws -> [Customer]
     
-    func saveCustomers(customers: [Customer]) throws
+    func saveCustomers(customers: [Customer]) async throws
 
-    func saveCustomer(customer: Customer) throws
+    func saveCustomer(customer: Customer) async throws
     
-    func getCustomer(phoneNumber: String) throws -> Customer?
+    func getCustomer(phoneNumber: String) async throws -> Customer?
     
-    func getCustomer(name: String) throws -> Customer?
+    func getCustomer(name: String) async throws -> Customer?
 
     
-    func updateCustomer(customer: Customer) throws
+    func updateCustomer(customer: Customer) async throws
     
-    func deleteCustomer(phoneNumber: String) throws // Hard delete
+    func deleteCustomer(phoneNumber: String) async throws // Hard delete
     
-    func markAsDeleted(id: String) throws  // Soft delete
+    func markAsDeleted(id: String) async throws  // Soft delete
 }

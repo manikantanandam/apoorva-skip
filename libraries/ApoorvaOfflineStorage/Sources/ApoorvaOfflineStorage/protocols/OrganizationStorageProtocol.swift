@@ -9,11 +9,11 @@ import Foundation
 import ApoorvaModels
 
 public protocol OrganizationStorageProtocol: Sendable {
-    func getOrganizations() throws -> [Organization]
-    func getOrganization(orgId: String) throws -> Organization?
-    func saveOrganization(organization: Organization) throws
-    func updateOrganization(organization: Organization) throws
-    func deleteOrganization(orgId: String) throws
-    func markAsDeleted(orgId: String) throws
-    func saveOrganizations(organizations: [Organization]) throws
+    func getOrganizations() async throws -> [Organization]
+    func getOrganization(orgId: String) async throws -> Organization?
+    func saveOrganization(organization: Organization) async throws
+    func updateOrganization(organization: Organization) async throws
+    func deleteOrganization(orgId: String) async throws
+    func markAsDeleted(orgId: String) async throws
+    func saveOrganizations(organizations: [Organization]) async throws
 }

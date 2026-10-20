@@ -6,8 +6,16 @@ public struct AddUpdateDailyCashflowSummaryView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var viewModel: AddUpdateDailyCashflowSummaryViewModel
     
-    public init(viewModel: AddUpdateDailyCashflowSummaryViewModel) {
+    // 1. ADD SHEET STATE
+    @State private var showTransactionSheet = false
+    @State private var transactionToEdit: CashflowTransaction? = nil
+    
+    var makeAddUpdateTransactionViewModel: (Date, CashflowTransaction?) -> AddUpdateCashflowTransactionViewModel
+    
+    public init(viewModel: AddUpdateDailyCashflowSummaryViewModel,
+                makeAddUpdateTransactionViewModel: @escaping (Date, CashflowTransaction?) -> AddUpdateCashflowTransactionViewModel) {
         self.viewModel = viewModel
+        self.makeAddUpdateTransactionViewModel = makeAddUpdateTransactionViewModel
     }
     
     public var body: some View {
@@ -76,6 +84,12 @@ public struct AddUpdateDailyCashflowSummaryView: View {
                                                 .font(.subheadline)
                                                 .fontWeight(.bold)
                                                 .foregroundColor(tx.transactionType == .credit ? .green : .red)
+                                        }
+                                        
+                                        .contentShape(Rectangle()) // Ensures the whole row is tappable
+                                        .onTapGesture {
+                                            transactionToEdit = tx
+                                            showTransactionSheet = true
                                         }
                                         
                                         if tx.id != viewModel.dayTransactions.last?.id {
@@ -154,6 +168,14 @@ public struct AddUpdateDailyCashflowSummaryView: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
+            .sheet(isPresented: $showTransactionSheet, onDismiss: {
+                // Re-fetch transactions so the Closing Balance recalculates if the user edited the amount
+                Task { await viewModel.fetchInitialData(existingSummary: nil) }
+            }) {
+                AddUpdateCashflowTransactionView(
+                    viewModel: makeAddUpdateTransactionViewModel(viewModel.date, transactionToEdit)
+                )
+            }
         }
     }
     

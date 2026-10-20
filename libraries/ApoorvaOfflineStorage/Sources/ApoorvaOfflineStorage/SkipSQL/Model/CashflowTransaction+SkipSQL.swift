@@ -55,8 +55,8 @@ extension CashflowTransaction: @retroactive SQLCodable {
         
         let isDeleted = try Self.isDeletedCol.longValueRequired(in: row)
         let updatedAt = try Self.updatedAtCol.realValueRequired(in: row)
-        let fromAccountId = Self.updatedAtCol.textValue(in: row) ?? ""
-        let toAccountId = Self.updatedAtCol.textValue(in: row) ?? ""
+        let fromAccountId = Self.fromAccountIdCol.textValue(in: row) ?? ""
+        let toAccountId = Self.toAccountIdCol.textValue(in: row) ?? ""
         
         let timestampInMs = Self.timestampInMsCol.realValue(in: row) ?? 0
         let updatedAtInMs = Self.updatedAtInMsCol.realValue(in: row) ?? 0

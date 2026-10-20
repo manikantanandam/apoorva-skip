@@ -7,7 +7,7 @@ import Foundation
 import ApoorvaModels
 import SkipSQL
 
-public final class SyncStorage: Sendable {
+public final actor SyncStorage: Sendable {
     private let db: SkipSqlDatabase
 
     public init(db: SkipSqlDatabase) {

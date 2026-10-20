@@ -192,8 +192,20 @@ public class CashflowTransactionListViewModel {
     
     func update() async {
         do {
-            for transaction in transactions {
-                try await repository.saveCashflowTransaction(transaction: transaction)
+            for var transaction in transactions {
+                
+                switch transaction.transactionType {
+                case .credit:
+                    transaction.toAccountId = transaction.paymentMode.accountId
+                case .debit:
+                    transaction.fromAccountId = transaction.paymentMode.accountId
+                    
+                case .unknown:
+                    continue
+                }
+                
+                
+                try await repository.updateCashflowTransaction(transaction)
             }
         } catch {
             print("Cashflow Update failed")
@@ -253,4 +265,3 @@ public class CashflowTransactionListViewModel {
             return text
         }
 }
-

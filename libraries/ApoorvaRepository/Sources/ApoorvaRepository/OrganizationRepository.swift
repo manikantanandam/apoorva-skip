@@ -37,29 +37,24 @@ public final class OrganizationRepository: OrganizationRepositoryProtocol {
     }
     
     public func getOrganizations() async throws -> [Organization] {
-        let organizations = try storage.getOrganizations()
+        let organizations = try await storage.getOrganizations()
         if organizations.isEmpty {
             try await sync(force: false)
             
-            return try storage.getOrganizations()
+            return try await storage.getOrganizations()
         }
         
         return organizations
     }
     
     public func getOrganization(orgId: String) async throws -> Organization? {
-        var organizations = try storage.getOrganizations()
-        if organizations.isEmpty {
-            try await sync(force: false)
-            
-            organizations = try storage.getOrganizations()
-        }
-        
+        try await sync(force: true)
+        let organizations = try await storage.getOrganizations()
         return organizations.first(where: { $0.id == orgId })
     }
     
     public func saveOrganization(organization: Organization) async throws {
-        try storage.saveOrganization(organization: organization)
+        try await storage.saveOrganization(organization: organization)
     }
     
     public func sync(force: Bool) async throws {
@@ -74,7 +69,7 @@ public final class OrganizationRepository: OrganizationRepositoryProtocol {
             return
         }
         
-        let lastUpdatedDate = try? syncStorage.getLastSyncTimestamp(for: Organization.table.name)
+        let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: Organization.table.name)
         var fetchedOrganizations: [Organization] = []
         
         if let lastUpdatedDate = lastUpdatedDate, !force {
@@ -108,12 +103,12 @@ public final class OrganizationRepository: OrganizationRepositoryProtocol {
         }
         
         print("Saving \(fetchedOrganizations.count) assigned organizations locally")
-        try storage.saveOrganizations(organizations: fetchedOrganizations)
+        try await storage.saveOrganizations(organizations: fetchedOrganizations)
         
         // Update Sync Timestamp
         guard let orgWithMaxDate = fetchedOrganizations.max(by: { $0.updatedAt < $1.updatedAt }) else { return }
         print("Last updated organization date = \(orgWithMaxDate)")
-        try syncStorage.updateSyncTimestamp(
+        try await syncStorage.updateSyncTimestamp(
             for: Organization.table.name,
             timestamp: orgWithMaxDate.updatedAt.timeIntervalSince1970
         )

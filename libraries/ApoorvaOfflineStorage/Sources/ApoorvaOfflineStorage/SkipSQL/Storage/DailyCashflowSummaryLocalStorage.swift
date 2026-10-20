@@ -9,7 +9,7 @@ import Foundation
 import ApoorvaModels
 import SkipSQL
 
-public final class DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorageProtocol {
+public final actor DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorageProtocol {
     
     private let database: SkipSqlDatabase
     

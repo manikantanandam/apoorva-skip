@@ -49,7 +49,7 @@ public class AddUpdateDailyCashflowSummaryViewModel {
         }
     }
     
-    private func fetchInitialData(existingSummary: DailyCashflowSummary?) async {
+    func fetchInitialData(existingSummary: DailyCashflowSummary?) async {
         do {
             let user = try await userRepository.getCurrentUser()
             guard let orgId = user.selectedOrganization?.orgId else {

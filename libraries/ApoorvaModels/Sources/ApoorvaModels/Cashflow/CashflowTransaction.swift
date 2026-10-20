@@ -27,6 +27,19 @@ public struct CashflowTransaction: Identifiable, Codable, Hashable, Sendable {
         case cash
         case upi
         case unknown
+        
+        public var accountId: String {
+            switch self {
+            case .cash:
+                let cashAccountId = "b5ca46b1-8bb6-4c02-a42e-5d8507c04735"
+                return cashAccountId
+            case .upi:
+                let bankAccountId = "6b4b14b1-b8cb-4f7f-8881-91852e85b938"
+                return bankAccountId
+            case .unknown:
+                return ""
+            }
+        }
     }
     
     enum CodingKeys: CodingKey {
