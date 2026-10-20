@@ -74,6 +74,8 @@ public class ModulesContainer {
     public func makeDailyCashflowViewModel() -> DailyCashFlowViewModel {
         return DailyCashFlowViewModel(
             repository: repositoryContainer.dailyCashflowRepository,
+            userRepository: repositoryContainer.userRepository,
+            organizationRepository: repositoryContainer.organizationRepository,
             cashflowRepository: repositoryContainer.cashflowRepository
         )
     }
