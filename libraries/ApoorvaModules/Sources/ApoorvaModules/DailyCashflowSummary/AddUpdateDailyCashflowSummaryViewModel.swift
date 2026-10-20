@@ -68,7 +68,7 @@ public class AddUpdateDailyCashflowSummaryViewModel {
             
             // 1. Fetch Today's Transactions
             let allTx = try await cashflowRepository.getCashflowTransactions()
-                .filter { $0.category != .shopSetup }r
+                .filter { $0.category != .shopSetup }
             let startOfDay = Calendar.current.startOfDay(for: self.date)
             let endOfDay = Calendar.current.date(bySettingHour: 23, minute: 59, second: 59, of: self.date) ?? self.date
             self.dayTransactions = allTx.filter { !$0.isDeleted && $0.timestamp >= startOfDay && $0.timestamp <= endOfDay }
