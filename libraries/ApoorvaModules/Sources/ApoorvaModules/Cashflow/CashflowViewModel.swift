@@ -54,7 +54,7 @@ public class CashflowTransactionListViewModel {
         }
     }
     
-    var dateFilter: CashflowDateFilterOption = .today {
+    var dateFilter: CashflowDateFilterOption = .all {
             didSet {
                 applyFilterAndSort()
             }

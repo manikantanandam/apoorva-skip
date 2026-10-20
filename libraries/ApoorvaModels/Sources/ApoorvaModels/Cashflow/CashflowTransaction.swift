@@ -29,6 +29,43 @@ public struct CashflowTransaction: Identifiable, Codable, Hashable, Sendable {
         case unknown
     }
     
+    enum CodingKeys: CodingKey {
+        case id
+        case timestamp
+        case particulars
+        case amount
+        case transactionType
+        case paymentMode
+        case category
+        case subCategory
+        case fromAccountId
+        case toAccountId
+        case person
+        case isDeleted
+        case updatedAt
+        case timestampInMs
+        case updatedAtInMs
+    }
+    
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(String.self, forKey: .id)
+        self.timestamp = try container.decode(Date.self, forKey: .timestamp)
+        self.particulars = try container.decode(String.self, forKey: .particulars)
+        self.amount = try container.decode(Double.self, forKey: .amount)
+        self.transactionType = try container.decode(CashflowTransaction.TransactionType.self, forKey: .transactionType)
+        self.paymentMode = try container.decode(CashflowTransaction.PaymentMode.self, forKey: .paymentMode)
+        self.category = try container.decode(CashflowCategory.self, forKey: .category)
+        self.subCategory = try container.decodeIfPresent(CashflowSubCategory.self, forKey: .subCategory)
+        self.fromAccountId = try container.decodeIfPresent(String.self, forKey: .fromAccountId) ?? ""
+        self.toAccountId = try container.decodeIfPresent(String.self, forKey: .toAccountId) ?? ""
+        self.person = try container.decodeIfPresent(String.self, forKey: .person)
+        self.isDeleted = try container.decode(Bool.self, forKey: .isDeleted)
+        self.updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        self.timestampInMs = try container.decodeIfPresent(TimeInterval.self, forKey: .timestampInMs) ?? 0
+        self.updatedAtInMs = try container.decodeIfPresent(TimeInterval.self, forKey: .updatedAtInMs) ?? 0
+    }
+    
     public init(id: String = UUID().uuidString,
                 timestamp: Date,
                 particulars: String,
