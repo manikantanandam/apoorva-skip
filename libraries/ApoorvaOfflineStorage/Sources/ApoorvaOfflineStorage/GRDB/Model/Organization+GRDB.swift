@@ -18,6 +18,7 @@ extension Organization: @retroactive FetchableRecord, @retroactive MutablePersis
             
             t.column("updatedAt", .datetime).notNull()
             t.column("isDeleted", .boolean).notNull().defaults(to: false)
+            t.column("establishedAtInMs", .real).notNull().defaults(to: 0)
         }
     }
 
@@ -37,7 +38,8 @@ extension Organization: @retroactive FetchableRecord, @retroactive MutablePersis
                 accentColor: row["accentColor"],
                 accounts: decodedAccounts,
                 updatedAt: row["updatedAt"],
-                isDeleted: row["isDeleted"]
+                isDeleted: row["isDeleted"],
+                establishedAtInMs: row["establishedAtInMs"]
             )
         }
 }

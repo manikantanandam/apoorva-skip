@@ -48,7 +48,7 @@ public final actor OrganizationLocalStorage: OrganizationStorageProtocol {
     public func updateOrganization(organization: Organization) throws {
         let query = """
         UPDATE \(Organization.table.name)
-        SET name = ?, status = ?, createdAt = ?, minVersion = ?, currentTheme = ?, accentColor = ?, accounts = ?, updatedAt = ?, isDeleted = ?
+        SET name = ?, status = ?, createdAt = ?, minVersion = ?, currentTheme = ?, accentColor = ?, accounts = ?, updatedAt = ?, isDeleted = ?, establishedAtInMs = ?
         WHERE id = ?;
         """
         
@@ -71,7 +71,8 @@ public final actor OrganizationLocalStorage: OrganizationStorageProtocol {
             accountsValue,
             .real(organization.updatedAt.timeIntervalSince1970),
             .long(organization.isDeleted.int64Value),
-            .text(organization.id)
+            .text(organization.id),
+            .real(organization.establishedAtInMs)
         ])
     }
     
@@ -93,8 +94,8 @@ public final actor OrganizationLocalStorage: OrganizationStorageProtocol {
         
         let query = """
         INSERT OR REPLACE INTO \(Organization.table.name) (
-            id, name, status, createdAt, minVersion, currentTheme, accentColor, accounts, updatedAt, isDeleted
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+            id, name, status, createdAt, minVersion, currentTheme, accentColor, accounts, updatedAt, isDeleted, establishedAtInMs
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         """
         
         try database.context.exec(sql: "BEGIN TRANSACTION;")
@@ -119,7 +120,8 @@ public final actor OrganizationLocalStorage: OrganizationStorageProtocol {
                     .text(org.accentColor),
                     accountsValue,
                     .real(org.updatedAt.timeIntervalSince1970),
-                    .long(org.isDeleted.int64Value)
+                    .long(org.isDeleted.int64Value),
+                    .real(org.establishedAtInMs)
                 ])
             }
             try database.context.exec(sql: "COMMIT;")

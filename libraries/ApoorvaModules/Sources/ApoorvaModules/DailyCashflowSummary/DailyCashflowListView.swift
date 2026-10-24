@@ -22,20 +22,62 @@ public struct DailyCashflowListView: View {
     }
     
     public var body: some View {
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                // Loop through the summaries provided by the view model[cite: 26, 27]
-                ForEach(viewModel.summaries, id: \.id) { summary in
-                    // 3. Wrap the card in a NavigationLink passing the summary's date
-                    NavigationLink(destination: makeDailyCashFlowView(summary.date)) {
-                        cashflowCard(for: summary)
-                    }
-                    .buttonStyle(.plain)
+        VStack(spacing: 0) {
+            
+            // Custom Date Picker Section
+            if viewModel.dateFilter == .custom {
+                HStack {
+                    DatePicker("Start", selection: $viewModel.customStartDate, displayedComponents: .date)
+                        .labelsHidden()
+                    Text("to")
+                        .foregroundColor(.secondary)
+                    DatePicker("End", selection: $viewModel.customEndDate, displayedComponents: .date)
+                        .labelsHidden()
                 }
+                .padding()
+                .background(Color(UIColor.secondarySystemBackground))
             }
-            .padding(.vertical)
+            
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    // Loop through the summaries provided by the view model[cite: 26, 27]
+                    ForEach(viewModel.summaries, id: \.id) { summary in
+                        // 3. Wrap the card in a NavigationLink passing the summary's date
+                        NavigationLink(destination: makeDailyCashFlowView(summary.date)) {
+                            cashflowCard(for: summary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical)
+            }
         }
         .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+        .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            Picker("Filter By", selection: $viewModel.dateFilter) {
+                                ForEach(DailyCashflowDateFilterOption.allCases, id: \.self) { option in
+                                    Text(option.rawValue).tag(option)
+                                }
+                            }
+                        } label: {
+                            Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
+                        }
+                    }
+                    
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            Picker("Sort By", selection: $viewModel.sortOption) {
+                                ForEach(DailyCashflowSortOption.allCases, id: \.self) { option in
+                                    Text(option.rawValue).tag(option)
+                                }
+                            }
+                        } label: {
+                            Label("Sort", systemImage: "arrow.up.arrow.down")
+                        }
+                    }
+                }
         .task {
             await viewModel.fetchData() // Fetch data on load
         }

@@ -9,16 +9,17 @@ public struct Organization: Codable, Sendable {
     public let currentTheme: String
     public let accentColor: String
     public let accounts: [Account]
+    public let establishedAtInMs: TimeInterval
     
     public var updatedAt: Date
     public var isDeleted: Bool
     
     public enum CodingKeys: String, CodingKey {
-        case id, name, status, createdAt, minVersion, currentTheme, accentColor, accounts, updatedAt, isDeleted
+        case id, name, status, createdAt, minVersion, currentTheme, accentColor, accounts, updatedAt, isDeleted, establishedAtInMs
     }
     
     // 1. The explicit public memberwise init (Fixes the GRDB error)
-    public init(id: String, name: String, status: String, createdAt: Date, minVersion: String, currentTheme: String, accentColor: String, accounts: [Account], updatedAt: Date = Date(), isDeleted: Bool = false) {
+    public init(id: String, name: String, status: String, createdAt: Date, minVersion: String, currentTheme: String, accentColor: String, accounts: [Account], updatedAt: Date = Date(), isDeleted: Bool = false, establishedAtInMs: TimeInterval) {
         self.id = id
         self.name = name
         self.status = status
@@ -29,6 +30,7 @@ public struct Organization: Codable, Sendable {
         self.accounts = accounts
         self.updatedAt = updatedAt
         self.isDeleted = isDeleted
+        self.establishedAtInMs = establishedAtInMs
     }
     
     // 2. The JSON Decoder
@@ -44,5 +46,6 @@ public struct Organization: Codable, Sendable {
         self.accounts = try container.decodeIfPresent([Account].self, forKey: .accounts) ?? []
         self.updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
         self.isDeleted = try container.decodeIfPresent(Bool.self, forKey: .isDeleted) ?? false
+        self.establishedAtInMs = try container.decodeIfPresent(TimeInterval.self, forKey: .establishedAtInMs) ?? 0
     }
 }

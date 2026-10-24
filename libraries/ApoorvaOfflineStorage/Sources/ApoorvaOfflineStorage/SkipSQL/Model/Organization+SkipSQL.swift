@@ -24,7 +24,8 @@ extension Organization: @retroactive SQLCodable {
                 accentColorCol,
                 accountsCol,
                 updatedAtCol,
-                isDeletedCol
+                isDeletedCol,
+                establishedAtInMsCol
             ]
         )
     }
@@ -47,6 +48,7 @@ extension Organization: @retroactive SQLCodable {
         
         let updatedAt = try Self.updatedAtCol.realValueRequired(in: row)
         let isDeleted = try Self.isDeletedCol.longValueRequired(in: row)
+        let establishedAtInMs = try Self.establishedAtInMsCol.realValueRequired(in: row)
         
         self.init(id: orgId,
                   name: name,
@@ -57,7 +59,8 @@ extension Organization: @retroactive SQLCodable {
                   accentColor: accentColor ?? "",
                   accounts: accounts,
                   updatedAt: updatedAt.date,
-                  isDeleted: isDeleted.boolValue)
+                  isDeleted: isDeleted.boolValue,
+                  establishedAtInMs: establishedAtInMs)
     }
     
     public func encode(row: inout SkipSQLCore.SQLRow) throws {
@@ -80,6 +83,7 @@ extension Organization: @retroactive SQLCodable {
         
         row[Self.updatedAtCol] = SQLValue(self.updatedAt.timeIntervalSince1970)
         row[Self.isDeletedCol] = SQLValue(self.isDeleted.intValue)
+        row[Self.establishedAtInMsCol] = SQLValue(self.establishedAtInMs)
     }
     
     public static let idCol = SQLColumn(name: "id", type: .text, primaryKey: true)
@@ -92,4 +96,5 @@ extension Organization: @retroactive SQLCodable {
     public static let accountsCol = SQLColumn(name: "accounts", type: .text) // Serializes JSON arrays automatically
     public static let updatedAtCol = SQLColumn(name: "updatedAt", type: .real)
     public static let isDeletedCol = SQLColumn(name: "isDeleted", type: .long)
+    public static let establishedAtInMsCol = SQLColumn(name: "establishedAtInMs", type: .real)
 }
