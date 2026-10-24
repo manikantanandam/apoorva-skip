@@ -120,7 +120,7 @@ public class DailyCashFlowListViewModel {
         self.inventoryTotal = inventory
         self.totalIncome = income
         self.totalExpense = expense
-        self.profitOrLoss = income - expense
+        self.profitOrLoss = (income - expense).rounded()
     }
     
     func prepareDates(with fetchedSummaries: [DailyCashflowSummary]) async throws {
