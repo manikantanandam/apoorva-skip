@@ -55,6 +55,21 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
         case .reports:
             Text("Reports Screen")
         case .dailyCashflow:
+            DailyCashflowListView(
+                viewModel: container.modulesContainer.makeDailyCashflowListViewModel(),
+                makeDailyCashFlowView: { date in
+                    DailyCashFlowView(
+                        viewModel: container.modulesContainer.makeDailyCashflowViewModel(selectedDate: date),
+                        makeAddUpdateSummaryViewModel: { date, summary in
+                            container.modulesContainer.makeAddUpdateDailyCashflowViewModel(existingSummary: summary, date: date)
+                        },
+                        makeAddUpdateTransactionViewModel: { date, transaction in
+                            container.modulesContainer.makeAddUpdateCashflowTransactionViewModel(existingTransaction: transaction, defaultDate: date)
+                        }
+                    )
+                }
+            )
+            /*
             DailyCashFlowView(
                 viewModel: container.modulesContainer.makeDailyCashflowViewModel(),
                 makeAddUpdateSummaryViewModel: { date, summary in
@@ -64,6 +79,7 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
                     container.modulesContainer.makeAddUpdateCashflowTransactionViewModel(existingTransaction: transaction, defaultDate: date)
                 }
             )
+             */
         case .cashflow:
             CashflowTransactionListView(
                 viewModel: container.modulesContainer.makeCashflowTransactionListViewModel()

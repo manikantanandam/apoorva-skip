@@ -71,8 +71,18 @@ public class ModulesContainer {
         )
     }
     
-    public func makeDailyCashflowViewModel() -> DailyCashFlowViewModel {
+    public func makeDailyCashflowViewModel(selectedDate: Date? = nil) -> DailyCashFlowViewModel {
         return DailyCashFlowViewModel(
+            repository: repositoryContainer.dailyCashflowRepository,
+            userRepository: repositoryContainer.userRepository,
+            organizationRepository: repositoryContainer.organizationRepository,
+            cashflowRepository: repositoryContainer.cashflowRepository,
+            selectedDate: selectedDate
+        )
+    }
+    
+    public func makeDailyCashflowListViewModel() -> DailyCashFlowListViewModel {
+        return DailyCashFlowListViewModel(
             repository: repositoryContainer.dailyCashflowRepository,
             userRepository: repositoryContainer.userRepository,
             organizationRepository: repositoryContainer.organizationRepository,

@@ -212,7 +212,10 @@ public struct DailyCashFlowView: View {
         }
         // Summary Sheet
         .sheet(isPresented: $showSummarySheet, onDismiss: {
-            Task { await viewModel.fetchData() }
+            Task {
+                print("Add Update Daily Summary view data fetched and fetch data is called")
+                await viewModel.refreshData()
+            }
         }) {
             AddUpdateDailyCashflowSummaryView(
                 viewModel: makeAddUpdateSummaryViewModel(viewModel.selectedDate, viewModel.currentSummary),
@@ -221,7 +224,7 @@ public struct DailyCashFlowView: View {
         }
         // Transaction Sheet
         .sheet(isPresented: $showTransactionSheet, onDismiss: {
-            Task { await viewModel.fetchData() }
+            Task { await viewModel.refreshData() }
         }) {
             AddUpdateCashflowTransactionView(
                 viewModel: makeAddUpdateTransactionView(viewModel.selectedDate, transactionToEdit)

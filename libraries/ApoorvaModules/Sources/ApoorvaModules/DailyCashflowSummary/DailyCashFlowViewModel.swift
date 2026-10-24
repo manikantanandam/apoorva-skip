@@ -23,12 +23,13 @@ public class DailyCashFlowViewModel {
     public init(repository: DailyCashflowSummaryRepositoryProtocol,
                 userRepository: UserRepositoryProtocol,
                 organizationRepository: OrganizationRepositoryProtocol,
-                cashflowRepository: CashflowTransactionRepositoryProtocol) {
+                cashflowRepository: CashflowTransactionRepositoryProtocol,
+                selectedDate: Date? = nil) {
         self.repository = repository
         self.cashflowRepository = cashflowRepository
         self.userRepository = userRepository
         self.organizationRepository = organizationRepository
-        self.selectedDate = Date.from(day: 17, month: 10, year: 2025) ?? Date()
+        self.selectedDate = selectedDate ?? Date()
     }
     
     // Renamed from fetchSummary to fetchData to reflect it grabs both
@@ -53,7 +54,7 @@ public class DailyCashFlowViewModel {
     public func deleteTransaction(id: String) async {
         do {
             try await cashflowRepository.markAsDeleted(id: id)
-            try await fetchData()
+            await fetchData()
         } catch {
             print("Failed to delete transaction: \(error.localizedDescription)")
         }
@@ -81,7 +82,7 @@ public class DailyCashFlowViewModel {
         
         do {
             try await repository.updateDailyCashflowSummary(summary: updatedSummary)
-            try await fetchData()
+            await fetchData()
         } catch {
             print("Failed to toggle lock status: \(error.localizedDescription)")
             isLoading = false
@@ -91,6 +92,7 @@ public class DailyCashFlowViewModel {
     func refreshData() async {
         do {
             try await repository.refresh(for: selectedDate.toString(format: "dd-MM-yyyy"))
+            await fetchData()
             
         } catch {
             print("Force sync failed \(error.localizedDescription)")

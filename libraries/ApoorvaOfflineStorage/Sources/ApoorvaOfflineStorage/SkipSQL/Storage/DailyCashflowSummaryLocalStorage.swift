@@ -55,6 +55,7 @@ public final actor DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
         SET date = ?, openingBalances = ?, closingBalances = ?, updatedAt = ?, locked = ?
         WHERE id = ?;
         """
+        print("Updating the summary \(summary) for \(summary.id)")
         
         try database.context.exec(sql: query, parameters: [
             .real(summary.date.timeIntervalSince1970),
@@ -72,12 +73,13 @@ public final actor DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
     }
     
     public func saveDailyCashflowSummaries(summaries: [DailyCashflowSummary]) throws {
+        print("Saving daily cash flow summaries")
         guard !summaries.isEmpty else { return }
         
         let query = """
         INSERT OR REPLACE INTO \(DailyCashflowSummary.table.name) (
-            id, date, openingBalances, closingBalances
-        ) VALUES (?, ?, ?, ?);
+            id, date, openingBalances, closingBalances, updatedAt, locked
+        ) VALUES (?, ?, ?, ?, ?, ?);
         """
         
         // Wrap bulk inserts in a transaction for performance and safety[cite: 10, 11]
@@ -89,7 +91,9 @@ public final actor DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
                     .text(summary.id),
                     .real(summary.date.timeIntervalSince1970),
                     .text(summary.openingBalances.string),
-                    .text(summary.closingBalances.string)
+                    .text(summary.closingBalances.string),
+                    .real(summary.updatedAt),
+                    .long(summary.locked.int64Value)
                 ])
             }
             try database.context.exec(sql: "COMMIT;")

@@ -44,7 +44,7 @@ public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
     }
     
     public func getDailyCashflowSummary(id: String) async throws -> DailyCashflowSummary? {
-        try await sync(force: false)
+        print("reading daily cashflow from storage \(id)")
         return try await storage.getDailyCashflowSummary(id: id)
     }
     
@@ -97,7 +97,7 @@ public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
         }
 
         let summary = try await service.getDailyCashflowSummary(orgId: orgId, date: date)
-        try await storage.updateDailyCashflowSummary(summary: summary)
+        try await storage.saveDailyCashflowSummary(summary: summary)
         print("Refreshed daily summary for date \(date):  \(summary)")
     }
 }
