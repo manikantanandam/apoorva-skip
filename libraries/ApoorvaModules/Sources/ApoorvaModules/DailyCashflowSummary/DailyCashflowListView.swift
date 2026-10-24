@@ -24,6 +24,26 @@ public struct DailyCashflowListView: View {
     public var body: some View {
         VStack(spacing: 0) {
             
+            // Dashboard Row
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    dashboardCard(title: "Shop Setup", value: viewModel.shopSetupTotal, color: .orange, icon: "building.2")
+                    dashboardCard(title: "Money In", value: viewModel.totalIncome, color: .green, icon: "arrow.down.left.circle")
+                    dashboardCard(title: "Money Out", value: viewModel.totalExpense, color: .red, icon: "arrow.up.right.circle")
+                    dashboardCard(title: "Inventory", value: viewModel.inventoryTotal, color: .blue, icon: "shippingbox")
+                    dashboardCard(
+                        title: viewModel.profitOrLoss >= 0 ? "Profit" : "Loss",
+                        value: abs(viewModel.profitOrLoss),
+                        color: viewModel.profitOrLoss >= 0 ? .green : .red,
+                        icon: "chart.line.uptrend.xyaxis",
+                        prefix: viewModel.profitOrLoss >= 0 ? "+" : "-"
+                    )
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+            .background(Color(UIColor.secondarySystemGroupedBackground))
+            
             // Custom Date Picker Section
             if viewModel.dateFilter == .custom {
                 HStack {
@@ -81,6 +101,29 @@ public struct DailyCashflowListView: View {
         .task {
             await viewModel.fetchData() // Fetch data on load
         }
+    }
+    
+    @ViewBuilder
+    private func dashboardCard(title: String, value: Double, color: Color, icon: String, prefix: String = "") -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(color)
+                    .font(.subheadline)
+                Text(title)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Text("\(prefix)\(value.string)")
+                .font(.headline)
+                .fontWeight(.bold)
+                .foregroundColor(color)
+        }
+        .padding(12)
+        .frame(minWidth: 120, alignment: .leading)
+        .background(Color(UIColor.tertiarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .shadow(color: Color.black.opacity(0.03), radius: 3, x: 0, y: 2)
     }
     
     // Extracted into a separate view builder for cleaner code

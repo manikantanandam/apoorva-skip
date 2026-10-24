@@ -1,4 +1,3 @@
-
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
@@ -24,6 +23,13 @@ public class DailyCashFlowListViewModel {
     
     public var isLoading: Bool = false
     public var summaries: [DailyCashflowSummary] = []
+    
+    // Dashboard Stats
+    public var shopSetupTotal: Double = 0.0
+    public var totalIncome: Double = 0.0
+    public var totalExpense: Double = 0.0
+    public var inventoryTotal: Double = 0.0
+    public var profitOrLoss: Double = 0.0
     
     // Backing store containing all dates from established to today
     private var allSummaries: [DailyCashflowSummary] = []
@@ -62,20 +68,21 @@ public class DailyCashFlowListViewModel {
     
     public func fetchData() async {
         do {
-            print("Fetching data in DailyCashflowListViewModel")
             isLoading = true
             
-            // 1. Fetch initial local data & generate date list
+            // Fetch Summaries
             let fetchedSummaries = try await repository.getDailyCashflowSummaries()
-            print("Fetched summaries \(fetchedSummaries.count)")
             try await prepareDates(with: fetchedSummaries)
             
-            // 2. Sync with remote
+            // Sync & Refetch
             try await repository.sync(force: false)
             
-            // 3. Re-fetch and regenerate date list after sync
             let updatedSummaries = try await repository.getDailyCashflowSummaries()
             try await prepareDates(with: updatedSummaries)
+            
+            // Fetch Transactions for Dashboard
+            let transactions = try await cashflowRepository.getCashflowTransactions()
+            calculateDashboardStats(from: transactions)
             
             isLoading = false
         } catch {
@@ -84,16 +91,46 @@ public class DailyCashFlowListViewModel {
         }
     }
     
+    private func calculateDashboardStats(from transactions: [CashflowTransaction]) {
+        var setup: Double = 0
+        var income: Double = 0
+        var expense: Double = 0
+        var inventory: Double = 0
+
+        for t in transactions {
+            // Ignore internal transfers and deleted records[cite: 9, 11]
+            if t.category == .internalTransfer || t.isDeleted { continue }
+            
+            // Categorized sums[cite: 9]
+            if t.category == .shopSetup {
+                setup += t.amount
+            } else if t.category == .inventory {
+                inventory += t.amount
+            }
+            
+            // General Cashflow[cite: 11]
+            if t.transactionType == .credit {
+                income += t.amount
+            } else if t.transactionType == .debit {
+                expense += t.amount
+            }
+        }
+        
+        self.shopSetupTotal = setup
+        self.inventoryTotal = inventory
+        self.totalIncome = income
+        self.totalExpense = expense
+        self.profitOrLoss = income - expense
+    }
+    
     func prepareDates(with fetchedSummaries: [DailyCashflowSummary]) async throws {
         guard let orgId = try await getOrganizationId() else { return }
         guard let fullOrganization = try await organizationRepository.getOrganization(orgId: orgId) else { return }
-        print("Got the full organization \(fullOrganization)")
         let establishedAtInMsDate = fullOrganization.establishedAtInMs.date
         let calendar = Calendar.current
         let startDate = calendar.startOfDay(for: establishedAtInMsDate)
         let endDate = calendar.startOfDay(for: Date())
         
-        // 1. Generate all dates
         var allDates: [Date] = []
         var currentDate = startDate
         
@@ -103,12 +140,9 @@ public class DailyCashFlowListViewModel {
             currentDate = nextDate
         }
         
-        // 2. Map existing summaries for quick lookup
         let existingSummaries = Dictionary(fetchedSummaries.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        
         var fullList: [DailyCashflowSummary] = []
         
-        // 3. Construct the final list
         for date in allDates {
             let id = date.toString(format: "dd-MM-yyyy")
             if let existing = existingSummaries[id] {
@@ -136,22 +170,18 @@ public class DailyCashFlowListViewModel {
         let filtered = allSummaries.filter { item in
             var dateMatches = false
             switch dateFilter {
-            case .today:
-                dateMatches = calendar.isDateInToday(item.date)
+            case .today: dateMatches = calendar.isDateInToday(item.date)
             case .last7Days:
                 if let pastDate = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now)) {
                     dateMatches = item.date >= pastDate
                 } else { dateMatches = true }
-            case .thisMonth:
-                dateMatches = calendar.isDate(item.date, equalTo: now, toGranularity: .month)
+            case .thisMonth: dateMatches = calendar.isDate(item.date, equalTo: now, toGranularity: .month)
             case .last3Months:
                 if let pastDate = calendar.date(byAdding: .month, value: -3, to: now) {
                     dateMatches = item.date >= pastDate
                 } else { dateMatches = true }
-            case .thisYear:
-                dateMatches = calendar.isDate(item.date, equalTo: now, toGranularity: .year)
-            case .all:
-                dateMatches = true
+            case .thisYear: dateMatches = calendar.isDate(item.date, equalTo: now, toGranularity: .year)
+            case .all: dateMatches = true
             case .custom:
                 let startOfDay = calendar.startOfDay(for: customStartDate)
                 let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: customEndDate) ?? customEndDate
@@ -166,10 +196,8 @@ public class DailyCashFlowListViewModel {
     
     private func sortItems() {
         switch sortOption {
-        case .newest:
-            self.summaries.sort { $0.date > $1.date }
-        case .oldest:
-            self.summaries.sort { $0.date < $1.date }
+        case .newest: self.summaries.sort { $0.date > $1.date }
+        case .oldest: self.summaries.sort { $0.date < $1.date }
         }
     }
     
@@ -180,17 +208,10 @@ public class DailyCashFlowListViewModel {
         } catch {
             print("Force sync failed \(error.localizedDescription)")
         }
-        
     }
     
     func getOrganizationId() async throws -> String? {
         let user = try await userRepository.getCurrentUser()
-        guard let orgId = user.selectedOrganization?.orgId else {
-            return nil
-        }
-        
-        return orgId
+        return user.selectedOrganization?.orgId
     }
-    
-    
 }
