@@ -29,6 +29,10 @@ let package = Package(
                 .product(name: "ApoorvaServices", package: "ApoorvaServices")
             ]
         ),
+        .testTarget(
+            name: "ApoorvaRepositoryTests",
+            dependencies: ["ApoorvaRepository"]
+        ),
 
     ],
     swiftLanguageModes: [.v6]

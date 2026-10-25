@@ -31,6 +31,10 @@ let package = Package(
                 .product(name: "FirebaseAuth", package: "firebase-ios-sdk")
             ]
         ),
+        .testTarget(
+            name: "ApoorvaServicesTests",
+            dependencies: ["ApoorvaServices"]
+        ),
 
     ],
     swiftLanguageModes: [.v6]

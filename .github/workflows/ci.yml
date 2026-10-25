@@ -19,30 +19,47 @@ jobs:
 
       - name: Set up Xcode Version
         run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
-      - name: Run Tests and Generate Coverage
+      - name: Run Tests and Generate Coverage for All Modules
         env:
           SKIP_ACTION: none
-        run: |
-            cd libraries/ApoorvaUtilities/
-            xcodebuild test \
-              -scheme ApoorvaUtilities \
-              -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
-              -enableCodeCoverage YES \
-              -resultBundlePath TestResults
-
-      - name: Convert Coverage to Generic XML
         run: |
           # Download official SonarSource conversion script
           curl -LO https://raw.githubusercontent.com/SonarSource/sonar-scanning-examples/master/swift-coverage/swift-coverage-example/xccov-to-sonarqube-generic.sh
           chmod +x xccov-to-sonarqube-generic.sh
           
-          # Convert the xcodebuild .xcresult bundle to generic XML
-          ./xccov-to-sonarqube-generic.sh libraries/ApoorvaUtilities/TestResults.xcresult > sonarqube-generic-coverage.xml
-      - name: Upload Coverage Artifact
+          # Create a directory to hold all individual coverage XMLs
+          mkdir -p coverage-reports
+          
+          # Loop through all packages in the libraries folder
+          for dir in libraries/*; do
+            # Only run if it is a directory, contains a Package.swift, AND has a Tests folder
+            if [ -d "$dir" ] && [ -f "$dir/Package.swift" ] && [ -d "$dir/Tests" ]; then
+              MODULE_NAME=$(basename "$dir")
+              echo "========================================"
+              echo "Running tests for $MODULE_NAME..."
+              echo "========================================"
+              
+              # Run xcodebuild inside the module's directory using a subshell
+              (
+                cd "$dir"
+                xcodebuild test \
+                  -scheme "$MODULE_NAME" \
+                  -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+                  -enableCodeCoverage YES \
+                  -resultBundlePath "TestResults.xcresult"
+              )
+              
+              # Convert the xcodebuild .xcresult bundle to generic XML
+              ./xccov-to-sonarqube-generic.sh "$dir/TestResults.xcresult" > "coverage-reports/${MODULE_NAME}-coverage.xml"
+            fi
+          done
+
+      - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
-          path: sonarqube-generic-coverage.xml
+          name: coverage-reports
+          path: coverage-reports/*.xml
+
   sonarcloud-analysis:
     name: SonarCloud Scan
     needs: build-and-test # Wait for build to finish
@@ -53,10 +70,11 @@ jobs:
         with:
           fetch-depth: 0
           
-      - name: Download Coverage Artifact
+      - name: Download Coverage Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: coverage-report
+          name: coverage-reports
+          path: coverage-reports # Downloads the files into a 'coverage-reports' directory
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v3
@@ -70,5 +88,5 @@ jobs:
             -Dsonar.sources=.
             -Dsonar.tests=.
             -Dsonar.test.inclusions=**/*Tests.swift,**/*Test.swift
-            -Dsonar.coverageReportPaths=sonarqube-generic-coverage.xml
+            -Dsonar.coverageReportPaths=coverage-reports/*-coverage.xml
             -Dsonar.c.compiler=/usr/bin/clang

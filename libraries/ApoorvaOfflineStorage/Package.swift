@@ -33,6 +33,11 @@ let package = Package(
                 .product(name: "ApoorvaUtilities", package: "ApoorvaUtilities")
             ]
         ),
+        .testTarget(
+            name: "ApoorvaOfflineStorageTests",
+            dependencies: ["ApoorvaOfflineStorage"]
+        ),
+        
 
     ],
     swiftLanguageModes: [.v6]

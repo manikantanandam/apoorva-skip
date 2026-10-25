@@ -23,7 +23,7 @@ let package = Package(
         ),
         .testTarget(
             name: "ApoorvaUtilitiesTests",
-            dependencies: ["ApoorvaUtilities"] // Links tests to your main code
+            dependencies: ["ApoorvaUtilities"]
         ),
 
     ]

@@ -27,6 +27,10 @@ let package = Package(
                 .product(name: "ApoorvaUtilities", package: "ApoorvaUtilities")
             ]
         ),
+        .testTarget(
+            name: "ApoorvaModulesTests",
+            dependencies: ["ApoorvaModules"]
+        ),
 
     ],
     swiftLanguageModes: [.v6]
