@@ -23,6 +23,7 @@ jobs:
         env:
           SKIP_ACTION: none
         run: |
+            cd app/
             xcodebuild test \
               -scheme Apoorva \
               -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
