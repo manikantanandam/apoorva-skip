@@ -52,6 +52,9 @@ jobs:
         env:
           SKIP_ACTION: none
         run: |
+          # Force CoreSimulator to initialize and cache available devices to prevent random missing simulator errors
+          xcrun simctl list devices available > /dev/null
+
           # Download official SonarSource conversion script
           curl -LO https://raw.githubusercontent.com/SonarSource/sonar-scanning-examples/master/swift-coverage/swift-coverage-example/xccov-to-sonarqube-generic.sh
           chmod +x xccov-to-sonarqube-generic.sh
