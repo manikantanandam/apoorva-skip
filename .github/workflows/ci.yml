@@ -105,6 +105,13 @@ jobs:
           pattern: coverage-* # Downloads all artifacts matching this pattern
           merge-multiple: true # Flattens them into the coverage-reports directory
 
+      - name: Prepare Coverage Paths
+        id: coverage
+        run: |
+          # Finds all XML files and joins them into a comma-separated string
+          PATHS=$(ls coverage-reports/*-coverage.xml | paste -sd "," -)
+          echo "paths=$PATHS" >> $GITHUB_OUTPUT
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v3
         env:
@@ -118,5 +125,5 @@ jobs:
             -Dsonar.tests=.
             -Dsonar.test.inclusions=**/*Tests.swift,**/*Test.swift
             -Dsonar.exclusions=**/.skip/**,**/Skip/**,**/*.kt,**/build/**
-            -Dsonar.coverageReportPaths=coverage-reports/*-coverage.xml
+            -Dsonar.coverageReportPaths=${{ steps.coverage.outputs.paths }}
             -Dsonar.c.compiler=/usr/bin/clang
