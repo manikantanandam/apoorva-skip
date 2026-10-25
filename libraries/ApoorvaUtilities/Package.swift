@@ -21,6 +21,10 @@ let package = Package(
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ],
         ),
+        .testTarget(
+            name: "ApoorvaUtilitiesTests",
+            dependencies: ["ApoorvaUtilities"] // Links tests to your main code
+        ),
 
     ]
 )
