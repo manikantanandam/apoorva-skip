@@ -73,8 +73,6 @@ jobs:
               
               # Convert the xcodebuild .xcresult bundle to generic XML
             ./xccov-to-sonarqube-generic.sh libraries/${{ matrix.module }}/TestResults.xcresult > "coverage-reports/${{ matrix.module }}-coverage.xml"
-            fi
-          done
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@v4
