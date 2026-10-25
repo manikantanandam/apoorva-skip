@@ -6,11 +6,6 @@ on:
   pull_request:
     branches: [ "main" ]
 
-# Add this permissions block:
-permissions:
-  pull-requests: write # Allows SonarCloud to post PR comments
-  contents: read       # Required to checkout the code
-
 jobs:
   detect-modules:
     name: Detect Testable Modules
@@ -97,6 +92,12 @@ jobs:
     name: SonarCloud Scan
     needs: build-and-test # Wait for build to finish
     runs-on: ubuntu-latest # Linux runner supports the container action
+
+    # Add the permissions block here at the job level
+    permissions:
+      pull-requests: write # Allows SonarCloud to post PR comments
+      contents: read       # Required to checkout the code
+      
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
