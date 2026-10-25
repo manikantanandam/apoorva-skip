@@ -38,6 +38,25 @@ jobs:
           
           # Convert the xcodebuild .xcresult bundle to generic XML
           ./xccov-to-sonarqube-generic.sh libraries/ApoorvaUtilities/TestResults.xcresult > sonarqube-generic-coverage.xml
+      - name: Upload Coverage Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: sonarqube-generic-coverage.xml
+  sonarcloud-analysis:
+    name: SonarCloud Scan
+    needs: build-and-test # Wait for build to finish
+    runs-on: ubuntu-latest # Linux runner supports the container action
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Download Coverage Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v3
