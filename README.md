@@ -1,3 +1,5 @@
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=nanirocks125_apoorva-skip&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=nanirocks125_apoorva-skip)
+
 # ApoorvaApp
 
 A cross-platform Point of Sale (POS) and business management application built from scratch using Swift, SwiftUI, and the Skip framework for native iOS and Android deployment. 
