@@ -67,6 +67,8 @@ jobs:
                       xcodebuild test \
                         -scheme "${{ matrix.module }}" \
                         -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+                        -skipPackagePluginValidation \
+                        -skipMacroValidation \
                         -enableCodeCoverage YES \
                         -resultBundlePath "TestResults.xcresult"
                     )
