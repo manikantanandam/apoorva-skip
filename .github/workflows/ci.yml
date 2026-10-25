@@ -23,7 +23,11 @@ jobs:
         env:
           SKIP_ACTION: none
         run: |
-          swift test --package-path app/ --enable-code-coverage
+            xcodebuild test \
+              -scheme Apoorva \
+              -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+              -enableCodeCoverage YES \
+              -resultBundlePath TestResults
 
       - name: Convert Coverage to Generic XML
         run: |
