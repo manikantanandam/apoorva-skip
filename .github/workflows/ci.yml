@@ -7,9 +7,37 @@ on:
     branches: [ "main" ]
 
 jobs:
+  detect-modules:
+    name: Detect Testable Modules
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.set-modules.outputs.modules }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Find Modules with Tests
+        id: set-modules
+        run: |
+          MODULES=()
+          for dir in libraries/*; do
+            # Check if it is a directory, contains a Package.swift, AND has a Tests folder[cite: 33]
+            if [ -d "$dir" ] && [ -f "$dir/Package.swift" ] && [ -d "$dir/Tests" ]; then
+              MODULES+=("\"$(basename "$dir")\"")
+            fi
+          done
+          # Format as a JSON array for the matrix
+          JSON="[$(IFS=,; echo "${MODULES[*]}")]"
+          echo "modules=$JSON" >> $GITHUB_OUTPUT
+
   build-and-test:
-    name: Build, Test, and Analyze
+    name: Test ${{ matrix.module }}
+    needs: detect-modules
     runs-on: macos-15 # Uses Apple Silicon M1/M2 runners with latest Xcode pre-installed
+    strategy:
+          fail-fast: false # Prevents one module's failure from cancelling the others
+          matrix:
+            module: ${{ fromJson(needs.detect-modules.outputs.modules) }}
 
     steps:
       - name: Checkout Code
@@ -19,6 +47,7 @@ jobs:
 
       - name: Set up Xcode Version
         run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+
       - name: Run Tests and Generate Coverage for All Modules
         env:
           SKIP_ACTION: none
@@ -29,35 +58,28 @@ jobs:
           
           # Create a directory to hold all individual coverage XMLs
           mkdir -p coverage-reports
+
+          echo "Running tests for ${{ matrix.module }}..."
           
-          # Loop through all packages in the libraries folder
-          for dir in libraries/*; do
-            # Only run if it is a directory, contains a Package.swift, AND has a Tests folder
-            if [ -d "$dir" ] && [ -f "$dir/Package.swift" ] && [ -d "$dir/Tests" ]; then
-              MODULE_NAME=$(basename "$dir")
-              echo "========================================"
-              echo "Running tests for $MODULE_NAME..."
-              echo "========================================"
-              
-              # Run xcodebuild inside the module's directory using a subshell
-              (
-                cd "$dir"
-                xcodebuild test \
-                  -scheme "$MODULE_NAME" \
-                  -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
-                  -enableCodeCoverage YES \
-                  -resultBundlePath "TestResults.xcresult"
-              )
+          # Run xcodebuild for the specific module[cite: 33]
+                    (
+                      cd libraries/${{ matrix.module }}
+                      xcodebuild test \
+                        -scheme "${{ matrix.module }}" \
+                        -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+                        -enableCodeCoverage YES \
+                        -resultBundlePath "TestResults.xcresult"
+                    )
               
               # Convert the xcodebuild .xcresult bundle to generic XML
-              ./xccov-to-sonarqube-generic.sh "$dir/TestResults.xcresult" > "coverage-reports/${MODULE_NAME}-coverage.xml"
+            ./xccov-to-sonarqube-generic.sh libraries/${{ matrix.module }}/TestResults.xcresult > "coverage-reports/${{ matrix.module }}-coverage.xml"
             fi
           done
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-reports
+          name: coverage-${{ matrix.module }}
           path: coverage-reports/*.xml
 
   sonarcloud-analysis:
@@ -70,11 +92,12 @@ jobs:
         with:
           fetch-depth: 0
           
-      - name: Download Coverage Artifacts
+      - name: Download All Coverage Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: coverage-reports
-          path: coverage-reports # Downloads the files into a 'coverage-reports' directory
+          path: coverage-reports
+          pattern: coverage-* # Downloads all artifacts matching this pattern
+          merge-multiple: true # Flattens them into the coverage-reports directory
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v3
