@@ -76,6 +76,9 @@ jobs:
               # Convert the xcodebuild .xcresult bundle to generic XML
             ./xccov-to-sonarqube-generic.sh libraries/${{ matrix.module }}/TestResults.xcresult > "coverage-reports/${{ matrix.module }}-coverage.xml"
 
+            # Strip absolute macOS paths so Ubuntu SonarScanner can read them
+          sed -i '' "s|$(pwd)/||g" "coverage-reports/${{ matrix.module }}-coverage.xml"
+
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -111,5 +114,6 @@ jobs:
             -Dsonar.sources=.
             -Dsonar.tests=.
             -Dsonar.test.inclusions=**/*Tests.swift,**/*Test.swift
-            -Dsonar.coverageReportPaths=coverage-reports/*-coverage.xml
+            -Dsonar.exclusions=**/.skip/**,**/Skip/**,**/*.kt,**/build/**
+            -Dsonar.coverageReportPaths="coverage-reports/*-coverage.xml"
             -Dsonar.c.compiler=/usr/bin/clang
