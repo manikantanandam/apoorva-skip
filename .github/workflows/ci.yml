@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Add this permissions block:
+permissions:
+  pull-requests: write # Allows SonarCloud to post PR comments
+  contents: read       # Required to checkout the code
+
 jobs:
   detect-modules:
     name: Detect Testable Modules
