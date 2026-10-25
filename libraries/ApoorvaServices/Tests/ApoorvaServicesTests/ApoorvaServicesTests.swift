@@ -6,3 +6,13 @@
 //
 
 import Foundation
+import Foundation
+import XCTest
+@testable import ApoorvaServices // Grants access to internal types
+
+final class ApoorvaServicesTests: XCTestCase {
+    func testExample() throws {
+        XCTAssertTrue(true)
+    }
+}
+
