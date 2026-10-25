@@ -56,7 +56,7 @@ jobs:
           xcrun simctl list devices available > /dev/null
 
           # Download official SonarSource conversion script
-          curl -LO https://raw.githubusercontent.com/SonarSource/sonar-scanning-examples/master/swift-coverage/swift-coverage-example/xccov-to-sonarqube-generic.sh
+          curl --proto '=https' --tlsv1.2 -LO https://raw.githubusercontent.com/SonarSource/sonar-scanning-examples/master/swift-coverage/swift-coverage-example/xccov-to-sonarqube-generic.sh
           chmod +x xccov-to-sonarqube-generic.sh
           
           # Create a directory to hold all individual coverage XMLs
@@ -92,6 +92,12 @@ jobs:
     name: SonarCloud Scan
     needs: build-and-test # Wait for build to finish
     runs-on: ubuntu-latest # Linux runner supports the container action
+
+    # Add the permissions block here at the job level
+    permissions:
+      pull-requests: write # Allows SonarCloud to post PR comments
+      contents: read       # Required to checkout the code
+      
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -113,7 +119,7 @@ jobs:
           echo "paths=$PATHS" >> $GITHUB_OUTPUT
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@v3
+        uses: SonarSource/sonarcloud-github-action@383f7e52eae3ab0510c3cb0e7d9d150bbaeab838
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
