@@ -80,11 +80,18 @@ public struct AddUpdateDailyCashflowSummaryView: View {
                                             }
                                             
                                             Spacer()
+                                            VStack {
+                                                Text(String(format: "%.2f", tx.amount))
+                                                    .font(.subheadline)
+                                                    .fontWeight(.bold)
+                                                    .foregroundColor(tx.transactionType == .credit ? .green : .red)
+                                                
+                                                Text(tx.paymentMode.rawValue)
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
                                             
-                                            Text(String(format: "%.2f", tx.amount))
-                                                .font(.subheadline)
-                                                .fontWeight(.bold)
-                                                .foregroundColor(tx.transactionType == .credit ? .green : .red)
+                                            
                                         }
                                         
                                         .contentShape(Rectangle()) // Ensures the whole row is tappable

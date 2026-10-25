@@ -104,7 +104,7 @@ private extension CashflowTransactionService {
             do {
                 let record = try document.data(as: CashflowTransaction.self)
                 successfulRecords.append(record)
-            } catch { print("❌ Failed to decode Category: \(document.documentID) - \(error)") }
+            } catch { print("❌ Failed to decode CashflowTransaction: \(document.documentID) - \(error)") }
         }
         
         print("✅ Fetched \(successfulRecords.count) Cashflow Transactions.")
