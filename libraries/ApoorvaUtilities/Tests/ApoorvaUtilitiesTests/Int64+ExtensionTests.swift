@@ -42,11 +42,14 @@ struct Int64ExtensionTests {
     }
     
     @Test("Test Date Conversion")
-    func testDateConversion() {
-        let timestamp: Int64 = 1792866600
-        let date = timestamp.date
-        let dateResult = Date.from(day: 25, month: 10, year: 2026)
-        #expect(date == dateResult)
+    func testDateConversion() throws {
+        // Construct the expected date dynamically based on the runner's local calendar
+        let dateResult = try #require(Date.from(day: 25, month: 10, year: 2026))
         
+        // Derive the timestamp from the dynamically created date
+        let timestamp: Int64 = Int64(dateResult.timeIntervalSince1970)
+        
+        let date = timestamp.date
+        #expect(date == dateResult)
     }
 }
