@@ -23,9 +23,9 @@ jobs:
         env:
           SKIP_ACTION: none
         run: |
-            cd app/
+            cd libraries/ApoorvaUtilities/
             xcodebuild test \
-              -scheme Apoorva \
+              -scheme ApoorvaUtilities \
               -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
               -enableCodeCoverage YES \
               -resultBundlePath TestResults
@@ -37,7 +37,7 @@ jobs:
           chmod +x xccov-to-sonarqube-generic.sh
           
           # Convert the SPM coverage files generated inside the app build directory
-          ./xccov-to-sonarqube-generic.sh app/.build/debug/codecov/*.xccovreport > sonarqube-generic-coverage.xml
+          ./xccov-to-sonarqube-generic.sh libraries/ApoorvaUtilities/.build/debug/codecov/*.xccovreport > sonarqube-generic-coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v3
