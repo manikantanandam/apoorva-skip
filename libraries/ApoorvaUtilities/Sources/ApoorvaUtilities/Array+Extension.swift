@@ -9,7 +9,12 @@ import Foundation
 
 public extension Array where Element: Encodable {
     var string: String {
-        guard let encodedData = try? JSONEncoder().encode(self),
+        let encoder = JSONEncoder()
+        
+        // Enforces deterministic key ordering
+        encoder.outputFormatting = .sortedKeys
+        
+        guard let encodedData = try? encoder.encode(self),
               let jsonString = String(data: encodedData, encoding: .utf8) else {
             return "[]" // Fallback to empty JSON array string if encoding fails
         }
