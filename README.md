@@ -1,4 +1,14 @@
 [![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=nanirocks125_apoorva-skip&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=nanirocks125_apoorva-skip)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=nanirocks125_apoorva-skip&metric=coverage)](https://sonarcloud.io/summary/new_code?id=nanirocks125_apoorva-skip)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=nanirocks125_apoorva-skip&metric=duplicated_lines_density)](https://sonarcloud.io/summary/new_code?id=nanirocks125_apoorva-skip)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=nanirocks125_apoorva-skip&metric=ncloc)](https://sonarcloud.io/summary/new_code?id=nanirocks125_apoorva-skip)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=nanirocks125_apoorva-skip&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=nanirocks125_apoorva-skip)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=nanirocks125_apoorva-skip&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=nanirocks125_apoorva-skip)
+[![Maintainability issues](https://sonarcloud.io/api/project_badges/measure?project=nanirocks125_apoorva-skip&metric=software_quality_maintainability_issues)](https://sonarcloud.io/summary/new_code?id=nanirocks125_apoorva-skip)
+[![Reliability issues](https://sonarcloud.io/api/project_badges/measure?project=nanirocks125_apoorva-skip&metric=software_quality_reliability_issues)](https://sonarcloud.io/summary/new_code?id=nanirocks125_apoorva-skip)
+[![Security issues](https://sonarcloud.io/api/project_badges/measure?project=nanirocks125_apoorva-skip&metric=software_quality_security_issues)](https://sonarcloud.io/summary/new_code?id=nanirocks125_apoorva-skip)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=nanirocks125_apoorva-skip&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=nanirocks125_apoorva-skip)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=nanirocks125_apoorva-skip&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=nanirocks125_apoorva-skip)
 
 # ApoorvaApp
 
