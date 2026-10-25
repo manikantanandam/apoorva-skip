@@ -1,0 +1,48 @@
+name: CI / SonarCloud Code Coverage
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    name: Build, Test, and Analyze
+    runs-on: macos-15 # Uses Apple Silicon M1/M2 runners with latest Xcode pre-installed
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Shallow clones must be disabled for a meaningful SonarCloud analysis
+
+      - name: Set up Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+      - name: Run Tests and Generate Coverage
+        run: |
+          swift test --package-path app/ --enable-code-coverage
+
+      - name: Convert Coverage to Generic XML
+        run: |
+          # Download official SonarSource conversion script
+          curl -LO https://githubusercontent.com
+          chmod +x xccov-to-sonarqube-generic.sh
+          
+          # Convert the SPM coverage files generated inside the app build directory
+          ./xccov-to-sonarqube-generic.sh app/.build/debug/codecov/*.xccovreport > sonarqube-generic-coverage.xml
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=nanirocks125_apoorva-skip
+            -Dsonar.organization=manikanta-nandam
+            -Dsonar.sources=.
+            -Dsonar.tests=.
+            -Dsonar.test.inclusions=**/*Tests.swift,**/*Test.swift
+            -Dsonar.coverageReportPaths=sonarqube-generic-coverage.xml
+            -Dsonar.c.compiler=/usr/bin/clang

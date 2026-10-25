@@ -68,7 +68,23 @@ public struct Sale: Codable, Sendable, Identifiable {
             self.isDeleted = (try? container.decodeIfPresent(Bool.self, forKey: .isDeleted)) ?? false
         }
     
-    public init(id: String, staffId: String, customerPhone: String, customerName: String, items: [SaleItem], subtotal: Double, overallDiscountPercent: Double, overallDiscountAmount: Double, roundOff: Double, netPayable: Double, payments: [PaymentMode: Double], timestamp: Date, source: String, status: String, whatsappStatus: String, updatedAt: Date? = nil, isDeleted: Bool = false) {
+    public init(id: String,
+                staffId: String,
+                customerPhone: String,
+                customerName: String,
+                items: [SaleItem],
+                subtotal: Double,
+                overallDiscountPercent: Double,
+                overallDiscountAmount: Double,
+                roundOff: Double,
+                netPayable: Double,
+                payments: [PaymentMode: Double],
+                timestamp: Date,
+                source: String,
+                status: String,
+                whatsappStatus: String,
+                updatedAt: Date? = nil,
+                isDeleted: Bool = false) {
             self.id = id
             self.staffId = staffId
             self.customerPhone = customerPhone
@@ -108,5 +124,20 @@ public struct Sale: Codable, Sendable, Identifiable {
     
     var totalSavings: Double {
         return totalItemsDiscount + overallDiscountAmount + roundOff
+    }
+}
+
+
+extension Sale: Comparable {
+    public static func == (lhs: borrowing Sale, rhs: borrowing Sale) -> Bool {
+        return lhs.id == rhs.id
+    }
+    
+    public static func < (lhs: Sale, rhs: Sale) -> Bool {
+        return lhs.timestamp < rhs.timestamp
+    }
+    
+    public static func > (lhs: Sale, rhs: Sale) -> Bool {
+        return lhs.timestamp > rhs.timestamp
     }
 }

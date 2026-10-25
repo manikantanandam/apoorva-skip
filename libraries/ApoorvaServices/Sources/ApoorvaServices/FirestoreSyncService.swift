@@ -1,7 +1,7 @@
 import FirebaseFirestore
 import ApoorvaModels
 import Foundation
-public typealias Category = ApoorvaModels.Category
+public typealias Category = ApoorvaModels.InventoryItem
 public final class FirestoreSyncService: @unchecked Sendable {
     private let db = Firestore.firestore()
     

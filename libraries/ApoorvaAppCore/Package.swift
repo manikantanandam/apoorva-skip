@@ -1,4 +1,4 @@
-// swift-tools-version: 6.3
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -14,7 +14,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../libraries/ApoorvaUI")
+        .package(path: "../ApoorvaModules")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -22,7 +22,7 @@ let package = Package(
         .target(
             name: "ApoorvaAppCore",
             dependencies: [
-                .product(name: "ApoorvaUI", package: "ApoorvaUI")
+                .product(name: "ApoorvaModules", package: "ApoorvaModules")
             ]
         ),
 

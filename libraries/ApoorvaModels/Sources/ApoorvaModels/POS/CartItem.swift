@@ -15,7 +15,7 @@ public enum DiscountType: String, Codable, Sendable {
 }
 
 struct CartItem: Codable, Sendable {
-    let category: Category
+    let category: InventoryItem
     let mrp: Double
     let discountPercent: Double
     let quantity: Int
@@ -28,7 +28,7 @@ struct CartItem: Codable, Sendable {
     // Handles default values for discountPercent and discountType
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.category = try container.decode(Category.self, forKey: .category)
+        self.category = try container.decode(InventoryItem.self, forKey: .category)
         self.mrp = try container.decode(Double.self, forKey: .mrp)
         self.discountPercent = try container.decodeIfPresent(Double.self, forKey: .discountPercent) ?? 0.0
         self.quantity = try container.decode(Int.self, forKey: .quantity)

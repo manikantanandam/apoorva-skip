@@ -1,6 +1,7 @@
 import Foundation
 
-public struct OrganizationSnapshot: Codable, Sendable {
+public struct OrganizationSnapshot: Codable, Sendable, Identifiable {
+    public var id: String { orgId }
     public let orgId: String
     public let name: String
     public let accentColor: String

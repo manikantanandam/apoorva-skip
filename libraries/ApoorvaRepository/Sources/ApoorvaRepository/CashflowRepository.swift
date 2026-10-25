@@ -2,67 +2,107 @@
 //  File.swift
 //  ApoorvaRepository
 //
-//  Created by Manikanta Nandam on 14/07/26.
+//  Created by Manikanta Nandam on 12/10/26.
 //
 
 import Foundation
 import ApoorvaOfflineStorage
-import ApoorvaServices
 import ApoorvaModels
+import ApoorvaServices
 
-public final class CashflowRepository: @unchecked Sendable {
-    private let localDB: AppDatabase
-    private let remoteAPI: FirestoreSyncService
+public protocol CashflowTransactionRepositoryProtocol: Sendable {
+    func getCashflowTransactions() async throws -> [CashflowTransaction]
+    func saveCashflowTransaction(transaction: CashflowTransaction) async throws
+    func updateCashflowTransaction(_ transaction: CashflowTransaction) async throws
+    func deleteCashflowTransaction(id: String) async throws // Hard delete
+    func markAsDeleted(id: String) async throws  // Soft delete
+    func sync(force: Bool) async throws
+}
+
+
+public final actor CashflowTransactionRepository: CashflowTransactionRepositoryProtocol {
+
+    let storage: CashflowTransactionStorageProtocol
+    let service: CashflowTransactionServiceProtocol
+    let userRepository: UserRepositoryProtocol
+    let syncStorage: SyncStorage
     
-    // We pass the database in so it shares the same GRDB connection pool as Sales
-    public init(database: AppDatabase) {
-        self.localDB = database
-        self.remoteAPI = FirestoreSyncService()
+    public init(storage: CashflowTransactionStorageProtocol,
+                service: CashflowTransactionServiceProtocol,
+                userRepository: UserRepositoryProtocol,
+                syncStorage: SyncStorage) {
+        self.storage = storage
+        self.service = service
+        self.userRepository = userRepository
+        self.syncStorage = syncStorage
     }
     
-    // MARK: - Data Reads
-    public func getAllTransactions() async throws -> [CashflowTransaction] {
-        return try await localDB.getAllCashflowTransactions()
+    public func getCashflowTransactions() async throws -> [CashflowTransaction] {
+        let transactions = try await storage.getCashflowTransactions()
+        return transactions
     }
     
-    public func getBalances() async throws -> (cash: Double, upi: Double, total: Double) {
-        return try await localDB.getCurrentBalances()
+    public func saveCashflowTransaction(transaction: CashflowTransaction) async throws {
+        let user = try await userRepository.getCurrentUser()
+        guard let orgId = user.selectedOrganization?.orgId else { return }
+        try await service.addCashflowTransaction(transaction, for: orgId)
+        try await sync(force: false)
     }
     
-    // MARK: - Orchestration Logic (Firebase Pull)
-    public func performCashflowSync(for orgId: String) async throws {
-        print("🔄 Syncing Cashflow...")
-        let lastSync = try await localDB.getLastSyncDate(for: "cashflow_\(orgId)")
-        
-        // Fetch deltas using the method we added to FirestoreSyncService earlier
-        let modifiedTransactions = try await remoteAPI.fetchCashflowDeltas(for: orgId, since: lastSync)
-        
-        if !modifiedTransactions.isEmpty {
-            try await localDB.upsertCashflowTransactions(modifiedTransactions)
-            
-            // Advance the sync cursor using the safest "max date" method we fixed earlier!
-            if let latestDate = modifiedTransactions.map({ $0.updatedAt }).max() {
-                try await localDB.updateSyncDate(latestDate, for: "cashflow_\(orgId)")
-            }
+    public func updateCashflowTransaction(_ transaction: CashflowTransaction) async throws {
+        let user = try await userRepository.getCurrentUser()
+        guard let orgId = user.selectedOrganization?.orgId else { return }
+        try await service.updateCashflowTransaction(transaction, for: orgId)
+        try await sync(force: false)
+    }
+    
+    public func deleteCashflowTransaction(id: String) async throws {
+        try await storage.deleteCashflowTransaction(id: id)
+    }
+    
+    public func markAsDeleted(id: String) async throws {
+        try await storage.markAsDeleted(id: id)
+    }
+    
+    public func sync(force: Bool) async throws {
+        print("Started sync")
+        let user = try await userRepository.getCurrentUser()
+        print("Received used")
+
+        guard let orgId = user.selectedOrganization?.orgId else {
+            return
         }
-        print("✅ Cashflow Delta Sync Completed for \(orgId)!")
-    }
-    
-    // MARK: - Data Writes (Local First + Cloud Push)
-        public func addTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws {
-            
-            // 1. Save to local SQLite instantly so the UI updates without waiting for the network
-            try await localDB.upsertCashflowTransactions([transaction])
-            
-            // 2. Push to Firestore so other devices (like the iPad) get the new transaction
-            Task {
-                do {
-                    try await remoteAPI.pushCashflowTransaction(transaction, for: orgId)
-                } catch {
-                    // In a production app, you might flag this transaction in SQLite as 'needsSync = true'
-                    // so it can retry later if the Wi-Fi is currently down!
-                    print("⚠️ Failed to push transaction to cloud. It is safely stored locally. Error: \(error)")
-                }
-            }
+        
+        let transactions: [CashflowTransaction]
+        
+        let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: CashflowTransaction.table.name)
+        print("Last updted date \(lastUpdatedDate)")
+        
+        if let lastUpdatedDate, !force {
+            transactions = try await service.getCashflowTransactions(since: Date(timeIntervalSince1970: lastUpdatedDate), for: orgId)
+        } else {
+            transactions = try await service.getCashflowTransactions(for: orgId)
         }
+        try await storage.saveCashflowTransactions(transactions: transactions)
+        guard
+            let transactionWithMinUpdatedAt = transactions.transactionWithMaxDate
+        else { return }
+        
+        print("transaction with min update \(transactionWithMinUpdatedAt)")
+        print("saving lastUpdatedDate \(transactionWithMinUpdatedAt.updatedAt)")
+
+        try await syncStorage.updateSyncTimestamp(
+            for: CashflowTransaction.table.name,
+            timestamp: transactionWithMinUpdatedAt.updatedAt.timeIntervalSince1970
+        )
+    }
+}
+
+
+private extension Array where Element == CashflowTransaction {
+    var transactionWithMaxDate: CashflowTransaction? {
+        self.max(by: {
+            return $0.updatedAt < $1.updatedAt
+        })
+    }
 }

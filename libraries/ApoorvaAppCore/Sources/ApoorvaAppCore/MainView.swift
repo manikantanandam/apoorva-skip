@@ -6,27 +6,42 @@
 //
 
 import SwiftUI
-import ApoorvaUI
-import ApoorvaViewModel
+import ApoorvaModules
 
-enum MainRoute: String, Route {
-    case login
-    case home
-}
-
+@MainActor
 @Observable
 class MainViewModel {
     enum State {
-        case login
-        case home
+        case login(LoginViewModel)
+        case pos(POSViewModel)
+        case home(AppContainer)
         case loading
     }
     
     var state: State = .loading
+    
+    let appContainer: AppContainer = AppContainer()
+    
+    init() {
+        Task {
+            await checkForLoggedInUser()
+        }
+    }
+    
+    func checkForLoggedInUser() async {
+        let userService = appContainer.servicesContainer.userService
+        for await user in userService.userSessionStream {
+            if user == nil {
+                state = .login(appContainer.modulesContainer.makeLoginViewModel())
+            } else {
+                state = .home(appContainer)
+            }
+
+        }
+    }
 }
 
 public struct MainView: View {
-    
     
     @State var viewModel: MainViewModel = MainViewModel()
     
@@ -36,10 +51,13 @@ public struct MainView: View {
         switch viewModel.state {
         case .loading:
             Text("Loading")
-        case .home:
-            HomeView()
-        case .login:
-            Text("LoginView")
+        case .home(let container):
+            HomeView(container: container)
+        case .login(let viewModel):
+            LoginView(viewModel: viewModel)
+        case .pos(let viewModel):
+            POSView(viewModel: viewModel)
+            
         }
     }
 }
