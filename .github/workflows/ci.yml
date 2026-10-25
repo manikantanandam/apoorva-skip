@@ -118,5 +118,5 @@ jobs:
             -Dsonar.tests=.
             -Dsonar.test.inclusions=**/*Tests.swift,**/*Test.swift
             -Dsonar.exclusions=**/.skip/**,**/Skip/**,**/*.kt,**/build/**
-            -Dsonar.coverageReportPaths="coverage-reports/*-coverage.xml"
+            -Dsonar.coverageReportPaths=coverage-reports/*-coverage.xml
             -Dsonar.c.compiler=/usr/bin/clang
