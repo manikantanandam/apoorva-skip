@@ -33,11 +33,11 @@ jobs:
       - name: Convert Coverage to Generic XML
         run: |
           # Download official SonarSource conversion script
-          curl -LO https://githubusercontent.com
+          curl -LO https://raw.githubusercontent.com/SonarSource/sonar-scanning-examples/master/swift-coverage/swift-coverage-example/xccov-to-sonarqube-generic.sh
           chmod +x xccov-to-sonarqube-generic.sh
           
-          # Convert the SPM coverage files generated inside the app build directory
-          ./xccov-to-sonarqube-generic.sh libraries/ApoorvaUtilities/.build/debug/codecov/*.xccovreport > sonarqube-generic-coverage.xml
+          # Convert the xcodebuild .xcresult bundle to generic XML
+          ./xccov-to-sonarqube-generic.sh libraries/ApoorvaUtilities/TestResults.xcresult > sonarqube-generic-coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v3
