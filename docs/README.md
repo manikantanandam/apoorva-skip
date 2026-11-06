@@ -15,6 +15,6 @@ Offline-first shop/POS app (Swift + SwiftUI, Skip for Android). Local SQLite is 
 | 09 | [Roadmap & risks](09-roadmap-and-risks.md) | Milestones, risks, open questions, gaps |
 | 10 | [Admin & multi-tenancy](10-admin-and-multi-tenancy.md) | Org/store/roles, permissions, theme & flag admin, audit |
 
-**Designs:** 135 screens in the Clean style (light + dark side by side), frozen for v1, in [`/designs`](../designs/README.md).
+**Designs:** 140 screens in the Clean style (light + dark side by side), frozen for v1, in [`/designs`](../designs/README.md).
 
 Diagrams are Mermaid and render in GitHub and most Markdown previews.

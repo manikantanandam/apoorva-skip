@@ -61,6 +61,25 @@ Pipeline rules:
 - Dev and staging use separate Firestore databases; never point dev builds at prod.
 - Seed script creates demo shop data for dev/staging only.
 
+## 7a. Developer settings & runtime environment switch
+- **Who:** always in Debug builds (More → Developer). In Staging/Release builds it is hidden. It opens by tapping the version 7 times in Help, and only for accounts with the `developer` auth claim.
+- **Environments:** Dev (`apoorva-dev`), Staging (`apoorva-stg`), Production (`apoorva-prod`). Each has its own Firebase project.
+  - Debug builds bundle all three config files.
+  - Staging builds bundle Staging and Production.
+  - Release bundles Production, plus Staging for claim holders.
+- **How switching works:** pick an environment → confirm → sign out → relaunch. `AppEnvironment` is read at launch and builds `FirebaseApp` with that env's `FirebaseOptions` (multi-app configuration), then opens a separate local DB file `apoorva-<env>-<orgId>.db`. Data from different environments never mixes.
+- **Visible marker:** a "DEV" / "STG" pill in the status-bar area on every screen when not on Production.
+- **Tools:**
+  - flag overrides (local only)
+  - Remote Config fetch now
+  - plan simulator (trial day, bills used, reset)
+  - sync force push/pull and outbox count
+  - seed demo shop, clear local DB (Dev/Staging only)
+  - log viewer with share (no PII)
+  - Crashlytics test crash
+  - screen-ID overlay, mock date/time, offline simulation
+- Screens: `designs/` "dev-settings", "dev-environment", "dev-flags", "dev-logs".
+
 ## 8. Gaps to decide
 - Xcode Cloud vs GitHub Actions macOS runner (cost vs convenience).
 - Whether Android CI runs on every PR (slower, needs emulator for `skip test`).

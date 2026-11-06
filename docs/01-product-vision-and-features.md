@@ -1,13 +1,12 @@
 # 01 — Product Vision & Features
 
 ## Vision
-One app that lets any small shop bill a customer in seconds on a phone, then manage customers, bills, stock, staff and daily cashflow. It keeps working offline, and it looks and bills the way that kind of shop works.
+A **spot sales and spot services** billing app. It lets any small shop bill a walk-in customer in seconds on a phone, then manage customers, bills, stock, staff and daily cashflow. It keeps working offline, and it looks and bills the way that kind of shop works.
 
 ## Personas
 - **Owner / Org admin**: runs one or more stores. Wants daily totals, cashflow, dues, staff performance, and control over themes and features.
 - **Store manager**: runs one store. Approves discounts, returns and day close.
 - **Cashier**: bills fast, takes cash/UPI/card, prints or shares receipts.
-- **Stylist (parlour)**: sees own appointments, services done and commission.
 - **Apoorva super admin (us)**: app-level flags, vertical catalogue, support.
 
 ## One app, many shop types (verticals)
@@ -18,7 +17,7 @@ The shop type is chosen at onboarding. A **Vertical Profile** sets the billing s
 | Kirana / General | Search-first list, loose items by weight, frequent items | Unit, weight/qty, MRP, barcode | Sage | Credit ledger (khata) |
 | Fancy & Gifts | Tap tile grid with qty badges, variant sheet | Category, variants (size/colour), barcode | Plum | Gift wrap add-on, low-stock nudges |
 | One-gram Jewellery | Image catalog, design-code search | Design code, category, weight, images | Brass | Trending designs, repeat buyers |
-| Beauty Parlour | Services + stylist assignment, packages | Service duration, price, stylist, package | Rose | Appointments, stylist commission |
+| Beauty Parlour | Spot service billing (walk-ins), optional "done by" staff, packages | Service, price, package sessions | Rose | Packages & memberships, staff commission |
 | Handloom (future) | Catalog + length/metre billing | Fabric, length, weave, colour | Indigo (TBD) | Tailoring orders |
 
 ## Modules (all in one app)
@@ -29,7 +28,6 @@ The shop type is chosen at onboarding. A **Vertical Profile** sets the billing s
 | **Bills & Sales** | List with quick filters, detail, reprint, share, collect, cancel with reason |
 | **Customers** | Phone lookup, credit ledger and dues, lifetime value, add with minimal fields |
 | **Inventory** | Items, variants, stock adjust with reason, low/out of stock |
-| **Appointments** (parlour) | Day view by stylist, free slots, walk-ins, link to bill |
 | **Daily Cashflow** | Opening, cash in/out, mode split, day close with counted cash |
 | **Shop analytics (Insights)** | Sales trend, items, customers/dues ageing, staff leaderboard, export |
 | **Settings** | Appearance (theme), printer, tax, invoice prefix, backup |
@@ -45,10 +43,16 @@ The shop type is chosen at onboarding. A **Vertical Profile** sets the billing s
 - Org setting under Settings → Tax: **Off** · **Same rate for all items** · **Per item** (rate set on each item; default 0%). Prices can include tax or add it on top.
 - GSTIN is an optional field in Settings. Tax lines appear on receipts and reports only when tax is on.
 
-## Plans
-- **Free**: 1 store, owner only, billing, customers, cashflow, inventory, insights.
-- **Pro** (₹199/month or ₹1,999/year, 14-day trial): staff accounts, multiple stores, reports export, packages & loyalty, priority support.
-- Plan gating uses feature flags (see 05). A locked feature shows an upgrade or ask-owner screen, never a dead button.
+## Plans: try everything, then choose
+- **30-day full trial**: every feature and unlimited bills from day one, so the shop gets used to the app and sees its value. No card needed.
+- **Day 27**: a trial recap shows the value delivered (amount billed, bills, customers, dues collected, time saved), then the owner chooses Pro or Free.
+- **Free** (after trial): 1 store, owner only, **100 bills per month** (resets on the 1st). Includes billing (all styles), customers & dues, cashflow & day close, basic inventory, today's insights.
+- **Pro** (₹199/month or ₹1,999/year): unlimited bills and everything else. That covers staff accounts & PIN switch, multiple stores, suppliers & purchases, orders & advances, expenses & profit, reports & export, warranty, offers & catalog share, attendance & salary, and priority support.
+- **Limits never block a customer**:
+  - from 80% a usage meter appears on Home
+  - at 100 bills a soft stop offers **10 grace bills**, then new bills pause until upgrade or the monthly reset
+  - existing data is always viewable and exportable
+- Limits are configurable at app level (`plan.trial_days`, `plan.free_bill_limit`, `plan.grace_bills`, see 05). Plan gating reuses feature flags. A locked feature shows Upgrade (owner) or Ask owner (staff), never a dead button.
 
 ## Languages
 English, Telugu, Hindi, Tamil, Kannada for both app and receipts. Each can be set separately.
@@ -61,7 +65,6 @@ English, Telugu, Hindi, Tamil, Kannada for both app and receipts. Each can be se
 | Accountant (read-only) | View bills, insights and reports; export. No edits, no billing |
 | Store manager | Billing, discounts > limit, cancel, returns, insights, day close for own store |
 | Cashier | Billing, customers (create/read), cash entries, returns if allowed |
-| Stylist | Own appointments, bill services, own performance |
 
 ## UX principles (hassle-free journey)
 - **≤ 2 taps to start a bill** from anywhere: centre "New bill" tab plus universal search.
@@ -85,7 +88,7 @@ The audit walked a shop's whole day (open → sell → customers → stock → m
 | Selling | **Bill as image** | WhatsApp image receipt as well as PDF and print |
 | Customers | **Import from contacts** | Add regulars in seconds |
 | Customers | **Birthdays & offers** | Free WhatsApp wishes and offer messages to a segment |
-| Orders | **Orders with advance** | Custom jewellery, bridal bookings, repairs, home delivery. Advance first, balance billed on delivery |
+| Orders | **Orders with advance** | Custom jewellery, repairs, home delivery. Advance first, balance billed on delivery |
 | Orders | **Catalog share** | Send design photos and prices on WhatsApp |
 | Stock | **Suppliers & purchases** | Record purchases (items or total, with bill photo), supplier dues, pay supplier. Stock and cash update automatically |
 | Stock | **Reorder list** | Low-stock items become a list sent to the supplier on WhatsApp |
@@ -102,7 +105,7 @@ The audit walked a shop's whole day (open → sell → customers → stock → m
 | **R3 Growth & control** | Admin (stores, members, roles incl. Accountant, permissions, theme, font, flags, audit), plans (Free/Pro), attendance & salary, offers & wishes, catalog share, widget, demo shop, platform console & support |
 
 ## v2 backlog (no v1 designs)
-Multi-store analytics roll-up beyond the store switcher, loyalty points, GSTR-1 export, web admin console, handloom vertical, jewellery rental, barcode label printing, offers & combos, voice entry, expiry/batch, parlour consumables, online booking link, web bill link with pay, referral program, bulk price update, import from Khatabook/Vyapar files, shop timings & holidays.
+Multi-store analytics roll-up beyond the store switcher, loyalty points, GSTR-1 export, web admin console, handloom vertical, jewellery rental, barcode label printing, offers & combos, voice entry, expiry/batch, parlour consumables, web bill link with pay, referral program, bulk price update, import from Khatabook/Vyapar files, shop timings & holidays.
 
 ## Success metrics
 - Bill completion < 20 s for a 5-item cart

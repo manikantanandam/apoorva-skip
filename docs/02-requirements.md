@@ -18,10 +18,10 @@
 | FR-12 | User changes theme (accent, light/dark); admin can set and lock org/store theme | `ThemeStore` resolution order (see 04) |
 | FR-13 | In-app admin: stores, staff, roles, permissions, theme, flags, audit | Admin module, owner-only (see 10) |
 | FR-14 | Shop analytics: sales trend, items, customers/dues, staff | Local aggregate queries; no network needed (see 06) |
-| FR-15 | Appointments with stylist assignment (parlour) | Appointments module, flag `appointments` |
+| FR-15 | Spot service billing (walk-ins) with optional "done by" staff for commission; no appointments or bookings | Parlour `BillingStrategy`; bill line `staffId` (optional) |
 | FR-16 | Universal search across customers, bills, items and actions | SQLite FTS5 index |
 | FR-17 | Optional tax: org config `taxMode` = off (default) / fixed / perItem, plus `pricesIncludeTax`, optional GSTIN | `TaxPolicy` in `ApoorvaModels`; item `taxRate` used only in perItem mode |
-| FR-18 | Free / Pro plans with trial | `plan.*` flags resolved with org flags; store billing via App Store / Play |
+| FR-18 | 30-day full trial → Free (100 bills/month, core) or Pro; usage meter from 80%; soft stop with 10 grace bills; monthly reset; data always viewable/exportable | `PlanService`: local counter + server-verified count (Cloud Function); App Store / Play subscriptions |
 | FR-19 | Org owner adds, invites, deactivates members | Admin module + Cloud Function for claims |
 | FR-20 | Platform console: suspend/block/delete orgs, platform analytics, app flags | Hidden section for `superAdmin` claim; org `status` enforced by rules |
 | FR-21 | UPI QR payment, quick item, weight entry, WhatsApp receipts and reminders | Billing module; share via system share sheet / WhatsApp intent |
@@ -42,6 +42,7 @@
 | FR-36 | Devices list with remote sign-out | Firebase token revocation + device registry per member |
 | FR-37 | Accountant read-only role | Built-in role; rules deny writes |
 | FR-38 | Purchase return to supplier; read-only audited support sessions | Negative purchase reduces stock and dues; support session token with 30-min TTL and audit events |
+| FR-39 | Developer settings: switch Dev / Staging / Production backends, flag overrides, plan simulator, logs, crash test, sync tools | Debug builds always; release only with `developer` claim (see 07) |
 
 ## Non-functional requirements
 

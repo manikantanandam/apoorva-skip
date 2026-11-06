@@ -12,9 +12,9 @@
 
 ### 2a. Shop analytics (for the owner, in the app → Insights)
 - Computed **on device from local SQLite**, so it works offline and needs no extra cloud reads.
-- Views: sales trend (day/week/month/custom), bills, avg bill, margin, payment-mode split, top items/designs, slow movers, customers (repeat rate, new, dues ageing), staff leaderboard (sales, bills, discounts, stylist commission).
+- Views: sales trend (day/week/month/custom), bills, avg bill, margin, payment-mode split, top items/designs, slow movers, customers (repeat rate, new, dues ageing), staff leaderboard (sales, bills, discounts, service staff commission).
 - Multi-store roll-up for org admins uses per-store daily summary docs (`stores/{id}/daily/{date}`), written at day close.
-- Export to CSV/PDF behind the `insights.export` flag. Role-scoped: managers see their own store, stylists see only their own stats.
+- Export to CSV/PDF behind the `insights.export` flag. Role-scoped: managers see their own store; staff see only their own stats.
 
 ### 2b. App analytics (for us, Firebase Analytics → BigQuery)
 No PII, no customer names, no per-customer amounts. Every event carries `vertical`, `role`, `app_version` and `plan` as user properties.
@@ -25,6 +25,7 @@ No PII, no customer names, no per-customer amounts. Every event carries `vertica
 | Core usage | `bill_saved` (item count, mode, duration bucket), `bill_held`, `return_done`, `search_used`, `scan_used` |
 | Feature adoption | `feature_opened` (name) by vertical and flag state; theme changes; admin actions |
 | New features | `calculator_bill_saved`, `order_created`, `purchase_recorded`, `expense_added`, `warranty_claimed`, `sign_in_method` (google/phone/email), `font_changed`, `visual_style_changed`, `upi_verified`, `opening_balances_saved` |
+| Monetisation funnel | `trial_started`, `trial_recap_viewed`, `limit_80pct`, `limit_reached`, `grace_bill_used`, `upgrade_viewed`, `subscribed` (plan, period), `downgraded_to_free` |
 | Reliability | `sync_completed` (duration, count), `sync_failed` (reason), offline duration |
 | Retention | D1/D7/D30 per vertical, weekly active shops, bills/shop/day |
 

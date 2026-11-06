@@ -38,25 +38,27 @@ Entry is More → Admin. Screens 41–48 in `/designs`.
 
 ## Default permission matrix
 
-| Action | Owner | Manager | Cashier | Stylist | Accountant |
-|--------|:-----:|:-------:|:-------:|:-------:|:----------:|
-| Create bill | ✓ | ✓ | ✓ | ✓ | — |
-| Discount above limit | ✓ | ✓ | — | — | — |
-| Cancel bill | ✓ | ✓ | — | — | — |
-| Returns | ✓ | ✓ | ✓ | — | — |
-| Credit sales | ✓ | ✓ | — | — | — |
-| Cash out | ✓ | ✓ | ✓ | — | — |
-| Day close / reopen | ✓ / ✓ | ✓ / — | — | — | — |
-| Edit inventory | ✓ | ✓ | — | — | — |
-| View insights | ✓ | ✓ (own store) | — | own stats | ✓ (read-only) |
-| Undo own bill (5 min) | ✓ | ✓ | ✓ | ✓ | — |
-| Edit saved bill | ✓ | ✓ | — | — | — |
-| Purchases & supplier payments | ✓ | ✓ | — | — | — |
-| Expenses | ✓ | ✓ | — | — | — |
-| Warranty claim | ✓ | ✓ | ✓ | — | — |
-| Attendance (mark) / salary (pay) | ✓ / ✓ | ✓ / — | own / — | own / — | — |
-| Admin section | ✓ | — | — | — | — |
-| Export reports | ✓ | ✓ | — | — | ✓ |
+| Action | Owner | Manager | Cashier | Accountant |
+|--------|:-----:|:-------:|:-------:|:----------:|
+| Create bill | ✓ | ✓ | ✓ | — |
+| Discount above limit | ✓ | ✓ | — | — |
+| Cancel bill | ✓ | ✓ | — | — |
+| Returns | ✓ | ✓ | ✓ | — |
+| Credit sales | ✓ | ✓ | — | — |
+| Cash out | ✓ | ✓ | ✓ | — |
+| Day close / reopen | ✓ / ✓ | ✓ / — | — | — |
+| Edit inventory | ✓ | ✓ | — | — |
+| View insights | ✓ | ✓ (own store) | — | ✓ (read-only) |
+| Undo own bill (5 min) | ✓ | ✓ | ✓ | — |
+| Edit saved bill | ✓ | ✓ | — | — |
+| Purchases & supplier payments | ✓ | ✓ | — | — |
+| Expenses | ✓ | ✓ | — | — |
+| Warranty claim | ✓ | ✓ | ✓ | — |
+| Attendance (mark) / salary (pay) | ✓ / ✓ | ✓ / — | own / — | — |
+| Admin section | ✓ | — | — | — |
+| Export reports | ✓ | ✓ | — | ✓ |
+
+Service shops (parlour) use the Cashier role. With `billing.staff_commission` on, each service line can record who did it, for commission. There are no bookings or appointments.
 
 Permissions are enforced in three places: UI (hide), view model (guard), Firestore rules (authoritative).
 
@@ -66,7 +68,7 @@ Permissions are enforced in three places: UI (hide), view model (guard), Firesto
 - Deactivating revokes the auth claims at once and signs out all devices. Past bills stay in reports and the audit log.
 
 ## Platform console (Apoorva team)
-A hidden section in the same app, visible only with the `superAdmin` claim (screens 120–128). Every action is audited.
+A hidden section in the same app, visible only with the `superAdmin` claim (screens 121–129). Every action is audited.
 
 | Screen | Purpose |
 |--------|---------|
