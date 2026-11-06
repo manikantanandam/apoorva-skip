@@ -43,7 +43,7 @@ public final class DailyCashflowSummaryService: DailyCashflowSummaryServiceProto
             let record = try snapshot.data(as: DailyCashflowSummary.self)
             return record
         } catch {
-            print("❌ Failed to decode Category: \(snapshot.documentID) - \(error)")
+            print("❌ Failed to decode DailyCashflowSummary: \(snapshot.documentID) - \(error)")
             throw error
         }
     }
@@ -115,7 +115,7 @@ private extension DailyCashflowSummaryService {
             do {
                 let record = try document.data(as: DailyCashflowSummary.self)
                 summaries.append(record)
-            } catch { print("❌ Failed to decode Category: \(document.documentID) - \(error)") }
+            } catch { print("❌ Failed to decode DailyCashflowSummary: \(document.documentID) - \(error)") }
         }
         
         print("✅ Fetched \(summaries.count) Daily Cashflow Transactions.")

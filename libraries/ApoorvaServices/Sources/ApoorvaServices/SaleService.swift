@@ -54,7 +54,7 @@ private extension SaleService {
                 do {
                     let record = try document.data(as: Sale.self)
                     successfulRecords.append(record)
-                } catch { print("❌ Failed to decode Category: \(document.documentID) - \(error)") }
+                } catch { print("❌ Failed to decode Sale: \(document.documentID) - \(error)") }
             }
             
             print("✅ Fetched \(successfulRecords.count) Sales.")

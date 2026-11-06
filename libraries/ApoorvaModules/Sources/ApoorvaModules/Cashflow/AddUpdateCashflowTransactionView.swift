@@ -3,11 +3,14 @@ import ApoorvaModels
 import UIKit
 
 public struct AddUpdateCashflowTransactionView: View {
+    
     @Environment(\.dismiss) private var dismiss
-    @Bindable var viewModel: AddUpdateCashflowTransactionViewModel
+    
+    @State private var viewModel: AddUpdateCashflowTransactionViewModel
     
     public init(viewModel: AddUpdateCashflowTransactionViewModel) {
-        self.viewModel = viewModel
+        // This ensures the ViewModel is captured once and never wiped out by parent redraws
+        self._viewModel = State(initialValue: viewModel)
     }
     
     public var body: some View {

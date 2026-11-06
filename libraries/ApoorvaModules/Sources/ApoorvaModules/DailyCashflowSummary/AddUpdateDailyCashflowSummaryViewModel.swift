@@ -115,16 +115,21 @@ public class AddUpdateDailyCashflowSummaryViewModel {
     
     // Centralized calculation method updates the stored property directly
     private func calculateClosingBalances() {
+        print("Calculating the closing balances")
         for account in accounts {
+            print("Account: \(account.id) - \(account.name): \(account.currentBalance)")
             let opString = openingBalanceInputs[account.id] ?? "0"
             let opening = Double(opString) ?? 0.0
-            
             var netChange = 0.0
             for tx in dayTransactions {
+                print(" ")
+                print("Transaction \(tx)")
+                print(" ")
                 if tx.fromAccountId == account.id { netChange -= tx.amount }
                 if tx.toAccountId == account.id { netChange += tx.amount }
             }
-            
+            print("Opening \(opening) :Net change \(netChange)")
+
             // Format to 2 decimal places and store it
             closingBalanceInputs[account.id] = String(format: "%.2f", opening + netChange)
         }

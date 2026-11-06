@@ -205,10 +205,16 @@ struct CashflowCardRowView: View {
                 }
                 
                 Spacer()
+                VStack {
+                    Text(item.timestamp.formatted(date: .abbreviated, time: .shortened))
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                    
+                    Text(item.id)
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
                 
-                Text(item.timestamp.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
             }
             
             Divider()

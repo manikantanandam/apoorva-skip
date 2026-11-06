@@ -49,6 +49,18 @@ public struct DailyCashflowSummary: Sendable, Codable {
         self.id = date.toString(format: "dd-MM-yyyy")
     }
     
+    
+    
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(String.self, forKey: .id)
+        self.date = try container.decode(Date.self, forKey: .date)
+        self.openingBalances = try container.decode([AccountBalance].self, forKey: .openingBalances)
+        self.closingBalances = try container.decodeIfPresent([AccountBalance].self, forKey: .closingBalances) ?? []
+        self.updatedAt = try container.decode(TimeInterval.self, forKey: .updatedAt)
+        self.locked = try container.decode(Bool.self, forKey: .locked)
+    }
+    
     public func copyWith(date: Date? = nil,
                          openingBalances: [AccountBalance]? = nil,
                          closingBalances: [AccountBalance]? = nil,

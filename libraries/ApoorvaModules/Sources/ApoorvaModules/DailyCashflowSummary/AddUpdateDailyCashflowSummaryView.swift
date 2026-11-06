@@ -8,7 +8,7 @@ public struct AddUpdateDailyCashflowSummaryView: View {
     @Bindable var viewModel: AddUpdateDailyCashflowSummaryViewModel
     
     // 1. ADD SHEET STATE
-    @State private var showTransactionSheet = false
+    @State private var activeTransactionSheet: TransactionSheetAction? = nil
     @State private var transactionToEdit: CashflowTransaction? = nil
     
     var makeAddUpdateTransactionViewModel: (Date, CashflowTransaction?) -> AddUpdateCashflowTransactionViewModel
@@ -80,17 +80,23 @@ public struct AddUpdateDailyCashflowSummaryView: View {
                                             }
                                             
                                             Spacer()
+                                            VStack {
+                                                Text(String(format: "%.2f", tx.amount))
+                                                    .font(.subheadline)
+                                                    .fontWeight(.bold)
+                                                    .foregroundColor(tx.transactionType == .credit ? .green : .red)
+                                                
+                                                Text(tx.paymentMode.rawValue)
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
                                             
-                                            Text(String(format: "%.2f", tx.amount))
-                                                .font(.subheadline)
-                                                .fontWeight(.bold)
-                                                .foregroundColor(tx.transactionType == .credit ? .green : .red)
+                                            
                                         }
                                         
                                         .contentShape(Rectangle()) // Ensures the whole row is tappable
                                         .onTapGesture {
-                                            transactionToEdit = tx
-                                            showTransactionSheet = true
+                                            activeTransactionSheet = .edit(tx)
                                         }
                                         
                                         if tx.id != viewModel.dayTransactions.last?.id {
@@ -169,11 +175,11 @@ public struct AddUpdateDailyCashflowSummaryView: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
-            .sheet(isPresented: $showTransactionSheet, onDismiss: {
+            .sheet(item: $activeTransactionSheet, onDismiss: {
                 Task { await viewModel.fetchInitialData() }
-            }) {
+            }) { actionContext in
                 AddUpdateCashflowTransactionView(
-                    viewModel: makeAddUpdateTransactionViewModel(viewModel.date, transactionToEdit)
+                    viewModel: makeAddUpdateTransactionViewModel(viewModel.date, actionContext.transaction)
                 )
             }
             .task {

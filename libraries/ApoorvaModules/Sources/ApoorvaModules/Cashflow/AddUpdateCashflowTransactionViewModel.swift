@@ -63,6 +63,7 @@ public class AddUpdateCashflowTransactionViewModel {
     }
     
     func fetchAccounts() async {
+        print("fetching accounts")
         do {
             let user = try await userRepository.getCurrentUser()
             
@@ -75,8 +76,9 @@ public class AddUpdateCashflowTransactionViewModel {
                 self.errorMessage = "Organization details not found."
                 return
             }
-            
+            print("full organization \(fullOrganization)")
             self.accounts = fullOrganization.accounts
+            print("Accounts prepared \(self.accounts.count) ")
         } catch {
             self.errorMessage = "Failed to load accounts: \(error.localizedDescription)"
         }
