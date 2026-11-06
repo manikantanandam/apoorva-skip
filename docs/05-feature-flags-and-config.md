@@ -14,7 +14,7 @@ flowchart LR
 Rules:
 1. **App level decides availability.** If it is off, nobody gets the feature, whatever the org says. Admin UI shows it as "set by Apoorva" (locked).
 2. **Org → Store → Role narrow it down.** A lower level can only turn a feature *off* or tune a value. It can never enable what a higher level disabled.
-3. **Vertical defaults** seed org flags at onboarding (e.g. `appointments` on for parlour).
+3. **Vertical defaults** seed org flags at onboarding (e.g. `billing.staff_commission` on for parlour).
 4. **User preferences** (theme, compact lists) are not flags. They live in Settings.
 
 ## Implementation
@@ -22,7 +22,7 @@ Rules:
 - Sources: Firebase Remote Config (app level, compiled defaults) plus Firestore docs for org/store/role, cached in SQLite so flags work offline.
 - View models ask `flags.isOn(.returns)`. Views never read Remote Config directly.
 - Kill switches are checked at the start of each operation, not cached for the session.
-- Debug builds have a hidden override panel. It is stripped from release.
+- Developer settings (see 07) can override any flag locally and simulate plan state (trial day, bills used). Overrides live only on that phone, are never synced, and are available in debug builds or with the `developer` claim.
 
 ## Flag catalogue
 
@@ -34,8 +34,8 @@ Rules:
 | `billing.hold_bills` | bool | on | — |
 | `billing.split_payment` | bool | on | — |
 | `printing.bluetooth` | bool | off | Per store with printer |
-| `appointments` | bool | on | Parlour vertical only |
-| `inventory.edit` | bool | on | Off for cashier/stylist |
+| `billing.staff_commission` | bool | on | Service shops: optional "done by" staff on lines |
+| `inventory.edit` | bool | on | Off for cashier |
 | `insights.view` | bool | on | Owner/manager |
 | `insights.export` | bool | off | Rollout |
 | `loyalty` | bool | off | Not released (app locked) |
@@ -58,6 +58,7 @@ Rules:
 | `staff.attendance` | bool | on | Plan Pro (needs staff accounts) |
 | `offers.messages` | bool | on | Owner/manager only |
 | `summary.whatsapp_auto` | bool | off | Owner opt-in |
+| `plan.trial_days` / `plan.free_bill_limit` / `plan.grace_bills` | int | 30 / 100 / 10 | App only; tune via Remote Config |
 | `min_app_version` | string | 1.0.0 | Force-update gate |
 
 ## UI config (not flags)

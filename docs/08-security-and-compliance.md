@@ -48,3 +48,5 @@
 - [ ] Privacy labels cover Google / Apple sign-in data (name, email, photo) and UPI ID
 - [ ] UPI ID is verified with a ₹1 test before it appears on QR codes and receipts
 - [ ] Remote sign-out revokes tokens; support sessions are read-only, time-boxed and audited
+- [ ] Developer settings are absent in release unless the `developer` claim is present; Dev/Staging never write to Production; per-environment DB files
+- [ ] Free-plan bill count is verified server-side (Cloud Function counter); offline grace is a local counter reconciled on sync, so limits cannot be bypassed by staying offline

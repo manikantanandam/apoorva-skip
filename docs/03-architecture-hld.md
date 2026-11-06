@@ -138,18 +138,18 @@ flowchart LR
   BS --> K[KiranaBilling<br/>search list, weight]
   BS --> F[FancyBilling<br/>tile grid, variants]
   BS --> J[JewelleryBilling<br/>catalog, design code]
-  BS --> P[ParlourBilling<br/>services, stylist]
+  BS --> P[ParlourBilling<br/>spot services, packages]
   TS[ThemeStore] --> UI[SwiftUI environment tokens]
   FR[FlagResolver] --> VM[View models]
   PR[PermissionService] --> VM
 ```
 
-- `VerticalProfile` is data (synced from Firestore `verticals/{id}`). `BillingStrategy` is the only code per vertical: item picker view, line-item rules (weight, variant, stylist), receipt template. Adding handloom means one new strategy and one profile doc.
+- `VerticalProfile` is data (synced from Firestore `verticals/{id}`). `BillingStrategy` is the only code per vertical: item picker view, line-item rules (weight, variant, done-by staff), receipt template. Adding handloom means one new strategy and one profile doc.
 - Cart, checkout, payments, sync, ledger and analytics are shared and vertical-agnostic.
 - `ThemeStore`, `FlagResolver` and `PermissionService` are built in `AppContainer` and injected. They have no globals.
-- Placement: `ApoorvaUI` (ThemeStore, component kit, font loader, icon mapping Lucide → SF Symbols / Material Symbols), `ApoorvaModels` (VerticalProfile, FlagResolver, Permission, TaxPolicy), `ApoorvaModules` (Auth sign-in hub, Billing strategies incl. calculator, Orders, Suppliers & Purchases, Expenses, Staff, Warranty, Insights, Appointments, Settings incl. Payments & Devices, Admin, Platform console).
+- Placement: `ApoorvaUI` (ThemeStore, component kit, font loader, icon mapping Lucide → SF Symbols / Material Symbols), `ApoorvaModels` (VerticalProfile, FlagResolver, Permission, TaxPolicy), `ApoorvaModules` (Auth sign-in hub, Billing strategies incl. calculator, Orders, Suppliers & Purchases, Expenses, Staff, Warranty, Insights, Settings incl. Payments & Devices, Admin, Platform console, Developer settings). `AppEnvironment` (dev/stg/prod) is chosen at launch and passed to `AppContainer`, which builds Firebase and the local DB for that environment.
 
-Additional entities: `ORG`, `STORE` (with `verticalId`), `MEMBER`, `ROLE`, `FLAG_OVERRIDE`, `THEME`, `AUDIT_EVENT`, `APPOINTMENT`, `SERVICE`. See the ERD in [10](10-admin-and-multi-tenancy.md).
+Additional entities: `ORG`, `STORE` (with `verticalId`), `MEMBER`, `ROLE`, `FLAG_OVERRIDE`, `THEME`, `AUDIT_EVENT`, `SERVICE`, `PACKAGE`, `PLAN_USAGE` (bills this month, grace used). See the ERD in [10](10-admin-and-multi-tenancy.md).
 
 ## 7. Decisions
 | Decision | Choice | Why |

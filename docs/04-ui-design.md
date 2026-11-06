@@ -11,7 +11,7 @@ All screens are rendered as PNGs in [`/designs`](../designs/README.md). Each ima
 - Real icons only (Lucide line icons in the designs). No emoji or Unicode symbols.
 
 ### Visual style: Clean (default) and Bold (optional)
-Org admins (Admin → Theme) and the app console can switch to Bold. Compare them in `designs/107-style-light-vs-bold.png`.
+Org admins (Admin → Theme) and the app console can switch to Bold. Compare them in `designs/108-style-light-vs-bold.png`.
 
 | Aspect | Clean (default) | Bold (optional) |
 |--------|-----------------|-----------------|
@@ -54,7 +54,7 @@ Derived: `soft` = accent at 13% (selected chips, first KPI, avatars, notes). `on
 
 ### Typography & organisation font
 - Default **System** font: SF Pro (iOS) / Roboto (Android), with Noto Sans Telugu / Devanagari / Tamil / Kannada for Indic text. Best performance, Dynamic Type, no download.
-- The **org owner can choose a font** (Admin → Theme → Font, screen 116) from a curated, OFL-licensed list: System, Inter, Poppins, Noto Sans, Hind, Mukta, Manrope. Any script a font lacks falls back to Noto Sans for that script.
+- The **org owner can choose a font** (Admin → Theme → Font, screen 117) from a curated, OFL-licensed list: System, Inter, Poppins, Noto Sans, Hind, Mukta, Manrope. Any script a font lacks falls back to Noto Sans for that script.
 - Fonts download on demand (Google Fonts) and are cached. Until then, or when offline, the system font is used. App size is unchanged.
 - The font applies to the app and to PDF/image receipts. Thermal printers keep their built-in font.
 - Type scale is the same for every font; line heights adapt per script (+15% for Indic).
@@ -84,13 +84,13 @@ Implementation: `ThemeStore` (`@Observable`) in `ApoorvaUI` exposes resolved tok
 Onboarding: Splash → Demo shop (optional) → Sign-in hub (Google · Phone OTP · Email) → [Email sign-in | Register → Verify | Forgot | Link accounts] → Choose vertical → Shop setup → Pick look → First-run guide → Opening balances
 Staff: Invite link → Join → PIN switch on shared phones
 Tabs: Home | Bills | [+ New bill] | Customers | More
-More (grouped) → Sell: Orders, Held bills, Warranty · Stock: Inventory, Suppliers, Reorder · Money: Cashflow, Expenses, Summary, Insights · People: Staff, Attendance, Salary · Settings, Admin†, Apoorva Console‡, Help
+More (grouped) → Sell: Orders, Held bills, Warranty · Stock: Inventory, Suppliers, Reorder · Money: Cashflow, Expenses, Summary, Insights · People: Staff, Attendance, Salary · Settings, Admin†, Apoorva Console‡, Help, Developer§
 Settings → Appearance, Tax (optional), Receipts, Printer, Language, Backup & data, Account, Plan
 Global: universal search (Home ⌕), sync chip → Sync status
 ```
-\* parlour only (flag `appointments`) · † Owner/Org admin only · ‡ Apoorva team only (`superAdmin` claim)
+† Owner/Org admin only · ‡ Apoorva team only (`superAdmin` claim) · § debug builds, or `developer` claim in release
 
-## 3. Screen index (135, v1 frozen)
+## 3. Screen index (140, v1 frozen)
 The full numbered list with captions is in [`designs/README.md`](../designs/README.md). It is generated, so it never drifts from the images.
 
 | Area | Count | Highlights |
@@ -100,19 +100,20 @@ The full numbered list with captions is in [`designs/README.md`](../designs/READ
 | Billing | 20 | 4 vertical pickers, weight entry, quick item, variants, line edit, discount (PIN approval), jewellery detail, parlour packages, customer picker, checkout, split, UPI QR, receipt + printed preview, held, return, scan |
 | Bills | 4 | list, detail, cancel with reason, filters |
 | Customers | 6 | list, ledger, add, collect, WhatsApp reminder, statement |
-| Parlour | 3 | appointments, new booking, stylists |
+| Plans | 3 | usage meter, limit reached (grace), trial recap |
 | Inventory | 6 | list, add (name + price only), item, adjust, categories, import |
 | Cashflow | 4 | day, entry, day close, history |
-| Insights | 5 | overview, items, customers, staff, reports & export |
+| Insights | 6 | overview, profit, items, customers, staff, staff services & commission, reports & export |
 | More & Settings | 12 | more menu, appearance, tax, receipts, payments, printer, language, backup & export, account, devices, sign-in methods, plan |
 | Org admin | 12 (incl. font) | home, stores, store detail, members, add member, member detail, permissions, theme, features, audit, invite |
 | Platform console | 9 | console home, orgs, org detail, support session, suspend/block, blocked-org view, platform analytics, app flags, sign-in config |
 | Small-shop essentials | 25 | demo shop, staff PIN switch, calculator billing, tips, widget, undo, edit bill, wholesale price, warranty lookup, contacts import, offers, orders ×3, catalog share, reorder, suppliers ×2, purchase, expenses ×2, daily summary, profit, attendance, salary |
 | Visual style | 1 | Clean vs Bold comparison |
+| Developer | 4 | developer hub, environment switch, flag overrides, logs |
 | Global | 7 | search, sync, conflict, notifications, locked feature, force update, help |
 
 ## 3a. Design freeze (v1)
-- These 135 screens are the v1 contract. Development builds from them without redesign.
+- These 140 screens are the v1 contract. Development builds from them without redesign.
 - Allowed during development: copy changes and data changes, using existing components only.
 - Not allowed without review: new components, new navigation entries, colour changes.
 - To change a design: edit the one-line spec in `designs/_src/generate.py`, regenerate, and get it reviewed in a PR. The PNG diff is the review.

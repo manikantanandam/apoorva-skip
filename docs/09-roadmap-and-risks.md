@@ -27,7 +27,7 @@
 ## 3. Open questions (decide before M1)
 1. ~~Separate POS app?~~ Decided: one app, with billing styles per vertical (see 01).
 1a. Can one org own stores of different verticals? (Assumed yes.)
-1b. Pricing plans: which features are paid (multi-store, export, loyalty)?
+1b. ~~Pricing~~ Decided: 30-day full trial → Free (100 bills/month, core) or Pro ₹199/month (see 01).
 2. Login model for shop staff: phone OTP or email?
 3. ~~Tax~~ Decided: optional org config (off / same rate / per item), not asked at registration.
 4. Printer: Bluetooth thermal only, or also network/USB?
@@ -51,7 +51,7 @@
 - **Disaster recovery drill:** restore from backup once per quarter.
 
 ## 4a. Scope freeze
-The v1 feature scope and 135 designs (Clean style) are frozen (see 01 "Small-shop essentials" and 04 §3a). New ideas go to the v2 backlog in 01.
+The v1 feature scope and 140 designs (Clean style) are frozen (see 01 "Small-shop essentials" and 04 §3a). New ideas go to the v2 backlog in 01.
 
 ## 5. Next steps
 1. Answer open questions above.
