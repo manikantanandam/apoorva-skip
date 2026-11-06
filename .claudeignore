@@ -1,0 +1,59 @@
+# NOTE: Claude Code does NOT read this file.
+# Enforcement lives in .claude/settings.json (permissions.deny Read(...) rules).
+# Keep this file in sync with that list as human-readable documentation.
+
+# SwiftPM / Xcode build output
+.build/
+build/
+DerivedData/
+.swiftpm/
+xcuserdata/
+*.xcuserstate
+*.xcodeproj/project.xcworkspace/
+Package.resolved
+
+# Skip transpilation output (transpiled Kotlin lives under .build/)
+# Do NOT ignore *.kt globally: Android/app/src/main/kotlin/Main.kt and
+# Sources/*/Skip/ hold hand-written Kotlin.
+.skip/
+
+# Android / Gradle
+.gradle/
+.kotlin/
+.android/
+.idea/
+
+# Assets (binary images)
+*.xcassets/**/*.png
+*.xcassets/**/*.jpg
+*.xcassets/**/*.pdf
+
+# Fastlane output
+fastlane/metadata/
+fastlane/screenshots/
+fastlane/test_output/
+
+# Packaging & archives
+*.ipa
+*.apk
+*.aab
+*.dSYM/
+*.xcarchive/
+*.xcresult/
+
+# Logs, profiling, databases, OS junk
+*.log
+*.profraw
+*.sqlite*
+.DS_Store
+
+# Secrets
+GoogleService-Info.plist
+google-services.json
+local.properties
+keystore.*
+*.jks
+*.p12
+*.mobileprovision
+*.cer
+fastlane/apikey.json
