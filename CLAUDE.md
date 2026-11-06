@@ -28,6 +28,19 @@ app (Apoorva) → ApoorvaAppCore → ApoorvaModules → ApoorvaRepository → Ap
 
 ## Commands
 
+**Build and test rule (mandatory):** for any build or test of a library, run only the repo scripts. Never call `xcodebuild`, `swift build` or `swift test` directly, and never paste their raw output.
+
+```bash
+scripts/build.sh <Module|all> [build|test] [--coverage]               # prints SUCCESS/FAILED + root cause
+scripts/install-tools.sh                                              # one-time: installs xcbeautify
+```
+
+- Run the script with exactly the arguments the task needs. Pass `--coverage` only when the user asked for coverage.
+- If the script reports xcbeautify missing, run `scripts/install-tools.sh`, then rerun the same build command.
+- Report the script's output as it is. Do not open the log file or the `.xcresult` bundle to investigate.
+
+The raw commands below are for developers working in a terminal:
+
 Run tests per library package (there is no root package that aggregates them):
 
 ```bash
