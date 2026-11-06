@@ -4,16 +4,43 @@ import SwiftUI
 import ApoorvaModels
 import UIKit
 
+enum TransactionSheetAction: Identifiable {
+    case add
+    case edit(CashflowTransaction)
+    
+    var id: String {
+        switch self {
+        case .add: return "add"
+        case .edit(let tx): return tx.id
+        }
+    }
+    
+    var transaction: CashflowTransaction? {
+        if case .edit(let tx) = self { return tx }
+        return nil
+    }
+}
+
+enum SummarySheetAction: Identifiable {
+    case present(Date, DailyCashflowSummary?)
+    
+    var id: String {
+        switch self {
+        case .present(let date, let summary):
+            return summary?.id ?? date.description
+        }
+    }
+}
+
 public struct DailyCashFlowView: View {
     
     @Bindable var viewModel: DailyCashFlowViewModel
     
     // Summary Sheet State
-    @State private var showSummarySheet = false
+    @State private var activeSummarySheet: SummarySheetAction? = nil
     
     // Transaction Sheet State
-    @State private var showTransactionSheet = false
-    @State private var transactionToEdit: CashflowTransaction? = nil
+    @State private var activeTransactionSheet: TransactionSheetAction? = nil
     
     var makeAddUpdateSummaryViewModel: (Date, DailyCashflowSummary?) -> AddUpdateDailyCashflowSummaryViewModel
     
@@ -101,8 +128,7 @@ public struct DailyCashFlowView: View {
                             Spacer()
                             if viewModel.currentSummary?.locked != true {
                                 Button(action: {
-                                    transactionToEdit = nil
-                                    showTransactionSheet = true
+                                    activeTransactionSheet = .add
                                 }) {
                                     Image(systemName: "plus.circle.fill")
                                         .font(.body)
@@ -123,14 +149,12 @@ public struct DailyCashFlowView: View {
                                 CashflowCardRowView(item: item)
                                     .onTapGesture {
                                         if viewModel.currentSummary?.locked != true {
-                                            transactionToEdit = item
-                                            showTransactionSheet = true
+                                            activeTransactionSheet = .edit(item)
                                         }
                                     }
                                     .contextMenu {
                                         Button {
-                                            transactionToEdit = item
-                                            showTransactionSheet = true
+                                            activeTransactionSheet = .edit(item)
                                         } label: {
                                             Label("Edit", systemImage: "pencil")
                                         }
@@ -201,7 +225,9 @@ public struct DailyCashFlowView: View {
 
                         }
                         
-                        Button(action: { showSummarySheet = true }) {
+                        Button(action: {
+                            activeSummarySheet = .present(viewModel.selectedDate, viewModel.currentSummary)
+                        }) {
                             Image(systemName: viewModel.currentSummary == nil ? "plus.square.dashed" : "pencil.and.list.clipboard")
                         }
                     }
@@ -212,23 +238,26 @@ public struct DailyCashFlowView: View {
         }
         }
         // Summary Sheet
-        .sheet(isPresented: $showSummarySheet, onDismiss: {
+        .sheet(item: $activeSummarySheet, onDismiss: {
             Task {
                 print("Add Update Daily Summary view data fetched and fetch data is called")
                 await viewModel.refreshData()
             }
-        }) {
-            AddUpdateDailyCashflowSummaryView(
-                viewModel: makeAddUpdateSummaryViewModel(viewModel.selectedDate, viewModel.currentSummary),
-                makeAddUpdateTransactionViewModel: makeAddUpdateTransactionView
-            )
+        }) { action in
+            switch action {
+            case .present(let date, let summary):
+                AddUpdateDailyCashflowSummaryView(
+                    viewModel: makeAddUpdateSummaryViewModel(date, summary),
+                    makeAddUpdateTransactionViewModel: makeAddUpdateTransactionView
+                )
+            }
         }
-        // Transaction Sheet
-        .sheet(isPresented: $showTransactionSheet, onDismiss: {
+        .sheet(item: $activeTransactionSheet, onDismiss: {
             Task { await viewModel.refreshData() }
-        }) {
+        }) { actionContext in
             AddUpdateCashflowTransactionView(
-                viewModel: makeAddUpdateTransactionView(viewModel.selectedDate, transactionToEdit)
+                // Use actionContext.transaction which dynamically unpacks the item or nil
+                viewModel: makeAddUpdateTransactionView(viewModel.selectedDate, actionContext.transaction)
             )
         }
         .task {

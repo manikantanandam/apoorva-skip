@@ -100,6 +100,7 @@ public struct DailyCashflowListView: View {
                     }
                 }
         .task {
+            print("Daily Cashflow List View task")
             await viewModel.fetchData() // Fetch data on load
         }
     }

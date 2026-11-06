@@ -59,7 +59,7 @@ private extension CustomerService {
                 do {
                     var record = try document.data(as: Customer.self)
                     successfulRecords.append(record)
-                } catch { print("❌ Failed to decode Category: \(document.documentID) - \(error)") }
+                } catch { print("❌ Failed to decode Customer: \(document.documentID) - \(error)") }
             }
             
             print("✅ Fetched \(successfulRecords.count) Categories.")
