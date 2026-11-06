@@ -2,8 +2,8 @@
 # Low-noise build and test runner for the libraries/* packages.
 # Prints one SUCCESS or FAILED line plus root-cause lines; full output goes to a log file.
 #
-# Usage: scripts/build.sh <Module|all> [build|test] [--coverage]
-#   <Module>     a folder name under libraries/, or "all"
+# Usage: scripts/build.sh [Module|all] [build|test] [--coverage]
+#   [Module]     a folder name under libraries/, or "all" (default: all)
 #   build|test   xcodebuild action (default: test)
 #   --coverage   enable code coverage and print the module's line coverage
 #
@@ -16,13 +16,15 @@ LOG_DIR="${TMPDIR:-/tmp}/apoorva-xc"
 DESTINATION="${XC_DESTINATION:-platform=iOS Simulator,name=iPhone 17,OS=latest}"
 
 usage() {
-  echo "Usage: scripts/build.sh <Module|all> [build|test] [--coverage]" >&2
+  echo "Usage: scripts/build.sh [Module|all] [build|test] [--coverage]" >&2
   exit 64
 }
 
-[ $# -ge 1 ] || usage
-MODULE="$1"
-shift
+MODULE="all"
+if [ $# -ge 1 ] && [[ "$1" != build && "$1" != test && "$1" != --coverage ]]; then
+  MODULE="$1"
+  shift
+fi
 
 ACTION="test"
 COVERAGE=0
