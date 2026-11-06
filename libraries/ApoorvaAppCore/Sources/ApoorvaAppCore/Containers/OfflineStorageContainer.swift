@@ -7,6 +7,7 @@
 
 import Foundation
 import ApoorvaOfflineStorage
+import ApoorvaUtilities
 
 // In ApoorvaAppCore
 @MainActor
@@ -15,14 +16,22 @@ public class OfflineStorageContainer {
 //    public lazy var offlineStorage: OfflineStorageProtocol = ApoorvaDataStore()
 //    public lazy var apiClient: ApiClientProtocol = ApoorvaNetworkClient()
     
+    private let environment: AppEnvironment
+
+    /// Each environment gets its own database file so data never mixes across backends.
+    /// Production keeps the legacy name so existing installs retain their data.
+    public var databasePath: String {
+        let path = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first!
+        let fileName = environment == .production ? "apoorva.sqlite" : environment.dbFileName()
+        return "\(path)/\(fileName)"
+    }
+
     public lazy var skipSqlDatabase: SkipSqlDatabase = {
         do {
-            // Get the standard documents directory path
-            let path = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first!
-            let dbPath = "\(path)/apoorva.sqlite"
-            
-            print("DB Path: \(path)")
-            
+            let dbPath = databasePath
+
+            print("DB Path: \(dbPath)")
+
             // This will also trigger try createTables() as defined in SkipSqlDatabase
             return try SkipSqlDatabase(filepath: dbPath)
         } catch {
@@ -59,5 +68,7 @@ public class OfflineStorageContainer {
     
     public lazy var syncStorage: SyncStorage = SyncStorage(db: skipSqlDatabase)
     
-    public init() {}
+    public init(environment: AppEnvironment = .production) {
+        self.environment = environment
+    }
 }

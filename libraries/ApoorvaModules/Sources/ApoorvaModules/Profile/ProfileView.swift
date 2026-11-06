@@ -19,9 +19,14 @@ public struct ProfileView: View {
     @State private var activeModal: ProfileRoute? = nil
     
     @State var viewModel: ProfileViewModel
-    
-    public init(viewModel: ProfileViewModel) {
+
+    /// Provided only when developer settings are available (debug builds).
+    private let developerViewModel: DeveloperSettingsViewModel?
+
+    public init(viewModel: ProfileViewModel,
+                developerViewModel: DeveloperSettingsViewModel? = nil) {
         self.viewModel = viewModel
+        self.developerViewModel = developerViewModel
     }
     
     public var body: some View {
@@ -50,7 +55,14 @@ public struct ProfileView: View {
                     .onTapGesture {
                         self.activeModal = .selectOrganization
                     }
-                    
+
+                    if let developerViewModel {
+                        NavigationLink("Developer") {
+                            DeveloperSettingsView(viewModel: developerViewModel)
+                        }
+                        .padding(.top)
+                    }
+
                     Spacer()
                 } else {
                     Text("No User")
