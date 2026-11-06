@@ -1,0 +1,55 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Overview
+
+Apoorva is an offline-first POS / business management app written in Swift + SwiftUI and built for iOS and Android with [Skip](https://skip.dev). Local SQLite is the source of truth; data syncs to Firebase Firestore in the background.
+
+## Layout
+
+- `app/` — the Skip app shell (`Package.swift` with the `skipstone` plugin, `Skip.env`, `Darwin/` Xcode project, `Android/` Gradle project). `app/Sources/Apoorva/Skip/skip.yml` uses `mode: 'native'` (Skip Fuse). `Skip.env` currently sets `SKIP_NO_ANDROID=1`, so Android builds are disabled by default.
+- `libraries/Apoorva*` — independent local SwiftPM packages, each with its own `Package.swift` and `Tests/`. These are plain Swift packages (no skipstone plugin). `ApoorvaUI` and `ApoorvaViewModel` are empty placeholders.
+- Open `app/Project.xcworkspace` in Xcode to develop the app and libraries together.
+
+## Module dependency graph
+
+```
+app (Apoorva) → ApoorvaAppCore → ApoorvaModules → ApoorvaRepository → ApoorvaOfflineStorage → ApoorvaModels → ApoorvaUtilities
+                                              ↘ ApoorvaUtilities          ↘ ApoorvaServices → ApoorvaModels
+```
+
+- **ApoorvaModels** — pure data models (`Codable`, `SQLCodable`).
+- **ApoorvaOfflineStorage** — local DB layer. Contains two backends: `SkipSQL/` (`SkipSqlDatabase`, currently wired into the app) and `GRDB/` (`AppDatabase`, migrations, `+GRDB` model extensions). DAOs are protocol-based (e.g. `InventoryItemLocalStorageProtocol`).
+- **ApoorvaServices** — Firebase (Auth, Firestore) via `firebase-ios-sdk` directly, e.g. `FirestoreSyncService`, `AuthService`.
+- **ApoorvaRepository** — offline-first coordination between local storage and services.
+- **ApoorvaModules** — feature SwiftUI views + `@Observable` view models (POS, Cashflow, DailyCashflowSummary, Inventory, Customers, Sale, Login, Profile).
+- **ApoorvaAppCore** — composition root. `Containers/AppContainer.swift` builds `ServicesContainer`, `OfflineStorageContainer`, `RepositoryContainer`, `ModulesContainer` with lazy properties; no singletons. New dependencies get wired here and injected downward. Also holds `Router/` and the root `MainView`/`HomeView`.
+
+## Commands
+
+Run tests per library package (there is no root package that aggregates them):
+
+```bash
+cd libraries/ApoorvaUtilities && swift test
+swift test --filter BoolExtensionTests                 # one suite (type name)
+swift test --filter "BoolExtensionTests/<testName>"   # one test
+```
+
+CI (`.github/workflows/ci.yml`) runs every `libraries/*` package that has a `Tests/` folder on an iOS simulator, then uploads coverage to SonarCloud:
+
+```bash
+cd libraries/<Module> && xcodebuild test -scheme <Module> \
+  -destination 'platform=iOS Simulator,name=iPhone 17,OS=latest' \
+  -skipPackagePluginValidation -skipMacroValidation
+```
+
+Packages that depend on Firebase (`ApoorvaServices` and everything above it) need iOS/`xcodebuild`, and may not build with plain macOS `swift test`.
+
+For the app: `skip test` runs parity tests (Swift + transpiled Kotlin). The "Apoorva App" Xcode target builds iOS and deploys the APK to a running Android emulator.
+
+## Conventions
+
+- Tests use a mix of Swift Testing (`import Testing`) and XCTest; match the style already in the file or module you are editing. Date/number formatting tests must not depend on the machine locale.
+- Swift 6 tools / strict concurrency: `@MainActor`, `Sendable`, `async/await` throughout.
+- Never edit generated Kotlin or anything under `.build/`. Hand-written Kotlin lives only in `app/Android/app/src/main/kotlin/` and `app/Sources/Apoorva/Skip/`.
