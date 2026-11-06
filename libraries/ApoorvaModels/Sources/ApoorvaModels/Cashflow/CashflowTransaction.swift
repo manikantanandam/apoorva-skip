@@ -68,8 +68,10 @@ public struct CashflowTransaction: Identifiable, Codable, Hashable, Sendable {
         self.amount = try container.decode(Double.self, forKey: .amount)
         self.transactionType = try container.decode(CashflowTransaction.TransactionType.self, forKey: .transactionType)
         self.paymentMode = try container.decode(CashflowTransaction.PaymentMode.self, forKey: .paymentMode)
-        self.category = try container.decode(CashflowCategory.self, forKey: .category)
-        self.subCategory = try container.decodeIfPresent(CashflowSubCategory.self, forKey: .subCategory)
+        let categoryRaw = try container.decode(String.self, forKey: .category)
+        self.category = CashflowCategory(rawValue: categoryRaw) ?? .unknown
+        let subCategory = try container.decodeIfPresent(String.self, forKey: .subCategory) ?? ""
+        self.subCategory = CashflowSubCategory(rawValue: subCategory) ?? .unknown
         self.fromAccountId = try container.decodeIfPresent(String.self, forKey: .fromAccountId) ?? ""
         self.toAccountId = try container.decodeIfPresent(String.self, forKey: .toAccountId) ?? ""
         self.person = try container.decodeIfPresent(String.self, forKey: .person)

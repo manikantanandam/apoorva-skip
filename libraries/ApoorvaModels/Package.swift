@@ -29,7 +29,10 @@ let package = Package(
         ),
         .testTarget(
             name: "ApoorvaModelsTests",
-            dependencies: ["ApoorvaModels"]
+            dependencies: [
+                "ApoorvaModels",
+                .product(name: "ApoorvaUtilities", package: "ApoorvaUtilities")
+            ]
         ),
 
     ],
