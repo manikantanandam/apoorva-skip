@@ -4,32 +4,67 @@ All screens are rendered as PNGs in [`/designs`](../designs/README.md). Each ima
 
 ## 1. Theme system
 
-### Base tokens (shared by all verticals)
+### Design principles (enterprise, readable, light in feel)
+- Follows Apple HIG, Material 3 and WCAG 2.2 AA. Benchmarked against top Indian apps: clean neutral canvas, white cards, one accent, semibold numbers.
+- **Readability over style**: body text ≥ 15px, nothing below 12px, all text ≥ 4.5:1 contrast. No thin (100–300) weights anywhere.
+- **Light in feel** from white space, neutral greys and a single accent, not from faint text.
+- Real icons only (Lucide line icons in the designs). No emoji or Unicode symbols.
 
-| Token | Light | Dark |
-|-------|-------|------|
-| `bg` canvas | #F6F7F9 | #0E1013 |
-| `sf` surface | #FFFFFF | #171A1F |
-| `tx` text | #111827 | #F3F4F6 |
-| `mu` muted text | #6B7280 | #9CA3AF |
-| `bd` border | #E7E9EE | #262A31 |
-| `ok` / `er` / `wn` | #15803D / #B91C1C / #B45309 | #4ADE80 / #F87171 / #FBBF24 |
+### Visual style: Clean (default) and Bold (optional)
+Org admins (Admin → Theme) and the app console can switch to Bold. Compare them in `designs/107-style-light-vs-bold.png`.
 
-### Vertical themes (accent + optional canvas tint)
+| Aspect | Clean (default) | Bold (optional) |
+|--------|-----------------|-----------------|
+| Screen title | 22 / 600 | 22 / 700 |
+| Section header | 15 / 600, sentence case | 13 / 650 |
+| Body / secondary | 15 / 400 · 13 / 400 | 13.5 / 600 · 11.5 / 400 |
+| Amounts & KPIs | 600, tabular figures (KPI 22, hero 36) | 700 |
+| Cards | White, 1px `bd` border, radius 12 | Same, radius 16 |
+| First KPI | Soft accent tint, dark text | Solid accent fill |
+| Chips | Bordered, radius 8; selected = tint + accent border + accent text | Pill; selected = solid accent |
+| Segmented | iOS-style container, selected = raised white | Filled accent pill |
+| Inputs | Outlined 52px, label above | Same |
+| Buttons | 48px, radius 10, 600; secondary outlined | 650, radius 14 |
+| Status | Soft-filled pill badge | Same, more saturated |
+| Cart bar | Accent bar with "Charge" button | Dark bar |
+| Tab bar | 22px line icons, 11/500 labels, raised 52px "New bill" circle | Square accent "New bill" |
 
-| Theme | Accent light | Accent dark | Canvas tint |
-|-------|--------------|-------------|-------------|
-| Apoorva Indigo (brand / admin) | #4F46E5 | #A5B4FC | — |
-| Kirana Fresh Teal | #0F766E | #2DD4BF | #F4F8F7 |
-| Fancy Orchid | #C026D3 | #E879F9 | #F9F6FB |
-| Jewellery Antique Gold | #A16207 | #E2B865 | #FAF7F1 / dark #12100C |
-| Parlour Rose | #BE185D | #F9A8D4 | #FBF6F8 |
+### Base tokens (Clean)
 
-Derived: `soft` = accent at 13% (chips, avatars, notes). `on` = text on accent.
+| Token | Light mode | Dark mode | Contrast on surface |
+|-------|------------|-----------|---------------------|
+| `bg` canvas | #F5F6F8 | #0B0D12 | — |
+| `sf` surface | #FFFFFF | #151922 | — |
+| `tx` text | #0F172A | #E5E7EB | 17:1 / 13:1 |
+| `mu` secondary text | #475569 | #A1A7B3 | 7.5:1 / 7:1 |
+| `bd` border | #E2E8F0 | #262B36 | — |
+| `ok` / `er` / `wn` | #15803D / #B91C1C / #B45309 | #4ADE80 / #F87171 / #FBBF24 | ≥ 4.5:1 |
 
-### Type, space, shape
-- System font (SF Pro / Roboto). Title 22/700, body 13.5–14, caption 11.5, KPI 19/700. Dynamic Type supported.
-- Spacing 4/8/10/12/16. Radius 12 (inputs), 16 (cards), 46 (device). Touch targets ≥ 44 pt.
+### Vertical accents (all ≥ 4.5:1 on white)
+
+| Theme | Accent light | Accent dark |
+|-------|--------------|-------------|
+| Apoorva Ink (brand / admin) | #3F4396 | #A5B4FC |
+| Kirana Sage | #2F6F62 | #5EC4AE |
+| Fancy Plum | #8A3F86 | #E0A8DC |
+| Jewellery Brass | #85672C | #D9BE85 |
+| Parlour Rose | #A3405C | #F0A3B8 |
+
+Derived: `soft` = accent at 13% (selected chips, first KPI, avatars, notes). `on` = text on accent.
+
+### Typography & organisation font
+- Default **System** font: SF Pro (iOS) / Roboto (Android), with Noto Sans Telugu / Devanagari / Tamil / Kannada for Indic text. Best performance, Dynamic Type, no download.
+- The **org owner can choose a font** (Admin → Theme → Font, screen 116) from a curated, OFL-licensed list: System, Inter, Poppins, Noto Sans, Hind, Mukta, Manrope. Any script a font lacks falls back to Noto Sans for that script.
+- Fonts download on demand (Google Fonts) and are cached. Until then, or when offline, the system font is used. App size is unchanged.
+- The font applies to the app and to PDF/image receipts. Thermal printers keep their built-in font.
+- Type scale is the same for every font; line heights adapt per script (+15% for Indic).
+
+### Icons
+- Designs use **Lucide** (ISC licence, vendored in `designs/_src/icons/`).
+- In the app, use **SF Symbols** on iOS and **Material Symbols (Outlined)** on Android at the same size, 1.75 stroke look. A mapping table lives with the component kit.
+
+### Spacing & shape
+- Spacing 4/8/12/16/24. Cards radius 12, controls radius 8–10, sheets radius 20. Touch targets ≥ 44 pt / 48 dp.
 - Amounts in en-IN grouping (`₹2,84,200`) with tabular figures.
 
 ### Theme resolution (first match wins)
@@ -39,25 +74,28 @@ Derived: `soft` = accent at 13% (chips, avatars, notes). `on` = text on accent.
 4. **Org theme**.
 5. **Vertical default**.
 
+Visual style follows the same order: app default (`ui.visual_style`) → org → store → user, if not locked.
+
 Implementation: `ThemeStore` (`@Observable`) in `ApoorvaUI` exposes resolved tokens through the SwiftUI environment. Changes apply instantly with no restart (target < 100 ms). On Android, Skip maps the same tokens to the Compose `MaterialTheme`.
 
 ## 2. Navigation
 
 ```
-Onboarding: Splash → Sign-in hub (Google · Phone OTP · Email) → [Email sign-in | Register → Verify | Forgot | Link accounts] → Choose vertical → Shop setup → Pick look
+Onboarding: Splash → Demo shop (optional) → Sign-in hub (Google · Phone OTP · Email) → [Email sign-in | Register → Verify | Forgot | Link accounts] → Choose vertical → Shop setup → Pick look → First-run guide → Opening balances
+Staff: Invite link → Join → PIN switch on shared phones
 Tabs: Home | Bills | [+ New bill] | Customers | More
-More → Inventory, Cashflow, Insights, Held bills, Appointments*, Settings, Admin†, Apoorva Console‡, Help
+More (grouped) → Sell: Orders, Held bills, Warranty · Stock: Inventory, Suppliers, Reorder · Money: Cashflow, Expenses, Summary, Insights · People: Staff, Attendance, Salary · Settings, Admin†, Apoorva Console‡, Help
 Settings → Appearance, Tax (optional), Receipts, Printer, Language, Backup & data, Account, Plan
 Global: universal search (Home ⌕), sync chip → Sync status
 ```
 \* parlour only (flag `appointments`) · † Owner/Org admin only · ‡ Apoorva team only (`superAdmin` claim)
 
-## 3. Screen index (104, v1 frozen)
+## 3. Screen index (135, v1 frozen)
 The full numbered list with captions is in [`designs/README.md`](../designs/README.md). It is generated, so it never drifts from the images.
 
 | Area | Count | Highlights |
 |------|-------|-----------|
-| Onboarding & sign-in | 13 | splash, sign-in hub, email sign-in, email register, verify email, forgot password, Google chooser, link accounts, OTP, staff join via invite, shop type, shop setup (no tax questions), theme |
+| Onboarding & sign-in | 14 | splash, opening balances, sign-in hub, email sign-in, email register, verify email, forgot password, Google chooser, link accounts, OTP, staff join via invite, shop type, shop setup (no tax questions), theme |
 | Home | 7 | first-run guide, one per vertical, Telugu sample, store switcher |
 | Billing | 20 | 4 vertical pickers, weight entry, quick item, variants, line edit, discount (PIN approval), jewellery detail, parlour packages, customer picker, checkout, split, UPI QR, receipt + printed preview, held, return, scan |
 | Bills | 4 | list, detail, cancel with reason, filters |
@@ -66,20 +104,22 @@ The full numbered list with captions is in [`designs/README.md`](../designs/READ
 | Inventory | 6 | list, add (name + price only), item, adjust, categories, import |
 | Cashflow | 4 | day, entry, day close, history |
 | Insights | 5 | overview, items, customers, staff, reports & export |
-| More & Settings | 10 | more menu, appearance, tax, receipts, printer, language, backup & export, account, sign-in methods, plan |
-| Org admin | 11 | home, stores, store detail, members, add member, member detail, permissions, theme, features, audit, invite |
-| Platform console | 8 | console home, orgs, org detail, suspend/block, blocked-org view, platform analytics, app flags, sign-in config |
+| More & Settings | 12 | more menu, appearance, tax, receipts, payments, printer, language, backup & export, account, devices, sign-in methods, plan |
+| Org admin | 12 (incl. font) | home, stores, store detail, members, add member, member detail, permissions, theme, features, audit, invite |
+| Platform console | 9 | console home, orgs, org detail, support session, suspend/block, blocked-org view, platform analytics, app flags, sign-in config |
+| Small-shop essentials | 25 | demo shop, staff PIN switch, calculator billing, tips, widget, undo, edit bill, wholesale price, warranty lookup, contacts import, offers, orders ×3, catalog share, reorder, suppliers ×2, purchase, expenses ×2, daily summary, profit, attendance, salary |
+| Visual style | 1 | Clean vs Bold comparison |
 | Global | 7 | search, sync, conflict, notifications, locked feature, force update, help |
 
 ## 3a. Design freeze (v1)
-- These 104 screens are the v1 contract. Development builds from them without redesign.
+- These 135 screens are the v1 contract. Development builds from them without redesign.
 - Allowed during development: copy changes and data changes, using existing components only.
 - Not allowed without review: new components, new navigation entries, colour changes.
 - To change a design: edit the one-line spec in `designs/_src/generate.py`, regenerate, and get it reviewed in a PR. The PNG diff is the review.
 
 ## 3b. Languages
 - v1: English, Telugu, Hindi, Tamil, Kannada (String Catalog on iOS, Android resources via Skip).
-- Budget +40% string length. Labels wrap to 2 lines and never truncate amounts. Screen 10 checks this in Telugu.
+- Budget +40% string length. Labels wrap to 2 lines and never truncate amounts. Screen 19 checks this in Telugu.
 - Receipts and WhatsApp messages can use a different language from the app UI (Settings → Language).
 - Numbers and ₹ stay in Western digits with en-IN grouping in every language.
 

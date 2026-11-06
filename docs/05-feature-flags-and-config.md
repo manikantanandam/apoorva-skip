@@ -50,7 +50,24 @@ Rules:
 | `auth.apple` | bool | off | App only. Must be on for iOS release if Google is on |
 | `auth.email_verification_required` | bool | on | App only. Verify before cloud sync |
 | `auth.registrations_open` | bool | on | App only. Off pauses new sign-ups; existing users unaffected |
+| `billing.calculator_mode` | bool | on | Store setting picks the style; flag only hides it |
+| `billing.wholesale_price` | bool | on | Org on/off |
+| `billing.warranty` | bool | off | Org turns on (electronics/gifts); hidden otherwise |
+| `orders` | bool | on | Jewellery/parlour default on, kirana on (delivery) |
+| `suppliers` / `expenses` | bool | on | Off for cashier role |
+| `staff.attendance` | bool | on | Plan Pro (needs staff accounts) |
+| `offers.messages` | bool | on | Owner/manager only |
+| `summary.whatsapp_auto` | bool | off | Owner opt-in |
 | `min_app_version` | string | 1.0.0 | Force-update gate |
+
+## UI config (not flags)
+| Key | Levels | Default | Notes |
+|-----|--------|---------|-------|
+| `ui.visual_style` | App → org → store (user if not locked) | `clean` | `clean` or `bold`. App console sets the default for new orgs; org admin can switch and lock |
+| `ui.font` | Org → store | `system` | One of `ui.fonts_allowed`; downloaded on demand, cached |
+| `ui.fonts_allowed` | App only | 7 fonts | System, Inter, Poppins, Noto Sans, Hind, Mukta, Manrope |
+| `payments.upi_id` / `payments.modes` | Org → store | — / cash, UPI, card, credit | Cheque off by default |
+| `ui.accent` / `ui.theme_locked` | Org → store → user | Vertical default / off | See 04 theme resolution |
 
 ## Governance
 - Each flag has an owner, created date and expiry. Remove release flags within 2 cycles after 100%.

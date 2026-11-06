@@ -44,4 +44,7 @@
 - [ ] Rules tests pass
 - [ ] No secrets in diff (gitleaks)
 - [ ] New PII fields listed in privacy doc
-- [ ] Permissions requested are minimal (camera for barcode, Bluetooth for printer only when used)
+- [ ] Permissions are requested only when first needed: camera (barcode, bill photos), Bluetooth (printer), contacts (import), notifications (dues, low stock, summary), photos (item/bill images), biometrics (PIN switch)
+- [ ] Privacy labels cover Google / Apple sign-in data (name, email, photo) and UPI ID
+- [ ] UPI ID is verified with a ₹1 test before it appears on QR codes and receipts
+- [ ] Remote sign-out revokes tokens; support sessions are read-only, time-boxed and audited

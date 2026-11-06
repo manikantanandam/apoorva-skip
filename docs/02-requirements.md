@@ -26,6 +26,22 @@
 | FR-20 | Platform console: suspend/block/delete orgs, platform analytics, app flags | Hidden section for `superAdmin` claim; org `status` enforced by rules |
 | FR-21 | UPI QR payment, quick item, weight entry, WhatsApp receipts and reminders | Billing module; share via system share sheet / WhatsApp intent |
 | FR-22 | Sign in with Google, phone OTP or email/password; register with email; verify email; reset password; link methods. Each method on/off at app level | Firebase Auth providers; sign-in hub reads `auth.*` flags; see 05 and 08 |
+| FR-23 | Easy mode: calculator billing with optional category per amount | `BillingStrategy` "calculator"; per-store setting |
+| FR-24 | Quick staff switch with PIN / biometrics; app lock | Local PIN hash per member; LocalAuthentication / BiometricPrompt |
+| FR-25 | Undo bill within 5 min; edit saved bill with reason | Undo = cancel with reason "undo"; edit = new version, old kept for audit |
+| FR-26 | Retail/wholesale price tiers; units & packs | Item `prices[tier]`, `unit`, `packSize`; customer `defaultTier` |
+| FR-27 | Optional warranty per item (value + days/months/years), shown on bill and receipt; lookup and claims | Item `warrantyValue`, `warrantyUnit`; line `warrantyUntil` stored at sale; `WarrantyClaim` |
+| FR-28 | Orders with advance, due date, pickup/delivery; deliver → bill balance | `Order` entity linked to bill and payments |
+| FR-29 | Suppliers, purchases (items or total, photo), supplier dues and payments, reorder list | `Supplier`, `Purchase` → stock movements + cash entries |
+| FR-30 | Expenses with categories and monthly repeat; profit report | `Expense`; profit = sales − COGS − expenses |
+| FR-31 | Daily summary at day close, optional auto WhatsApp to owner | Generated locally; WhatsApp share intent / push notification |
+| FR-32 | Staff attendance, salary, advances, commission | `Attendance`, `SalaryEntry`; paid salary creates an expense |
+| FR-33 | Contacts import, birthday wishes, offer messages, catalog share, demo shop, tips, widget | Contacts permission on demand; WidgetKit / Glance via Skip |
+| FR-34 | Payments setup: UPI ID with ₹1 verification, payment modes on/off incl. cheque, UPI QR standee | Org config `payments.*`; QR generated on device |
+| FR-35 | Opening balances for customers, suppliers and cash at onboarding | Opening ledger entries dated before the first bill |
+| FR-36 | Devices list with remote sign-out | Firebase token revocation + device registry per member |
+| FR-37 | Accountant read-only role | Built-in role; rules deny writes |
+| FR-38 | Purchase return to supplier; read-only audited support sessions | Negative purchase reduces stock and dues; support session token with 30-min TTL and audit events |
 
 ## Non-functional requirements
 

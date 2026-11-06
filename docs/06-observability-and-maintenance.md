@@ -24,6 +24,7 @@ No PII, no customer names, no per-customer amounts. Every event carries `vertica
 | Activation funnel | `onboarding_step` (1–4), `vertical_selected`, `first_bill_saved` (time from install) |
 | Core usage | `bill_saved` (item count, mode, duration bucket), `bill_held`, `return_done`, `search_used`, `scan_used` |
 | Feature adoption | `feature_opened` (name) by vertical and flag state; theme changes; admin actions |
+| New features | `calculator_bill_saved`, `order_created`, `purchase_recorded`, `expense_added`, `warranty_claimed`, `sign_in_method` (google/phone/email), `font_changed`, `visual_style_changed`, `upi_verified`, `opening_balances_saved` |
 | Reliability | `sync_completed` (duration, count), `sync_failed` (reason), offline duration |
 | Retention | D1/D7/D30 per vertical, weekly active shops, bills/shop/day |
 
