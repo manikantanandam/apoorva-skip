@@ -5,10 +5,10 @@
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
 | M0 — Foundation | Docs finalised, design tokens + component kit, Dev/Stg Firebase projects, CI build job | Build green on both configs |
-| M1 — Core data | Customers, Bills, Cashflow on SQLite + Firestore sync | Offline bill + sync verified with 2 devices |
-| M2 — Inventory & reports | Inventory, dashboard, reports, export | Reports match manual totals on test data |
+| M1 — R1 Core | Sign-in (Google/phone/email), onboarding + opening balances, billing (4 verticals + Easy mode), payments setup, bills, customers, cashflow, offline sync | Offline bill + sync verified with 2 devices |
+| M2 — R2 Business | Inventory, suppliers & purchases, orders, expenses & profit, warranty, insights & reports, daily summary, devices | Reports match manual totals on test data |
 | M3 — Hardening | Crashlytics, flags, perf traces, rules tests, backup | Crash-free ≥ 99.5% in staging |
-| M3b — Verticals & admin | 4 billing strategies, theme engine, admin section, 3-level flags | One pilot shop per vertical bills end to end |
+| M3b — R3 Growth & control | Admin (roles incl. Accountant, theme, font, flags, audit), plans, attendance & salary, offers, catalog share, widget, demo, platform console | One pilot shop per vertical bills end to end |
 | M4 — Pilot | 3–5 real shops per vertical | Zero data-loss incidents for 4 weeks |
 | M5 — Release | Store submission, staged rollout | Production stable for 2 weeks |
 
@@ -49,6 +49,9 @@
 - **Localization of receipts** in 5 languages (tax labels only when tax is on).
 - **Load test** of local DB with 10k bills and 5k customers.
 - **Disaster recovery drill:** restore from backup once per quarter.
+
+## 4a. Scope freeze
+The v1 feature scope and 135 designs (Clean style) are frozen (see 01 "Small-shop essentials" and 04 §3a). New ideas go to the v2 backlog in 01.
 
 ## 5. Next steps
 1. Answer open questions above.

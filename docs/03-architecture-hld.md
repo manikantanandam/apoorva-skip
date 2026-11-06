@@ -108,7 +108,18 @@ erDiagram
   ITEM ||--o{ STOCK_MOVEMENT : tracks
   SHOP ||--o{ CASH_ENTRY : records
   CASH_ENTRY }o--o| BILL : "may link"
+  SUPPLIER ||--o{ PURCHASE : supplies
+  PURCHASE ||--|{ STOCK_MOVEMENT : adds
+  CUSTOMER ||--o{ ORDER : books
+  ORDER ||--o{ PAYMENT : "advance / balance"
+  ORDER |o--o| BILL : "billed on delivery"
+  SHOP ||--o{ EXPENSE : spends
+  MEMBER ||--o{ ATTENDANCE : marks
+  MEMBER ||--o{ SALARY_ENTRY : "paid / advance"
+  BILL_LINE ||--o{ WARRANTY_CLAIM : claims
 ```
+
+Item adds `prices` (retail, wholesale), `unit`, `packSize`, `warrantyValue`, `warrantyUnit` (days|months|years). Bill line stores `warrantyUntil` at sale time, so later changes to the item never change past warranties.
 
 Every table carries: `id` (UUID), `shopId`, `createdAt`, `updatedAt`, `deviceId`, `syncState`, `isDeleted`.
 
@@ -136,7 +147,7 @@ flowchart LR
 - `VerticalProfile` is data (synced from Firestore `verticals/{id}`). `BillingStrategy` is the only code per vertical: item picker view, line-item rules (weight, variant, stylist), receipt template. Adding handloom means one new strategy and one profile doc.
 - Cart, checkout, payments, sync, ledger and analytics are shared and vertical-agnostic.
 - `ThemeStore`, `FlagResolver` and `PermissionService` are built in `AppContainer` and injected. They have no globals.
-- Placement: `ApoorvaUI` (ThemeStore, component kit), `ApoorvaModels` (VerticalProfile, FlagResolver, Permission), `ApoorvaModules` (Billing strategies, Admin, Insights, Appointments).
+- Placement: `ApoorvaUI` (ThemeStore, component kit, font loader, icon mapping Lucide → SF Symbols / Material Symbols), `ApoorvaModels` (VerticalProfile, FlagResolver, Permission, TaxPolicy), `ApoorvaModules` (Auth sign-in hub, Billing strategies incl. calculator, Orders, Suppliers & Purchases, Expenses, Staff, Warranty, Insights, Appointments, Settings incl. Payments & Devices, Admin, Platform console).
 
 Additional entities: `ORG`, `STORE` (with `verticalId`), `MEMBER`, `ROLE`, `FLAG_OVERRIDE`, `THEME`, `AUDIT_EVENT`, `APPOINTMENT`, `SERVICE`. See the ERD in [10](10-admin-and-multi-tenancy.md).
 

@@ -9,6 +9,7 @@ A '*' suffix marks the selected chip/segment/swatch.
 """
 import html
 import random
+import re
 import pathlib
 import subprocess
 import sys
@@ -25,6 +26,37 @@ LIGHT = dict(bg="#F6F7F9", sf="#FFFFFF", tx="#111827", mu="#6B7280", bd="#E7E9EE
              ok="#15803D", er="#B91C1C", wn="#B45309")
 DARK = dict(bg="#0E1013", sf="#171A1F", tx="#F3F4F6", mu="#9CA3AF", bd="#262A31", on="#0E1013",
             ok="#4ADE80", er="#F87171", wn="#FBBF24")
+
+LIGHT_LT = dict(bg="#F5F6F8", sf="#FFFFFF", tx="#0F172A", mu="#475569", bd="#E2E8F0", on="#FFFFFF",
+                ok="#15803D", er="#B91C1C", wn="#B45309")
+DARK_LT = dict(bg="#0B0D12", sf="#151922", tx="#E5E7EB", mu="#A1A7B3", bd="#262B36", on="#0B0D12",
+               ok="#4ADE80", er="#F87171", wn="#FBBF24")
+MUTED = {
+    "brand":   ("#3F4396", "#A5B4FC", "Apoorva · Ink"),
+    "kirana":  ("#2F6F62", "#5EC4AE", "Kirana · Sage"),
+    "fancy":   ("#8A3F86", "#E0A8DC", "Fancy & Gifts · Plum"),
+    "jewel":   ("#85672C", "#D9BE85", "One-gram Jewellery · Brass"),
+    "parlour": ("#A3405C", "#F0A3B8", "Beauty Parlour · Rose"),
+}
+
+ICON_DIR = pathlib.Path(__file__).resolve().parent / "icons"
+GLYPHS = {"⌕": "search", "✕": "x", "⇩": "download", "⋯": "ellipsis", "+": "plus", "✓": "check",
+          "⇄": "arrow-left-right", "⟳": "refresh-cw", "✉": "mail", "⊘": "ban", "⚿": "lock",
+          "↑": "arrow-up-circle", "⎙": "printer", "⇪": "upload", "✦": "sparkles"}
+TAB_ICONS = ["house", "receipt-indian-rupee", "plus", "users", "layout-grid"]
+
+
+def icon(name, size=20, stroke=1.75):
+    svg = (ICON_DIR / f"{name}.svg").read_text()
+    svg = re.sub(r"<!--.*?-->", "", svg, flags=re.S)
+    svg = re.sub(r'class="[^"]*"', 'class="i"', svg)
+    svg = svg.replace('width="24"', f'width="{size}"').replace('height="24"', f'height="{size}"')
+    return svg.replace('stroke-width="2"', f'stroke-width="{stroke}"').strip()
+
+
+def glyph(x, size=20):
+    return icon(GLYPHS[x], size) if x in GLYPHS else e(x)
+
 
 THEMES = {
     "brand":   dict(a=("#4F46E5", "#A5B4FC"), name="Apoorva · Indigo"),
@@ -75,7 +107,7 @@ SCREENS = [
     ("bill-split", "Split payment across modes", "kirana", None,
      "ab:Split payment|Total ₹1,236|✕;split:Cash|50~UPI|40~Card|10;rows:Cash|Received|₹620|Paid~UPI|Ref 4412 · scanned|₹500|Paid~Card|Remaining|₹116|Pending;pad:;btn:Confirm ₹116 by card"),
     ("bill-receipt", "Success + share/print receipt", "kirana", None,
-     "hero:₹583|Bill #A-1047 saved · Ravi Kumar|✓;kv:Items|4~Paid by|Cash~Change returned|₹17;sec:Send receipt;chips:WhatsApp*,PDF,Print,SMS;btn:New bill;btn2:Back to home"),
+     "hero:₹583|Bill #A-1047 saved · Ravi Kumar|✓;kv:Items|4~Paid by|Cash~Change returned|₹17;sec:Send receipt;chips:WhatsApp*,Image,PDF,Print,SMS;btn:New bill;btn2:Back to home"),
     ("bill-held", "Held bills: park and resume", "fancy", 1,
      "ab:Held bills|3 parked · auto-clears at day close;rows:Walk-in · counter 2|5 items · 10:58|₹860|Held~Sneha P|2 items · 10:40|₹420|Held~Priya G|7 items · 09:55|₹2,140|Held;note:Tap a bill to resume. Stock is reserved until it is billed or discarded."),
     ("bill-return", "Return / exchange from a past bill", "fancy", None,
@@ -126,7 +158,7 @@ SCREENS = [
      "ab:Staff|This week|⇩;bars:Sales by staff~Kiran|100~Pooja|76~Rahul|54;rows:Kiran|Counter 1 · 142 bills|₹42,300~Pooja|Counter 2 · 108 bills|₹32,100~Rahul|Counter 3 · 77 bills|₹22,800;note:Discounts above 10% by staff: 4 this week."),
     # More / settings
     ("more-menu", "More: everything within one tap", "kirana", 4,
-     "ab:More|Sri Lakshmi Stores · Owner;rows:Inventory|1,240 items|›~Cashflow|Day open|›~Insights|Sales, items, customers|›~Held bills|3 parked|›~Settings|Printer, tax, appearance|›~Admin|Stores, staff, themes, features|›~Help & feedback|Chat, guides|›"),
+     "ab:More|Sri Lakshmi Stores · Owner|⌕;sec:Sell;chips:Orders · 4,Held bills · 3,Warranty;sec:Stock;chips:Inventory,Suppliers,Reorder · 9;sec:Money;chips:Cashflow,Expenses,Summary,Insights;sec:People;chips:Staff,Attendance,Salary;rows:Settings|Billing style, printer, tax, language|›~Admin|Stores, members, themes, features|›~Help & feedback|Chat, videos|›"),
     ("settings-appearance", "Appearance: user theme, org lock respected", "parlour", 4,
      "ab:Appearance||;seg:Light,Dark,System*;sec:Accent colour;swatch:Rose|#BE185D|*~Teal|#0F766E~Orchid|#C026D3~Gold|#A16207~Indigo|#4F46E5;tg:Use organisation theme|Set by Glow Studio admin|lock~Larger text|Bigger amounts on billing|off~Compact lists|More rows per screen|off;note:Your admin has locked the theme. Light/Dark mode is still yours."),
     # Admin
@@ -137,9 +169,9 @@ SCREENS = [
     ("admin-members", "Members across all stores", "brand", 4,
      "ab:Members|14 people · 3 stores|+;search:Name, phone or role;chips:All*,Ameerpet,Kukatpally,Dilsukhnagar,Inactive;rows:Anu R|Stylist · Ameerpet · active 5 min ago||Active=ok~Kiran M|Cashier · Kukatpally · today||Active=ok~Sravani K|Manager · Dilsukhnagar · 3 days ago||Active=ok~Rahul T|Cashier · invite sent 4 Nov||Invited=wn~Mahesh|Cashier · deactivated 1 Oct||Inactive=er"),
     ("admin-permissions", "Role permission matrix", "brand", 4,
-     "ab:Permissions|Tap a cell to change;mx:Action|Owner|Mgr|Cashier|Stylist~Create bill|1|1|1|1~Discount > 10%|1|1|0|0~Cancel bill|1|1|0|0~Returns|1|1|1|0~Credit sales|1|1|0|0~View insights|1|1|0|0~Cash out|1|1|1|0~Edit inventory|1|1|0|0;btn:Save changes"),
+     "ab:Permissions|Tap a cell to change;mx:Action|Owner|Mgr|Cashier|Stylist|Acct~Create bill|1|1|1|1|0~Discount > 10%|1|1|0|0|0~Cancel bill|1|1|0|0|0~Returns|1|1|1|0|0~Credit sales|1|1|0|0|0~View insights|1|1|0|0|1~Export reports|1|1|0|0|1~Cash out|1|1|1|0|0~Edit inventory|1|1|0|0|0;btn:Save changes"),
     ("admin-theme", "Organisation theme with lock", "brand", 4,
-     "ab:Theme|Applies to all staff devices;seg:Organisation*,Per store;swatch:Rose|#BE185D|*~Teal|#0F766E~Orchid|#C026D3~Gold|#A16207~Indigo|#4F46E5;tg:Lock theme for staff|Staff can't change accent|on~Allow dark mode|Staff choose light/dark|on~Show logo on receipts|Uses org logo|on;btn:Publish theme"),
+     "ab:Theme|Applies to all staff devices;seg:Organisation*,Per store;sec:Visual style;seg:Clean · default*,Bold;rows:Font|Inter · app and receipts|›;sec:Accent;swatch:Rose|#BE185D|*~Teal|#0F766E~Orchid|#C026D3~Gold|#A16207~Indigo|#4F46E5;tg:Lock theme for staff|Staff can't change accent|on~Allow dark mode|Staff choose light/dark|on~Show logo on receipts|Uses org logo|on;btn:Publish theme"),
     ("admin-features", "Feature flags at org / store / role level", "brand", 4,
      "ab:Features|Organisation level;seg:Organisation*,Store,Role;tg:Credit sales|Let customers pay later|on~Returns & exchange|Within 7 days|on~Appointments|Parlour stores|on~Bluetooth printing|Receipt printer|off~Loyalty points|Coming soon · set by Apoorva|lock;note:App-level switches from Apoorva always win. Then store, then role."),
     ("admin-audit", "Audit log", "brand", 4,
@@ -172,7 +204,7 @@ EXTRA = [
     ("bill-weight", ("bill-custom", "Unlisted item: bill any amount in seconds", "kirana", None,
      "ab:Quick item|Not in your list? Bill it anyway|✕;hero:₹250|Miscellaneous;field:Name (optional)|Plastic covers;chips:Misc*,Groceries,Snacks,Service;tg:Save as new item|Add to inventory for next time|off;pad:;btn:Add ₹250 to bill")),
     ("bill-fancy-variant", ("bill-line-edit", "Edit a line: qty, price, item discount, remove", "fancy", None,
-     "ab:Teddy 12in|₹499 · 3 in stock|✕;sec:Quantity;seg:−,1*,+;field:Price|₹499;sec:Item discount;seg:None,₹ off*,% off;field:Discount|₹50;kv:Line total|₹449;btn:Update line;btn2:Remove from bill")),
+     "ab:Teddy 12in|₹499 · 3 in stock|✕;sec:Quantity;seg:−,1*,+;field:Price|₹499;sec:Item discount;seg:None,₹ off*,% off;field:Discount|₹50;tg:Warranty|6 months · till 06-05-2027 · change|on;kv:Line total|₹449;btn:Update line;btn2:Remove from bill")),
     ("bill-line-edit", ("bill-discount", "Bill discount with role limit + manager PIN", "fancy", None,
      "ab:Bill discount|Subtotal ₹1,177|✕;seg:₹ amount,%*;hero:10%|−₹118 · new total ₹1,059;chips:5%,10%*,15%,Round to ₹1,050;note:Cashiers can give up to 10%. Above that a manager approves on this phone with their PIN.;btn:Apply discount")),
     ("bill-jewel", ("bill-jewel-item", "Jewellery design detail with photos", "jewel", None,
@@ -184,7 +216,7 @@ EXTRA = [
     ("bill-split", ("bill-upi", "UPI QR with amount", "kirana", None,
      "ab:Pay by UPI|Bill #A-1047|✕;qr:sri.lakshmi@okaxis;hero:₹583|Scan with any UPI app;chips:GPay,PhonePe,Paytm,BHIM;btn:Mark as received;btn2:Change mode")),
     ("bill-receipt", ("bill-receipt-preview", "Printed receipt (58 mm). Tax lines only when tax is on", "kirana", None,
-     "ab:Receipt preview|58 mm thermal · Bluetooth|✕;receipt:SRI LAKSHMI STORES|Ameerpet · 98480 12345~Bill A-1047|06-11-2026 10:52~—|~Aashirvaad Atta 5kg|265.00~Toor Dal 0.5kg|70.00~Sunflower Oil 1L x2|310.00~Amul Butter 100g|58.00~—|~Discount|-20.00~TOTAL|Rs 583.00~Cash|600.00  change 17.00~—|~Thank you! Visit again|;btn:Print;btn2:Share PDF")),
+     "ab:Receipt preview|58 mm thermal · Bluetooth|✕;receipt:SRI LAKSHMI STORES|Ameerpet · 98480 12345~Bill A-1047|06-11-2026 10:52~—|~Aashirvaad Atta 5kg|265.00~Toor Dal 0.5kg|70.00~Steel Flask 1L|310.00~  Warranty till 06-05-2027|~Amul Butter 100g|58.00~—|~Discount|-20.00~TOTAL|Rs 583.00~Cash|600.00  change 17.00~—|~Thank you! Visit again|;btn:Print;btn2:Share PDF")),
     ("bills-detail", ("bills-cancel", "Cancel needs a reason. Stock and dues reverse", "kirana", None,
      "ab:Cancel bill #A-1044|₹1,120 · Meena S|✕;pick:Entered by mistake|Wrong items or amount|#6B7280|*~Customer changed mind||#6B7280~Duplicate bill||#6B7280~Other||#6B7280;field:Note|Billed twice at counter 1;note:Stock goes back and the due of ₹1,120 is removed. This is recorded in the audit log.;btn:Cancel bill")),
     ("bills-cancel", ("bills-filter", "Filter sheet", "kirana", None,
@@ -196,7 +228,7 @@ EXTRA = [
     ("parlour-appointments", ("parlour-book", "New appointment", "parlour", None,
      "ab:New appointment||✕;field:Customer|Anjali R · 98480 33221;sec:Services;chips:Gold Facial*,Hair Spa*,Threading,Manicure;sec:Stylist;chips:Anu*,Kavya,Divya,Any free;sec:Fri 7 Nov;chips:10:00,11:30*,13:00,15:30,17:00;tg:WhatsApp confirmation|Reminder 2 hours before|on;btn:Book · 105 min · ₹2,000")),
     ("inventory-list", ("inventory-add", "Add item: only name and price required", "fancy", None,
-     "ab:New item||✕;gridbig:Add photo|Optional;field:Name|Kids Watch;field:Selling price|₹349;field:Category|Gifts;field:Stock|12;tg:Has variants|Size or colour|off~Track stock|Warn when low|on;btn2:More: barcode, cost price, tax rate;btn:Save item")),
+     "ab:New item|Only name and price are required|✕;field:Name|Kids Watch;field:Retail price|₹349;field:Wholesale price (optional)|₹290;sec:Sold as;seg:Piece*,Pack,Kg,Metre;field:Stock|12 pieces · 1 pack = 12;tg:Has warranty|Shown on bill and receipt|on;sec:Warranty period;seg:6*,12,24,Custom;seg:Days,Months*,Years;tg:Has variants|Size or colour|off;btn2:More: photo, barcode, cost, category, tax;btn:Save item")),
     ("inventory-adjust", ("inventory-categories", "Categories: manage and reorder billing chips", "fancy", 4,
      "ab:Categories|Drag to reorder billing chips|+;rows:Bangles|312 items|⋮⋮~Gifts|248 items|⋮⋮~Toys|190 items|⋮⋮~Cosmetics|276 items|⋮⋮~Hair accessories|214 items|⋮⋮")),
     ("inventory-categories", ("inventory-import", "Bulk import from Excel / CSV", "fancy", None,
@@ -238,7 +270,7 @@ EXTRA = [
     ("platform-blocked", ("platform-analytics", "Platform analytics (app level)", "brand", 4,
      "ab:Platform analytics|Last 30 days|⇩;line:Weekly active shops|9,840|+6%~60,64,70,72,78,85,88;kpis:New orgs|1,120~Activation|71%|first bill in 24 h~D30 retention|58%~Crash-free users|99.7%;bars:Active shops by type~Kirana|100~Fancy|62~Parlour|44~Jewellery|28;split:Android|78|Platform~iOS|22")),
     ("platform-analytics", ("platform-flags", "App-level flags & shop types", "brand", 4,
-     "ab:App flags|Wins over every org setting;seg:Flags*,Shop types;tg:Loyalty points|Rollout 10% · Pro only|on~Reports export|100%|on~Bluetooth printing|Android 72%|on~Kill: sync writes|Emergency stop|off;rows:Handloom|Shop type · draft||Draft=wn~Stationery|Shop type · planned||Planned;note:Changes reach phones within an hour or on the next app open.")),
+     "ab:App flags|Wins over every org setting;seg:Flags*,Shop types;kv:Default visual style|Clean · orgs may choose Bold~Allowed fonts|7 · System is default;tg:Loyalty points|Rollout 10% · Pro only|on~Reports export|100%|on~Bluetooth printing|Android 72%|on~Kill: sync writes|Emergency stop|off;rows:Handloom|Shop type · draft||Draft=wn~Stationery|Shop type · planned||Planned;note:Changes reach phones within an hour or on the next app open.")),
     ("global-sync", ("global-conflict", "Sync conflict: same bill edited on two phones", "kirana", None,
      "ab:Needs review|1 conflict · bill #A-1031|✕;note:This bill was changed on two phones while offline. Pick the correct version.;rows:This phone · Kiran|Edited 10:12 · 3 items|₹930|Pending~Counter 2 · Pooja|Edited 10:15 · 4 items|₹1,050|Pending;btn:Keep counter 2 version;btn2:Keep this phone's version")),
     ("global-conflict", ("global-notifications", "Notifications centre", "kirana", None,
@@ -268,8 +300,81 @@ EXTRA = [
 ]
 
 
+EXTRA2 = [
+    ("settings-receipt", ("settings-payments", "Payments: UPI ID, payment modes, counter QR standee", "kirana", 4,
+     "ab:Payments|How customers can pay you;field:UPI ID|srilakshmi.stores@okaxis;rows:UPI ID verified|₹1 test received from your bank app||Verified=ok;sec:Payment modes;chips:Cash*,UPI*,Card*,Credit*,Cheque;tg:Card machine|Ask for last 4 digits on card bills|off~Round off cash bills|To nearest ₹1|on;btn:Print UPI QR standee;btn2:Download QR for WhatsApp")),
+    ("home-empty", ("onboarding-opening", "Opening balances: bring dues and cash from your notebook or old app", "kirana", None,
+     "ab:Opening balances|Start with what people already owe;steps:4|4;kpis:Customers owe you|₹18,400|12 customers~You owe suppliers|₹26,000|3 suppliers;rows:Meena S|98480 11223 · owes you|₹1,120~Ramesh Traders|Supplier · you owe|₹12,000;field:Cash in drawer today|₹2,000;chips:+ Customer due,+ Supplier due,Import Excel / CSV;btn:Save balances;btn2:Skip for now")),
+    ("settings-account", ("settings-devices", "Signed-in devices; sign out a lost phone", "brand", 4,
+     "ab:Devices|2 phones signed in;rows:Redmi Note 13 · this phone|Counter 1 · synced just now|Active=ok~Samsung A15|Owner's phone · synced 2 h ago|Active=ok~iPhone 12|Last used 14 Oct · Hyderabad|Old=wn;btn2:Sign out iPhone 12;btn:Lost phone? Sign out everywhere;note:Unsynced bills on a signed-out phone are kept on that phone until someone signs in again.")),
+    ("platform-org-detail", ("platform-support", "Read-only support session (audited)", "brand", None,
+     "ab:Support · Raj Fancy|Read-only · session 18:42 left|✕;note:You are viewing as support. Nothing can be changed. Every screen you open is logged and the owner can see it.;kpis:Sync|OK|last 2 min ago~Pending changes|0~App version|1.4.2~Errors (7 days)|3;rows:Printer not found|Android · 5 Nov · 2 times||Error=er~Sync retry|4 Nov · resolved||Fixed=ok;btn:End session;btn2:Open ticket #T-2201")),
+    ("admin-theme", ("admin-font", "Organisation font: owner picks from a curated list", "brand", None,
+     "ab:Font|Applies to all stores, app and receipts;font:System|-apple-system|*~Inter|Inter~Poppins|Poppins~Noto Sans|Noto Sans~Hind|Hind~Mukta|Mukta~Manrope|Manrope;tg:Use on receipts & PDFs|Thermal printers keep their own font|on;btn:Apply font")),
+    ("settings-appearance", ("style-light-vs-bold", "Visual style: Clean is default; Bold is optional (org or app console)", "kirana", 0,
+     "=home-kirana")),
+    # Ease of use
+    ("onboarding-splash", ("onboarding-demo", "Try the app with a sample shop before signing up", "brand", None,
+     "sp:30;empty:✦|See how Apoorva works|Explore with a sample shop. Nothing is saved.;pick:Kirana / General|Sample: Sri Lakshmi Stores|#0F766E|*~Fancy & Gifts|Sample: Glitz Gifts|#C026D3~One-gram Jewellery|Sample: Swarna|#A16207~Beauty Parlour|Sample: Glow Studio|#BE185D;btn:Try sample shop;btn2:Start my own shop")),
+    ("onboarding-join", ("auth-pin-switch", "Shared counter phone: tap your name, enter PIN", "kirana", None,
+     "ab:Who's billing?|Sri Lakshmi Stores · counter 1;rows:Kumar Swamy|Owner|›~Kiran M|Cashier · on shift since 8:30|›~Pooja S|Cashier|›;hero:• • _ _|Kiran, enter your PIN;pad:;txt:Use fingerprint · Forgot PIN? Ask the owner")),
+    ("bill-kirana", ("bill-calculator", "Easy mode: bill by amount like a calculator, no item list", "kirana", 2,
+     "ab:Quick bill|Easy mode · change in Settings|⇄;kv:Item 1|₹120~Item 2|₹45~Item 3 · Soap|₹38~Total|₹203;hero:₹40|Next amount · tap a category to name it;chips:Misc*,Grocery,Snacks,Dairy;pad:;cart:4 amounts|₹243|Charge")),
+    ("bill-fancy", ("tips-overlay", "One-time tip on first use of each screen", "fancy", 2,
+     "ab:New bill|Walk-in customer|⌕;search:Search or scan barcode;chips:All*,Bangles,Gifts,Toys;grid:Glass Bangles|₹120~Photo Frame|₹349~Teddy 12in|₹499;note:Tip 1 of 3 · Tap an item to add it. Tap again to add one more. Long-press to change price or quantity.;btn:Got it;btn2:Skip tips")),
+    ("home-store-switch", ("widget-home", "Phone home-screen widget: today's sales + New bill", "kirana", None,
+     "sp:30;sec:Phone home screen;kpis:Today · Sri Lakshmi|₹12,400|46 bills · synced 2 min ago~Dues|₹3,120;chips:+ New bill,Collect due,Cash entry;sec:Small widget;kpis:Today|₹12,400|tap to bill;note:Long-press the app icon for shortcuts: New bill, Search, Collect due.")),
+    # Selling
+    ("bill-receipt", ("bill-undo", "Undo a wrong bill within 5 minutes", "kirana", None,
+     "hero:₹583|Bill #A-1047 saved · Ravi Kumar|✓;kv:Items|4~Paid by|Cash;sec:Send receipt;chips:WhatsApp*,Image,PDF,Print;cart:Saved by mistake?|4:52 left|Undo bill")),
+    ("bill-undo", ("bill-edit", "Edit a saved bill (reason + audit)", "kirana", None,
+     "ab:Edit bill #A-1044|Meena S · today 10:12|✕;rows:Basmati Rice 5kg|₹540 × 1|₹540~Toor Dal 1kg|₹140 × 2|₹280~Ghee 500ml|₹300 × 1 · removed|−₹300|Removed=er;kv:Old total|₹1,120~New total|₹820;field:Reason|Customer returned ghee before leaving;note:Stock, dues and cash update automatically. The change is saved in the audit log.;btn:Save changes")),
+    ("bill-customer", ("bill-price-tier", "Retail / wholesale price; remembered per customer", "fancy", 2,
+     "ab:New bill|Raju Traders · wholesale buyer|⌕;seg:Retail,Wholesale*;rows:Glass Bangles (box of 12)|Wholesale ₹95 · retail ₹120|₹950~Hair Clip Set|Wholesale ₹70 · retail ₹99|₹1,400~Keychain|Wholesale ₹55 · retail ₹79|₹1,100;note:Raju Traders always gets wholesale prices. Set this on the customer.;cart:3 items · 70 pieces|₹3,450|Charge")),
+    ("customers-detail", ("warranty-lookup", "Warranty check: by phone or bill number", "fancy", 3,
+     "ab:Warranty|Check before replacing|⌕;search:Phone or bill number · 98480 12345;rows:Kids Watch|Bill #GG-311 · sold 6 Nov 2026 · till 6 May 2027|6 months|Active=ok~Steel Flask 1L|Bill #GG-188 · till 2 Oct 2026|1 year|Expired=er~Hair Dryer|Bill #GG-245 · till 15 Jan 2027|1 year|Active=ok;sec:Kids Watch · claim;chips:Replace*,Repair,Refund;field:Note|Strap broken · replaced with same model;btn:Record claim")),
+    # Customers
+    ("customers-add", ("customers-import", "Import customers from phone contacts", "kirana", None,
+     "ab:Import contacts|Pick who to add · 18 selected|✕;search:Search contacts;tg:Anitha Rao|97010 55443|on~Bhaskar|90002 11887|on~Chinna (Milk)|98666 22110|off~Durga Prasad|99490 33221|on;btn:Add 18 customers;txt:Only names and numbers are imported")),
+    ("customers-statement", ("customers-offers", "Birthdays and offer messages", "parlour", 3,
+     "ab:Wishes & offers|WhatsApp · free to send;sec:Birthdays today;rows:Anjali R|Regular · 14 visits|Wish~Harika|Bridal client|Wish;sec:Send an offer;chips:All customers,Regulars*,Not visited 30 days,Birthdays this month;note:Diwali glow! 20% off on all facials till 15 Nov. Book now: 98480 33221 – Glow Studio;btn:Send to 86 regulars")),
+    # Orders & advances
+    ("bills-filter", ("orders-list", "Orders: advances, custom work, bookings, deliveries", "jewel", 4,
+     "ab:Orders|4 open · ₹8,500 advance held|+;chips:Open*,Ready,Delivered,Cancelled;rows:Lavanya K|Custom haram NK-118 · due 12 Nov|₹2,000 adv|Open=wn~Sowmya|Bridal set · due 20 Nov|₹5,000 adv|Open=wn~Ravi Kumar|Home delivery · today 6 pm|₹0|Ready=ok~Harika|Earrings repair · due 9 Nov|₹500 adv|Open=wn")),
+    ("orders-list", ("order-add", "New order with advance", "jewel", None,
+     "ab:New order||✕;field:Customer|Lavanya K · 98480 44556;field:What|Custom haram like NK-118, longer chain;field:Total price|₹4,500;field:Advance received|₹2,000;chips:Cash,UPI*;sec:Ready by;chips:Tomorrow,In 3 days,12 Nov*,Pick date;seg:Pickup*,Delivery;tg:WhatsApp when ready|Customer gets a message|on;btn:Save order · balance ₹2,500")),
+    ("order-add", ("order-detail", "Order detail: deliver and bill the balance", "jewel", None,
+     "ab:Order #O-0042|Lavanya K · custom haram|⋯;kv:Total|₹4,500~Advance (UPI, 2 Nov)|−₹2,000~Balance|₹2,500;rows:Ordered|2 Nov · by Owner||Done=ok~Ready|9 Nov · photo sent||Done=ok~Delivered|Waiting||Open=wn;btn:Deliver & collect ₹2,500;btn2:Send ready message")),
+    ("bill-jewel-item", ("catalog-share", "Share designs with photos and prices on WhatsApp", "jewel", None,
+     "ab:Share catalog|3 designs selected|✕;chips:All,Haram*,Earrings,Bangles;grid2:Lakshmi Haram|NK-118 · ₹2,450|✓~Temple Choker|NK-142 · ₹1,980|✓~Kemp Haram|NK-150 · ₹2,890|✓~Mango Mala|NK-160 · ₹3,200;tg:Show prices|Hide for wholesale buyers|on;btn:Share 3 designs on WhatsApp")),
+    # Stock & suppliers
+    ("inventory-import", ("reorder-list", "Reorder list from low stock → send to supplier", "kirana", 4,
+     "ab:Reorder|9 items low · Ramesh Traders;tg:Aashirvaad Atta 5kg|Left 2 · order 10|on~Toor Dal 1kg|Left 3 · order 20|on~Sunflower Oil 1L|Left 4 · order 12|on~Parle-G 800g|Left 5 · order 24|off;chips:Ramesh Traders*,Sai Agencies;btn:Send list on WhatsApp;btn2:Record purchase when it arrives")),
+    ("reorder-list", ("suppliers-list", "Suppliers and what you owe them", "kirana", 4,
+     "ab:Suppliers|You owe ₹18,400|+;search:Supplier name or phone;rows:Ramesh Traders|Groceries · last purchase 3 Nov|₹12,000|Due=er~Sai Agencies|Oil & snacks · 1 Nov|₹6,400|Due=er~Amul Distributor|Dairy · today|—")),
+    ("suppliers-list", ("supplier-detail", "Supplier ledger: purchases and payments", "kirana", 4,
+     "ab:Ramesh Traders|98490 11223 · since 2024|⋯;kpis:You owe|₹12,000|since 3 Nov~Bought this month|₹46,500;rows:Purchase #P-118|3 Nov · credit · 14 items|+₹12,000|Due=er~Payment · UPI|1 Nov|−₹20,000|Paid=ok~Purchase #P-109|28 Oct|+₹20,000|Paid=ok;btn:Pay supplier;btn2:New purchase")),
+    ("supplier-detail", ("purchase-add", "Record a purchase: stock and dues update", "kirana", None,
+     "ab:New purchase|Ramesh Traders|✕;seg:Purchase*,Return to supplier;seg:With items*,Total only;rows:Aashirvaad Atta 5kg|10 × ₹240|₹2,400~Toor Dal 1kg|20 × ₹125|₹2,500~Sunflower Oil 1L|12 × ₹138|₹1,656;gridbig:Bill photo|Attached · tap to view;seg:Paid now,On credit*,Part paid;btn:Save · ₹6,556 on credit")),
+    # Money
+    ("cashflow-history", ("expenses-list", "Monthly expenses by category", "kirana", 4,
+     "ab:Expenses|November · ₹38,600|+;split:Rent|52|Where money went~Salary|31~Electricity|9~Other|8;rows:Shop rent|1 Nov · repeats monthly|₹20,000~Kiran salary|1 Nov · repeats monthly|₹12,000~Electricity bill|5 Nov|₹3,450~Tea & snacks|daily · 6 entries|₹1,200")),
+    ("expenses-list", ("expense-add", "Add expense (one-time or monthly)", "kirana", None,
+     "ab:New expense||✕;hero:₹3,450|Electricity bill;chips:Rent,Salary,Electricity*,Transport,Repairs,Other;seg:Cash*,UPI,Bank;tg:Repeats every month|Remind me on the 5th|off;gridbig:Bill photo|Optional;btn:Save expense")),
+    ("cashflow-close", ("daily-summary", "End-of-day summary for the owner", "kirana", None,
+     "ab:Today's summary|Thu 6 Nov · day closed|✕;kpis:Sales|₹12,400|46 bills~Profit (est.)|₹2,980~Cash|₹5,950~UPI|₹6,450;kv:Dues collected|₹800~New credit given|₹1,120~Expenses|₹200~Top item|Aashirvaad Atta;tg:Send to my WhatsApp daily|At day close or 10 pm|on;btn:Share on WhatsApp")),
+    ("analytics-overview", ("analytics-profit", "Profit: sales minus cost minus expenses", "kirana", 4,
+     "ab:Profit|November|⇩;kpis:Net profit|₹42,300|+6% vs October~Sales|₹3,72,000~Cost of goods|₹2,91,100~Expenses|₹38,600;bars:Profit by week~W1|60~W2|80~W3|100~W4|70;note:Items without a cost price use 80% of selling price. Add cost prices for exact profit.")),
+    # Staff
+    ("parlour-staff", ("staff-attendance", "Staff attendance: one tap per person", "parlour", 4,
+     "ab:Attendance|This week · 5 staff|✓;seg:Today*,Week,Month;rows:Anu|In 9:52|Present=ok~Kavya|In 10:05|Present=ok~Divya|Half day|Half=wn~Rekha|Leave (informed)|Absent=er;mx:Staff|M|T|W|T|F|S~Anu|1|1|1|1|1|0~Kavya|1|1|0|1|1|1~Divya|1|0|1|1|1|1~Rekha|1|1|1|0|1|1")),
+    ("staff-attendance", ("staff-salary", "Salary, advances and payment → expense", "parlour", 4,
+     "ab:Salary|November;rows:Anu|₹15,000 + commission ₹1,840 · advance ₹2,000|₹14,840|Due=wn~Kavya|₹12,000 + commission ₹1,480|₹13,480|Paid=ok~Divya|₹10,000 · 2 half days · advance ₹1,000|₹8,600|Due=wn;btn:Pay Anu ₹14,840;btn2:Give advance;note:Paid salaries are added to Expenses automatically.")),
+]
+
+
 def ordered():
-    out, pending = [], list(EXTRA)
+    out, pending = [], list(EXTRA) + list(EXTRA2)
 
     def add(s):
         out.append(s)
@@ -282,6 +387,59 @@ def ordered():
     assert not pending, [p[0] for p in pending]
     return out
 
+
+FONT_LINK = ('<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@600&family=Poppins:wght@600'
+             '&family=Noto+Sans:wght@600&family=Hind:wght@600&family=Mukta:wght@600&family=Manrope:wght@600&display=block">')
+
+LIGHT_CSS = """
+body{background:#EEF0F3;font-family:-apple-system,'SF Pro Text','Noto Sans Telugu',system-ui,sans-serif}
+.top h1{font-weight:600}.top span{color:#475569}.top em{border:1px solid #E2E8F0;background:#fff;color:#334155;font-weight:600}
+svg.i{display:block;flex:none}
+.lt{border:6px solid #1C1C1E;box-shadow:0 30px 60px -24px rgba(15,23,42,.35)}
+.lt .sb{font-weight:600;align-items:center;padding-top:14px}.sb .si{display:flex;gap:5px;align-items:center}
+.lt .bd{gap:12px;padding:4px 16px 0}
+.lt .ab h2{font-weight:600;font-size:22px;letter-spacing:-.01em}.lt .ab small{font-size:13px;color:var(--mu)}
+.lt .ic{width:38px;height:38px;border-radius:10px;background:var(--sf);border:1px solid var(--bd);color:var(--tx)}
+.lt .cd{border-radius:12px;border:1px solid var(--bd);box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.lt .r{padding:11px 14px;min-height:58px}
+.lt .av{width:40px;height:40px;border-radius:50%;background:var(--soft);color:var(--a);font-weight:600;font-size:14px}
+.lt .t b{font-size:15px;font-weight:500}.lt .t i{font-size:13px;color:var(--mu)}
+.lt .v{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.lt .bg{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:6px}
+.lt .k{border-radius:12px;border:1px solid var(--bd);padding:12px 14px}
+.lt .k i{font-size:13px;color:var(--mu)}.lt .k b{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.lt .k em{font-size:12px;font-weight:500}
+.lt .k.h{background:var(--soft);border-color:transparent;color:var(--tx)}.lt .k.h i{color:var(--mu);opacity:1}.lt .k.h em{color:var(--a);opacity:1}
+.lt .sc{font-size:15px;font-weight:600;margin-top:4px}.lt .sc a{font-size:13px;font-weight:600}
+.lt .se{border-radius:10px;font-size:14px;padding:12px 14px}
+.lt .chs{gap:8px}.lt .chs b{font-size:13px;font-weight:500;padding:7px 12px;border-radius:8px;border:1px solid var(--bd);background:var(--sf);color:var(--tx)}
+.lt .chs b.on{background:var(--soft);border-color:var(--a);color:var(--a);font-weight:600}
+.lt .sg{background:color-mix(in srgb,var(--tx) 6%,transparent);border:0;border-radius:10px;padding:3px}
+.lt .sg b{font-size:13px;font-weight:500;color:var(--mu);border-radius:8px}
+.lt .sg b.on{background:var(--sf);color:var(--tx);font-weight:600;box-shadow:0 1px 3px rgba(15,23,42,.14)}
+.lt .bt{border-radius:10px;font-weight:600;font-size:15px;padding:0;height:48px;display:flex;align-items:center;justify-content:center}
+.lt .bt.o{border:1px solid var(--bd);background:var(--sf);color:var(--tx)}
+.lt .fd{border-radius:10px;padding:7px 12px}.lt .fd i{font-size:12px;color:var(--mu)}.lt .fd b{font-size:15px;font-weight:500}
+.lt .nt{border-radius:10px;font-size:13px;padding:10px 12px}
+.lt .tx{font-size:13px;color:var(--mu)}
+.lt .ch2{border-radius:12px}.lt .ch2 h3{font-size:13px;color:var(--mu);font-weight:500}.lt .ch2 h4{font-size:22px;font-weight:600}
+.lt .bs div{font-size:11px}.lt .lg{font-size:12px}
+.lt .hr b{font-size:36px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}.lt .hr i{font-size:13px;color:var(--mu)}
+.lt .pd b{border-radius:10px;font-size:20px;font-weight:500;height:46px}
+.lt .tl{border-radius:12px}.lt .tl b{font-size:13px;font-weight:500}.lt .tl i{font-size:12px;color:var(--mu)}
+.lt .cb{background:var(--a);color:var(--on);border-radius:14px;padding:10px 10px 10px 16px;box-shadow:0 10px 24px -8px color-mix(in srgb,var(--a) 60%,transparent)}
+.lt .cb .t i{color:var(--on);opacity:.85;font-size:12px}.lt .cb .t b{color:var(--on);font-size:17px;font-weight:600}
+.lt .cb .go{background:var(--on);color:var(--a);border-radius:10px;font-weight:600}
+.lt .tabs{height:78px;padding-top:9px}.lt .tabs div{font-size:11px;font-weight:500;gap:4px}
+.lt .tabs .on{color:var(--a);font-weight:600}
+.lt .tabs .nb b{width:52px;height:52px;border-radius:50%;margin-top:-20px;box-shadow:0 6px 14px -4px color-mix(in srgb,var(--a) 60%,transparent)}
+.lt .tabs .nb{color:var(--tx)}
+.lt .mk{border-radius:22px;font-weight:700}.lt .lo h1{font-weight:700}
+.lt .mx{font-size:12.5px}.lt .mx>.h{font-weight:600}
+.lt .em b{font-size:18px;font-weight:600}.lt .em i{font-size:13px;color:var(--mu)}
+.lt .plus{border-radius:50%}.lt .swi{font-size:12px}
+.lt .cd .r[style]{min-height:44px;padding:10px 14px}
+"""
 
 CSS = """
 *{box-sizing:border-box;margin:0;padding:0}
@@ -341,7 +499,7 @@ body{width:%dpx;height:%dpx;background:#ECEEF2;font-family:-apple-system,'SF Pro
 .cb{position:absolute;left:12px;right:12px;bottom:20px;background:var(--tx);color:var(--bg);border-radius:18px;padding:10px 10px 10px 16px;display:flex;align-items:center;gap:10px;box-shadow:0 10px 24px rgba(0,0,0,.18)}
 .ph.tb .cb{bottom:84px}.cb .t i{color:var(--bg);opacity:.7}.cb .t b{font-size:16px}.cb .go{background:var(--a);color:var(--on);border-radius:12px;padding:10px 18px;font-weight:700;font-size:13.5px}
 .tabs{position:absolute;bottom:0;left:0;right:0;height:72px;background:var(--sf);border-top:1px solid var(--bd);display:flex;justify-content:space-around;align-items:flex-start;padding-top:9px}
-.tabs div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--mu);width:60px}.tabs div b{font-size:18px;line-height:22px;font-weight:500}.tabs .on{color:var(--a);font-weight:600}
+.tabs div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--mu);width:60px}.tabs div b{font-size:18px;line-height:22px;font-weight:500;display:grid;place-items:center}.tabs .on{color:var(--a);font-weight:600}
 .tabs .nb b{width:42px;height:42px;margin-top:-4px;border-radius:14px;background:var(--a);color:var(--on);display:grid;place-items:center;font-size:24px;line-height:1}
 .em{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:16px 10px}.em b{font-size:18px;font-weight:700}.em i{font-style:normal;font-size:12.5px;color:var(--mu);line-height:1.4}
 .rcp{background:#fff;color:#111;font-family:Menlo,monospace;font-size:10.5px;line-height:1.55;padding:14px 16px;margin:0 22px;border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.18)}.rcp h5{text-align:center;font-size:12.5px}.rcp p{text-align:center;color:#555}.rcp div{display:flex;justify-content:space-between}.rcp hr{border:0;border-top:1px dashed #999;margin:5px 0}
@@ -374,8 +532,8 @@ def comp(kind, arg):
     E = [x.split("|") + [""] * 4 for x in arg.split("~")] if arg else []
     f = E[0] if E else [""] * 4
     if kind == "ab":
-        icon = f'<div class="ic">{e(f[2])}</div>' if f[2] else ""
-        return f'<div class="ab"><div><h2>{e(f[0])}</h2><small>{e(f[1])}</small></div>{icon}</div>'
+        ico = f'<div class="ic">{glyph(f[2], 18)}</div>' if f[2] else ""
+        return f'<div class="ab"><div><h2>{e(f[0])}</h2><small>{e(f[1])}</small></div>{ico}</div>'
     if kind == "logo":
         return f'<div class="lo"><div class="mk">A</div><h1>{e(f[0])}</h1><p>{e(f[1])}</p></div>'
     if kind == "steps":
@@ -397,7 +555,7 @@ def comp(kind, arg):
         out = []
         for t, s, v, b, *_ in E:
             if v == "+":
-                right = '<div class="plus">+</div>'
+                right = f'<div class="plus">{icon("plus", 16, 2.25)}</div>'
             else:
                 right = f'<div class="v">{e(v)}<small>{badge(b)}</small></div>'
             out.append(row(f'<div class="av">{e(t[:1])}</div>', t, s, right))
@@ -424,6 +582,13 @@ def comp(kind, arg):
             f'<div class="t" style="font-weight:inherit">{e(x[0])}</div><div class="v" style="font-size:inherit">{e(x[1])}</div></div>'
             for i, x in enumerate(E))
         return f'<div class="cd">{out}</div>'
+    if kind == "font":
+        out = "".join(
+            row("", x[0], "శ్రీ లక్ష్మి · श्री लक्ष्मी" if x[0] != "System" else "SF Pro / Roboto · Indic via Noto Sans",
+                f'<div class="rd{" on" if x[2] == "*" else ""}"></div>').replace(
+                f'<b>{e(x[0])}</b>', f'<b style="font-family:\'{x[1]}\',sans-serif;font-size:17px;font-weight:600">'
+                f'₹12,400 · {e(x[0])}</b>') for x in E)
+        return f'<div class="cd">{out}</div>'
     if kind == "gbtn":
         g = ('<b style="font-size:17px;font-weight:800;background:conic-gradient(#EA4335 0 25%,#FBBC05 0 50%,'
              '#34A853 0 75%,#4285F4 0);-webkit-background-clip:text;color:transparent">G</b>')
@@ -439,8 +604,8 @@ def comp(kind, arg):
     if kind == "sp":
         return f'<div style="height:{int(arg)}px"></div>'
     if kind == "hero":
-        icon = f'<div class="hk">{e(f[2])}</div>' if f[2] else ""
-        return f'<div class="hr">{icon}<b>{e(f[0])}</b><i>{e(f[1])}</i></div>'
+        ico = f'<div class="hk">{glyph(f[2], 26)}</div>' if f[2] else ""
+        return f'<div class="hr">{ico}<b>{e(f[0])}</b><i>{e(f[1])}</i></div>'
     if kind == "pad":
         return '<div class="pd">' + "".join(f"<b>{k}</b>" for k in "123456789·0⌫") + "</div>"
     if kind == "scan":
@@ -486,7 +651,7 @@ def comp(kind, arg):
         return (f'<div class="cb"><div class="t"><i>{e(f[0])}</i><b>{e(f[1])}</b></div>'
                 f'<div class="go">{e(f[2])} →</div></div>')
     if kind == "empty":
-        return f'<div class="em"><div class="hk">{e(f[0])}</div><b>{e(f[1])}</b><i>{e(f[2])}</i></div>'
+        return f'<div class="em"><div class="hk">{glyph(f[0], 26)}</div><b>{e(f[1])}</b><i>{e(f[2])}</i></div>'
     if kind == "receipt":
         out = ""
         for i, x in enumerate(E):
@@ -514,10 +679,14 @@ def comp(kind, arg):
     raise ValueError(f"unknown component {kind}")
 
 
-def phone(spec, theme, mode, tab):
+def phone(spec, theme, mode, tab, bold=False, label=None):
     t = THEMES[theme]
-    v = {**(LIGHT if mode == "light" else DARK), **t.get(mode, {})}
-    v["a"] = t["a"][0 if mode == "light" else 1]
+    if bold:
+        v = {**(LIGHT if mode == "light" else DARK), **t.get(mode, {})}
+        v["a"] = t["a"][0 if mode == "light" else 1]
+    else:
+        v = dict(LIGHT_LT if mode == "light" else DARK_LT)
+        v["a"] = MUTED[theme][0 if mode == "light" else 1]
     style = ";".join(f"--{k}:{val}" for k, val in v.items())
     body, overlay = "", ""
     for c in spec.split(";"):
@@ -532,18 +701,25 @@ def phone(spec, theme, mode, tab):
     if tab is not None:
         tab %= 10
         tabs = '<div class="tabs">' + "".join(
-            f'<div class="{"nb " if i == 2 else ""}{"on" if i == tab else ""}"><b>{g}</b>{n}</div>'
+            f'<div class="{"nb " if i == 2 else ""}{"on" if i == tab else ""}"><b>{icon(TAB_ICONS[i], 26 if i == 2 else 22, 2.25 if i == 2 else 1.75)}</b>{n}</div>'
             for i, (g, n) in enumerate(labels)) + "</div>"
-    cls = "ph tb" if tabs else "ph"
-    return (f'<div class="col"><div class="lb">{mode}</div><div class="{cls}" style="{style}">'
-            f'<div class="sb"><span>9:41</span><span>● ● ▮</span></div><div class="bd">{body}</div>{overlay}{tabs}</div></div>')
+    cls = ("ph tb" if tabs else "ph") + ("" if bold else " lt")
+    return (f'<div class="col"><div class="lb">{label or mode}</div><div class="{cls}" style="{style}">'
+            f'<div class="sb"><span>9:41</span><span class="si">{icon("signal", 15, 2.25)}{icon("wifi", 15, 2.25)}{icon("battery-full", 17, 2)}</span></div><div class="bd">{body}</div>{overlay}{tabs}</div></div>')
 
 
 def page(n, slug, caption, theme, tab, spec):
-    return (f'<!doctype html><meta charset="utf-8"><style>{CSS}</style>'
+    if spec.startswith("="):
+        spec = next(x[4] for x in SCREENS if x[0] == spec[1:])
+        pair = phone(spec, theme, "light", tab, label="clean style · default") + \
+            phone(spec, theme, "light", tab, bold=True, label="bold style · optional")
+    else:
+        pair = phone(spec, theme, "light", tab) + phone(spec, theme, "dark", tab)
+    fonts = FONT_LINK if "font:" in spec else ""
+    return (f'<!doctype html><meta charset="utf-8">{fonts}<style>{CSS}{LIGHT_CSS}</style>'
             f'<div class="top"><h1>{n:02d} · {e(slug.replace("-", " ").title())}</h1><span>{e(caption)}</span>'
-            f'<em>{e(THEMES[theme]["name"])}</em></div>'
-            f'<div class="row">{phone(spec, theme, "light", tab)}{phone(spec, theme, "dark", tab)}</div>')
+            f'<em>{e(MUTED[theme][2])}</em></div>'
+            f'<div class="row">{pair}</div>')
 
 
 def render(job):
@@ -552,10 +728,15 @@ def render(job):
     with tempfile.TemporaryDirectory() as tmp:
         src = pathlib.Path(tmp) / "s.html"
         src.write_text(page(n, slug, caption, theme, tab, spec), encoding="utf-8")
-        subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", f"--user-data-dir={tmp}/u",
-                        f"--force-device-scale-factor={SCALE}", f"--window-size={W},{H}",
-                        f"--screenshot={out}", src.as_uri()], check=True, capture_output=True, timeout=90)
-    Image.open(out).convert("RGB").quantize(colors=128, dither=0).save(out, optimize=True)
+        for attempt in range(3):  # headless Chrome occasionally exits early under parallel load
+            done = subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", f"--user-data-dir={tmp}/u{attempt}",
+                                   f"--force-device-scale-factor={SCALE}", "--virtual-time-budget=6000", f"--window-size={W},{H}",
+                                   f"--screenshot={out}", src.as_uri()], capture_output=True, timeout=90)
+            if done.returncode == 0:
+                break
+        else:
+            done.check_returncode()
+    Image.open(out).convert("RGB").quantize(colors=256, dither=0).save(out, optimize=True)
     return out
 
 
@@ -565,7 +746,7 @@ def index():
              "`python3 designs/_src/generate.py` (edit the one-line specs in `SCREENS` and re-run).", "",
              "| # | Screen | Theme | Shows |", "|---|--------|-------|-------|"]
     for n, (slug, caption, theme, _, _) in enumerate(ordered(), 1):
-        lines.append(f"| {n:02d} | [{slug}]({n:02d}-{slug}.png) | {THEMES[theme]['name']} | {caption} |")
+        lines.append(f"| {n:02d} | [{slug}]({n:02d}-{slug}.png) | {MUTED[theme][2]} | {caption} |")
     (OUT / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -573,7 +754,7 @@ if __name__ == "__main__":
     only = set(sys.argv[1:])
     jobs = [(n, s) for n, s in enumerate(ordered(), 1) if not only or s[0] in only]
     if not only:
-        for old in OUT.glob("[0-9][0-9]-*.png"):
+        for old in OUT.glob("[0-9]*-*.png"):
             old.unlink()
     with ThreadPoolExecutor(6) as pool:
         files = list(pool.map(render, jobs))

@@ -15,9 +15,9 @@ The shop type is chosen at onboarding. A **Vertical Profile** sets the billing s
 
 | Vertical | Billing style | Catalog fields | Default theme | Extra modules |
 |----------|---------------|----------------|---------------|---------------|
-| Kirana / General | Search-first list, loose items by weight, frequent items | Unit, weight/qty, MRP, barcode | Fresh Teal | Credit ledger (khata) |
-| Fancy & Gifts | Tap tile grid with qty badges, variant sheet | Category, variants (size/colour), barcode | Orchid | Gift wrap add-on, low-stock nudges |
-| One-gram Jewellery | Image catalog, design-code search | Design code, category, weight, images | Antique Gold | Trending designs, repeat buyers |
+| Kirana / General | Search-first list, loose items by weight, frequent items | Unit, weight/qty, MRP, barcode | Sage | Credit ledger (khata) |
+| Fancy & Gifts | Tap tile grid with qty badges, variant sheet | Category, variants (size/colour), barcode | Plum | Gift wrap add-on, low-stock nudges |
+| One-gram Jewellery | Image catalog, design-code search | Design code, category, weight, images | Brass | Trending designs, repeat buyers |
 | Beauty Parlour | Services + stylist assignment, packages | Service duration, price, stylist, package | Rose | Appointments, stylist commission |
 | Handloom (future) | Catalog + length/metre billing | Fabric, length, weave, colour | Indigo (TBD) | Tailoring orders |
 
@@ -35,6 +35,9 @@ The shop type is chosen at onboarding. A **Vertical Profile** sets the billing s
 | **Settings** | Appearance (theme), printer, tax, invoice prefix, backup |
 | **Admin** (owner/org admin) | Stores, staff & roles, permission matrix, org theme with lock, feature flags by org/store/role, audit log, invites. See [10](10-admin-and-multi-tenancy.md) |
 
+| **Payments setup** | Shop UPI ID with ₹1 verification, payment modes (Cash, UPI, Card, Credit, Cheque), printable UPI QR standee |
+| **Opening balances** | First-run entry of existing customer dues, supplier dues and cash (type, CSV or skip) |
+| **Devices** | Signed-in phones, sign out one or all (lost phone) |
 | **Platform console** (Apoorva team only) | Org list, org detail, suspend/block/delete with reason, platform analytics, app-level flags, shop-type catalogue |
 
 ## Tax (optional, not a focus)
@@ -55,6 +58,7 @@ English, Telugu, Hindi, Tamil, Kannada for both app and receipts. Each can be se
 | Role | Can |
 |------|-----|
 | Owner / Org admin | Everything, including Admin |
+| Accountant (read-only) | View bills, insights and reports; export. No edits, no billing |
 | Store manager | Billing, discounts > limit, cancel, returns, insights, day close for own store |
 | Cashier | Billing, customers (create/read), cash entries, returns if allowed |
 | Stylist | Own appointments, bill services, own performance |
@@ -65,16 +69,40 @@ English, Telugu, Hindi, Tamil, Kannada for both app and receipts. Each can be se
 - **Role-aware UI**: hidden features never show as dead buttons. Locked ones show why.
 - **Offline is normal**: there are no blocking spinners. A sync chip shows status.
 
-## MVP (first release)
-1. Onboarding with vertical choice, shop setup and theme
-2. Billing for all 4 verticals, checkout, split payment, receipt share
-3. Bills, customers with dues, cashflow with day close
-4. Inventory basics, insights overview
-5. Admin: staff & roles, theme lock, org/role feature flags
-6. Offline-first sync to Firestore
+## Small-shop essentials (added after the day-in-the-life audit)
+The audit walked a shop's whole day (open → sell → customers → stock → money → staff → close → month-end) for every shop type.
 
-## Later
-Multi-store analytics roll-up, loyalty points, GSTR-1 export, supplier purchases, web admin console, handloom vertical.
+| Area | Feature | Why it matters for a small shop |
+|------|---------|--------------------------------|
+| Ease | **Easy mode (calculator billing)** | Bill by typing amounts. There is no item list to set up. Switch in Settings → Billing style |
+| Ease | **Quick staff switch** | Shared counter phone: tap your name, enter a 4-digit PIN or use fingerprint |
+| Ease | **Demo shop + one-time tips** | Try before signing up. A short tip on first use of each screen |
+| Ease | **Home-screen widget & shortcuts** | New bill and today's sales without opening the app |
+| Selling | **Undo bill (5 min) + edit bill** | Mistakes are fixed in one tap. Edits need a reason and are audited |
+| Selling | **Retail / wholesale price** | Many kirana and fancy shops also sell to small retailers. The price tier is remembered per customer |
+| Selling | **Units & packs** | Buy a box of 12, sell by piece. Kg and metre for loose goods and cloth |
+| Selling | **Warranty (opt-in per item)** | Item has a warranty toggle with a period in days, months or years. The bill and receipt show "warranty till" a date. Warranty lookup by phone or bill. Claim as replace, repair or refund |
+| Selling | **Bill as image** | WhatsApp image receipt as well as PDF and print |
+| Customers | **Import from contacts** | Add regulars in seconds |
+| Customers | **Birthdays & offers** | Free WhatsApp wishes and offer messages to a segment |
+| Orders | **Orders with advance** | Custom jewellery, bridal bookings, repairs, home delivery. Advance first, balance billed on delivery |
+| Orders | **Catalog share** | Send design photos and prices on WhatsApp |
+| Stock | **Suppliers & purchases** | Record purchases (items or total, with bill photo), supplier dues, pay supplier. Stock and cash update automatically |
+| Stock | **Reorder list** | Low-stock items become a list sent to the supplier on WhatsApp |
+| Money | **Expenses** | Rent, salary, electricity, with monthly repeat |
+| Money | **Profit** | Sales − cost of goods − expenses. A default cost estimate is used when the cost price is missing |
+| Money | **Daily summary** | End-of-day card. Can be sent to the owner's WhatsApp automatically |
+| Staff | **Attendance & salary** | One-tap attendance, advances, commission. Salary paid goes to expenses |
+
+## Release phases (all designs ship in v1, delivered in 3 phases; see 09)
+| Phase | Scope |
+|-------|-------|
+| **R1 Core** | Sign-in (Google, phone, email), onboarding + opening balances, billing for all 4 verticals + Easy mode, checkout, payments setup & UPI, receipts, bills, customers & dues, cashflow & day close, inventory basics, offline sync, Clean theme |
+| **R2 Business** | Suppliers & purchases (incl. returns), reorder, orders & advances, expenses & profit, warranty, wholesale price & units, insights & reports, daily summary, staff PIN switch, devices |
+| **R3 Growth & control** | Admin (stores, members, roles incl. Accountant, permissions, theme, font, flags, audit), plans (Free/Pro), attendance & salary, offers & wishes, catalog share, widget, demo shop, platform console & support |
+
+## v2 backlog (no v1 designs)
+Multi-store analytics roll-up beyond the store switcher, loyalty points, GSTR-1 export, web admin console, handloom vertical, jewellery rental, barcode label printing, offers & combos, voice entry, expiry/batch, parlour consumables, online booking link, web bill link with pay, referral program, bulk price update, import from Khatabook/Vyapar files, shop timings & holidays.
 
 ## Success metrics
 - Bill completion < 20 s for a 5-item cart
