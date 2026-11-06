@@ -84,7 +84,7 @@ public struct AppUser: Codable, Sendable {
         self.isDeleted = (try? container.decodeIfPresent(Bool.self, forKey: .isDeleted)) ?? false
         self.selectedOrganization = try? container.decodeIfPresent(OrganizationSnapshot.self, forKey: .selectedOrganization)
         self.url = (try? container.decodeIfPresent(String.self, forKey: .url)) ?? ""
-        self.updatedTimestamp = (try? container.decodeIfPresent(TimeInterval.self, forKey: .url)) ?? 0
+        self.updatedTimestamp = (try? container.decodeIfPresent(TimeInterval.self, forKey: .updatedTimestamp)) ?? 0
     }
     
     public init(id: String,

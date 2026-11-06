@@ -25,6 +25,19 @@ struct CartItem: Codable, Sendable {
         case category, mrp, discountPercent, quantity, discountType
     }
     
+    // Standard Memberwise Initializer
+    init(category: InventoryItem,
+         mrp: Double,
+         discountPercent: Double = 0.0,
+         quantity: Int,
+         discountType: DiscountType = .percentage) {
+        self.category = category
+        self.mrp = mrp
+        self.discountPercent = discountPercent
+        self.quantity = quantity
+        self.discountType = discountType
+    }
+    
     // Handles default values for discountPercent and discountType
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
