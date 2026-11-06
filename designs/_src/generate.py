@@ -8,6 +8,7 @@ DSL: components separated by ';'  ->  kind:entry~entry~entry, fields inside an e
 A '*' suffix marks the selected chip/segment/swatch.
 """
 import html
+import random
 import pathlib
 import subprocess
 import sys
@@ -41,12 +42,12 @@ SCREENS = [
     # Onboarding
     ("onboarding-splash", "Brand splash", "brand", None,
      "logo:Apoorva|Billing, beautifully simple"),
-    ("onboarding-login", "Phone OTP sign-in; works offline after first login", "brand", None,
-     "ab:Welcome back|Sign in to your shop;sp:6;field:Phone number|+91 98480 12345;btn:Send OTP;txt:or;btn2:Continue with email;note:Works offline after the first sign-in. Data syncs when you are online."),
+    ("onboarding-login", "Sign-in hub: Google, phone OTP, email. Each method is on/off from app config", "brand", None,
+     "ab:Welcome|Sign in or create your shop account;sp:4;gbtn:Continue with Google;txt:or use your phone;field:Phone number|+91 98480 12345;btn:Send OTP;btn2:Sign in with email;txt:New here? Create an account with email;note:Only the methods turned on by Apoorva are shown. Works offline after the first sign-in."),
     ("onboarding-vertical", "Choose shop type: drives billing style, catalog fields and default theme", "brand", None,
      "ab:What do you sell?|We tailor billing and theme to your shop;steps:1|4;pick:Kirana / General|Quick search, loose items by weight|#0F766E~Fancy & Gifts|Item grid, variants, barcode|#C026D3|*~One-gram Jewellery|Catalog, design codes, weight|#A16207~Beauty Parlour|Services, stylists, appointments|#BE185D~More coming|Handloom, stationery, pharmacy|#6B7280;btn:Continue"),
     ("onboarding-shop", "Shop profile & tax", "fancy", None,
-     "ab:Your shop|Shown on bills and receipts;steps:2|4;field:Shop name|Glitz Gifts & Fancy;field:GSTIN (optional)|36ABCDE1234F1Z5;field:Address|Ameerpet, Hyderabad;field:Invoice prefix|GG-;seg:GST 0%,5%,12%,18%*;btn:Continue"),
+     "ab:Your shop|Shown on bills and receipts;steps:2|4;field:Shop name|Glitz Gifts & Fancy;field:Shop phone|+91 98480 12345;field:Address|Ameerpet, Hyderabad;field:Bill number prefix|GG-;note:Tax / GST is optional. Turn it on later in Settings → Tax only if you need it.;btn:Continue"),
     ("onboarding-theme", "Pick a look; preview updates live", "fancy", None,
      "ab:Pick a look|Change anytime in Settings;steps:3|4;seg:Light,Dark,System*;swatch:Teal|#0F766E~Orchid|#C026D3|*~Gold|#A16207~Rose|#BE185D~Indigo|#4F46E5~Slate|#334155;sec:Preview;kpis:Today's sales|₹12,400|+8% vs yesterday~Bills|46;btn:Finish setup"),
     # Home per vertical
@@ -70,7 +71,7 @@ SCREENS = [
     ("bill-parlour", "Parlour billing: services + stylist assignment", "parlour", 2,
      "ab:New bill|Anjali R · 11:00 appointment;seg:Services*,Packages,Products;rows:Gold Facial|60 min · Stylist Anu|₹1,200~Threading (Eyebrows)|10 min · Stylist Kavya|₹60~Hair Spa|45 min · choose stylist|+~Pedicure|40 min|+;sec:Stylist for Hair Spa;chips:Anu,Kavya*,Divya,Any free;cart:2 services|₹1,260|Charge"),
     ("bill-checkout", "Checkout: customer, totals, payment mode", "kirana", None,
-     "ab:Checkout|Bill #A-1047|✕;rows:Ravi Kumar|+91 98480 12345 · dues ₹420|Change;kv:Subtotal (4 items)|₹603~Discount|−₹20~GST included|₹12~Round off|₹0.00~Total|₹583;sec:Payment;chips:Cash*,UPI,Card,Credit,Split;btn:Collect ₹583;btn2:Hold bill"),
+     "ab:Checkout|Bill #A-1047|✕;rows:Ravi Kumar|+91 98480 12345 · dues ₹420|Change;kv:Subtotal (4 items)|₹603~Discount|−₹20~Round off|₹0.00~Total|₹583;sec:Payment;chips:Cash*,UPI,Card,Credit,Split;btn:Collect ₹583;btn2:Hold bill"),
     ("bill-split", "Split payment across modes", "kirana", None,
      "ab:Split payment|Total ₹1,236|✕;split:Cash|50~UPI|40~Card|10;rows:Cash|Received|₹620|Paid~UPI|Ref 4412 · scanned|₹500|Paid~Card|Remaining|₹116|Pending;pad:;btn:Confirm ₹116 by card"),
     ("bill-receipt", "Success + share/print receipt", "kirana", None,
@@ -133,8 +134,8 @@ SCREENS = [
      "ab:Admin|Glow Studio Group · 3 stores;kpis:Stores|3~Staff|14~Features on|11 of 16~Last sync|1 min ago;rows:Stores|Branches, verticals, GST|›~Staff & roles|Invite, assign, deactivate|›~Permissions|What each role can do|›~Theme|Organisation look & lock|›~Features|On/off by org, store, role|›~Audit log|Who changed what|›"),
     ("admin-stores", "Stores and their verticals", "brand", 4,
      "ab:Stores|3 active|+;rows:Glow Studio · Ameerpet|Beauty Parlour · 6 staff|Active|Live~Glitz Gifts · Kukatpally|Fancy & Gifts · 5 staff|Active|Live~Swarna One Gram · Dilsukhnagar|Jewellery · 3 staff|Setup|Pending;btn:Add store"),
-    ("admin-staff", "Staff and roles", "brand", 4,
-     "ab:Staff & roles|14 people|+;search:Search staff;chips:All*,Managers,Cashiers,Stylists,Inactive;rows:Anu R|Stylist · Ameerpet|Active|Live~Kiran M|Cashier · Kukatpally|Active|Live~Pooja S|Store manager · Kukatpally|Active|Live~Rahul T|Cashier · Kukatpally|Invited|Pending"),
+    ("admin-members", "Members across all stores", "brand", 4,
+     "ab:Members|14 people · 3 stores|+;search:Name, phone or role;chips:All*,Ameerpet,Kukatpally,Dilsukhnagar,Inactive;rows:Anu R|Stylist · Ameerpet · active 5 min ago||Active=ok~Kiran M|Cashier · Kukatpally · today||Active=ok~Sravani K|Manager · Dilsukhnagar · 3 days ago||Active=ok~Rahul T|Cashier · invite sent 4 Nov||Invited=wn~Mahesh|Cashier · deactivated 1 Oct||Inactive=er"),
     ("admin-permissions", "Role permission matrix", "brand", 4,
      "ab:Permissions|Tap a cell to change;mx:Action|Owner|Mgr|Cashier|Stylist~Create bill|1|1|1|1~Discount > 10%|1|1|0|0~Cancel bill|1|1|0|0~Returns|1|1|1|0~Credit sales|1|1|0|0~View insights|1|1|0|0~Cash out|1|1|1|0~Edit inventory|1|1|0|0;btn:Save changes"),
     ("admin-theme", "Organisation theme with lock", "brand", 4,
@@ -151,6 +152,136 @@ SCREENS = [
     ("global-sync", "Offline / sync status", "kirana", None,
      "ab:Sync|Offline since 10:02|✕;hero:3|changes waiting to sync|⟳;rows:Bill #A-1047|Saved on this phone|₹583|Pending~Cash out ₹200|Saved on this phone|—|Pending~New customer Anitha|Saved on this phone|—|Pending;note:Everything works offline. Changes upload automatically when you're back online.;btn:Retry now"),
 ]
+
+TABS_TE = [("⌂", "హోమ్"), ("≡", "బిల్లులు"), ("+", "కొత్త బిల్లు"), ("◎", "కస్టమర్లు"), ("⋯", "మరిన్ని")]
+
+# Added screens: (insert after slug, screen). A tab value >= 10 uses Telugu tab labels.
+EXTRA = [
+    ("onboarding-login", ("onboarding-otp", "Enter OTP (auto-read on Android)", "brand", None,
+     "ab:Verify phone|Code sent to +91 98480 12345;sp:6;hero:4 8 2 _|Enter the 4-digit code;pad:;txt:Resend code in 0:24;btn:Verify")),
+    ("onboarding-otp", ("onboarding-join", "Staff joins via invite: no shop setup needed", "brand", None,
+     "ab:You're invited|Glow Studio Group;hero:Cashier|Kukatpally store · invited by Owner|✉;kv:Name|Rahul T~Phone|+91 99000 11223~Access|Billing, customers, cash;note:You will use the shop's theme and settings. Nothing to set up.;btn:Join shop;btn2:Not you? Use another number")),
+    ("onboarding-theme", ("home-empty", "First run: guided steps instead of empty charts", "kirana", 0,
+     "ab:Sri Lakshmi Stores|Let's get you billing|⌕;empty:✦|Welcome! 3 quick steps|Most shops finish this in 5 minutes.;rows:Add your first item|Or bill with custom amounts|+~Create your first bill|Takes about 20 seconds|+~Add a customer|For credit and reminders|+;btn:Create first bill;btn2:Import items from Excel / CSV")),
+    ("home-kirana", ("home-kirana-te", "Telugu: text-length check on the same layout", "kirana", 10,
+     "ab:శ్రీ లక్ష్మి స్టోర్స్|గురు, 6 నవం · సింక్ అయింది|⌕;kpis:ఈరోజు అమ్మకాలు|₹12,400|నిన్నటి కంటే +8%~బిల్లులు|46|సగటు ₹270~చేతిలో నగదు|₹8,250~బాకీలు|₹3,120|6 కస్టమర్లు;sec:త్వరిత చర్యలు;chips:బాకీ వసూలు,నగదు ఎంట్రీ,వస్తువు జోడించు,రోజు ముగింపు;sec:ఇటీవలి బిల్లులు|అన్నీ చూడండి;rows:రవి కుమార్|#A-1046 · 10:42|₹640|చెల్లింది=ok~వాక్-ఇన్|#A-1045 · 10:31|₹185|చెల్లింది=ok~మీనా ఎస్|#A-1044 · 10:12|₹1,120|బాకీ=er")),
+    ("home-parlour", ("home-store-switch", "Store switcher for multi-store owners", "brand", None,
+     "ab:Switch store|Glow Studio Group · 3 stores|✕;pick:Glow Studio · Ameerpet|Beauty Parlour · ₹9,800 today|#BE185D|*~Glitz Gifts · Kukatpally|Fancy & Gifts · ₹18,960 today|#C026D3~Swarna One Gram · Dilsukhnagar|Jewellery · ₹42,300 today|#A16207;sec:All stores today;kpis:Combined sales|₹71,060|+9% vs last Thu~Bills|132;btn:Switch")),
+    ("bill-kirana", ("bill-weight", "Loose item by weight or by amount", "kirana", None,
+     "ab:Toor Dal (loose)|₹140 per kg|✕;seg:By weight*,By amount;hero:0.500 kg|= ₹70.00;chips:250 g,500 g*,1 kg,2 kg,5 kg;pad:;btn:Add to bill · ₹70")),
+    ("bill-weight", ("bill-custom", "Unlisted item: bill any amount in seconds", "kirana", None,
+     "ab:Quick item|Not in your list? Bill it anyway|✕;hero:₹250|Miscellaneous;field:Name (optional)|Plastic covers;chips:Misc*,Groceries,Snacks,Service;tg:Save as new item|Add to inventory for next time|off;pad:;btn:Add ₹250 to bill")),
+    ("bill-fancy-variant", ("bill-line-edit", "Edit a line: qty, price, item discount, remove", "fancy", None,
+     "ab:Teddy 12in|₹499 · 3 in stock|✕;sec:Quantity;seg:−,1*,+;field:Price|₹499;sec:Item discount;seg:None,₹ off*,% off;field:Discount|₹50;kv:Line total|₹449;btn:Update line;btn2:Remove from bill")),
+    ("bill-line-edit", ("bill-discount", "Bill discount with role limit + manager PIN", "fancy", None,
+     "ab:Bill discount|Subtotal ₹1,177|✕;seg:₹ amount,%*;hero:10%|−₹118 · new total ₹1,059;chips:5%,10%*,15%,Round to ₹1,050;note:Cashiers can give up to 10%. Above that a manager approves on this phone with their PIN.;btn:Apply discount")),
+    ("bill-jewel", ("bill-jewel-item", "Jewellery design detail with photos", "jewel", None,
+     "ab:Jhumka Gold|ER-204 · Earrings|✕;gridbig:Jhumka Gold|4 photos · swipe;kv:Price|₹890~Weight|18 g~Finish|Matte gold, kemp stones~Stock|12 pairs;chips:Similar designs,Share photo;btn:Add to bill · ₹890")),
+    ("bill-parlour", ("bill-parlour-package", "Packages & memberships with sessions left", "parlour", None,
+     "ab:Packages|Anjali R|✕;rows:Bridal Glow (5 sessions)|2 of 5 used · valid till 30 Dec|₹6,500|Active=ok~Hair Spa × 4|4 of 4 used|₹2,400|Used up=wn;sec:Sell a new package;rows:Monthly Glow|Facial + spa · 30 days|₹2,999~Gold Membership|10% off all services · 1 year|₹1,999;btn:Use 1 session today")),
+    ("bill-parlour-package", ("bill-customer", "Attach customer: search, recent or quick add", "kirana", None,
+     "ab:Customer for this bill||✕;search:Name or phone · 98480;rows:Ravi Kumar|98480 12345 · dues ₹420|›~Ravindra P|98480 77881 · last visit 3 Nov|›;sec:Recent;chips:Meena S,Suresh B,Lakshmi T;sec:New customer;field:Phone|98480 55667;field:Name|Kiran;btn:Add & attach;btn2:Continue as walk-in")),
+    ("bill-split", ("bill-upi", "UPI QR with amount", "kirana", None,
+     "ab:Pay by UPI|Bill #A-1047|✕;qr:sri.lakshmi@okaxis;hero:₹583|Scan with any UPI app;chips:GPay,PhonePe,Paytm,BHIM;btn:Mark as received;btn2:Change mode")),
+    ("bill-receipt", ("bill-receipt-preview", "Printed receipt (58 mm). Tax lines only when tax is on", "kirana", None,
+     "ab:Receipt preview|58 mm thermal · Bluetooth|✕;receipt:SRI LAKSHMI STORES|Ameerpet · 98480 12345~Bill A-1047|06-11-2026 10:52~—|~Aashirvaad Atta 5kg|265.00~Toor Dal 0.5kg|70.00~Sunflower Oil 1L x2|310.00~Amul Butter 100g|58.00~—|~Discount|-20.00~TOTAL|Rs 583.00~Cash|600.00  change 17.00~—|~Thank you! Visit again|;btn:Print;btn2:Share PDF")),
+    ("bills-detail", ("bills-cancel", "Cancel needs a reason. Stock and dues reverse", "kirana", None,
+     "ab:Cancel bill #A-1044|₹1,120 · Meena S|✕;pick:Entered by mistake|Wrong items or amount|#6B7280|*~Customer changed mind||#6B7280~Duplicate bill||#6B7280~Other||#6B7280;field:Note|Billed twice at counter 1;note:Stock goes back and the due of ₹1,120 is removed. This is recorded in the audit log.;btn:Cancel bill")),
+    ("bills-cancel", ("bills-filter", "Filter sheet", "kirana", None,
+     "ab:Filter bills||✕;sec:Date;chips:Today,Yesterday,This week*,This month,Custom;sec:Payment;chips:Cash*,UPI*,Card,Credit,Split;sec:Status;seg:All*,Paid,Due,Cancelled;sec:Staff;chips:All*,Kiran,Pooja,Rahul;btn:Show 212 bills;btn2:Reset")),
+    ("customers-collect", ("customers-reminder", "Due reminder on WhatsApp / SMS with UPI link", "kirana", None,
+     "ab:Send reminder|Meena S · due ₹1,120|✕;seg:WhatsApp*,SMS;note:Namaste Meena garu, your balance at Sri Lakshmi Stores is ₹1,120. Pay by UPI: sri.lakshmi@okaxis. Thank you!;chips:English*,తెలుగు,हिंदी,தமிழ்,ಕನ್ನಡ;tg:Add UPI payment link|Customer pays in one tap|on~Remind again in 7 days|If still unpaid|on;btn:Send on WhatsApp")),
+    ("customers-reminder", ("customers-statement", "Customer statement (PDF / image)", "kirana", None,
+     "ab:Statement|Meena S|✕;chips:This month*,Last 3 months,This year,Custom;kv:Opening balance|₹800~Bills|+₹3,240~Payments|−₹2,920~Closing balance|₹1,120;seg:PDF*,Image;btn:Share on WhatsApp;btn2:Download")),
+    ("parlour-appointments", ("parlour-book", "New appointment", "parlour", None,
+     "ab:New appointment||✕;field:Customer|Anjali R · 98480 33221;sec:Services;chips:Gold Facial*,Hair Spa*,Threading,Manicure;sec:Stylist;chips:Anu*,Kavya,Divya,Any free;sec:Fri 7 Nov;chips:10:00,11:30*,13:00,15:30,17:00;tg:WhatsApp confirmation|Reminder 2 hours before|on;btn:Book · 105 min · ₹2,000")),
+    ("inventory-list", ("inventory-add", "Add item: only name and price required", "fancy", None,
+     "ab:New item||✕;gridbig:Add photo|Optional;field:Name|Kids Watch;field:Selling price|₹349;field:Category|Gifts;field:Stock|12;tg:Has variants|Size or colour|off~Track stock|Warn when low|on;btn2:More: barcode, cost price, tax rate;btn:Save item")),
+    ("inventory-adjust", ("inventory-categories", "Categories: manage and reorder billing chips", "fancy", 4,
+     "ab:Categories|Drag to reorder billing chips|+;rows:Bangles|312 items|⋮⋮~Gifts|248 items|⋮⋮~Toys|190 items|⋮⋮~Cosmetics|276 items|⋮⋮~Hair accessories|214 items|⋮⋮")),
+    ("inventory-categories", ("inventory-import", "Bulk import from Excel / CSV", "fancy", None,
+     "ab:Import items||✕;empty:⇪|items.csv · 1,240 rows|Columns matched automatically;kv:Name|Column A~Category|Column B~Price|Column C~Stock|Column D;rows:Ready to add|1,198 items||Ready=ok~Need attention|42 rows · missing price||Fix=wn;btn:Import 1,198 items;btn2:Download template")),
+    ("cashflow-close", ("cashflow-history", "Previous days with cash differences", "kirana", 4,
+     "ab:Cash history|November|⇩;rows:Wed 5 Nov|Closed by Owner · diff ₹0|₹7,980|Matched=ok~Tue 4 Nov|Closed by Kiran · diff −₹40|₹6,420|Short=wn~Mon 3 Nov|Closed by Owner · diff ₹0|₹8,110|Matched=ok~Sun 2 Nov|Shop closed|—")),
+    ("analytics-staff", ("analytics-reports", "Reports & export", "jewel", 4,
+     "ab:Reports|Download or share|⇩;chips:This month*,Last month,Custom;rows:Sales summary|Day-wise totals by payment mode|PDF~Item-wise sales|Quantity and value by item|Excel~Customer dues|Who owes what, ageing|PDF~Cash book|All cash in and out|PDF~Staff performance|Bills, sales, discounts|Excel~Tax summary|Only when tax is on|Excel")),
+    ("settings-appearance", ("settings-tax", "Tax is optional: Off by default, same rate or per item", "kirana", 4,
+     "ab:Tax|Optional · off for most small shops;seg:Off,Same for all*,Per item;field:Tax rate|5%;seg:Price includes tax*,Add tax on top;field:GSTIN (optional)|Add only if registered;tg:Show tax on receipts|Only when tax is on|on;note:Per item: set a rate on each item. Items without a rate use 0%.")),
+    ("settings-tax", ("settings-receipt", "Receipt & bill numbering", "kirana", 4,
+     "ab:Receipts|What customers see;field:Header|Sri Lakshmi Stores;field:Footer|Thank you! Visit again;field:Bill number|Prefix A- · next A-1048;tg:Show shop logo|On PDF receipts|on~Show UPI QR|Customers pay from the receipt|on~Auto-share on WhatsApp|When customer has a phone|off;seg:58 mm*,80 mm,A4 PDF")),
+    ("settings-receipt", ("settings-printer", "Bluetooth printer pairing", "kirana", 4,
+     "ab:Printer|Bluetooth thermal;empty:⎙|Searching nearby…|Turn on your printer and keep it close.;pick:RPP02N-5821|58 mm · strong signal|#15803D|*~MTP-II|58 mm · weak signal|#B45309;tg:Print automatically|After every bill|off~Open cash drawer|If connected|off;btn:Print test page")),
+    ("settings-printer", ("settings-language", "Language: app and receipts set separately", "kirana", 4,
+     "ab:Language|Changes instantly;rows:English|English|✓~తెలుగు|Telugu|~हिंदी|Hindi|~தமிழ்|Tamil|~ಕನ್ನಡ|Kannada|;sec:Receipt language;seg:Same as app*,English,తెలుగు")),
+    ("settings-language", ("settings-backup", "Backup, restore and export your data", "kirana", 4,
+     "ab:Backup & data|Your data is yours;kpis:Last cloud backup|2 min ago|automatic~On this phone|48 MB;rows:Export all data|Excel + PDF · sent to your email|›~Backup to Google Drive|Weekly · last Sunday|›~Restore from backup|Choose a date|›;note:Bills are saved on this phone first and copied to the cloud when online.")),
+    ("settings-backup", ("settings-account", "Profile & account", "brand", 4,
+     "ab:Account|Owner · Sri Lakshmi Stores;rows:Kumar Swamy|+91 98480 12345 · Owner|›~Security|App PIN, fingerprint|›~Devices|2 phones signed in|›~Notifications|Dues, low stock, day close|›;btn2:Sign out;txt:Delete account and shop data")),
+    ("settings-account", ("settings-plan", "Plan & subscription: Free vs Pro", "brand", 4,
+     "ab:Your plan|Free · 1 store;mx:Feature|Free|Pro~Billing & customers|1|1~Staff accounts|0|1~Multiple stores|0|1~Reports export|0|1~Packages & loyalty|0|1~Priority support|0|1;kpis:Pro|₹199/month|or ₹1,999/year~Free trial|14 days|no card needed;btn:Start free trial")),
+    ("admin-members", ("admin-member-add", "Add member directly or invite by SMS", "brand", None,
+     "ab:Add member||✕;seg:Invite by SMS,Add directly*;field:Name|Sravani K;field:Phone|+91 90000 33445;sec:Role;seg:Manager*,Cashier,Stylist;sec:Stores;chips:Ameerpet,Kukatpally,Dilsukhnagar*;field:4-digit login PIN|• • • •;btn:Add member")),
+    ("admin-member-add", ("admin-member-detail", "Member detail: role, stores, deactivate", "brand", None,
+     "ab:Kiran M|Cashier · since Jun 2025|⋯;kpis:Sales this month|₹1,42,300~Bills|612~Discounts|1.8%~Cash difference|−₹40;tg:Active|Can sign in and bill|on~Kukatpally|Store access|on~Ameerpet|Store access|off;rows:Role|Cashier|Change;btn2:Deactivate member;txt:Past bills stay in reports and the audit log")),
+    ("admin-stores", ("admin-store-detail", "Store detail & edit", "brand", None,
+     "ab:Glitz Gifts · Kukatpally|Fancy & Gifts · since Mar 2025|⋯;field:Store name|Glitz Gifts;field:Address|KPHB Colony, Kukatpally;field:Bill number prefix|GG-;rows:Shop type|Fancy & Gifts|›~Theme|Orchid · locked|›~Tax|Off|›~Printer|RPP02N · paired|›;btn:Save changes")),
+    ("admin-invite", ("platform-home", "Apoorva Console: hidden, superAdmin accounts only", "brand", 4,
+     "ab:Apoorva Console|Super admin · production;kpis:Active orgs|1,284|+42 this week~Bills today|61,920~Blocked orgs|7~Sync errors|0.4%;rows:Organisations|Search, suspend, block, plans|›~Platform analytics|Growth, usage, health|›~App flags|Kill switches, rollouts|›~Shop types|Verticals catalogue|›~Support|Tickets, read-only view|›")),
+    ("platform-home", ("platform-orgs", "All organisations", "brand", 4,
+     "ab:Organisations|1,284 total|⌕;search:Org name, owner phone or ID;chips:All*,Active,Suspended,Blocked,Pro,Trial;rows:Glow Studio Group|Parlour · 3 stores · Pro|₹4.2L/mo|Active=ok~Sri Lakshmi Stores|Kirana · 1 store · Free|₹3.1L/mo|Active=ok~Raj Fancy|Fancy · payment due|₹0.9L/mo|Suspended=wn~Fake Mart|Kirana · 12 spam reports|—|Blocked=er")),
+    ("platform-orgs", ("platform-org-detail", "Organisation detail", "brand", None,
+     "ab:Raj Fancy|Org 7F2A · since Jan 2026|⋯;kpis:Status|Suspended|payment due 12 days~Plan|Pro~Stores|2~Members|6;rows:Owner|Raj K · 98490 22113|Call~Last active|Today 11:20|—~Bills this month|1,204|—~App version|1.4.2 · Android|—;btn:Reactivate;btn2:Block organisation")),
+    ("platform-org-detail", ("platform-org-block", "Suspend / block / delete with reason; owner notified", "brand", None,
+     "ab:Block organisation|Raj Fancy|✕;seg:Suspend*,Block,Delete;pick:Payment overdue||#B45309|*~Fraud or abuse||#B91C1C~Terms violation||#B91C1C~Owner request||#6B7280;seg:7 days,30 days*,Until lifted;tg:Notify owner by SMS|With reason and how to fix|on~Allow data export|Owner can still download data|on;btn:Suspend for 30 days")),
+    ("platform-org-block", ("platform-blocked", "What a suspended org's staff see", "brand", None,
+     "sp:90;empty:⊘|Account paused|Glitz Gifts is paused because the subscription is overdue.;kv:Reason|Payment overdue~Since|6 Nov 2026~Your data|Safe · read-only;btn:Pay & reactivate;btn2:Export my data;txt:Need help? Call 1800 123 4567")),
+    ("platform-blocked", ("platform-analytics", "Platform analytics (app level)", "brand", 4,
+     "ab:Platform analytics|Last 30 days|⇩;line:Weekly active shops|9,840|+6%~60,64,70,72,78,85,88;kpis:New orgs|1,120~Activation|71%|first bill in 24 h~D30 retention|58%~Crash-free users|99.7%;bars:Active shops by type~Kirana|100~Fancy|62~Parlour|44~Jewellery|28;split:Android|78|Platform~iOS|22")),
+    ("platform-analytics", ("platform-flags", "App-level flags & shop types", "brand", 4,
+     "ab:App flags|Wins over every org setting;seg:Flags*,Shop types;tg:Loyalty points|Rollout 10% · Pro only|on~Reports export|100%|on~Bluetooth printing|Android 72%|on~Kill: sync writes|Emergency stop|off;rows:Handloom|Shop type · draft||Draft=wn~Stationery|Shop type · planned||Planned;note:Changes reach phones within an hour or on the next app open.")),
+    ("global-sync", ("global-conflict", "Sync conflict: same bill edited on two phones", "kirana", None,
+     "ab:Needs review|1 conflict · bill #A-1031|✕;note:This bill was changed on two phones while offline. Pick the correct version.;rows:This phone · Kiran|Edited 10:12 · 3 items|₹930|Pending~Counter 2 · Pooja|Edited 10:15 · 4 items|₹1,050|Pending;btn:Keep counter 2 version;btn2:Keep this phone's version")),
+    ("global-conflict", ("global-notifications", "Notifications centre", "kirana", None,
+     "ab:Notifications|3 new|✓;rows:Low stock · 4 items|Teddy, gift wrap and 2 more|10:30|New=wn~Day not closed|Yesterday's cash is still open|09:00|New=er~Meena S paid ₹800|UPI · auto-matched|Yesterday~Backup complete|All data safe in the cloud|Yesterday")),
+    ("global-notifications", ("global-locked", "Feature not allowed for this role or plan", "fancy", None,
+     "ab:Insights||✕;sp:40;empty:⚿|Ask your owner for access|Insights are available to owners and managers.;btn:Request access;btn2:Go back;note:For Pro features, owners see an Upgrade button here instead.")),
+    ("global-locked", ("global-update", "Force update (min_app_version)", "brand", None,
+     "sp:110;empty:↑|Update required|This version can no longer sync safely. Update to keep billing.;kv:Your version|1.2.0~Required|1.4.0;btn:Update now;txt:Unsynced bills are safe and upload after the update")),
+    ("global-update", ("global-help", "Help & feedback", "kirana", 4,
+     "ab:Help|We reply within 1 hour;search:Search help · e.g. printer;rows:How to bill loose items|2 min video|›~Connect a Bluetooth printer|Step by step|›~Collect dues on WhatsApp|Guide|›;chips:Chat on WhatsApp,Call us,Report a bug;note:Report a bug attaches app logs (no customer data) so we can fix it faster.")),
+    ("onboarding-login", ("auth-email-login", "Email sign-in", "brand", None,
+     "ab:Sign in with email||✕;field:Email|kumar.swamy@gmail.com;field:Password|••••••••••   👁;txt:Forgot password?;btn:Sign in;txt:or;gbtn:Continue with Google;txt:No account? Create one")),
+    ("auth-email-login", ("auth-email-register", "Email registration", "brand", None,
+     "ab:Create account|Free · no card needed|✕;field:Your name|Kumar Swamy;field:Email|kumar.swamy@gmail.com;field:Password|••••••••••   👁;txt:Strong password · 8+ characters with a number;tg:I agree to the Terms and Privacy Policy||on;btn:Create account;txt:or;gbtn:Sign up with Google")),
+    ("auth-email-register", ("auth-email-verify", "Verify email (when required by app config)", "brand", None,
+     "sp:60;empty:✉|Check your inbox|We sent a verification link to kumar.swamy@gmail.com;btn:Open mail app;btn2:Resend link in 0:45;txt:Wrong email? Change it;note:You can start setting up your shop now. Syncing to the cloud starts after you verify.")),
+    ("auth-email-verify", ("auth-forgot-password", "Forgot password", "brand", None,
+     "ab:Reset password|We'll email you a reset link|✕;field:Email|kumar.swamy@gmail.com;btn:Send reset link;note:Signed up with Google or phone? Use that method instead. There is no password to reset.;txt:Back to sign in")),
+    ("auth-forgot-password", ("auth-google", "Google account chooser (system sheet)", "brand", None,
+     "sp:40;gbtn:Choose an account;txt:to continue to Apoorva;rows:Kumar Swamy|kumar.swamy@gmail.com|›~Sri Lakshmi Stores|srilakshmi.stores@gmail.com|›~Use another account||›;note:Apoorva gets only your name, email and profile photo.")),
+    ("auth-google", ("auth-link-accounts", "Same email already registered: link instead of duplicating", "brand", None,
+     "ab:Link your accounts||✕;empty:⇄|Account already exists|kumar.swamy@gmail.com is registered with email and password.;field:Password|••••••••••;btn:Link Google & sign in;btn2:Use a different Google account;note:After linking you can sign in with either method. Your shop data stays the same.")),
+    ("settings-account", ("settings-signin-methods", "Sign-in methods linked to this account", "brand", 4,
+     "ab:Sign-in methods|At least one must stay linked;rows:Phone|+91 98480 12345|Linked=ok~Google|kumar.swamy@gmail.com|Linked=ok~Email & password|Not added|+;btn2:Change password;note:Methods turned off by Apoorva are hidden here. If your only method is turned off you will be asked to link another one.")),
+    ("platform-flags", ("platform-auth-config", "App-level sign-in configuration", "brand", 4,
+     "ab:Sign-in methods|App level · all organisations;tg:Phone OTP|India +91 · SMS cost ₹0.12 each|on~Email & password|Sign in and register|on~Google|Android + iOS|on~Apple|iOS · must be on before App Store release|off~Email verification required|Before cloud sync|on~New registrations|Turn off to pause sign-ups|on;note:At least one method must stay on. Changes apply on the next app open. Signed-in users stay signed in.")),
+]
+
+
+def ordered():
+    out, pending = [], list(EXTRA)
+
+    def add(s):
+        out.append(s)
+        for p in [p for p in pending if p[0] == s[0]]:
+            pending.remove(p)
+            add(p[1])
+
+    for s in SCREENS:
+        add(s)
+    assert not pending, [p[0] for p in pending]
+    return out
+
 
 CSS = """
 *{box-sizing:border-box;margin:0;padding:0}
@@ -212,6 +343,9 @@ body{width:%dpx;height:%dpx;background:#ECEEF2;font-family:-apple-system,'SF Pro
 .tabs{position:absolute;bottom:0;left:0;right:0;height:72px;background:var(--sf);border-top:1px solid var(--bd);display:flex;justify-content:space-around;align-items:flex-start;padding-top:9px}
 .tabs div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--mu);width:60px}.tabs div b{font-size:18px;line-height:22px;font-weight:500}.tabs .on{color:var(--a);font-weight:600}
 .tabs .nb b{width:42px;height:42px;margin-top:-4px;border-radius:14px;background:var(--a);color:var(--on);display:grid;place-items:center;font-size:24px;line-height:1}
+.em{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:16px 10px}.em b{font-size:18px;font-weight:700}.em i{font-style:normal;font-size:12.5px;color:var(--mu);line-height:1.4}
+.rcp{background:#fff;color:#111;font-family:Menlo,monospace;font-size:10.5px;line-height:1.55;padding:14px 16px;margin:0 22px;border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.18)}.rcp h5{text-align:center;font-size:12.5px}.rcp p{text-align:center;color:#555}.rcp div{display:flex;justify-content:space-between}.rcp hr{border:0;border-top:1px dashed #999;margin:5px 0}
+.qr{background:#fff;border-radius:18px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:6px;margin:0 60px}.qr i{font-style:normal;font-size:11px;color:#555}
 """ % (W, H)
 
 
@@ -224,6 +358,9 @@ def sel(items):
 
 
 def badge(text):
+    if "=" in text:
+        text, cls = text.split("=")
+        return f'<span class="bg {cls}">{e(text)}</span>'
     cls = {"Paid": "ok", "Live": "ok", "Due": "er", "Out": "er", "Cancelled": "er",
            "Low": "wn", "Pending": "wn", "Held": "wn"}.get(text, "")
     return f'<span class="bg {cls}">{e(text)}</span>' if text else ""
@@ -287,6 +424,10 @@ def comp(kind, arg):
             f'<div class="t" style="font-weight:inherit">{e(x[0])}</div><div class="v" style="font-size:inherit">{e(x[1])}</div></div>'
             for i, x in enumerate(E))
         return f'<div class="cd">{out}</div>'
+    if kind == "gbtn":
+        g = ('<b style="font-size:17px;font-weight:800;background:conic-gradient(#EA4335 0 25%,#FBBC05 0 50%,'
+             '#34A853 0 75%,#4285F4 0);-webkit-background-clip:text;color:transparent">G</b>')
+        return f'<div class="bt o" style="display:flex;gap:10px;justify-content:center;align-items:center">{g}{e(arg)}</div>'
     if kind in ("btn", "btn2"):
         return f'<div class="bt{" o" if kind == "btn2" else ""}">{e(arg)}</div>'
     if kind == "field":
@@ -326,13 +467,15 @@ def comp(kind, arg):
         ops = [1, .55, .28, .15]
         segs = "".join(f'<div style="flex:{x[1]};background:var(--a);opacity:{ops[i]}"></div>' for i, x in enumerate(E))
         leg = "".join(f'<span><b>{e(x[0])}</b> {e(x[1])}%</span>' for x in E)
-        return f'<div class="ch2"><h3>Payment modes</h3><div class="spl">{segs}</div><div class="lg">{leg}</div></div>'
+        return f'<div class="ch2"><h3>{e(E[0][2] or "Payment modes")}</h3><div class="spl">{segs}</div><div class="lg">{leg}</div></div>'
     if kind == "mx":
-        cells = "".join(f'<div class="h{" l" if i == 0 else ""}">{e(h)}</div>' for i, h in enumerate(f[:5]))
+        n = len([h for h in f if h])
+        cells = "".join(f'<div class="h{" l" if i == 0 else ""}">{e(h)}</div>' for i, h in enumerate(f[:n]))
         for x in E[1:]:
             cells += f'<div class="l">{e(x[0])}</div>' + "".join(
-                '<div class="y">✓</div>' if v == "1" else '<div class="n">—</div>' for v in x[1:5])
-        return f'<div class="cd"><div class="mx">{cells}</div></div>'
+                '<div class="y">✓</div>' if v == "1" else '<div class="n">—</div>' for v in x[1:n])
+        cols = f"grid-template-columns:1.8fr repeat({n - 1},1fr)"
+        return f'<div class="cd"><div class="mx" style="{cols}">{cells}</div></div>'
     if kind == "slots":
         out = ""
         for tm, t, s, *_ in E:
@@ -342,6 +485,32 @@ def comp(kind, arg):
     if kind == "cart":
         return (f'<div class="cb"><div class="t"><i>{e(f[0])}</i><b>{e(f[1])}</b></div>'
                 f'<div class="go">{e(f[2])} →</div></div>')
+    if kind == "empty":
+        return f'<div class="em"><div class="hk">{e(f[0])}</div><b>{e(f[1])}</b><i>{e(f[2])}</i></div>'
+    if kind == "receipt":
+        out = ""
+        for i, x in enumerate(E):
+            if x[0] == "—":
+                out += "<hr>"
+            elif i == 0:
+                out += f"<h5>{e(x[0])}</h5><p>{e(x[1])}</p>"
+            elif not x[1]:
+                out += f"<p>{e(x[0])}</p>"
+            else:
+                out += f"<div><span>{e(x[0])}</span><span>{e(x[1])}</span></div>"
+        return f'<div class="rcp">{out}</div>'
+    if kind == "qr":
+        n, s = 25, 8
+        rnd = random.Random(arg)
+        finder = ((0, 0), (n - 7, 0), (0, n - 7))
+        parts = [f'<rect x="{x * s}" y="{y * s}" width="{s}" height="{s}"/>' for y in range(n) for x in range(n)
+                 if not any(fx - 1 <= x < fx + 8 and fy - 1 <= y < fy + 8 for fx, fy in finder) and rnd.random() < .5]
+        for fx, fy in finder:
+            parts.append(f'<rect x="{fx * s}" y="{fy * s}" width="{7 * s}" height="{7 * s}"/>'
+                         f'<rect x="{(fx + 1) * s}" y="{(fy + 1) * s}" width="{5 * s}" height="{5 * s}" fill="#fff"/>'
+                         f'<rect x="{(fx + 2) * s}" y="{(fy + 2) * s}" width="{3 * s}" height="{3 * s}"/>')
+        return (f'<div class="qr"><svg viewBox="0 0 {n * s} {n * s}" width="168" height="168" fill="#111">'
+                f'{"".join(parts)}</svg><i>{e(arg)}</i></div>')
     raise ValueError(f"unknown component {kind}")
 
 
@@ -359,10 +528,12 @@ def phone(spec, theme, mode, tab):
         else:
             body += h
     tabs = ""
+    labels = TABS_TE if tab is not None and tab >= 10 else TABS
     if tab is not None:
+        tab %= 10
         tabs = '<div class="tabs">' + "".join(
             f'<div class="{"nb " if i == 2 else ""}{"on" if i == tab else ""}"><b>{g}</b>{n}</div>'
-            for i, (g, n) in enumerate(TABS)) + "</div>"
+            for i, (g, n) in enumerate(labels)) + "</div>"
     cls = "ph tb" if tabs else "ph"
     return (f'<div class="col"><div class="lb">{mode}</div><div class="{cls}" style="{style}">'
             f'<div class="sb"><span>9:41</span><span>● ● ▮</span></div><div class="bd">{body}</div>{overlay}{tabs}</div></div>')
@@ -393,14 +564,17 @@ def index():
              "Each image shows one screen in **light (left)** and **dark (right)**. Generated by",
              "`python3 designs/_src/generate.py` (edit the one-line specs in `SCREENS` and re-run).", "",
              "| # | Screen | Theme | Shows |", "|---|--------|-------|-------|"]
-    for n, (slug, caption, theme, _, _) in enumerate(SCREENS, 1):
+    for n, (slug, caption, theme, _, _) in enumerate(ordered(), 1):
         lines.append(f"| {n:02d} | [{slug}]({n:02d}-{slug}.png) | {THEMES[theme]['name']} | {caption} |")
     (OUT / "README.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
     only = set(sys.argv[1:])
-    jobs = [(n, s) for n, s in enumerate(SCREENS, 1) if not only or s[0] in only]
+    jobs = [(n, s) for n, s in enumerate(ordered(), 1) if not only or s[0] in only]
+    if not only:
+        for old in OUT.glob("[0-9][0-9]-*.png"):
+            old.unlink()
     with ThreadPoolExecutor(6) as pool:
         files = list(pool.map(render, jobs))
     index()

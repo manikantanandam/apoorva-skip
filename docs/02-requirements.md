@@ -12,7 +12,7 @@
 | FR-06 | Show dashboard totals for today | Aggregate queries on local DB |
 | FR-07 | Export reports to CSV/PDF | Generated on device from local data |
 | FR-08 | Works fully offline; syncs later | Write local first, queue to outbox, `FirestoreSyncService` pushes/pulls |
-| FR-09 | Shop profile and GST details | Settings module; stored per shop in Firestore + cache locally |
+| FR-09 | Shop profile (name, phone, address, bill prefix). No tax questions at registration | Settings module; stored per shop in Firestore + cached locally |
 | FR-10 | Feature flags at app, org, store and role level | `FlagResolver` over Remote Config + Firestore overrides (see 05) |
 | FR-11 | Shop chooses a vertical; billing UI and catalog fields follow it | `VerticalProfile` + `BillingStrategy` protocol (see 03) |
 | FR-12 | User changes theme (accent, light/dark); admin can set and lock org/store theme | `ThemeStore` resolution order (see 04) |
@@ -20,6 +20,12 @@
 | FR-14 | Shop analytics: sales trend, items, customers/dues, staff | Local aggregate queries; no network needed (see 06) |
 | FR-15 | Appointments with stylist assignment (parlour) | Appointments module, flag `appointments` |
 | FR-16 | Universal search across customers, bills, items and actions | SQLite FTS5 index |
+| FR-17 | Optional tax: org config `taxMode` = off (default) / fixed / perItem, plus `pricesIncludeTax`, optional GSTIN | `TaxPolicy` in `ApoorvaModels`; item `taxRate` used only in perItem mode |
+| FR-18 | Free / Pro plans with trial | `plan.*` flags resolved with org flags; store billing via App Store / Play |
+| FR-19 | Org owner adds, invites, deactivates members | Admin module + Cloud Function for claims |
+| FR-20 | Platform console: suspend/block/delete orgs, platform analytics, app flags | Hidden section for `superAdmin` claim; org `status` enforced by rules |
+| FR-21 | UPI QR payment, quick item, weight entry, WhatsApp receipts and reminders | Billing module; share via system share sheet / WhatsApp intent |
+| FR-22 | Sign in with Google, phone OTP or email/password; register with email; verify email; reset password; link methods. Each method on/off at app level | Firebase Auth providers; sign-in hub reads `auth.*` flags; see 05 and 08 |
 
 ## Non-functional requirements
 
@@ -33,7 +39,7 @@
 | NFR-06 | Security | Data encrypted at rest and in transit | Firestore TLS; device-level encryption; SQLCipher option (see 08) |
 | NFR-07 | Privacy | Minimal PII, deletion on request | Customer delete = soft delete + scheduled purge |
 | NFR-08 | Accessibility | Dynamic Type, VoiceOver/TalkBack labels, 4.5:1 contrast | Design tokens in 04 meet contrast |
-| NFR-09 | Localization | English + Hindi first; currency ₹ with locale formatting | String catalogs / Android resources; date/number formatting independent of machine locale (per repo rule) |
+| NFR-09 | Localization | English, Telugu, Hindi, Tamil, Kannada (app and receipts set separately); currency ₹ with locale formatting | String catalogs / Android resources; date/number formatting independent of machine locale (per repo rule) |
 | NFR-10 | Platform | iOS 17+, Android 9+ (API 28+) | Deployment targets set in Skip/Xcode |
 | NFR-11 | Observability | Crash-free users ≥ 99.5% | Crashlytics + custom logs (see 06) |
 | NFR-12 | Maintainability | Module boundaries enforced by package graph | SwiftPM libraries; no singletons; DI via `AppContainer` |

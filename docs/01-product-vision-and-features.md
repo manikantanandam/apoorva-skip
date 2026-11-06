@@ -25,7 +25,7 @@ The shop type is chosen at onboarding. A **Vertical Profile** sets the billing s
 
 | Module | Key features |
 |--------|--------------|
-| **Billing (POS)** | Vertical-specific item picker, universal search, barcode scan, cart, discounts, GST, split payment (cash/UPI/card/credit), hold & resume, returns/exchange, receipt print (Bluetooth) or share (WhatsApp/PDF/SMS) |
+| **Billing (POS)** | Vertical-specific item picker, universal search, barcode scan, quick/custom-amount item, weight entry, line and bill discounts (manager PIN above limit), optional tax, UPI QR, split payment (cash/UPI/card/credit), hold & resume, returns/exchange, receipt print (Bluetooth) or share (WhatsApp/PDF/SMS) |
 | **Bills & Sales** | List with quick filters, detail, reprint, share, collect, cancel with reason |
 | **Customers** | Phone lookup, credit ledger and dues, lifetime value, add with minimal fields |
 | **Inventory** | Items, variants, stock adjust with reason, low/out of stock |
@@ -34,6 +34,21 @@ The shop type is chosen at onboarding. A **Vertical Profile** sets the billing s
 | **Shop analytics (Insights)** | Sales trend, items, customers/dues ageing, staff leaderboard, export |
 | **Settings** | Appearance (theme), printer, tax, invoice prefix, backup |
 | **Admin** (owner/org admin) | Stores, staff & roles, permission matrix, org theme with lock, feature flags by org/store/role, audit log, invites. See [10](10-admin-and-multi-tenancy.md) |
+
+| **Platform console** (Apoorva team only) | Org list, org detail, suspend/block/delete with reason, platform analytics, app-level flags, shop-type catalogue |
+
+## Tax (optional, not a focus)
+- Registration never asks about GST or tax rates. Tax is **Off** by default.
+- Org setting under Settings → Tax: **Off** · **Same rate for all items** · **Per item** (rate set on each item; default 0%). Prices can include tax or add it on top.
+- GSTIN is an optional field in Settings. Tax lines appear on receipts and reports only when tax is on.
+
+## Plans
+- **Free**: 1 store, owner only, billing, customers, cashflow, inventory, insights.
+- **Pro** (₹199/month or ₹1,999/year, 14-day trial): staff accounts, multiple stores, reports export, packages & loyalty, priority support.
+- Plan gating uses feature flags (see 05). A locked feature shows an upgrade or ask-owner screen, never a dead button.
+
+## Languages
+English, Telugu, Hindi, Tamil, Kannada for both app and receipts. Each can be set separately.
 
 ## Roles (summary; full matrix in 10)
 

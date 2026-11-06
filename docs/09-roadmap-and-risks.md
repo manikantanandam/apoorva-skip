@@ -20,7 +20,7 @@
 | Skip/Android parity gaps (Bluetooth printing, Firebase on Android) | High | Medium | Spike Android printer early; keep platform code behind protocols |
 | Firestore cost from listeners | Medium | Medium | Scope listeners by date/shop; paginate; monitor reads |
 | Firebase SDK breaking changes | Low | Medium | Pin versions; upgrade monthly |
-| GST rule changes | Medium | Medium | Keep tax rules in Remote Config / data, not code |
+| Tax rule changes (tax-enabled shops only) | Medium | Medium | Keep tax rules in Remote Config / data, not code |
 | Single developer bus factor | High | High | Docs, runbook, CI automation |
 | Data loss from bad migration | Low | High | Migration tests from every prior version, backup before migrate |
 
@@ -29,9 +29,9 @@
 1a. Can one org own stores of different verticals? (Assumed yes.)
 1b. Pricing plans: which features are paid (multi-store, export, loyalty)?
 2. Login model for shop staff: phone OTP or email?
-3. Tax: GST only, or also composite scheme?
+3. ~~Tax~~ Decided: optional org config (off / same rate / per item), not asked at registration.
 4. Printer: Bluetooth thermal only, or also network/USB?
-5. Languages for v1: English only, or English + Hindi?
+5. ~~Languages~~ Decided: English, Telugu, Hindi, Tamil, Kannada.
 6. Pricing/licensing: free, subscription, or per-device?
 
 ## 4. Things you may have missed
@@ -46,7 +46,7 @@
 - **Number/receipt sequence:** gap-free invoice numbers per device need a strategy (reserve blocks from server).
 - **Hardware:** barcode scanner via camera only in v1; external scanners later.
 - **Accessibility audit** before store release.
-- **Localization of receipts** (GST labels).
+- **Localization of receipts** in 5 languages (tax labels only when tax is on).
 - **Load test** of local DB with 10k bills and 5k customers.
 - **Disaster recovery drill:** restore from backup once per quarter.
 
