@@ -39,9 +39,17 @@ Rules:
 | `insights.view` | bool | on | Owner/manager |
 | `insights.export` | bool | off | Rollout |
 | `loyalty` | bool | off | Not released (app locked) |
-| `multi_store` | bool | off | Paid plan |
+| `multi_store` | bool | off | Pro plan |
+| `plan.staff_accounts` / `plan.reports_export` / `plan.packages` | bool | off | Turned on by Pro plan or trial |
+| `tax.enabled` | derived | off | From org `taxMode`, not a flag. Listed here so it is not duplicated as one |
 | `sync.batch_size` / `sync.interval_sec` | int | 50 / 30 | App only |
 | `kill.sync_writes` | bool | off | Emergency, app only |
+| `auth.phone_otp` | bool | on | App only. Sign-in hub hides it when off |
+| `auth.email_password` | bool | on | App only. Covers email sign-in and registration |
+| `auth.google` | bool | on | App only |
+| `auth.apple` | bool | off | App only. Must be on for iOS release if Google is on |
+| `auth.email_verification_required` | bool | on | App only. Verify before cloud sync |
+| `auth.registrations_open` | bool | on | App only. Off pauses new sign-ups; existing users unaffected |
 | `min_app_version` | string | 1.0.0 | Force-update gate |
 
 ## Governance

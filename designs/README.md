@@ -6,52 +6,106 @@ Each image shows one screen in **light (left)** and **dark (right)**. Generated 
 | # | Screen | Theme | Shows |
 |---|--------|-------|-------|
 | 01 | [onboarding-splash](01-onboarding-splash.png) | Apoorva · Indigo | Brand splash |
-| 02 | [onboarding-login](02-onboarding-login.png) | Apoorva · Indigo | Phone OTP sign-in; works offline after first login |
-| 03 | [onboarding-vertical](03-onboarding-vertical.png) | Apoorva · Indigo | Choose shop type: drives billing style, catalog fields and default theme |
-| 04 | [onboarding-shop](04-onboarding-shop.png) | Fancy & Gifts · Orchid | Shop profile & tax |
-| 05 | [onboarding-theme](05-onboarding-theme.png) | Fancy & Gifts · Orchid | Pick a look; preview updates live |
-| 06 | [home-kirana](06-home-kirana.png) | Kirana · Fresh Teal | Kirana dashboard |
-| 07 | [home-fancy](07-home-fancy.png) | Fancy & Gifts · Orchid | Fancy store dashboard with low-stock nudges |
-| 08 | [home-jewel](08-home-jewel.png) | One-gram Jewellery · Antique Gold | Jewellery dashboard: designs and repeat buyers |
-| 09 | [home-parlour](09-home-parlour.png) | Beauty Parlour · Rose | Parlour dashboard: today's appointments first |
-| 10 | [bill-kirana](10-bill-kirana.png) | Kirana · Fresh Teal | Kirana billing: search-first, loose items by weight |
-| 11 | [bill-fancy](11-bill-fancy.png) | Fancy & Gifts · Orchid | Fancy billing: tap tiles, badges show qty |
-| 12 | [bill-fancy-variant](12-bill-fancy-variant.png) | Fancy & Gifts · Orchid | Variant picker (size / colour) as a bottom sheet |
-| 13 | [bill-jewel](13-bill-jewel.png) | One-gram Jewellery · Antique Gold | Jewellery billing: catalog with design codes |
-| 14 | [bill-parlour](14-bill-parlour.png) | Beauty Parlour · Rose | Parlour billing: services + stylist assignment |
-| 15 | [bill-checkout](15-bill-checkout.png) | Kirana · Fresh Teal | Checkout: customer, totals, payment mode |
-| 16 | [bill-split](16-bill-split.png) | Kirana · Fresh Teal | Split payment across modes |
-| 17 | [bill-receipt](17-bill-receipt.png) | Kirana · Fresh Teal | Success + share/print receipt |
-| 18 | [bill-held](18-bill-held.png) | Fancy & Gifts · Orchid | Held bills: park and resume |
-| 19 | [bill-return](19-bill-return.png) | Fancy & Gifts · Orchid | Return / exchange from a past bill |
-| 20 | [bill-scan](20-bill-scan.png) | Fancy & Gifts · Orchid | Camera barcode scan with continuous add |
-| 21 | [bills-list](21-bills-list.png) | Kirana · Fresh Teal | Bills list with quick filters |
-| 22 | [bills-detail](22-bills-detail.png) | Kirana · Fresh Teal | Bill detail: reprint, share, collect, cancel |
-| 23 | [customers-list](23-customers-list.png) | Kirana · Fresh Teal | Customers with dues filter |
-| 24 | [customers-detail](24-customers-detail.png) | Kirana · Fresh Teal | Customer ledger and lifetime value |
-| 25 | [customers-add](25-customers-add.png) | Kirana · Fresh Teal | Add customer (minimal fields) |
-| 26 | [customers-collect](26-customers-collect.png) | Kirana · Fresh Teal | Collect due with keypad |
-| 27 | [parlour-appointments](27-parlour-appointments.png) | Beauty Parlour · Rose | Appointments day view |
-| 28 | [parlour-staff](28-parlour-staff.png) | Beauty Parlour · Rose | Stylist performance & commission |
-| 29 | [inventory-list](29-inventory-list.png) | Fancy & Gifts · Orchid | Inventory with stock status |
-| 30 | [inventory-item](30-inventory-item.png) | Fancy & Gifts · Orchid | Item detail with variants and movement |
-| 31 | [inventory-adjust](31-inventory-adjust.png) | Fancy & Gifts · Orchid | Stock adjust with reason |
-| 32 | [cashflow-day](32-cashflow-day.png) | Kirana · Fresh Teal | Daily cashflow by mode |
-| 33 | [cashflow-add](33-cashflow-add.png) | Kirana · Fresh Teal | Add cash entry |
-| 34 | [cashflow-close](34-cashflow-close.png) | Kirana · Fresh Teal | Day close with counted cash |
-| 35 | [analytics-overview](35-analytics-overview.png) | One-gram Jewellery · Antique Gold | Shop analytics overview |
-| 36 | [analytics-items](36-analytics-items.png) | One-gram Jewellery · Antique Gold | Top designs and slow movers |
-| 37 | [analytics-customers](37-analytics-customers.png) | Kirana · Fresh Teal | Customer insights and dues ageing |
-| 38 | [analytics-staff](38-analytics-staff.png) | Fancy & Gifts · Orchid | Staff sales leaderboard |
-| 39 | [more-menu](39-more-menu.png) | Kirana · Fresh Teal | More: everything within one tap |
-| 40 | [settings-appearance](40-settings-appearance.png) | Beauty Parlour · Rose | Appearance: user theme, org lock respected |
-| 41 | [admin-home](41-admin-home.png) | Apoorva · Indigo | Admin home (Owner / Org admin only) |
-| 42 | [admin-stores](42-admin-stores.png) | Apoorva · Indigo | Stores and their verticals |
-| 43 | [admin-staff](43-admin-staff.png) | Apoorva · Indigo | Staff and roles |
-| 44 | [admin-permissions](44-admin-permissions.png) | Apoorva · Indigo | Role permission matrix |
-| 45 | [admin-theme](45-admin-theme.png) | Apoorva · Indigo | Organisation theme with lock |
-| 46 | [admin-features](46-admin-features.png) | Apoorva · Indigo | Feature flags at org / store / role level |
-| 47 | [admin-audit](47-admin-audit.png) | Apoorva · Indigo | Audit log |
-| 48 | [admin-invite](48-admin-invite.png) | Apoorva · Indigo | Invite staff with role and stores |
-| 49 | [global-search](49-global-search.png) | Kirana · Fresh Teal | Universal search across customers, bills, items, actions |
-| 50 | [global-sync](50-global-sync.png) | Kirana · Fresh Teal | Offline / sync status |
+| 02 | [onboarding-login](02-onboarding-login.png) | Apoorva · Indigo | Sign-in hub: Google, phone OTP, email. Each method is on/off from app config |
+| 03 | [onboarding-otp](03-onboarding-otp.png) | Apoorva · Indigo | Enter OTP (auto-read on Android) |
+| 04 | [onboarding-join](04-onboarding-join.png) | Apoorva · Indigo | Staff joins via invite: no shop setup needed |
+| 05 | [auth-email-login](05-auth-email-login.png) | Apoorva · Indigo | Email sign-in |
+| 06 | [auth-email-register](06-auth-email-register.png) | Apoorva · Indigo | Email registration |
+| 07 | [auth-email-verify](07-auth-email-verify.png) | Apoorva · Indigo | Verify email (when required by app config) |
+| 08 | [auth-forgot-password](08-auth-forgot-password.png) | Apoorva · Indigo | Forgot password |
+| 09 | [auth-google](09-auth-google.png) | Apoorva · Indigo | Google account chooser (system sheet) |
+| 10 | [auth-link-accounts](10-auth-link-accounts.png) | Apoorva · Indigo | Same email already registered: link instead of duplicating |
+| 11 | [onboarding-vertical](11-onboarding-vertical.png) | Apoorva · Indigo | Choose shop type: drives billing style, catalog fields and default theme |
+| 12 | [onboarding-shop](12-onboarding-shop.png) | Fancy & Gifts · Orchid | Shop profile & tax |
+| 13 | [onboarding-theme](13-onboarding-theme.png) | Fancy & Gifts · Orchid | Pick a look; preview updates live |
+| 14 | [home-empty](14-home-empty.png) | Kirana · Fresh Teal | First run: guided steps instead of empty charts |
+| 15 | [home-kirana](15-home-kirana.png) | Kirana · Fresh Teal | Kirana dashboard |
+| 16 | [home-kirana-te](16-home-kirana-te.png) | Kirana · Fresh Teal | Telugu: text-length check on the same layout |
+| 17 | [home-fancy](17-home-fancy.png) | Fancy & Gifts · Orchid | Fancy store dashboard with low-stock nudges |
+| 18 | [home-jewel](18-home-jewel.png) | One-gram Jewellery · Antique Gold | Jewellery dashboard: designs and repeat buyers |
+| 19 | [home-parlour](19-home-parlour.png) | Beauty Parlour · Rose | Parlour dashboard: today's appointments first |
+| 20 | [home-store-switch](20-home-store-switch.png) | Apoorva · Indigo | Store switcher for multi-store owners |
+| 21 | [bill-kirana](21-bill-kirana.png) | Kirana · Fresh Teal | Kirana billing: search-first, loose items by weight |
+| 22 | [bill-weight](22-bill-weight.png) | Kirana · Fresh Teal | Loose item by weight or by amount |
+| 23 | [bill-custom](23-bill-custom.png) | Kirana · Fresh Teal | Unlisted item: bill any amount in seconds |
+| 24 | [bill-fancy](24-bill-fancy.png) | Fancy & Gifts · Orchid | Fancy billing: tap tiles, badges show qty |
+| 25 | [bill-fancy-variant](25-bill-fancy-variant.png) | Fancy & Gifts · Orchid | Variant picker (size / colour) as a bottom sheet |
+| 26 | [bill-line-edit](26-bill-line-edit.png) | Fancy & Gifts · Orchid | Edit a line: qty, price, item discount, remove |
+| 27 | [bill-discount](27-bill-discount.png) | Fancy & Gifts · Orchid | Bill discount with role limit + manager PIN |
+| 28 | [bill-jewel](28-bill-jewel.png) | One-gram Jewellery · Antique Gold | Jewellery billing: catalog with design codes |
+| 29 | [bill-jewel-item](29-bill-jewel-item.png) | One-gram Jewellery · Antique Gold | Jewellery design detail with photos |
+| 30 | [bill-parlour](30-bill-parlour.png) | Beauty Parlour · Rose | Parlour billing: services + stylist assignment |
+| 31 | [bill-parlour-package](31-bill-parlour-package.png) | Beauty Parlour · Rose | Packages & memberships with sessions left |
+| 32 | [bill-customer](32-bill-customer.png) | Kirana · Fresh Teal | Attach customer: search, recent or quick add |
+| 33 | [bill-checkout](33-bill-checkout.png) | Kirana · Fresh Teal | Checkout: customer, totals, payment mode |
+| 34 | [bill-split](34-bill-split.png) | Kirana · Fresh Teal | Split payment across modes |
+| 35 | [bill-upi](35-bill-upi.png) | Kirana · Fresh Teal | UPI QR with amount |
+| 36 | [bill-receipt](36-bill-receipt.png) | Kirana · Fresh Teal | Success + share/print receipt |
+| 37 | [bill-receipt-preview](37-bill-receipt-preview.png) | Kirana · Fresh Teal | Printed receipt (58 mm). Tax lines only when tax is on |
+| 38 | [bill-held](38-bill-held.png) | Fancy & Gifts · Orchid | Held bills: park and resume |
+| 39 | [bill-return](39-bill-return.png) | Fancy & Gifts · Orchid | Return / exchange from a past bill |
+| 40 | [bill-scan](40-bill-scan.png) | Fancy & Gifts · Orchid | Camera barcode scan with continuous add |
+| 41 | [bills-list](41-bills-list.png) | Kirana · Fresh Teal | Bills list with quick filters |
+| 42 | [bills-detail](42-bills-detail.png) | Kirana · Fresh Teal | Bill detail: reprint, share, collect, cancel |
+| 43 | [bills-cancel](43-bills-cancel.png) | Kirana · Fresh Teal | Cancel needs a reason. Stock and dues reverse |
+| 44 | [bills-filter](44-bills-filter.png) | Kirana · Fresh Teal | Filter sheet |
+| 45 | [customers-list](45-customers-list.png) | Kirana · Fresh Teal | Customers with dues filter |
+| 46 | [customers-detail](46-customers-detail.png) | Kirana · Fresh Teal | Customer ledger and lifetime value |
+| 47 | [customers-add](47-customers-add.png) | Kirana · Fresh Teal | Add customer (minimal fields) |
+| 48 | [customers-collect](48-customers-collect.png) | Kirana · Fresh Teal | Collect due with keypad |
+| 49 | [customers-reminder](49-customers-reminder.png) | Kirana · Fresh Teal | Due reminder on WhatsApp / SMS with UPI link |
+| 50 | [customers-statement](50-customers-statement.png) | Kirana · Fresh Teal | Customer statement (PDF / image) |
+| 51 | [parlour-appointments](51-parlour-appointments.png) | Beauty Parlour · Rose | Appointments day view |
+| 52 | [parlour-book](52-parlour-book.png) | Beauty Parlour · Rose | New appointment |
+| 53 | [parlour-staff](53-parlour-staff.png) | Beauty Parlour · Rose | Stylist performance & commission |
+| 54 | [inventory-list](54-inventory-list.png) | Fancy & Gifts · Orchid | Inventory with stock status |
+| 55 | [inventory-add](55-inventory-add.png) | Fancy & Gifts · Orchid | Add item: only name and price required |
+| 56 | [inventory-item](56-inventory-item.png) | Fancy & Gifts · Orchid | Item detail with variants and movement |
+| 57 | [inventory-adjust](57-inventory-adjust.png) | Fancy & Gifts · Orchid | Stock adjust with reason |
+| 58 | [inventory-categories](58-inventory-categories.png) | Fancy & Gifts · Orchid | Categories: manage and reorder billing chips |
+| 59 | [inventory-import](59-inventory-import.png) | Fancy & Gifts · Orchid | Bulk import from Excel / CSV |
+| 60 | [cashflow-day](60-cashflow-day.png) | Kirana · Fresh Teal | Daily cashflow by mode |
+| 61 | [cashflow-add](61-cashflow-add.png) | Kirana · Fresh Teal | Add cash entry |
+| 62 | [cashflow-close](62-cashflow-close.png) | Kirana · Fresh Teal | Day close with counted cash |
+| 63 | [cashflow-history](63-cashflow-history.png) | Kirana · Fresh Teal | Previous days with cash differences |
+| 64 | [analytics-overview](64-analytics-overview.png) | One-gram Jewellery · Antique Gold | Shop analytics overview |
+| 65 | [analytics-items](65-analytics-items.png) | One-gram Jewellery · Antique Gold | Top designs and slow movers |
+| 66 | [analytics-customers](66-analytics-customers.png) | Kirana · Fresh Teal | Customer insights and dues ageing |
+| 67 | [analytics-staff](67-analytics-staff.png) | Fancy & Gifts · Orchid | Staff sales leaderboard |
+| 68 | [analytics-reports](68-analytics-reports.png) | One-gram Jewellery · Antique Gold | Reports & export |
+| 69 | [more-menu](69-more-menu.png) | Kirana · Fresh Teal | More: everything within one tap |
+| 70 | [settings-appearance](70-settings-appearance.png) | Beauty Parlour · Rose | Appearance: user theme, org lock respected |
+| 71 | [settings-tax](71-settings-tax.png) | Kirana · Fresh Teal | Tax is optional: Off by default, same rate or per item |
+| 72 | [settings-receipt](72-settings-receipt.png) | Kirana · Fresh Teal | Receipt & bill numbering |
+| 73 | [settings-printer](73-settings-printer.png) | Kirana · Fresh Teal | Bluetooth printer pairing |
+| 74 | [settings-language](74-settings-language.png) | Kirana · Fresh Teal | Language: app and receipts set separately |
+| 75 | [settings-backup](75-settings-backup.png) | Kirana · Fresh Teal | Backup, restore and export your data |
+| 76 | [settings-account](76-settings-account.png) | Apoorva · Indigo | Profile & account |
+| 77 | [settings-plan](77-settings-plan.png) | Apoorva · Indigo | Plan & subscription: Free vs Pro |
+| 78 | [settings-signin-methods](78-settings-signin-methods.png) | Apoorva · Indigo | Sign-in methods linked to this account |
+| 79 | [admin-home](79-admin-home.png) | Apoorva · Indigo | Admin home (Owner / Org admin only) |
+| 80 | [admin-stores](80-admin-stores.png) | Apoorva · Indigo | Stores and their verticals |
+| 81 | [admin-store-detail](81-admin-store-detail.png) | Apoorva · Indigo | Store detail & edit |
+| 82 | [admin-members](82-admin-members.png) | Apoorva · Indigo | Members across all stores |
+| 83 | [admin-member-add](83-admin-member-add.png) | Apoorva · Indigo | Add member directly or invite by SMS |
+| 84 | [admin-member-detail](84-admin-member-detail.png) | Apoorva · Indigo | Member detail: role, stores, deactivate |
+| 85 | [admin-permissions](85-admin-permissions.png) | Apoorva · Indigo | Role permission matrix |
+| 86 | [admin-theme](86-admin-theme.png) | Apoorva · Indigo | Organisation theme with lock |
+| 87 | [admin-features](87-admin-features.png) | Apoorva · Indigo | Feature flags at org / store / role level |
+| 88 | [admin-audit](88-admin-audit.png) | Apoorva · Indigo | Audit log |
+| 89 | [admin-invite](89-admin-invite.png) | Apoorva · Indigo | Invite staff with role and stores |
+| 90 | [platform-home](90-platform-home.png) | Apoorva · Indigo | Apoorva Console: hidden, superAdmin accounts only |
+| 91 | [platform-orgs](91-platform-orgs.png) | Apoorva · Indigo | All organisations |
+| 92 | [platform-org-detail](92-platform-org-detail.png) | Apoorva · Indigo | Organisation detail |
+| 93 | [platform-org-block](93-platform-org-block.png) | Apoorva · Indigo | Suspend / block / delete with reason; owner notified |
+| 94 | [platform-blocked](94-platform-blocked.png) | Apoorva · Indigo | What a suspended org's staff see |
+| 95 | [platform-analytics](95-platform-analytics.png) | Apoorva · Indigo | Platform analytics (app level) |
+| 96 | [platform-flags](96-platform-flags.png) | Apoorva · Indigo | App-level flags & shop types |
+| 97 | [platform-auth-config](97-platform-auth-config.png) | Apoorva · Indigo | App-level sign-in configuration |
+| 98 | [global-search](98-global-search.png) | Kirana · Fresh Teal | Universal search across customers, bills, items, actions |
+| 99 | [global-sync](99-global-sync.png) | Kirana · Fresh Teal | Offline / sync status |
+| 100 | [global-conflict](100-global-conflict.png) | Kirana · Fresh Teal | Sync conflict: same bill edited on two phones |
+| 101 | [global-notifications](101-global-notifications.png) | Kirana · Fresh Teal | Notifications centre |
+| 102 | [global-locked](102-global-locked.png) | Fancy & Gifts · Orchid | Feature not allowed for this role or plan |
+| 103 | [global-update](103-global-update.png) | Apoorva · Indigo | Force update (min_app_version) |
+| 104 | [global-help](104-global-help.png) | Kirana · Fresh Teal | Help & feedback |

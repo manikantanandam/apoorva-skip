@@ -27,7 +27,7 @@ No PII, no customer names, no per-customer amounts. Every event carries `vertica
 | Reliability | `sync_completed` (duration, count), `sync_failed` (reason), offline duration |
 | Retention | D1/D7/D30 per vertical, weekly active shops, bills/shop/day |
 
-Dashboards: activation per vertical, time-to-first-bill, feature adoption vs flag rollout, sync health, retention cohorts.
+Dashboards: activation per vertical, time-to-first-bill, feature adoption vs flag rollout, sync health, retention cohorts. A summary is in the in-app **Platform analytics** screen for the Apoorva team (see 10). The full analysis is in BigQuery.
 
 ## 3. Performance — Firebase Performance Monitoring
 Custom traces: `save_bill`, `sync_push`, `sync_pull`, `dashboard_load`, `local_db_migration`.

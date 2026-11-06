@@ -11,10 +11,10 @@ Offline-first shop/POS app (Swift + SwiftUI, Skip for Android). Local SQLite is 
 | 05 | [Feature flags & config](05-feature-flags-and-config.md) | App / org / store / role flags, resolution, rollout |
 | 06 | [Observability & maintenance](06-observability-and-maintenance.md) | Crashlytics, analytics, perf, runbook |
 | 07 | [Build, CI/CD](07-build-ci-cd.md) | Debug/release, environments, pipelines |
-| 08 | [Security & compliance](08-security-and-compliance.md) | Auth, rules, data protection, GST/privacy |
+| 08 | [Security & compliance](08-security-and-compliance.md) | Auth, rules, data protection, privacy, optional tax |
 | 09 | [Roadmap & risks](09-roadmap-and-risks.md) | Milestones, risks, open questions, gaps |
 | 10 | [Admin & multi-tenancy](10-admin-and-multi-tenancy.md) | Org/store/roles, permissions, theme & flag admin, audit |
 
-**Designs:** 50 screens (light + dark side by side) in [`/designs`](../designs/README.md).
+**Designs:** 104 screens (light + dark side by side), frozen for v1, in [`/designs`](../designs/README.md).
 
 Diagrams are Mermaid and render in GitHub and most Markdown previews.

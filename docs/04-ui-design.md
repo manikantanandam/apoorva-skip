@@ -44,29 +44,44 @@ Implementation: `ThemeStore` (`@Observable`) in `ApoorvaUI` exposes resolved tok
 ## 2. Navigation
 
 ```
-Onboarding: Splash → Login → Choose vertical → Shop setup → Pick look
+Onboarding: Splash → Sign-in hub (Google · Phone OTP · Email) → [Email sign-in | Register → Verify | Forgot | Link accounts] → Choose vertical → Shop setup → Pick look
 Tabs: Home | Bills | [+ New bill] | Customers | More
-More → Inventory, Cashflow, Insights, Held bills, Appointments*, Settings, Admin†, Help
+More → Inventory, Cashflow, Insights, Held bills, Appointments*, Settings, Admin†, Apoorva Console‡, Help
+Settings → Appearance, Tax (optional), Receipts, Printer, Language, Backup & data, Account, Plan
 Global: universal search (Home ⌕), sync chip → Sync status
 ```
-\* parlour only (flag `appointments`) · † Owner/Org admin only
+\* parlour only (flag `appointments`) · † Owner/Org admin only · ‡ Apoorva team only (`superAdmin` claim)
 
-## 3. Screen index (50)
+## 3. Screen index (104, v1 frozen)
+The full numbered list with captions is in [`designs/README.md`](../designs/README.md). It is generated, so it never drifts from the images.
 
-| Area | Screens (see `/designs`) |
-|------|--------------------------|
-| Onboarding | 01 splash · 02 login · 03 choose vertical · 04 shop setup · 05 pick look |
-| Home | 06 kirana · 07 fancy · 08 jewellery · 09 parlour |
-| Billing | 10 kirana list · 11 fancy grid · 12 variant sheet · 13 jewellery catalog · 14 parlour services · 15 checkout · 16 split pay · 17 receipt · 18 held bills · 19 return · 20 barcode scan |
-| Bills | 21 list · 22 detail |
-| Customers | 23 list · 24 ledger · 25 add · 26 collect due |
-| Parlour | 27 appointments · 28 stylists |
-| Inventory | 29 list · 30 item · 31 adjust |
-| Cashflow | 32 day · 33 add entry · 34 day close |
-| Insights | 35 overview · 36 items · 37 customers · 38 staff |
-| More | 39 more menu · 40 appearance |
-| Admin | 41 home · 42 stores · 43 staff · 44 permissions · 45 theme · 46 features · 47 audit · 48 invite |
-| Global | 49 search · 50 sync/offline |
+| Area | Count | Highlights |
+|------|-------|-----------|
+| Onboarding & sign-in | 13 | splash, sign-in hub, email sign-in, email register, verify email, forgot password, Google chooser, link accounts, OTP, staff join via invite, shop type, shop setup (no tax questions), theme |
+| Home | 7 | first-run guide, one per vertical, Telugu sample, store switcher |
+| Billing | 20 | 4 vertical pickers, weight entry, quick item, variants, line edit, discount (PIN approval), jewellery detail, parlour packages, customer picker, checkout, split, UPI QR, receipt + printed preview, held, return, scan |
+| Bills | 4 | list, detail, cancel with reason, filters |
+| Customers | 6 | list, ledger, add, collect, WhatsApp reminder, statement |
+| Parlour | 3 | appointments, new booking, stylists |
+| Inventory | 6 | list, add (name + price only), item, adjust, categories, import |
+| Cashflow | 4 | day, entry, day close, history |
+| Insights | 5 | overview, items, customers, staff, reports & export |
+| More & Settings | 10 | more menu, appearance, tax, receipts, printer, language, backup & export, account, sign-in methods, plan |
+| Org admin | 11 | home, stores, store detail, members, add member, member detail, permissions, theme, features, audit, invite |
+| Platform console | 8 | console home, orgs, org detail, suspend/block, blocked-org view, platform analytics, app flags, sign-in config |
+| Global | 7 | search, sync, conflict, notifications, locked feature, force update, help |
+
+## 3a. Design freeze (v1)
+- These 104 screens are the v1 contract. Development builds from them without redesign.
+- Allowed during development: copy changes and data changes, using existing components only.
+- Not allowed without review: new components, new navigation entries, colour changes.
+- To change a design: edit the one-line spec in `designs/_src/generate.py`, regenerate, and get it reviewed in a PR. The PNG diff is the review.
+
+## 3b. Languages
+- v1: English, Telugu, Hindi, Tamil, Kannada (String Catalog on iOS, Android resources via Skip).
+- Budget +40% string length. Labels wrap to 2 lines and never truncate amounts. Screen 10 checks this in Telugu.
+- Receipts and WhatsApp messages can use a different language from the app UI (Settings → Language).
+- Numbers and ₹ stay in Western digits with en-IN grouping in every language.
 
 ## 4. Component kit (build once in SwiftUI)
 AppBar, SearchField, Chips, Segmented, KPI tile (first tile highlighted), ListRow (avatar, title, subtitle, value, status badge), ItemTile (image, qty badge), CartBar (floating, above tabs), BottomTabs (centre action), Toggle row (with lock state), Keypad, Note (info), Chart card (bars, line, split bar), Permission matrix, Time slot.
