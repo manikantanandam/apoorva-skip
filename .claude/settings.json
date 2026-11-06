@@ -1,0 +1,67 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-bash-file-writes.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "deny": [
+      "Bash(cat **/*.log)",
+      "Bash(cat **/*.xcresult/**)",
+      "Bash(cat **/.build/**)",
+      "Bash(cat **/.gradle/**)",
+      "Bash(cat **/.skip/**)",
+      "Bash(cat **/DerivedData/**)",
+      "Bash(grep -R * .build/*)",
+      "Bash(grep -R * DerivedData/*)",
+      "Bash(grep -r * .build/*)",
+      "Bash(grep -r * DerivedData/*)",
+      "Read(**/*.aab)",
+      "Read(**/*.apk)",
+      "Read(**/*.cer)",
+      "Read(**/*.dSYM/**)",
+      "Read(**/*.ipa)",
+      "Read(**/*.jks)",
+      "Read(**/*.log)",
+      "Read(**/*.mobileprovision)",
+      "Read(**/*.p12)",
+      "Read(**/*.profraw)",
+      "Read(**/*.sqlite*)",
+      "Read(**/*.xcarchive/**)",
+      "Read(**/*.xcassets/**/*.jpg)",
+      "Read(**/*.xcassets/**/*.pdf)",
+      "Read(**/*.xcassets/**/*.png)",
+      "Read(**/*.xcodeproj/project.xcworkspace/**)",
+      "Read(**/*.xcresult/**)",
+      "Read(**/*.xcuserstate)",
+      "Read(**/.DS_Store)",
+      "Read(**/.android/**)",
+      "Read(**/.build/**)",
+      "Read(**/.gradle/**)",
+      "Read(**/.idea/**)",
+      "Read(**/.kotlin/**)",
+      "Read(**/.skip/**)",
+      "Read(**/.swiftpm/**)",
+      "Read(**/DerivedData/**)",
+      "Read(**/GoogleService-Info.plist)",
+      "Read(**/Package.resolved)",
+      "Read(**/build/**)",
+      "Read(**/fastlane/apikey.json)",
+      "Read(**/fastlane/metadata/**)",
+      "Read(**/fastlane/screenshots/**)",
+      "Read(**/fastlane/test_output/**)",
+      "Read(**/google-services.json)",
+      "Read(**/keystore.*)",
+      "Read(**/local.properties)",
+      "Read(**/xcuserdata/**)"
+    ]
+  }
+}
