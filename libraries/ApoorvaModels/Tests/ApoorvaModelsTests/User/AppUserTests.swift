@@ -12,7 +12,7 @@ import Foundation
 @Suite("AppUser Model Tests")
 struct AppUserTests {
 
-    private let orgJSON = #"{"orgId": "org-1", "name": "Apoorva Store", "accentColor": "#112233"}"#
+    private let orgJSON = ##"{"orgId": "org-1", "name": "Apoorva Store", "accentColor": "#112233"}"##
 
     private func decodeUser(_ json: String) throws -> AppUser {
         let decoder = JSONDecoder()
@@ -327,7 +327,7 @@ struct AppUserTests {
     @Test("copyWith replaces every field when arguments are supplied")
     func testCopyWithAllArguments() throws {
         let original = try makeUser()
-        let newOrg = try decodeSnapshot(#"{"orgId": "org-2", "name": "Branch", "accentColor": "#000000"}"#)
+        let newOrg = try decodeSnapshot(##"{"orgId": "org-2", "name": "Branch", "accentColor": "#000000"}"##)
         let newCreated = Date(timeIntervalSince1970: 1_600_000_000)
         let newUpdated = Date(timeIntervalSince1970: 1_650_000_000)
 
