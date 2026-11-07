@@ -18,7 +18,7 @@ public protocol UserServiceProtocol: Sendable {
 
 @MainActor
 public class UserService: UserServiceProtocol {
-    private let db = Firestore.firestore()
+    private let store: FirestoreStoring
     private let authService: AuthServicing
     private var sessionTask: Task<Void, Never>?
     
@@ -29,8 +29,9 @@ public class UserService: UserServiceProtocol {
     public private(set) var currentUser: AppUser?
     
     // 1. Dependency Injection (Replaces the Singleton)
-    public init(authService: AuthServicing) {
+    public init(authService: AuthServicing, store: FirestoreStoring = FirebaseFirestoreStore()) {
         self.authService = authService
+        self.store = store
         
         let (stream, continuation) = AsyncStream.makeStream(
             of: AppUser?.self,
@@ -88,14 +89,12 @@ public class UserService: UserServiceProtocol {
     public func fetchUserProfile(uid: String) async throws -> AppUser {
         
         do {
-            let doc = try await db.collection("users").document(uid).getDocument()
-            
-            guard doc.exists else {
+            guard let doc = try await store.getDocument(path: "\(String.users)/\(uid)") else {
                 print("❌ User document does not exist in Firestore for UID: \(uid)")
                 throw AuthError.userDocumentNotFound
             }
-            
-            return try doc.data(as: AppUser.self)
+
+            return try Firestore.Decoder().decode(AppUser.self, from: doc.data)
             
         } catch {
             // Keep your existing detailed catch blocks here
@@ -109,14 +108,12 @@ public class UserService: UserServiceProtocol {
         organization: OrganizationSnapshot
     ) async throws {
         do {
-            let userRef = try db.collection(.users).document(user.id)
-            
             let encodedOrg = try Firestore.Encoder().encode(organization)
-            
-            try await userRef.updateData([
+
+            try await store.updateData([
                 "selectedOrganization": encodedOrg,
                 "updatedTimestamp": Date().timeIntervalSince1970
-            ])
+            ], path: "\(String.users)/\(user.id)")
             
         } catch {
             print("❌ Update error: \(error)")

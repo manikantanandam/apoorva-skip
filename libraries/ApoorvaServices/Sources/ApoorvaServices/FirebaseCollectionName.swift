@@ -14,4 +14,9 @@ internal extension String {
     static let customers = "customers"
     static let sales = "sales"
     static let cashflow = "cashflow"
+
+    /// Path of a sub-collection of an organization, e.g. `organizations/{orgId}/sales`.
+    static func orgPath(_ orgId: String, _ collection: String) -> String {
+        "\(organizations)/\(orgId)/\(collection)"
+    }
 }

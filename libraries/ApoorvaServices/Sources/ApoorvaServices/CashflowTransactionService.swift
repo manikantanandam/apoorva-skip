@@ -1,16 +1,13 @@
 //
-//  File.swift
+//  CashflowTransactionService.swift
 //  ApoorvaServices
-//
-//  Created by Manikanta Nandam on 12/10/26.
 //
 
 import Foundation
 import ApoorvaModels
-@preconcurrency import FirebaseFirestore
 
 public protocol CashflowTransactionServiceProtocol: Sendable {
-    
+
     func getCashflowTransactions(for orgId: String) async throws -> [CashflowTransaction]
     func getCashflowTransactions(since lastSync: Date, for orgId: String) async throws -> [CashflowTransaction]
     func addCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws
@@ -19,95 +16,64 @@ public protocol CashflowTransactionServiceProtocol: Sendable {
 
 
 public final class CashflowTransactionService: CashflowTransactionServiceProtocol {
-    
-    private let db = Firestore.firestore()
-    
-    public init() {}
-    
+
+    private let store: FirestoreStoring
+
+    public init(store: FirestoreStoring = FirebaseFirestoreStore()) {
+        self.store = store
+    }
+
     public func getCashflowTransactions(for orgId: String) async throws -> [CashflowTransaction] {
         try await cashflowTransactions(for: orgId)
     }
-    
+
     public func getCashflowTransactions(since lastSync: Date, for orgId: String) async throws -> [CashflowTransaction] {
         try await cashflowTransactions(since: lastSync, for: orgId)
     }
-    
+
     public func addCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws {
-        let docRef = db
-            .collection(.organizations)
-            .document(orgId)
-            .collection(.cashflow)
-            .document(transaction.id)
-        
+        let path = documentPath(transaction.id, orgId: orgId)
+
         // Prevent duplicates by checking if the document already exists
-        let snapshot = try await docRef.getDocument()
-        guard !snapshot.exists else {
+        guard try await store.getDocument(path: path) == nil else {
             print("⚠️ Cashflow Transaction \(transaction.id) already exists. Skipping insertion.")
             return
         }
-        
-        try docRef.setData(from: transaction)
+
+        try store.set(transaction, path: path)
     }
-    
+
     public func updateCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws {
         var updatedTransaction = transaction
         let now = Date.now
         updatedTransaction.updatedAt = now
         updatedTransaction.updatedAtInMs = now.timeIntervalSince1970
-        
-        let docRef = db
-            .collection(.organizations)
-            .document(orgId)
-            .collection(.cashflow)
-            .document(transaction.id)
-        
-        try docRef.setData(from: updatedTransaction, merge: true)
+
+        try store.set(updatedTransaction, path: documentPath(transaction.id, orgId: orgId), merge: true)
     }
-    
+
     public func deleteCashflowTransaction(id: String, for orgId: String) async throws {
-        let docRef = db
-            .collection(.organizations)
-            .document(orgId)
-            .collection(.cashflow)
-            .document(id)
-        
-        // Soft-delete to keep offline sync working via the isDeleted flag[cite: 14]
-        try await docRef.updateData([
+        // Soft-delete to keep offline sync working via the isDeleted flag
+        try await store.updateData([
             "isDeleted": true,
-            "updatedAt": Timestamp(date: Date())
-        ])
+            "updatedAt": Date()
+        ], path: documentPath(id, orgId: orgId))
     }
 }
 
 private extension CashflowTransactionService {
-    func cashflowTransactions(since lastSync: Date? = nil, for orgId: String) async throws -> [CashflowTransaction] {
-        let baseCollection = db
-            .collection(.organizations)
-            .document(orgId)
-            .collection(.cashflow)
-        
-        var query: Query = baseCollection
-        
-        if let lastSync = lastSync {
-            let timestamp = Timestamp(date: lastSync)
-            
-            query = baseCollection.whereField("updatedAt", isGreaterThan: timestamp)
-            print("🌐 Fetching Cashflow Transactions for Org: \(orgId)... for last sync \(lastSync)")
+    func documentPath(_ id: String, orgId: String) -> String {
+        "\(String.orgPath(orgId, .cashflow))/\(id)"
+    }
 
+    func cashflowTransactions(since lastSync: Date? = nil, for orgId: String) async throws -> [CashflowTransaction] {
+        var query = StoreQuery.all
+        if let lastSync = lastSync {
+            query = StoreQuery(conditions: [.greaterThan(field: "updatedAt", date: lastSync)])
         }
-//        query = query.limit(to: 10)
         print("🌐 Fetching Cashflow Transactions for Org: \(orgId)...")
-        let snapshot = try await query.getDocuments()
-        
-        var successfulRecords: [CashflowTransaction] = []
-        for document in snapshot.documents {
-            do {
-                let record = try document.data(as: CashflowTransaction.self)
-                successfulRecords.append(record)
-            } catch { print("❌ Failed to decode CashflowTransaction: \(document.documentID) - \(error)") }
-        }
-        
-        print("✅ Fetched \(successfulRecords.count) Cashflow Transactions.")
-        return successfulRecords
+        let records = try await store.fetch(CashflowTransaction.self, collection: .orgPath(orgId, .cashflow), query: query)
+        print("✅ Fetched \(records.count) Cashflow Transactions.")
+        return records
     }
 }

@@ -7,10 +7,9 @@
 
 import Foundation
 import ApoorvaModels
-@preconcurrency import FirebaseFirestore
 
 public protocol SaleServiceProtocol: Sendable {
-    
+
     func getSales(for orgId: String) async throws -> [Sale]
     func getSales(since lastSync: Date, for orgId: String) async throws -> [Sale]
 }
@@ -18,14 +17,16 @@ public protocol SaleServiceProtocol: Sendable {
 
 public final class SaleService: SaleServiceProtocol {
 
-    private let db = Firestore.firestore()
-    
-    public init() {}
+    private let store: FirestoreStoring
+
+    public init(store: FirestoreStoring = FirebaseFirestoreStore()) {
+        self.store = store
+    }
 
     public func getSales(for orgId: String) async throws -> [Sale] {
         try await sales(for: orgId)
     }
-    
+
     public func getSales(since lastSync: Date, for orgId: String) async throws -> [Sale] {
         try await sales(since: lastSync, for: orgId)
     }
@@ -33,31 +34,13 @@ public final class SaleService: SaleServiceProtocol {
 
 private extension SaleService {
     func sales(since lastSync: Date? = nil, for orgId: String) async throws -> [Sale] {
-        let baseCollection = db
-                .collection(.organizations)
-                .document(orgId)
-                .collection(.sales)
-                
-        var query: Query = baseCollection
-            
+        var query = StoreQuery.all
         if let lastSync = lastSync {
-            print("Fetching Sales in sale service \(lastSync)")
-                let timestamp = Timestamp(date: lastSync)
-                
-            query = baseCollection.whereField("timestamp", isGreaterThan: timestamp)
-            }
-            print("🌐 Fetching Sales for Org: \(orgId)...")
-            let snapshot = try await query.getDocuments()
-            
-            var successfulRecords: [Sale] = []
-            for document in snapshot.documents {
-                do {
-                    let record = try document.data(as: Sale.self)
-                    successfulRecords.append(record)
-                } catch { print("❌ Failed to decode Sale: \(document.documentID) - \(error)") }
-            }
-            
-            print("✅ Fetched \(successfulRecords.count) Sales.")
-            return successfulRecords
+            query = StoreQuery(conditions: [.greaterThan(field: "timestamp", date: lastSync)])
         }
+        print("🌐 Fetching Sales for Org: \(orgId)...")
+        let records = try await store.fetch(Sale.self, collection: .orgPath(orgId, .sales), query: query)
+        print("✅ Fetched \(records.count) Sales.")
+        return records
+    }
 }
