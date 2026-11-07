@@ -79,3 +79,7 @@ Carthage/Build/
 .skip/
 *.xcuserstate
 *.xcresult
+
+# Firebase config (per-environment; CI injects from secrets)
+GoogleService-Info.plist
+google-services.json
