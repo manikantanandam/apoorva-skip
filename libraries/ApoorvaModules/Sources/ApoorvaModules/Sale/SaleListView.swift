@@ -8,25 +8,26 @@
 import Foundation
 import SwiftUI
 import ApoorvaModels
+import ManiSwiftUIComponents
 import UIKit
 
 public struct SaleListView: View {
-    
+    @Environment(\.maniTheme) private var theme
     @Bindable var viewModel: SaleListViewModel
-    
+
     public init(viewModel: SaleListViewModel) {
         self.viewModel = viewModel
     }
-    
+
     // Grid layout for top stats
     private let columns = [
         GridItem(.flexible()),
         GridItem(.flexible())
     ]
-    
+
     public var body: some View {
         VStack(spacing: 0) {
-            
+
             // Custom Date Picker Section
             if viewModel.dateFilter == .custom {
                 HStack {
@@ -38,25 +39,25 @@ public struct SaleListView: View {
                         .labelsHidden()
                 }
                 .padding()
-                .background(Color(UIColor.secondarySystemBackground))
+                .background(theme.base.surface)
             }
-            
+
             ScrollView {
-                LazyVStack(spacing: 12) {
-                    // Modernized Stats Section
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        ModernStatBox(title: "Total Sales", value: viewModel.totalSalesCount.string)
-                        ModernStatBox(title: "Revenue", value: viewModel.totalSubtotal.string)
-                        ModernStatBox(title: "Received", value: viewModel.totalNetPayable.string)
-                        ModernStatBox(title: "Total Discount", value: viewModel.totalDiscount.string)
+                LazyVStack(spacing: ManiSpacing.md) {
+                    // Stats section
+                    LazyVGrid(columns: columns, spacing: ManiSpacing.md) {
+                        ManiKPITile(title: "Total Sales", value: viewModel.totalSalesCount.string, isHighlighted: true)
+                        ManiKPITile(title: "Revenue", value: viewModel.totalSubtotal.string)
+                        ManiKPITile(title: "Received", value: viewModel.totalNetPayable.string)
+                        ManiKPITile(title: "Total Discount", value: viewModel.totalDiscount.string)
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 16)
-                    .padding(.bottom, 8)
-                    
+                    .padding(.horizontal, ManiSpacing.lg)
+                    .padding(.top, ManiSpacing.lg)
+                    .padding(.bottom, ManiSpacing.sm)
+
                     if viewModel.sales.isEmpty {
                         Text("No sales found for this period.")
-                            .foregroundColor(.secondary)
+                            .foregroundStyle(theme.base.textSecondary)
                             .padding(.top, 40)
                     } else {
                         ForEach(viewModel.sales) { sale in
@@ -64,10 +65,10 @@ public struct SaleListView: View {
                         }
                     }
                 }
-                .padding(.bottom, 16)
+                .padding(.bottom, ManiSpacing.lg)
             }
         }
-        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+        .background(theme.base.background.ignoresSafeArea())
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
@@ -109,19 +110,21 @@ public struct SaleListView: View {
     }
 }
 
-// MARK: - Modern Subviews
+// MARK: - Subviews
 
+// NOTE: kept (unmigrated) because CashflowView.swift still uses it;
+// out of scope for this pass, which only covers SaleListView/POSView.
 struct ModernStatBox: View {
     let title: String
     let value: String
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .textCase(.uppercase)
-            
+
             Text(value)
                 .font(.title3)
                 .fontWeight(.semibold)
@@ -135,73 +138,45 @@ struct ModernStatBox: View {
     }
 }
 
-struct SaleCardRowView: View {
-    
+private struct SaleCardRowView: View {
+    @Environment(\.maniTheme) private var theme
     let sale: Sale
-    
+
+    private var statusKind: ManiStatusKind {
+        switch sale.status {
+        case "Completed", "Paid": .success
+        case "Due": .warning
+        case "Cancelled": .error
+        default: .neutral
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header: Customer & Date
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(sale.customerName.isEmpty ? "Unknown" : sale.customerName)
-                        .font(.headline)
-                    
-                    if !sale.customerPhone.isEmpty {
-                        Text(sale.customerPhone)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                
-                Spacer()
-                
-                Text(sale.timestamp.formatted(date: .abbreviated, time: .shortened))
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-            
-            Divider()
-            
-            // Footer: Financials
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Sub Total")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(sale.subtotal.string)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Discount")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(sale.overallDiscountAmount.string)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Net Pay")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(sale.netPayable.string)
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.green)
+        ManiCard {
+            VStack(alignment: .leading, spacing: ManiSpacing.md) {
+                ManiListRow(
+                    avatar: ManiAvatar(initials: initials),
+                    title: sale.customerName.isEmpty ? "Unknown" : sale.customerName,
+                    subtitle: sale.customerPhone.isEmpty ? sale.timestamp.formatted(date: .abbreviated, time: .shortened) : sale.customerPhone,
+                    value: sale.netPayable.string,
+                    status: (sale.status, statusKind)
+                )
+
+                Divider().overlay(theme.base.border)
+
+                HStack {
+                    ManiBreakdownRow(label: "Sub Total", value: sale.subtotal.string)
+                    Spacer()
+                    ManiBreakdownRow(label: "Discount", value: sale.overallDiscountAmount.string)
                 }
             }
         }
-        .padding(16)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.04), radius: 5, x: 0, y: 2)
-        .padding(.horizontal)
+        .padding(.horizontal, ManiSpacing.lg)
+    }
+
+    private var initials: String {
+        let trimmed = sale.customerName.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return "?" }
+        return String(trimmed.prefix(1)).uppercased()
     }
 }

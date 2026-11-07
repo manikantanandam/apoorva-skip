@@ -6,32 +6,34 @@
 //
 
 import SwiftUI
+import ManiSwiftUIComponents
 
 public struct POSView: View {
-    
+
     // 1. Inject the ViewModel
     @Bindable private var viewModel: POSViewModel
-    
+
     public init(viewModel: POSViewModel) {
         self.viewModel = viewModel
     }
-    
+
     public var body: some View {
         NavigationStack {
             ScrollView {
-                VStack {
-                    IconTextField(
+                VStack(spacing: ManiSpacing.md) {
+                    ManiInputField(
+                        label: "Customer name",
                         text: $viewModel.customerName,
-                        placeholder: "Customer Name",
-                        icon: .person
+                        placeholder: "e.g. Priya"
                     )
-                    
-                    IconTextField(
+
+                    ManiInputField(
+                        label: "Phone number",
                         text: $viewModel.customerPhoneNumber,
-                        placeholder: "Phone Number",
-                        icon: .phone
+                        placeholder: "e.g. 98765 43210",
+                        keyboard: .phone
                     )
-                    
+
                     QuickItemsView(items: viewModel.items)
                     
                     SelectedCartItemsView(items: viewModel.items)

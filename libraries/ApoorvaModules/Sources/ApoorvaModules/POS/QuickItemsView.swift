@@ -7,8 +7,10 @@
 
 import SwiftUI
 import ApoorvaModels
+import ManiSwiftUIComponents
 
 public struct QuickItemsView: View {
+    @Environment(\.maniTheme) private var theme
     // 1. Flattened data list (Supports infinite items)
     let items: [ApoorvaModels.InventoryItem]
     let rowCount: Int
@@ -35,14 +37,14 @@ public struct QuickItemsView: View {
         VStack(alignment: .leading, spacing: 14) {
             // Header Title Label
             Text("QUICK ITEMS")
-                .font(.system(size: 15, weight: .bold, design: .rounded))
-                .foregroundColor(Color(red: 0.3, green: 0.4, blue: 0.5))
+                .font(theme.typography.sectionHeader)
+                .foregroundStyle(theme.base.textSecondary)
                 .padding(.leading, 4)
-            
+
             HStack(alignment: .top, spacing: spacing) {
-                
+
                 GridView(items: items, rowCount: rowCount, spacing: 4) { item in
-                    
+
                     // Inject whatever look and structural treatments you prefer here:
                     QuickItemCard(
                         title: item.name,
@@ -50,8 +52,11 @@ public struct QuickItemsView: View {
                     )
                         .onTapGesture {
                         }
-                    
+
                 }
+                // NOTE: kept as CustomButton — ManiButton v1 has no
+                // vertical icon-above-text layout with a caller-supplied
+                // minHeight, which this compact "FIND" tile needs.
                 CustomButton(text: "FIND",
                              icon: .search,
                              minHeight: calculatedActionCardHeight,
@@ -63,7 +68,7 @@ public struct QuickItemsView: View {
             }
         }
         .padding(16)
-        .background(Color(red: 0.98, green: 0.96, blue: 0.96))
+        .background(theme.base.background)
     }
 }
 
@@ -71,23 +76,24 @@ public struct QuickItemsView: View {
 
 
 struct QuickItemCard: View {
+    @Environment(\.maniTheme) private var theme
     let title: String
     let height: CGFloat
     let width: CGFloat
 
-    
     var body: some View {
-        CardView {
+        ManiCard {
             Text(title)
-                .font(.system(size: 14, weight: .medium, design: .default))
-                .foregroundColor(.black)
+                .font(theme.typography.body.weight(.medium))
+                .foregroundStyle(theme.base.text)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 8)
         }
         .frame(width: width, height: height)
         .overlay(alignment: .top) {
-            Color(.systemOrange)
+            theme.accent.accent
                 .frame(height: 6)
+                .clipShape(RoundedRectangle(cornerRadius: theme.radii.card, style: .continuous))
         }
     }
 }
