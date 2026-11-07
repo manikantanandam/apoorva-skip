@@ -10,27 +10,32 @@ import ApoorvaModules
 import ApoorvaServices
 import ApoorvaRepository
 import ApoorvaModels
+import ApoorvaUtilities
 
 // In ApoorvaPOS Module
 @MainActor
 public class ModulesContainer {
     private let servicesContainer: ServicesContainer
     private let repositoryContainer: RepositoryContainer
-    
+    private let environment: AppEnvironment
+
 //    // Feature-specific repositories (lazy so they don't consume memory until POS is opened)
 //    private lazy var posRepository: PosRepositoryProtocol = {
 //        PosRepository(api: core.apiClient, storage: core.offlineStorage)
 //    }()
-    
+
     public init(servicesContainer: ServicesContainer,
-                repositoryContainer: RepositoryContainer) {
+                repositoryContainer: RepositoryContainer,
+                environment: AppEnvironment) {
         self.servicesContainer = servicesContainer
         self.repositoryContainer = repositoryContainer
+        self.environment = environment
     }
-    
+
     public func makeLoginViewModel() -> LoginViewModel {
         return LoginViewModel(
-            authService: servicesContainer.authService
+            authService: servicesContainer.authService,
+            environment: environment
         )
     }
     

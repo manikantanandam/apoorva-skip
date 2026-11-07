@@ -55,6 +55,11 @@ public struct MainView: View {
             HomeView(container: container)
         case .login(let viewModel):
             LoginView(viewModel: viewModel)
+                .overlay(alignment: .topTrailing) {
+                    EnvironmentBadgeView(environment: self.viewModel.appContainer.environment)
+                        .padding(.trailing, 8)
+                        .allowsHitTesting(false)
+                }
         case .pos(let viewModel):
             POSView(viewModel: viewModel)
             

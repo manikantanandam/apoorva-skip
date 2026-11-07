@@ -1,5 +1,9 @@
 ## User settings
 
+# Firebase config (injected locally or via GitHub secret, never committed)
+GoogleService-Info*.plist
+google-services.json
+
 # vi
 .*.swp
 .*.swo

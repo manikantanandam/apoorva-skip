@@ -5,12 +5,11 @@
 | Config | Purpose | Firebase project | Bundle ID (iOS) | Application ID (Android) | Logs | Flags |
 |--------|---------|------------------|-----------------|--------------------------|------|-------|
 | `Debug` | Local dev, simulator/emulator | `apoorva-dev` | `com.apoorva.app.dev` | `com.apoorva.app.dev` | verbose | overridable |
-| `Staging` | QA, internal testers | `apoorva-stg` | `com.apoorva.app.stg` | `com.apoorva.app.stg` | info | remote |
 | `Release` | App Store / Play | `apoorva-prod` | `com.apoorva.app` | `com.apoorva.app` | error | remote |
 
 Notes:
 - Bundle IDs above are proposals; confirm the real ones in `app/Darwin` and `app/Android` before use.
-- One `GoogleService-Info.plist` / `google-services.json` per environment, kept out of git (CI injects from secrets).
+- One plist/JSON per environment, kept out of git (CI injects from secrets): `GoogleService-Info-debug.plist` / `GoogleService-Info-production.plist` for iOS, `google-services.json` for Android.
 - Use `.xcconfig` files per config for the iOS app; Skip's `Skip.env` for shared Skip settings.
 - `SKIP_NO_ANDROID=1` is currently set — Android builds are off by default; flip per branch when testing Android.
 
@@ -35,12 +34,11 @@ Proposed additions:
 | `ci.yml` (existing) | PR, push to main | Library tests + coverage + SonarCloud |
 | `build-app.yml` | PR, push to main | `xcodebuild` iOS app build (Debug), `skip android build` only when Android enabled |
 | `lint.yml` | PR | swift-format, markdown link check, secret scan (gitleaks) |
-| `release-staging.yml` | push to `main` | Archive Staging, upload to TestFlight internal + Play internal track |
 | `release-prod.yml` | tag `v*` | Archive Release, upload TestFlight / App Store review, Play production (staged 10%) |
 
 Pipeline rules:
 - Branch protection on `main`: required checks = tests, build, lint, SonarCloud quality gate.
-- Secrets in GitHub Environments (`staging`, `production`): signing certs, provisioning profiles, Play service account JSON, Firebase plists, App Store Connect API key.
+- Secrets in the GitHub `production` Environment: signing certs, provisioning profiles, Play service account JSON, Firebase plists, App Store Connect API key.
 - Cache SwiftPM and Gradle to cut CI minutes.
 - Concurrency group per branch to cancel superseded runs.
 
@@ -54,27 +52,26 @@ Pipeline rules:
 - [ ] Migrations tested from previous version
 - [ ] Remote Config defaults updated
 - [ ] Crashlytics dSYM uploaded
-- [ ] Staging smoke test (login, bill, sync, cashflow)
+- [ ] Smoke test (login, bill, sync, cashflow)
 - [ ] Tag created, staged rollout started
 
 ## 7. Environments & data
-- Dev and staging use separate Firestore databases; never point dev builds at prod.
-- Seed script creates demo shop data for dev/staging only.
+- Debug and production use separate Firestore databases; never point debug builds at prod.
+- Seed script creates demo shop data for debug only.
 
 ## 7a. Developer settings & runtime environment switch
-- **Who:** always in Debug builds (More → Developer). In Staging/Release builds it is hidden. It opens by tapping the version 7 times in Help, and only for accounts with the `developer` auth claim.
-- **Environments:** Dev (`apoorva-dev`), Staging (`apoorva-stg`), Production (`apoorva-prod`). Each has its own Firebase project.
-  - Debug builds bundle all three config files.
-  - Staging builds bundle Staging and Production.
-  - Release bundles Production, plus Staging for claim holders.
+- **Who:** always in Debug builds (More → Developer). In Release builds it is hidden. It opens by tapping the version 7 times in Help, and only for accounts with the `developer` auth claim.
+- **Environments:** Debug (`apoorva-dev`), Production (`apoorva-prod`). Each has its own Firebase project.
+  - Debug builds bundle both config files.
+  - Release bundles Production only.
 - **How switching works:** pick an environment → confirm → sign out → relaunch. `AppEnvironment` is read at launch and builds `FirebaseApp` with that env's `FirebaseOptions` (multi-app configuration), then opens a separate local DB file `apoorva-<env>-<orgId>.db`. Data from different environments never mixes.
-- **Visible marker:** a "DEV" / "STG" pill in the status-bar area on every screen when not on Production.
+- **Visible marker:** a "DEBUG" pill in the status-bar area on every screen when not on Production.
 - **Tools:**
   - flag overrides (local only)
   - Remote Config fetch now
   - plan simulator (trial day, bills used, reset)
   - sync force push/pull and outbox count
-  - seed demo shop, clear local DB (Dev/Staging only)
+  - seed demo shop, clear local DB (Debug only)
   - log viewer with share (no PII)
   - Crashlytics test crash
   - screen-ID overlay, mock date/time, offline simulation

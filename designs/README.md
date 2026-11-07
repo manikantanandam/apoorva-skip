@@ -142,6 +142,6 @@ Each image shows one screen in **light (left)** and **dark (right)**. Generated 
 | 135 | [global-update](135-global-update.png) | Apoorva · Ink | Force update (min_app_version) |
 | 136 | [global-help](136-global-help.png) | Kirana · Sage | Help & feedback |
 | 137 | [dev-settings](137-dev-settings.png) | Apoorva · Ink | Developer settings (debug builds, or developer claim in release) |
-| 138 | [dev-environment](138-dev-environment.png) | Apoorva · Ink | Switch backend: Dev / Staging / Production (separate Firebase + local data) |
+| 138 | [dev-environment](138-dev-environment.png) | Apoorva · Ink | Switch backend: Debug / Production (separate Firebase + local data) |
 | 139 | [dev-flags](139-dev-flags.png) | Apoorva · Ink | Flag overrides with source of each value (local only) |
 | 140 | [dev-logs](140-dev-logs.png) | Apoorva · Ink | Log viewer with filters and share |
