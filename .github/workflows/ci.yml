@@ -125,7 +125,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.projectKey=nanirocks125_apoorva-skip
+            -Dsonar.projectKey=manikantanandam_apoorva-skip
             -Dsonar.organization=manikanta-nandam
             -Dsonar.sources=.
             -Dsonar.tests=.
