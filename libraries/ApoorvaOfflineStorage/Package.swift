@@ -35,7 +35,10 @@ let package = Package(
         ),
         .testTarget(
             name: "ApoorvaOfflineStorageTests",
-            dependencies: ["ApoorvaOfflineStorage"]
+            dependencies: [
+                "ApoorvaOfflineStorage",
+                .product(name: "ApoorvaModels", package: "ApoorvaModels")
+            ]
         ),
         
 
