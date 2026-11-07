@@ -1,11 +1,12 @@
 import SwiftUI
 import ApoorvaModels
-import UIKit
+import ManiSwiftUIComponents
 
 public struct AddUpdateCashflowTransactionView: View {
-    
+
     @Environment(\.dismiss) private var dismiss
-    
+    @Environment(\.maniTheme) private var theme
+
     @State private var viewModel: AddUpdateCashflowTransactionViewModel
     
     public init(viewModel: AddUpdateCashflowTransactionViewModel) {
@@ -32,7 +33,7 @@ public struct AddUpdateCashflowTransactionView: View {
                                     .keyboardType(.decimalPad)
                                     .font(.system(size: 34, weight: .bold, design: .rounded))
                                     // Change color based on transaction type for visual feedback
-                                    .foregroundColor(viewModel.transactionType == .credit ? .green : .red)
+                                    .foregroundStyle(viewModel.transactionType == .credit ? theme.base.success : theme.base.error)
                             }
                             .padding(.bottom, 4)
                             
@@ -42,11 +43,9 @@ public struct AddUpdateCashflowTransactionView: View {
                             HStack {
                                 ZStack {
                                     Circle()
-                                        .fill(Color.blue.opacity(0.15))
+                                        .fill(theme.accent.soft)
                                         .frame(width: 32, height: 32)
-                                    Image(systemName: "calendar")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundStyle(.blue)
+                                    ManiSwiftUIComponents.IconView(.calendar, size: 14, color: theme.accent.accent)
                                 }
                                 
                                 DatePicker("Date", selection: $viewModel.timestamp)
@@ -186,18 +185,12 @@ public struct AddUpdateCashflowTransactionView: View {
                     
                     // MARK: - Error Message
                     if let error = viewModel.errorMessage {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundColor(.red)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.red.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        ManiNote(error, kind: .error)
                     }
                 }
-                .padding()
+                .padding(ManiSpacing.lg)
             }
-            .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+            .background(theme.base.background.ignoresSafeArea())
             .navigationTitle(viewModel.isUpdating ? "Edit Transaction" : "Add Transaction")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -220,14 +213,7 @@ public struct AddUpdateCashflowTransactionView: View {
             }
             .overlay {
                 if viewModel.isSaving {
-                    ZStack {
-                        Color(.systemBackground).opacity(0.6).ignoresSafeArea()
-                        ProgressView()
-                            .padding(24)
-                            .background(Color(.secondarySystemGroupedBackground))
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .shadow(radius: 10)
-                    }
+                    ProgressView()
                 }
             }
             .scrollDismissesKeyboard(.interactively)

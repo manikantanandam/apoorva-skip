@@ -15,7 +15,8 @@ enum ProfileRoute: Hashable, Identifiable {
 }
 
 public struct ProfileView: View {
-    
+    @Environment(\.maniTheme) private var theme
+
     @State private var path: [ProfileRoute] = []
     @State private var activeModal: ProfileRoute? = nil
     
@@ -38,61 +39,68 @@ public struct ProfileView: View {
     
     public var body: some View {
         NavigationStack(path: $path) {
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: ManiSpacing.lg) {
                 if let user = viewModel.appUser {
-                    HStack {
-                        AvatarView(imageURL: user.imageURL)
-                        VStack(alignment: .leading) {
-                            LabelView(text: user.name)
-                            LabelView(text: user.email)
+                    HStack(spacing: ManiSpacing.md) {
+                        ManiAvatar(imageURL: user.imageURL, size: 60)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(user.name)
+                                .font(theme.typography.body.weight(.semibold))
+                                .foregroundStyle(theme.base.text)
+                            Text(user.email)
+                                .font(theme.typography.secondary)
+                                .foregroundStyle(theme.base.textSecondary)
                         }
                     }
-                    
-                    DescriptionView(title: "Role", value: user.role.rawValue)
-                    DescriptionView(title: "Status", value: user.status)
-                    
-                    DescriptionView(title: "Created At",
-                                    value: viewModel.createdAt)
-                    DescriptionView(title: "updated At",
-                                    value: viewModel.updatedAt)
-                    
-                    DescriptionView(title: "Organization",
-                                    value: viewModel.currentOrganization,
-                                    navigationAllowed: true)
-                    .onTapGesture {
-                        self.activeModal = .selectOrganization
+
+                    ManiCard {
+                        VStack(spacing: ManiSpacing.sm) {
+                            ManiBreakdownRow(label: "Role", value: user.role.rawValue)
+                            ManiBreakdownRow(label: "Status", value: user.status)
+                            ManiBreakdownRow(label: "Created At", value: viewModel.createdAt)
+                            ManiBreakdownRow(label: "Updated At", value: viewModel.updatedAt)
+                        }
                     }
 
-                    NavigationLink("Organizations") {
+                    ManiListRow(
+                        title: "Organization",
+                        value: viewModel.currentOrganization,
+                        action: { self.activeModal = .selectOrganization }
+                    )
+
+                    NavigationLink {
                         OrganizationListView(viewModel: makeOrganizationListViewModel())
+                    } label: {
+                        ManiListRow(title: "Organizations")
                     }
-                    .padding(.top)
 
                     if viewModel.canManageUsers {
-                        NavigationLink("Team Members") {
+                        NavigationLink {
                             UserListView(viewModel: makeUserListViewModel())
+                        } label: {
+                            ManiListRow(title: "Team Members")
                         }
-                        .padding(.top)
                     }
 
                     if let developerViewModel {
-                        NavigationLink("Developer") {
+                        NavigationLink {
                             DeveloperSettingsView(viewModel: developerViewModel)
+                        } label: {
+                            ManiListRow(title: "Developer")
                         }
-                        .padding(.top)
                     }
 
                     ManiButton("Logout", kind: .outline) {
                         viewModel.logoutPressed()
                     }
-                    .padding(.top)
 
                     Spacer()
                 } else {
-                    Text("No User")
+                    ManiNote("No user signed in.", kind: .warning)
                 }
             }
-
+            .padding(ManiSpacing.lg)
+            .background(theme.base.background.ignoresSafeArea())
         }
         .task {
             await viewModel.checkForUser()

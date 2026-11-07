@@ -34,23 +34,26 @@ public struct POSView: View {
                         keyboard: .phone
                     )
 
-                    QuickItemsView(items: viewModel.items)
-                    
-                    SelectedCartItemsView(items: viewModel.items)
-                    
-                    
-                    
-        //            CustomButton(text: "Logout", backgroundColor: .orange) {
-        //                viewModel.logoutPressed()
-        //            }
+                    QuickItemsView(viewModel: viewModel)
+
+                    SelectedCartItemsView(viewModel: viewModel)
+
                     Spacer()
                 }
-                .padding(16)
+                .padding(ManiSpacing.lg)
             }
-            
+            .safeAreaInset(edge: .bottom) {
+                if viewModel.cartItemCount > 0 {
+                    ManiActionBar(
+                        summaryText: "\(viewModel.cartItemCount) items",
+                        primaryTitle: "Collect",
+                        primaryAction: { print("Collect tapped") },
+                        secondaryTitle: "Hold bill",
+                        secondaryAction: { print("Hold bill tapped") }
+                    )
+                    .padding(.horizontal, ManiSpacing.lg)
+                }
+            }
         }
-        
     }
-    
-    
 }

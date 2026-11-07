@@ -6,48 +6,65 @@
 //
 
 import SwiftUI
+import ManiSwiftUIComponents
 
 public struct CustomerListView: View {
-    
+    @Environment(\.maniTheme) private var theme
+
     @Bindable var viewModel: CustomerListViewModel
-    
+
     @State private var isShowingFormatSheet = false
     @State private var selectedFormat: FileFormat?
     @State private var exportURL: URL?
-    
+
     public init(viewModel: CustomerListViewModel) {
         self.viewModel = viewModel
     }
-    
+
     public var body: some View {
         ScrollView {
-            LazyVStack {
-                ForEach(viewModel.customers) { item in
-                    CardView {
-                        VStack {
-                            LabelView(text: item.name)
-                            LabelView(text: item.phone)
-                            LabelView(text: "\(item.totalSales)")
-                            LabelView(text: "\(item.totalAmountSpent)")
-                            DescriptionView(
-                                title: "Created Date",
-                                value: Date(timeIntervalSince1970: item.createdAt)
-                                    .toString(format: "dd-MM-yyyy") ?? ""
-                            )
-                            if let lastPurchaseDate = item.lastPurchaseDate {
-                                DescriptionView(
-                                    title: "Last Purchased Date",
-                                    value: Date(timeIntervalSince1970: lastPurchaseDate)
+            LazyVStack(spacing: ManiSpacing.md) {
+                if viewModel.customers.isEmpty {
+                    ManiNote("No customers found.", kind: .warning)
+                        .padding(.horizontal, ManiSpacing.lg)
+                        .padding(.top, ManiSpacing.lg)
+                } else {
+                    ForEach(viewModel.customers) { item in
+                        ManiCard {
+                            VStack(alignment: .leading, spacing: ManiSpacing.sm) {
+                                ManiListRow(
+                                    avatar: ManiAvatar(initials: initials(for: item.name)),
+                                    title: item.name,
+                                    subtitle: item.phone
+                                )
+
+                                Divider().overlay(theme.base.border)
+
+                                ManiBreakdownRow(label: "Total Sales", value: "\(item.totalSales)")
+                                ManiBreakdownRow(label: "Total Spent", value: "\(item.totalAmountSpent)")
+                                ManiBreakdownRow(
+                                    label: "Created Date",
+                                    value: Date(timeIntervalSince1970: item.createdAt)
                                         .toString(format: "dd-MM-yyyy") ?? ""
                                 )
-                            } else {
-                                LabelView(text: "No Purchase")
+                                if let lastPurchaseDate = item.lastPurchaseDate {
+                                    ManiBreakdownRow(
+                                        label: "Last Purchased Date",
+                                        value: Date(timeIntervalSince1970: lastPurchaseDate)
+                                            .toString(format: "dd-MM-yyyy") ?? ""
+                                    )
+                                } else {
+                                    ManiBreakdownRow(label: "Last Purchased Date", value: "No purchase")
+                                }
                             }
                         }
+                        .padding(.horizontal, ManiSpacing.lg)
                     }
                 }
             }
+            .padding(.vertical, ManiSpacing.lg)
         }
+        .background(theme.base.background.ignoresSafeArea())
         .toolbar{
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
@@ -108,6 +125,12 @@ public struct CustomerListView: View {
                 .presentationDetents([.medium, .large])
         }
     }
+
+    private func initials(for name: String) -> String {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return "?" }
+        return String(trimmed.prefix(1)).uppercased()
+    }
 }
 
 // 5. Lightweight UIViewControllerRepresentable helper to bring up the iOS Native Share UI
@@ -132,36 +155,17 @@ extension URL: Identifiable {
 struct FormatSelectionSheet: View {
     @Environment(\.dismiss) var dismiss
     var onSelect: (FileFormat) -> Void
-    
+
     var body: some View {
         NavigationStack {
             List {
                 Section(header: Text("Choose a format to proceed")) {
                     ForEach(FileFormat.allCases) { format in
-                        Button(action: { onSelect(format) }) {
-                            HStack(spacing: 15) {
-                                Image(systemName: format.icon)
-                                    .font(.title2)
-                                    .foregroundColor(.accentColor)
-                                    .frame(width: 30)
-                                
-                                VStack(alignment: .leading) {
-                                    Text(format == .csv ? "Comma-Separated Values" : "vCard / Contacts")
-                                        .font(.body)
-                                        .foregroundColor(.primary)
-                                    Text(format.rawValue)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                                
-                                Spacer()
-                                
-                                Image(systemName: "chevron.right")
-                                    .font(.footnote)
-                                    .foregroundColor(Color.black)
-                            }
-                            .padding(.vertical, 4)
-                        }
+                        ManiListRow(
+                            title: format == .csv ? "Comma-Separated Values" : "vCard / Contacts",
+                            subtitle: format.rawValue,
+                            action: { onSelect(format) }
+                        )
                     }
                 }
             }

@@ -8,10 +8,11 @@
 import SwiftUI
 import ApoorvaUtilities
 import ApoorvaModels
-import UIKit
+import ManiSwiftUIComponents
 
 public struct DailyCashflowListView: View {
-    
+    @Environment(\.maniTheme) private var theme
+
     @Bindable var viewModel: DailyCashFlowListViewModel
     
     var makeDailyCashFlowView: (Date) -> DailyCashFlowView
@@ -27,40 +28,39 @@ public struct DailyCashflowListView: View {
             
             // Dashboard Row
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    dashboardCard(title: "Shop Setup", value: viewModel.shopSetupTotal, color: .orange, icon: "building.2")
-                    dashboardCard(title: "Money In", value: viewModel.totalIncome, color: .green, icon: "arrow.down.left.circle")
-                    dashboardCard(title: "Money Out", value: viewModel.totalExpense, color: .red, icon: "arrow.up.right.circle")
-                    dashboardCard(title: "Inventory", value: viewModel.inventoryTotal, color: .blue, icon: "shippingbox")
+                HStack(spacing: ManiSpacing.sm) {
+                    dashboardCard(title: "Shop Setup", value: viewModel.shopSetupTotal)
+                    dashboardCard(title: "Money In", value: viewModel.totalIncome)
+                    dashboardCard(title: "Money Out", value: viewModel.totalExpense)
+                    dashboardCard(title: "Inventory", value: viewModel.inventoryTotal)
                     dashboardCard(
                         title: viewModel.profitOrLoss >= 0 ? "Profit" : "Loss",
                         value: abs(viewModel.profitOrLoss),
-                        color: viewModel.profitOrLoss >= 0 ? .green : .red,
-                        icon: "chart.line.uptrend.xyaxis",
-                        prefix: viewModel.profitOrLoss >= 0 ? "+" : "-"
+                        prefix: viewModel.profitOrLoss >= 0 ? "+" : "-",
+                        isHighlighted: true
                     )
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, ManiSpacing.lg)
+                .padding(.vertical, ManiSpacing.md)
             }
-            .background(Color(UIColor.secondarySystemGroupedBackground))
-            
+            .background(theme.base.surface)
+
             // Custom Date Picker Section
             if viewModel.dateFilter == .custom {
                 HStack {
                     DatePicker("Start", selection: $viewModel.customStartDate, displayedComponents: .date)
                         .labelsHidden()
                     Text("to")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(theme.base.textSecondary)
                     DatePicker("End", selection: $viewModel.customEndDate, displayedComponents: .date)
                         .labelsHidden()
                 }
                 .padding()
-                .background(Color(UIColor.secondarySystemBackground))
+                .background(theme.base.surface)
             }
-            
+
             ScrollView {
-                LazyVStack(spacing: 12) {
+                LazyVStack(spacing: ManiSpacing.md) {
                     // Loop through the summaries provided by the view model[cite: 26, 27]
                     ForEach(viewModel.summaries, id: \.id) { summary in
                         // 3. Wrap the card in a NavigationLink passing the summary's date
@@ -70,10 +70,10 @@ public struct DailyCashflowListView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .padding(.vertical)
+                .padding(.vertical, ManiSpacing.lg)
             }
         }
-        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+        .background(theme.base.background.ignoresSafeArea())
         .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
@@ -106,84 +106,27 @@ public struct DailyCashflowListView: View {
     }
     
     @ViewBuilder
-    private func dashboardCard(title: String, value: Double, color: Color, icon: String, prefix: String = "") -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: icon)
-                    .foregroundColor(color)
-                    .font(.subheadline)
-                Text(title)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            Text("\(prefix)\(value.string)")
-                .font(.headline)
-                .fontWeight(.bold)
-                .foregroundColor(color)
-        }
-        .padding(12)
-        .frame(minWidth: 120, alignment: .leading)
-        .background(Color(UIColor.tertiarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .shadow(color: Color.black.opacity(0.03), radius: 3, x: 0, y: 2)
+    private func dashboardCard(title: String, value: Double, prefix: String = "", isHighlighted: Bool = false) -> some View {
+        ManiKPITile(title: title, value: "\(prefix)\(value.string)", isHighlighted: isHighlighted)
+            .frame(minWidth: 120, alignment: .leading)
     }
-    
+
     // Extracted into a separate view builder for cleaner code
     @ViewBuilder
     private func cashflowCard(for summary: DailyCashflowSummary) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            
-            // Header: Date and ID
-            HStack {
-                
-                Spacer()
-                
-                Text("#\(summary.id.prefix(8))")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color(UIColor.tertiarySystemFill)) // Adapts better to dark mode
-                    .clipShape(Capsule())
-            }
-            
-            Divider()
-            
-            // Body: Opening and Closing Balances[cite: 27]
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Opening")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Text(summary.totalOpening.string)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary)
+        ManiCard {
+            VStack(alignment: .leading, spacing: ManiSpacing.sm) {
+                HStack {
+                    Spacer()
+                    ManiStatusBadge("#\(summary.id.prefix(8))", kind: .neutral)
                 }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Closing")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Text(summary.totalClosing.string)
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(.green) // Highlights the final daily amount
-                }
+
+                Divider().overlay(theme.base.border)
+
+                ManiBreakdownRow(label: "Opening", value: summary.totalOpening.string)
+                ManiBreakdownRow(label: "Closing", value: summary.totalClosing.string, emphasis: .total)
             }
         }
-        .padding(16)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color(UIColor.separator).opacity(0.5), lineWidth: 0.5)
-                )
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, ManiSpacing.lg)
     }
 }

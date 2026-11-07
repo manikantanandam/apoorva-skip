@@ -5,6 +5,7 @@
 
 import SwiftUI
 import ApoorvaUtilities
+import ManiSwiftUIComponents
 
 struct EnvironmentSwitchView: View {
     @State var viewModel: DeveloperSettingsViewModel
@@ -14,23 +15,12 @@ struct EnvironmentSwitchView: View {
         List {
             Section {
                 ForEach(AppEnvironment.allCases) { environment in
-                    Button {
-                        viewModel.pendingEnvironment = environment
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(environment.displayName)
-                                Text(environment.firebaseProjectId)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            if environment == viewModel.pendingEnvironment {
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                    .foregroundStyle(.primary)
+                    ManiListRow(
+                        title: environment.displayName,
+                        subtitle: environment.firebaseProjectId,
+                        status: environment == viewModel.pendingEnvironment ? ("Selected", .success) : nil,
+                        action: { viewModel.pendingEnvironment = environment }
+                    )
                 }
             } footer: {
                 Text("Switching signs you out, clears local data for this device, and closes the app immediately. Reopen it to use the new environment.")

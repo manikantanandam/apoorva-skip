@@ -1,10 +1,11 @@
 // AddUpdateDailyCashflowSummaryView.swift
 import SwiftUI
 import ApoorvaModels
-import UIKit
+import ManiSwiftUIComponents
 
 public struct AddUpdateDailyCashflowSummaryView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.maniTheme) private var theme
     @Bindable var viewModel: AddUpdateDailyCashflowSummaryViewModel
     
     // 1. ADD SHEET STATE
@@ -29,13 +30,11 @@ public struct AddUpdateDailyCashflowSummaryView: View {
                         HStack {
                             ZStack {
                                 Circle()
-                                    .fill(Color.blue.opacity(0.15))
+                                    .fill(theme.accent.soft)
                                     .frame(width: 32, height: 32)
-                                Image(systemName: "calendar")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundStyle(.blue)
+                                ManiSwiftUIComponents.IconView(.calendar, size: 14, color: theme.accent.accent)
                             }
-                            
+
                             DatePicker("Select Date", selection: $viewModel.date, displayedComponents: .date)
                                 .labelsHidden()
                                 .datePickerStyle(.compact)
@@ -63,44 +62,22 @@ public struct AddUpdateDailyCashflowSummaryView: View {
                         ModernFormCard(title: "Day Transactions (\(viewModel.dayTransactions.count))") {
                             if viewModel.dayTransactions.isEmpty {
                                 Text("No transactions recorded for this date.")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
-                                    .padding(.vertical, 8)
+                                    .font(theme.typography.secondary)
+                                    .foregroundStyle(theme.base.textSecondary)
+                                    .padding(.vertical, ManiSpacing.sm)
                             } else {
-                                VStack(spacing: 12) {
+                                VStack(spacing: ManiSpacing.sm) {
                                     ForEach(viewModel.dayTransactions) { tx in
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 4) {
-                                                Text(tx.category.rawValue)
-                                                    .font(.subheadline)
-                                                    .fontWeight(.medium)
-                                                Text(tx.particulars)
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                            
-                                            Spacer()
-                                            VStack {
-                                                Text(String(format: "%.2f", tx.amount))
-                                                    .font(.subheadline)
-                                                    .fontWeight(.bold)
-                                                    .foregroundColor(tx.transactionType == .credit ? .green : .red)
-                                                
-                                                Text(tx.paymentMode.rawValue)
-                                                    .font(.caption)
-                                                    .foregroundColor(.secondary)
-                                            }
-                                            
-                                            
-                                        }
-                                        
-                                        .contentShape(Rectangle()) // Ensures the whole row is tappable
-                                        .onTapGesture {
-                                            activeTransactionSheet = .edit(tx)
-                                        }
-                                        
+                                        ManiListRow(
+                                            title: tx.category.rawValue,
+                                            subtitle: tx.particulars,
+                                            value: String(format: "%.2f", tx.amount),
+                                            status: (tx.paymentMode.rawValue, tx.transactionType == .credit ? .success : .error),
+                                            action: { activeTransactionSheet = .edit(tx) }
+                                        )
+
                                         if tx.id != viewModel.dayTransactions.last?.id {
-                                            Divider().opacity(0.5)
+                                            Divider().overlay(theme.base.border)
                                         }
                                     }
                                 }
@@ -130,18 +107,12 @@ public struct AddUpdateDailyCashflowSummaryView: View {
                     
                     // MARK: - Error Message
                     if let error = viewModel.errorMessage {
-                        Text(error)
-                            .font(.caption)
-                            .foregroundColor(.red)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.red.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        ManiNote(error, kind: .error)
                     }
                 }
-                .padding()
+                .padding(ManiSpacing.lg)
             }
-            .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+            .background(theme.base.background.ignoresSafeArea())
             .navigationTitle("Daily Summary")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -164,14 +135,7 @@ public struct AddUpdateDailyCashflowSummaryView: View {
             }
             .overlay {
                 if viewModel.isSaving {
-                    ZStack {
-                        Color(.systemBackground).opacity(0.6).ignoresSafeArea()
-                        ProgressView()
-                            .padding(24)
-                            .background(Color(.secondarySystemGroupedBackground))
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .shadow(radius: 10)
-                    }
+                    ProgressView()
                 }
             }
             .scrollDismissesKeyboard(.interactively)
@@ -207,71 +171,71 @@ public struct AddUpdateDailyCashflowSummaryView: View {
 // MARK: - UI Components
 
 struct ModernFormCard<Content: View>: View {
+    @Environment(\.maniTheme) private var theme
     let title: String
     let content: Content
-    
+
     init(title: String, @ViewBuilder content: () -> Content) {
         self.title = title
         self.content = content()
     }
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(title)
-                .font(.system(size: 12, weight: .bold)) // Fixed font size
-                .foregroundColor(.secondary)
-                .textCase(.uppercase)
-            
-            content
+        ManiCard {
+            VStack(alignment: .leading, spacing: ManiSpacing.md) {
+                Text(title)
+                    .font(theme.typography.secondary.weight(.bold))
+                    .foregroundStyle(theme.base.textSecondary)
+                    .textCase(.uppercase)
+
+                content
+            }
         }
-        .padding(16)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
     }
 }
 
 struct AccountBalanceInputRow: View {
+    @Environment(\.maniTheme) private var theme
     let accountName: String
     @Binding var text: String
-    
+
     var body: some View {
-        HStack(spacing: 12) {
-            // Contextual icon with a modern circular background badge
+        HStack(spacing: ManiSpacing.md) {
+            // Contextual icon with a themed circular background badge
             ZStack {
                 Circle()
-                    .fill(Color(UIColor.tertiarySystemGroupedBackground))
+                    .fill(theme.accent.soft)
                     .frame(width: 32, height: 32)
-                
-                Image(systemName: iconName(for: accountName))
-                    .font(.system(size: 14, weight: .medium)) // Fixed size instead of flexible frame
-                    .foregroundColor(.primary.opacity(0.7))
+
+                ManiSwiftUIComponents.IconView(icon(for: accountName), size: 14, color: theme.accent.accent)
             }
-            
+
             Text(accountName)
-                .font(.system(size: 16, weight: .medium)) // Fixed size to block cascade
-                .foregroundColor(.primary)
-            
+                .font(theme.typography.body.weight(.medium))
+                .foregroundStyle(theme.base.text)
+
             Spacer()
-            
+
             TextField("0.0", text: $text)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
-                .font(.system(.body, design: .rounded).weight(.semibold))
-                .padding(.vertical, 8)
-                .padding(.horizontal, 12)
-                .background(Color(UIColor.tertiarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .font(theme.typography.body.weight(.semibold))
+                .foregroundStyle(theme.base.text)
+                .padding(.vertical, ManiSpacing.sm)
+                .padding(.horizontal, ManiSpacing.md)
+                .background(theme.base.background)
+                .clipShape(RoundedRectangle(cornerRadius: theme.radii.input, style: .continuous))
                 .frame(width: 140)
         }
     }
-    
-    // Auto-selects a relevant SF Symbol (using filled variants for better contrast inside the circular badge)
-    private func iconName(for name: String) -> String {
+
+    // Falls back to `.more` when no mapped icon exists for the account name
+    // (ManiIconName has no bank/institution icon yet).
+    private func icon(for name: String) -> ManiIconName {
         let lowercased = name.lowercased()
-        if lowercased.contains("cash") { return "banknote.fill" }
-        if lowercased.contains("upi") || lowercased.contains("pay") { return "qrcode.viewfinder" }
-        if lowercased.contains("card") { return "creditcard.fill" }
-        return "building.columns.fill"
+        if lowercased.contains("cash") { return .cash }
+        if lowercased.contains("upi") || lowercased.contains("pay") { return .qrCode }
+        if lowercased.contains("card") { return .card }
+        return .more
     }
 }
