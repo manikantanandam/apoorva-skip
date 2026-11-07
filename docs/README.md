@@ -14,6 +14,7 @@ Offline-first shop/POS app (Swift + SwiftUI, Skip for Android). Local SQLite is 
 | 08 | [Security & compliance](08-security-and-compliance.md) | Auth, rules, data protection, privacy, optional tax |
 | 09 | [Roadmap & risks](09-roadmap-and-risks.md) | Milestones, risks, open questions, gaps |
 | 10 | [Admin & multi-tenancy](10-admin-and-multi-tenancy.md) | Org/store/roles, permissions, theme & flag admin, audit |
+| 11 | [NFR MVP baseline](11-nfr-mvp-baseline.md) | Minimum non-functional bar for the Store MVP, verification, release gate |
 
 **Designs:** 140 screens in the Clean style (light + dark side by side), frozen for v1, in [`/designs`](../designs/README.md).
 
