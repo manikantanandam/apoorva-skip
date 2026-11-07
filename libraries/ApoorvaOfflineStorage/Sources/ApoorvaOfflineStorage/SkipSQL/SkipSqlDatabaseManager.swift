@@ -36,4 +36,16 @@ public final class SkipSqlDatabase: @unchecked Sendable {
             // try context.createTableIfNotExists(Account.self)
             // try context.createTableIfNotExists(Sale.self)
         }
+
+    /// Deletes all rows from every local table, in place, without touching the file or closing the connection.
+    /// Safe to call while the app keeps running (unlike deleting the database file, which requires a restart).
+    public func clearAllLocalData() throws {
+        try context.deleteAll(InventoryItem.self)
+        try context.deleteAll(SyncState.self)
+        try context.deleteAll(Customer.self)
+        try context.deleteAll(Sale.self)
+        try context.deleteAll(CashflowTransaction.self)
+        try context.deleteAll(DailyCashflowSummary.self)
+        try context.deleteAll(Organization.self)
+    }
 }

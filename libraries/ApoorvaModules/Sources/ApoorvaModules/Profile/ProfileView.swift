@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ApoorvaUtilities
+import ManiSwiftUIComponents
 
 enum ProfileRoute: Hashable, Identifiable {
     var id: String { UUID().uuidString }
@@ -80,6 +81,11 @@ public struct ProfileView: View {
                         }
                         .padding(.top)
                     }
+
+                    ManiButton("Logout", kind: .outline) {
+                        viewModel.logoutPressed()
+                    }
+                    .padding(.top)
 
                     Spacer()
                 } else {

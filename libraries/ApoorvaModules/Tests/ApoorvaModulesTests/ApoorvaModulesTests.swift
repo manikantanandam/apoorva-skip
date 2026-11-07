@@ -96,6 +96,36 @@ struct LoginViewModelTests {
 }
 
 @MainActor
+struct ProfileViewModelTests {
+    @Test func logoutPressedCallsServiceAndClearsLocalData() {
+        let auth = MockAuthService()
+        var clearedLocalData = false
+        let vm = ProfileViewModel(
+            userRepository: MockUserRepository(),
+            authService: auth,
+            clearLocalData: { clearedLocalData = true }
+        )
+        vm.logoutPressed()
+        #expect(auth.logoutCount == 1)
+        #expect(clearedLocalData)
+    }
+
+    @Test func logoutPressedSkipsClearOnServiceError() {
+        let auth = MockAuthService()
+        auth.shouldThrow = true
+        var clearedLocalData = false
+        let vm = ProfileViewModel(
+            userRepository: MockUserRepository(),
+            authService: auth,
+            clearLocalData: { clearedLocalData = true }
+        )
+        vm.logoutPressed()
+        #expect(auth.logoutCount == 1)
+        #expect(!clearedLocalData)
+    }
+}
+
+@MainActor
 struct POSViewModelTests {
     @Test func startsWithQuickItems() {
         let vm = POSViewModel(authService: MockAuthService())

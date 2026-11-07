@@ -27,6 +27,10 @@ final class MockUserDefaultsStorage: UserDefaultsStorageProtocol, @unchecked Sen
     func remove(forKey key: String) {
         store[key] = nil
     }
+
+    func removeAll(matchingPrefix prefix: String) {
+        store = store.filter { !$0.key.hasPrefix(prefix) }
+    }
 }
 
 struct StubAuthService: AuthServicing {
