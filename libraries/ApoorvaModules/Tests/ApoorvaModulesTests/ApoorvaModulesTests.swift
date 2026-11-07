@@ -7,6 +7,7 @@ import Testing
 import Foundation
 import ApoorvaServices
 import ApoorvaModels
+import ApoorvaUtilities
 @testable import ApoorvaModules
 
 final class MockAuthService: AuthServicing, @unchecked Sendable {
@@ -34,7 +35,7 @@ final class MockAuthService: AuthServicing, @unchecked Sendable {
 @MainActor
 struct LoginViewModelTests {
     @Test func loginDisabledWhenFieldsEmpty() {
-        let vm = LoginViewModel(authService: MockAuthService())
+        let vm = LoginViewModel(authService: MockAuthService(), environment: .debug)
         vm.username = ""
         #expect(!vm.isLoginEnabled)
         vm.username = "a@b.com"
@@ -43,7 +44,7 @@ struct LoginViewModelTests {
     }
 
     @Test func loginEnabledWhenFieldsFilled() {
-        let vm = LoginViewModel(authService: MockAuthService())
+        let vm = LoginViewModel(authService: MockAuthService(), environment: .debug)
         vm.username = "a@b.com"
         vm.password = "pw"
         #expect(vm.isLoginEnabled)
@@ -51,7 +52,7 @@ struct LoginViewModelTests {
 
     @Test func loginPressedCallsServiceWithCredentials() async throws {
         let auth = MockAuthService()
-        let vm = LoginViewModel(authService: auth)
+        let vm = LoginViewModel(authService: auth, environment: .debug)
         vm.username = "a@b.com"
         vm.password = "pw"
         vm.loginPressed()
@@ -62,7 +63,7 @@ struct LoginViewModelTests {
 
     @Test func loginPressedSkipsWhenDisabled() async throws {
         let auth = MockAuthService()
-        let vm = LoginViewModel(authService: auth)
+        let vm = LoginViewModel(authService: auth, environment: .debug)
         vm.username = ""
         vm.loginPressed()
         try await Task.sleep(nanoseconds: 50_000_000)
@@ -72,7 +73,7 @@ struct LoginViewModelTests {
     @Test func loginPressedSwallowsServiceError() async throws {
         let auth = MockAuthService()
         auth.shouldThrow = true
-        let vm = LoginViewModel(authService: auth)
+        let vm = LoginViewModel(authService: auth, environment: .debug)
         vm.loginPressed()
         try await Task.sleep(nanoseconds: 100_000_000)
         #expect(auth.loginCalls.count == 1)
