@@ -8,13 +8,14 @@
 import Foundation
 import ApoorvaModels
 import SwiftUI
+import ManiSwiftUIComponents
 
 struct SelectedCartItemsView: View {
     let items: [InventoryItem]
     var body: some View {
-        LazyVStack {
+        LazyVStack(spacing: 0) {
             ForEach(items, id: \.self.id) { item in
-                Text(item.name)
+                ManiListRow(title: item.name)
             }
         }
     }
