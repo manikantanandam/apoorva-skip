@@ -105,35 +105,35 @@ struct CustomerTests {
 
     @Test("Tenure calculates correctly for days (< 30)")
     func testTenureDays() {
-        let tenDaysAgo = Date().addingTimeInterval(-10 * 24 * 60 * 60).timeIntervalSince1970
+        let tenDaysAgo = Calendar.current.date(byAdding: .day, value: -10, to: Date())!.timeIntervalSince1970
         let customer = createMockCustomer(createdAt: tenDaysAgo)
         #expect(customer.tenure == "Customer for 10 days")
     }
 
     @Test("Tenure calculates correctly for months (< 365 days)")
     func testTenureMonths() {
-        let fortyDaysAgo = Date().addingTimeInterval(-40 * 24 * 60 * 60).timeIntervalSince1970
+        let fortyDaysAgo = Calendar.current.date(byAdding: .day, value: -40, to: Date())!.timeIntervalSince1970
         let customer = createMockCustomer(createdAt: fortyDaysAgo)
         #expect(customer.tenure == "Customer for 1 month") // 40 / 30 = 1
         
-        let seventyDaysAgo = Date().addingTimeInterval(-70 * 24 * 60 * 60).timeIntervalSince1970
+        let seventyDaysAgo = Calendar.current.date(byAdding: .day, value: -70, to: Date())!.timeIntervalSince1970
         let customer2 = createMockCustomer(createdAt: seventyDaysAgo)
         #expect(customer2.tenure == "Customer for 2 months") // 70 / 30 = 2
     }
 
     @Test("Tenure calculates correctly for years")
     func testTenureYears() {
-        let oneYearAgo = Date().addingTimeInterval(-365 * 24 * 60 * 60).timeIntervalSince1970
+        let oneYearAgo = Calendar.current.date(byAdding: .day, value: -365, to: Date())!.timeIntervalSince1970
         let customer = createMockCustomer(createdAt: oneYearAgo)
         #expect(customer.tenure == "Customer for 1 year")
         
         // 365 + 30 days = 395 days (1 year, 1 month)
-        let oneYearOneMonthAgo = Date().addingTimeInterval(-395 * 24 * 60 * 60).timeIntervalSince1970
+        let oneYearOneMonthAgo = Calendar.current.date(byAdding: .day, value: -395, to: Date())!.timeIntervalSince1970
         let customer2 = createMockCustomer(createdAt: oneYearOneMonthAgo)
         #expect(customer2.tenure == "Customer for 1 year, 1 month")
         
         // 730 + 60 days = 790 days (2 years, 2 months)
-        let twoYearsTwoMonthsAgo = Date().addingTimeInterval(-790 * 24 * 60 * 60).timeIntervalSince1970
+        let twoYearsTwoMonthsAgo = Calendar.current.date(byAdding: .day, value: -790, to: Date())!.timeIntervalSince1970
         let customer3 = createMockCustomer(createdAt: twoYearsTwoMonthsAgo)
         #expect(customer3.tenure == "Customer for 2 years, 2 months")
     }
