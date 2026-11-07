@@ -1,4 +1,4 @@
-# 11 — Firestore Data Model (as-is snapshot)
+# 12 — Firestore Data Model (as-is snapshot)
 
 Baseline of the **live** Firestore structure as read by this app. Derived from code (`libraries/ApoorvaModels`, `libraries/ApoorvaServices`), not from the live database. Items marked **⚠ verify** must be confirmed against live data (read-only, Firebase console).
 

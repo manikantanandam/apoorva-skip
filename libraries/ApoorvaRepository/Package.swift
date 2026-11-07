@@ -18,6 +18,7 @@ let package = Package(
     dependencies: [
         .package(path: "../ApoorvaOfflineStorage"),
         .package(path: "../ApoorvaServices"),
+        .package(path: "../ApoorvaModels"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -31,7 +32,12 @@ let package = Package(
         ),
         .testTarget(
             name: "ApoorvaRepositoryTests",
-            dependencies: ["ApoorvaRepository"]
+            dependencies: [
+                "ApoorvaRepository",
+                .product(name: "ApoorvaOfflineStorage", package: "ApoorvaOfflineStorage"),
+                .product(name: "ApoorvaServices", package: "ApoorvaServices"),
+                .product(name: "ApoorvaModels", package: "ApoorvaModels")
+            ]
         ),
 
     ],
