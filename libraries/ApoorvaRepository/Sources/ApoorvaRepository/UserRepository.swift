@@ -31,6 +31,10 @@ public protocol UserRepositoryProtocol: Sendable {
         for user: AppUser,
         organization: OrganizationSnapshot
     ) async throws
+
+    func listUsers(orgId: String) async throws -> [AppUser]
+
+    func updateUserRole(id: String, role: AppUserRole) async throws
 }
 
 
@@ -84,6 +88,14 @@ public final actor UserRepository: UserRepositoryProtocol {
         print("Remote update successful")
         let updatedUser = user.copyWith(selectedOrganization: organization)
         try userDefaults.set(updatedUser, forKey: key(for: user.id))
+    }
+
+    public func listUsers(orgId: String) async throws -> [AppUser] {
+        try await userService.listUsers(orgId: orgId)
+    }
+
+    public func updateUserRole(id: String, role: AppUserRole) async throws {
+        try await userService.updateRole(userId: id, role: role)
     }
 }
 

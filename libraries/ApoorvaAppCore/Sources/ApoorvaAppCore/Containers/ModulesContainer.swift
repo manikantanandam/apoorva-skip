@@ -50,6 +50,18 @@ public class ModulesContainer {
             userRepository: repositoryContainer.userRepository
         )
     }
+
+    public func makeUserListViewModel() -> UserListViewModel {
+        return UserListViewModel(
+            userRepository: repositoryContainer.userRepository
+        )
+    }
+
+    public func makeOrganizationListViewModel() -> OrganizationListViewModel {
+        return OrganizationListViewModel(
+            userRepository: repositoryContainer.userRepository
+        )
+    }
     
     public func makeInventoryViewModel() -> InventoryViewModel {
         return InventoryViewModel(

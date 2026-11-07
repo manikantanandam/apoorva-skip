@@ -22,11 +22,17 @@ public struct ProfileView: View {
 
     /// Provided only when developer settings are available (debug builds).
     private let developerViewModel: DeveloperSettingsViewModel?
+    private let makeUserListViewModel: () -> UserListViewModel
+    private let makeOrganizationListViewModel: () -> OrganizationListViewModel
 
     public init(viewModel: ProfileViewModel,
-                developerViewModel: DeveloperSettingsViewModel? = nil) {
+                developerViewModel: DeveloperSettingsViewModel? = nil,
+                makeUserListViewModel: @escaping () -> UserListViewModel,
+                makeOrganizationListViewModel: @escaping () -> OrganizationListViewModel) {
         self.viewModel = viewModel
         self.developerViewModel = developerViewModel
+        self.makeUserListViewModel = makeUserListViewModel
+        self.makeOrganizationListViewModel = makeOrganizationListViewModel
     }
     
     public var body: some View {
@@ -56,6 +62,18 @@ public struct ProfileView: View {
                         self.activeModal = .selectOrganization
                     }
 
+                    NavigationLink("Organizations") {
+                        OrganizationListView(viewModel: makeOrganizationListViewModel())
+                    }
+                    .padding(.top)
+
+                    if viewModel.canManageUsers {
+                        NavigationLink("Team Members") {
+                            UserListView(viewModel: makeUserListViewModel())
+                        }
+                        .padding(.top)
+                    }
+
                     if let developerViewModel {
                         NavigationLink("Developer") {
                             DeveloperSettingsView(viewModel: developerViewModel)
@@ -73,28 +91,15 @@ public struct ProfileView: View {
         .task {
             await viewModel.checkForUser()
         }
-        .sheet(item: $activeModal) { modalRoute in
+        .sheet(item: $activeModal, onDismiss: {
+            Task { await viewModel.checkForUser() }
+        }) { modalRoute in
             // Wrap inside a new NavigationStack to allow navigation INSIDE the modal sheet
             NavigationStack {
                 switch modalRoute {
                 case .selectOrganization:
-                    GenericSelectionView(
-                        items: viewModel.assignedOrganizations,
-                        onSelect: { organization in
-                            Task {
-                                await viewModel.updateSelectedOrganization(
-                                    orgSnapshot: organization
-                                )
-                                self.activeModal = nil
-                            }
-                        }
-                    ) { organization in
-                        LabelView(text: organization.name)
-                            .padding(.vertical, 4)
-                    }
-                    .navigationTitle("Select Organization")
+                    OrganizationListView(viewModel: makeOrganizationListViewModel())
                 }
-            
             }
         }
         .alert("", isPresented: $viewModel.showAlert) {

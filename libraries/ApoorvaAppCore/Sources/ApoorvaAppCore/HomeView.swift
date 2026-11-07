@@ -90,7 +90,9 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
         case .profile:
             ProfileView(
                 viewModel: container.modulesContainer.makeProfileViewModel(),
-                developerViewModel: container.makeDeveloperSettingsViewModel()
+                developerViewModel: container.makeDeveloperSettingsViewModel(),
+                makeUserListViewModel: { container.modulesContainer.makeUserListViewModel() },
+                makeOrganizationListViewModel: { container.modulesContainer.makeOrganizationListViewModel() }
             )
         case .customers:
             CustomerListView(viewModel: container.modulesContainer.makeCustomerListViewModel())

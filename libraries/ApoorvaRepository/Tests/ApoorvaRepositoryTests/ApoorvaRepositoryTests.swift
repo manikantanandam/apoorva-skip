@@ -39,6 +39,8 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
     var user: AppUser?
     var updatedOrgs: [String] = []
     var shouldThrow = false
+    var listUsersResult: [AppUser] = []
+    var updatedRoles: [(id: String, role: AppUserRole)] = []
 
     var userSessionStream: AsyncStream<AppUser?> { AsyncStream { $0.finish() } }
     var currentUser: AppUser? { user }
@@ -46,6 +48,16 @@ final class MockUserService: UserServiceProtocol, @unchecked Sendable {
     func updateSelectedOrganization(for user: AppUser, organization: OrganizationSnapshot) async throws {
         if shouldThrow { throw TestError.failed }
         updatedOrgs.append(organization.orgId)
+    }
+
+    func listUsers(orgId: String) async throws -> [AppUser] {
+        if shouldThrow { throw TestError.failed }
+        return listUsersResult
+    }
+
+    func updateRole(userId: String, role: AppUserRole) async throws {
+        if shouldThrow { throw TestError.failed }
+        updatedRoles.append((userId, role))
     }
 }
 
@@ -148,6 +160,32 @@ struct UserRepositoryTests {
             try await sut.updateSelectedOrganization(for: makeUser(id: "u4"), organization: makeOrg())
         }
         #expect(defaults.store["user_u4"] == nil)
+    }
+
+    @Test func listUsersDelegatesToService() async throws {
+        let (sut, _, service) = makeSUT()
+        service.listUsersResult = [try makeUser(id: "member1")]
+        let users = try await sut.listUsers(orgId: "orgX")
+        #expect(users.map(\.id) == ["member1"])
+    }
+
+    @Test func listUsersPropagatesServiceError() async throws {
+        let (sut, _, service) = makeSUT()
+        service.shouldThrow = true
+        await #expect(throws: TestError.self) { try await sut.listUsers(orgId: "orgX") }
+    }
+
+    @Test func updateUserRoleDelegatesToService() async throws {
+        let (sut, _, service) = makeSUT()
+        try await sut.updateUserRole(id: "member1", role: .admin)
+        #expect(service.updatedRoles.map(\.id) == ["member1"])
+        #expect(service.updatedRoles.map(\.role) == [.admin])
+    }
+
+    @Test func updateUserRolePropagatesServiceError() async throws {
+        let (sut, _, service) = makeSUT()
+        service.shouldThrow = true
+        await #expect(throws: TestError.self) { try await sut.updateUserRole(id: "member1", role: .admin) }
     }
 }
 

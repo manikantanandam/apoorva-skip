@@ -72,4 +72,8 @@ public extension ProfileViewModel {
         return appUser.assignedOrgs
 
     }
+
+    var canManageUsers: Bool {
+        appUser?.role == .admin || appUser?.role == .superAdmin
+    }
 }

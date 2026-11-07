@@ -20,6 +20,7 @@ public struct StoreDocument: @unchecked Sendable {
 public enum StoreCondition: Sendable {
     case greaterThan(field: String, date: Date)
     case isIn(field: String, values: [String])
+    case arrayContains(field: String, value: String)
 }
 
 public struct StoreQuery: Sendable {
@@ -60,6 +61,8 @@ public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable
                 return Filter.whereField(field, isGreaterThan: Timestamp(date: date))
             case let .isIn(field, values):
                 return Filter.whereField(field, in: values)
+            case let .arrayContains(field, value):
+                return Filter.whereField(field, arrayContains: value)
             }
         }
         if !filters.isEmpty {

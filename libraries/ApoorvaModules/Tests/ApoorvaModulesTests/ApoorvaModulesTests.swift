@@ -70,13 +70,28 @@ struct LoginViewModelTests {
         #expect(auth.loginCalls.isEmpty)
     }
 
-    @Test func loginPressedSwallowsServiceError() async throws {
+    @Test func loginPressedSetsErrorMessageOnFailure() async throws {
         let auth = MockAuthService()
         auth.shouldThrow = true
         let vm = LoginViewModel(authService: auth, environment: .debug)
+        vm.username = "a@b.com"
+        vm.password = "pw"
         vm.loginPressed()
         try await Task.sleep(nanoseconds: 100_000_000)
         #expect(auth.loginCalls.count == 1)
+        #expect(vm.errorMessage != nil)
+    }
+
+    @Test func loginPressedClearsErrorMessageOnNewAttempt() async throws {
+        let auth = MockAuthService()
+        let vm = LoginViewModel(authService: auth, environment: .debug)
+        vm.username = "a@b.com"
+        vm.password = "pw"
+        vm.errorMessage = "stale error"
+        vm.loginPressed()
+        #expect(vm.errorMessage == nil)
+        try await Task.sleep(nanoseconds: 100_000_000)
+        #expect(vm.errorMessage == nil)
     }
 }
 
