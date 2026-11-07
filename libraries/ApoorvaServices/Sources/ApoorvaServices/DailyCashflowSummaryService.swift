@@ -2,14 +2,13 @@
 //  DailyCashflowSummaryService.swift
 //  ApoorvaServices
 //
-//  Created by Manikanta Nandam on 18/10/26.
-//
 
 import Foundation
 import ApoorvaModels
 @preconcurrency import FirebaseFirestore
 
 public protocol DailyCashflowSummaryServiceProtocol: Sendable {
+
     func getDailyCashflowSummaries(for orgId: String) async throws -> [DailyCashflowSummary]
     func getDailyCashflowSummaries(since lastSync: Date, for orgId: String) async throws -> [DailyCashflowSummary]
     func getDailyCashflowSummary(orgId: String, date: String) async throws -> DailyCashflowSummary
@@ -17,37 +16,36 @@ public protocol DailyCashflowSummaryServiceProtocol: Sendable {
     func updateDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws
 }
 
+
 public final class DailyCashflowSummaryService: DailyCashflowSummaryServiceProtocol {
-    
-    private let db = Firestore.firestore()
-    
-    // Using a string extension pattern similar to .cashflow[cite: 14] and .organizations[cite: 13]
+
+    private let store: FirestoreStoring
+
     private let collectionName = "dailyCashflowSummaries"
-    
-    public init() {}
-    
+
+    public init(store: FirestoreStoring = FirebaseFirestoreStore()) {
+        self.store = store
+    }
+
     public func getDailyCashflowSummaries(for orgId: String) async throws -> [DailyCashflowSummary] {
         try await dailyCashflowTransactions(for: orgId)
     }
-    
+
     public func getDailyCashflowSummary(orgId: String, date: String) async throws -> DailyCashflowSummary {
         print("🌐 Fetching Daily Cashflow Transactions for Org: \(orgId) for date \(date) ...")
-        let query = db
-            .collection(.organizations)
-            .document(orgId)
-            .collection(collectionName)
-            .document(date)
-        
-        let snapshot = try await query.getDocument()
+        let path = documentPath(date, orgId: orgId)
+        guard let document = try await store.getDocument(path: path) else {
+            throw NSError(domain: "DailyCashflowSummaryService", code: 404,
+                          userInfo: [NSLocalizedDescriptionKey: "Daily cashflow summary not found."])
+        }
         do {
-            let record = try snapshot.data(as: DailyCashflowSummary.self)
-            return record
+            return try Firestore.Decoder().decode(DailyCashflowSummary.self, from: document.data)
         } catch {
-            print("❌ Failed to decode DailyCashflowSummary: \(snapshot.documentID) - \(error)")
+            print("❌ Failed to decode DailyCashflowSummary: \(document.id) - \(error)")
             throw error
         }
     }
-    
+
     public func getDailyCashflowSummaries(since lastSync: Date, for orgId: String) async throws -> [DailyCashflowSummary] {
         do {
             return try await dailyCashflowTransactions(since: lastSync, for: orgId)
@@ -55,69 +53,43 @@ public final class DailyCashflowSummaryService: DailyCashflowSummaryServiceProto
             print("Eror in fething firestore \(error.localizedDescription)")
             throw error
         }
-        
     }
 
-    
     public func addDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws {
-        let docRef = db
-            .collection("organizations")
-            .document(orgId)
-            .collection(collectionName)
-            .document(summary.id)
-        
-        // Prevent duplicates by checking if the document already exists[cite: 14]
-        let snapshot = try await docRef.getDocument()
-        guard !snapshot.exists else {
+        let path = documentPath(summary.id, orgId: orgId)
+
+        // Prevent duplicates by checking if the document already exists
+        guard try await store.getDocument(path: path) == nil else {
             print("⚠️ Daily Cashflow Summary \(summary.id) already exists. Skipping insertion.")
             return
         }
-        
-        try docRef.setData(from: summary)
+
+        try store.set(summary, path: path)
     }
-    
+
     public func updateDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws {
-        let docRef = db
-            .collection("organizations")
-            .document(orgId)
-            .collection(collectionName)
-            .document(summary.id)
-        
-        // Note: The DailyCashflowSummary model currently lacks an `updatedAt` field[cite: 6, 15],
-        // so we write the data directly without injecting a new timestamp like we do for CashflowTransaction[cite: 14].
-        try docRef.setData(from: summary, merge: true)
+        // The model has no `updatedAt` injection, so the data is written as is.
+        try store.set(summary, path: documentPath(summary.id, orgId: orgId), merge: true)
     }
 }
 
 
 private extension DailyCashflowSummaryService {
-    func dailyCashflowTransactions(since lastSync: Date? = nil, for orgId: String) async throws -> [DailyCashflowSummary] {
-        let baseCollection = db
-            .collection(.organizations)
-            .document(orgId)
-            .collection(collectionName)
-        
-        var query: Query = baseCollection
-        
-        if let lastSync = lastSync {
-            let timestamp = Timestamp(date: lastSync)
-            
-            query = baseCollection.whereField("updatedAt", isGreaterThan: timestamp)
-            print("🌐 Fetching Daily Cashflow Transactions for Org: \(orgId)... for last sync \(lastSync)")
+    func collectionPath(orgId: String) -> String {
+        "\(String.organizations)/\(orgId)/\(collectionName)"
+    }
 
+    func documentPath(_ id: String, orgId: String) -> String {
+        "\(collectionPath(orgId: orgId))/\(id)"
+    }
+
+    func dailyCashflowTransactions(since lastSync: Date? = nil, for orgId: String) async throws -> [DailyCashflowSummary] {
+        var query = StoreQuery.all
+        if let lastSync = lastSync {
+            query = StoreQuery(conditions: [.greaterThan(field: "updatedAt", date: lastSync)])
         }
-//        query = query.limit(to: 10)
         print("🌐 Fetching Daily Cashflow Transactions for Org: \(orgId)...")
-        let snapshot = try await query.getDocuments()
-        
-        var summaries: [DailyCashflowSummary] = []
-        for document in snapshot.documents {
-            do {
-                let record = try document.data(as: DailyCashflowSummary.self)
-                summaries.append(record)
-            } catch { print("❌ Failed to decode DailyCashflowSummary: \(document.documentID) - \(error)") }
-        }
-        
+        let summaries = try await store.fetch(DailyCashflowSummary.self, collection: collectionPath(orgId: orgId), query: query)
         print("✅ Fetched \(summaries.count) Daily Cashflow Transactions.")
         return summaries
     }

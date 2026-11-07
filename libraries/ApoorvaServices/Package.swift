@@ -33,7 +33,11 @@ let package = Package(
         ),
         .testTarget(
             name: "ApoorvaServicesTests",
-            dependencies: ["ApoorvaServices"]
+            dependencies: [
+                "ApoorvaServices",
+                .product(name: "ApoorvaModels", package: "ApoorvaModels"),
+                .product(name: "FirebaseFirestore", package: "firebase-ios-sdk")
+            ]
         ),
 
     ],
