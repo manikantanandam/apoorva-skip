@@ -127,6 +127,13 @@ run_module() {
   if [ -z "$causes" ]; then
     causes="$(grep -E "error:" "$raw" | head -5 || true)"
   fi
+  # Test failures and crashes carry no "error:" prefix in xcodebuild output.
+  if [ -z "$causes" ]; then
+    causes="$(grep -hE "Test [Cc]ase .* failed|Testing failed|failed after|Restarting after unexpected exit|crashed|Failing tests|Issue recorded|✘" "$raw" | sort -u | head -5 || true)"
+  fi
+  if [ -z "$causes" ]; then
+    causes="$(tail -3 "$raw" | cut -c1-200)"
+  fi
   if [ -n "$causes" ]; then
     echo "$causes"
   fi
