@@ -67,6 +67,17 @@
 | NFR-17 | Extensibility | New vertical without touching billing core | Vertical profile is data + one strategy type |
 | NFR-18 | Ease of use | New bill ≤ 2 taps from any tab; any feature ≤ 1 tap from a tab | Centre tab + More menu + universal search |
 | NFR-19 | Permission correctness | Role limits enforced even if the UI is bypassed | Firestore rules are authoritative |
+| NFR-20 | Scale | 1 shop, ≤ 5 devices, 10k bills / 5k customers / 5k items without degradation | Indexed queries; seeded load test (see 09) |
+| NFR-21 | Data migration | App upgrades never lose or corrupt local data | Forward-only SQLite migrations; upgrade test per released schema; backup before migrate |
+| NFR-22 | Atomic writes | Sale, stock and cash writes survive a kill mid-write | Single DB transaction per business operation |
+| NFR-23 | Money correctness | Totals are exact and reproducible | Integer minor units/decimal; one rounding rule; shop time zone for day boundaries |
+| NFR-24 | Secrets & supply chain | No secrets in repo; dependencies pinned and monitored | gitleaks and Dependabot in CI; signing keys in CI secrets (see 07, 08) |
+| NFR-25 | Rules verification | Firestore rules deny by default and are tested | Rules file in repo; emulator tests in CI (see 08) |
+| NFR-26 | Audit & retention | Bill, stock and cash history is immutable; soft-delete purge window defined | Append-only events; scheduled purge |
+| NFR-27 | Resilience | Sync survives clock skew, low storage and flaky networks | Backoff retries; visible sync status and failed-item count |
+| NFR-28 | Release quality | Releases are gated on automated checks | CI green + Sonar gate; crash-free threshold blocks rollout (see 07) |
+
+**MVP minimum bar:** which NFRs are Must / Should / Later for the Store MVP, the relaxed pilot targets, and how each is verified are in [11 — NFR MVP baseline](11-nfr-mvp-baseline.md). Where a target there differs from this table (for example sync p95 and crash-free users), the MVP bar applies until M4.
 
 ## Sync model (summary)
 1. Every write goes to SQLite with `syncState = pending`.

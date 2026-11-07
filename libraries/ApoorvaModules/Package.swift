@@ -15,6 +15,8 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../ApoorvaRepository"),
+        .package(path: "../ApoorvaServices"),
+        .package(path: "../ApoorvaModels"),
         .package(path: "../ApoorvaUtilities")
     ],
     targets: [
@@ -29,7 +31,11 @@ let package = Package(
         ),
         .testTarget(
             name: "ApoorvaModulesTests",
-            dependencies: ["ApoorvaModules"]
+            dependencies: [
+                "ApoorvaModules",
+                .product(name: "ApoorvaServices", package: "ApoorvaServices"),
+                .product(name: "ApoorvaModels", package: "ApoorvaModels")
+            ]
         ),
 
     ],

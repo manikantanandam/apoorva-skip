@@ -131,5 +131,6 @@ jobs:
             -Dsonar.tests=.
             -Dsonar.test.inclusions=**/*Tests.swift,**/*Test.swift
             -Dsonar.exclusions=**/.skip/**,**/Skip/**,**/*.kt,**/build/**
+            -Dsonar.coverage.exclusions=**/*View.swift,**/Containers/**,**/Router/**,app/**
             -Dsonar.coverageReportPaths=${{ steps.coverage.outputs.paths }}
             -Dsonar.c.compiler=/usr/bin/clang
