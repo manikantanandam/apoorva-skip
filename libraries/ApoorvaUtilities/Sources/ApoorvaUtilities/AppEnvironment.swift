@@ -7,16 +7,14 @@ import Foundation
 
 /// Backend environment the app talks to. Chosen at launch; each has its own Firebase project and local DB file.
 public enum AppEnvironment: String, CaseIterable, Codable, Sendable, Identifiable {
-    case dev
-    case staging
+    case debug
     case production
 
     public var id: String { rawValue }
 
     public var displayName: String {
         switch self {
-        case .dev: return "Development"
-        case .staging: return "Staging"
+        case .debug: return "Debug"
         case .production: return "Production"
         }
     }
@@ -24,16 +22,14 @@ public enum AppEnvironment: String, CaseIterable, Codable, Sendable, Identifiabl
     /// Pill shown on every screen; `nil` for production.
     public var badge: String? {
         switch self {
-        case .dev: return "DEV"
-        case .staging: return "STG"
+        case .debug: return "DEBUG"
         case .production: return nil
         }
     }
 
     public var firebaseProjectId: String {
         switch self {
-        case .dev: return "apoorva-dev"
-        case .staging: return "apoorva-stg"
+        case .debug: return "apoorva-dev"
         case .production: return "apoorva-prod"
         }
     }
@@ -41,8 +37,7 @@ public enum AppEnvironment: String, CaseIterable, Codable, Sendable, Identifiabl
     /// Name of the Firebase plist (without extension) bundled with the app.
     public var firebasePlistName: String {
         switch self {
-        case .dev: return "GoogleService-Info-dev"
-        case .staging: return "GoogleService-Info-stg"
+        case .debug: return "GoogleService-Info-debug"
         case .production: return "GoogleService-Info"
         }
     }
@@ -59,8 +54,10 @@ public enum AppEnvironment: String, CaseIterable, Codable, Sendable, Identifiabl
 
     public static var defaultEnvironment: AppEnvironment {
         #if DEBUG
-        return .dev
+        print("[AppEnvironment] DEBUG flag set, defaultEnvironment = .debug")
+        return .debug
         #else
+        print("[AppEnvironment] DEBUG flag not set, defaultEnvironment = .production")
         return .production
         #endif
     }

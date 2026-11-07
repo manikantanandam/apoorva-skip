@@ -24,10 +24,12 @@ public class AppContainer {
     // Feature containers are grouped and lazy-loaded
     public lazy var modulesContainer = ModulesContainer(
         servicesContainer: servicesContainer,
-        repositoryContainer: repositoryContainer
+        repositoryContainer: repositoryContainer,
+        environment: environment
     )
     public init() {
         let environment = environmentStore.current
+        print("[AppContainer] init resolved environment: \(environment)")
         self.environment = environment
         self.offlineStorageContainer = OfflineStorageContainer(environment: environment)
     }
@@ -41,7 +43,8 @@ public class AppContainer {
             environmentStore: environmentStore,
             tools: developerTools,
             logBuffer: logBuffer,
-            clearLocalDatabase: { try? FileManager.default.removeItem(atPath: dbPath) }
+            clearLocalDatabase: { try? FileManager.default.removeItem(atPath: dbPath) },
+            terminateApp: { exit(0) }
         )
         #else
         return nil

@@ -12,22 +12,19 @@ struct AppEnvironmentTests {
 
     @Test("Badge is nil only for production")
     func testBadge() {
-        #expect(AppEnvironment.dev.badge == "DEV")
-        #expect(AppEnvironment.staging.badge == "STG")
+        #expect(AppEnvironment.debug.badge == "DEBUG")
         #expect(AppEnvironment.production.badge == nil)
     }
 
     @Test("DB file name is per environment and org")
     func testDbFileName() {
-        #expect(AppEnvironment.dev.dbFileName() == "apoorva-dev.db")
-        #expect(AppEnvironment.staging.dbFileName(orgId: "org1") == "apoorva-staging-org1.db")
+        #expect(AppEnvironment.debug.dbFileName() == "apoorva-debug.db")
         #expect(AppEnvironment.production.dbFileName(orgId: "") == "apoorva-production.db")
     }
 
     @Test("Destructive tools are disabled on production")
     func testDestructiveTools() {
-        #expect(AppEnvironment.dev.allowsDestructiveTools)
-        #expect(AppEnvironment.staging.allowsDestructiveTools)
+        #expect(AppEnvironment.debug.allowsDestructiveTools)
         #expect(!AppEnvironment.production.allowsDestructiveTools)
     }
 
@@ -38,8 +35,8 @@ struct AppEnvironmentTests {
         defaults.removePersistentDomain(forName: "AppEnvironmentTests")
         let store = EnvironmentStore(defaults: defaults)
         #expect(store.current == AppEnvironment.defaultEnvironment)
-        store.current = .staging
-        #expect(EnvironmentStore(defaults: defaults).current == .staging)
+        store.current = .production
+        #expect(EnvironmentStore(defaults: defaults).current == .production)
         defaults.removePersistentDomain(forName: "AppEnvironmentTests")
     }
     #endif

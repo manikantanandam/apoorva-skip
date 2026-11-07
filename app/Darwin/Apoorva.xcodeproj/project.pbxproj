@@ -12,6 +12,7 @@
 		499CD43B2AC5B799001AE8D8 /* Main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49F90C2B2A52156200F06D93 /* Main.swift */; };
 		499CD4402AC5B799001AE8D8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49F90C2F2A52156300F06D93 /* Assets.xcassets */; };
 		530F69213071344F009A9FFD /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 530F69203071344F009A9FFD /* GoogleService-Info.plist */; };
+		907DCF807C8268D31AB2FE2C /* GoogleService-Info-debug.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8D0F534DAEE3E81B72CA0B51 /* GoogleService-Info-debug.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -45,6 +46,7 @@
 		530DFB733071638E00C3D1A7 /* ApoorvaRepository */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaRepository; sourceTree = "<group>"; };
 		530DFB743071638E00C3D1A7 /* ApoorvaServices */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaServices; sourceTree = "<group>"; };
 		530F69203071344F009A9FFD /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		8D0F534DAEE3E81B72CA0B51 /* GoogleService-Info-debug.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info-debug.plist"; sourceTree = "<group>"; };
 		530F692D3071621A009A9FFD /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		5372E973307A844C00330358 /* ApoorvaModules */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaModules; sourceTree = "<group>"; };
 		53B9CED0307BDFAA00F23983 /* ApoorvaUtilities */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaUtilities; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
 				49F90C312A52156300F06D93 /* Entitlements.plist */,
 				4900101C2BACEA710000DE33 /* Info.plist */,
 				530F69203071344F009A9FFD /* GoogleService-Info.plist */,
+				8D0F534DAEE3E81B72CA0B51 /* GoogleService-Info-debug.plist */,
 				4971EFA92FA4FEA50002D3F7 /* InfoPlist.xcstrings */,
 			);
 			name = App;
@@ -187,6 +190,7 @@
 			files = (
 				499CD4402AC5B799001AE8D8 /* Assets.xcassets in Resources */,
 				530F69213071344F009A9FFD /* GoogleService-Info.plist in Resources */,
+				907DCF807C8268D31AB2FE2C /* GoogleService-Info-debug.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -57,7 +57,7 @@ public struct DeveloperSettingsView: View {
     }
 }
 
-/// "DEV" / "STG" pill shown on every screen when not on production.
+/// "DEBUG" pill shown on every screen when not on production.
 public struct EnvironmentBadgeView: View {
     let environment: AppEnvironment
 
@@ -71,7 +71,7 @@ public struct EnvironmentBadgeView: View {
                 .font(.caption2.bold())
                 .padding(.horizontal, 8)
                 .padding(.vertical, 2)
-                .background(environment == .dev ? Color.orange : Color.purple)
+                .background(Color.orange)
                 .foregroundStyle(.white)
                 .clipShape(Capsule())
         }

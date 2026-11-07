@@ -15,11 +15,11 @@ public class DeveloperSettingsViewModel {
     private var tools: DeveloperToolsProtocol
     private let logBuffer: LogBuffer
     private let clearLocalDatabaseAction: () -> Void
+    private let terminateAppAction: () -> Void
 
     /// Environment the app was launched with; switching only takes effect after relaunch.
     public let activeEnvironment: AppEnvironment
     public var pendingEnvironment: AppEnvironment
-    public var showRestartNotice = false
     public var errorMessage: String?
 
     public var flagOverrides: [String: Bool]
@@ -34,12 +34,14 @@ public class DeveloperSettingsViewModel {
                 environmentStore: EnvironmentStore,
                 tools: DeveloperToolsProtocol,
                 logBuffer: LogBuffer,
-                clearLocalDatabase: @escaping () -> Void) {
+                clearLocalDatabase: @escaping () -> Void,
+                terminateApp: @escaping () -> Void) {
         self.authService = authService
         self.environmentStore = environmentStore
         self.tools = tools
         self.logBuffer = logBuffer
         self.clearLocalDatabaseAction = clearLocalDatabase
+        self.terminateAppAction = terminateApp
         self.activeEnvironment = environmentStore.current
         self.pendingEnvironment = environmentStore.current
         self.flagOverrides = tools.flagOverrides
@@ -52,13 +54,18 @@ public class DeveloperSettingsViewModel {
     public var canClearDatabase: Bool { activeEnvironment.allowsDestructiveTools }
     public var canSwitchEnvironment: Bool { pendingEnvironment != activeEnvironment }
 
-    /// Persists the new environment and signs out; the user must relaunch for it to apply.
+    /// Signs out, wipes local state for a clean switch, persists the new environment, then kills the app.
     public func confirmEnvironmentSwitch() {
+        print("[DeveloperSettingsViewModel] confirmEnvironmentSwitch: active=\(activeEnvironment) pending=\(pendingEnvironment) canSwitch=\(canSwitchEnvironment)")
         guard canSwitchEnvironment else { return }
         do {
             try authService.logout()
+            clearLocalDatabaseAction()
+            if let bundleId = Bundle.main.bundleIdentifier {
+                UserDefaults.standard.removePersistentDomain(forName: bundleId)
+            }
             environmentStore.current = pendingEnvironment
-            showRestartNotice = true
+            terminateAppAction()
         } catch {
             errorMessage = error.localizedDescription
         }

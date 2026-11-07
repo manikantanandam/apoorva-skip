@@ -23,11 +23,12 @@ public struct CustomButton: View {
     let backgroundColor: ApoorvaColor
     let textColor: ApoorvaColor
     let alignment: CustomButtonAlignment
-    @State private var isLoading: Bool = false
-    
+    @Binding var isLoading: Bool
+
     public init(text: String,
                 icon: ApoorvaIcon? = nil,
                 needLoader: Bool = false,
+                isLoading: Binding<Bool> = .constant(false),
                 minHeight: CGFloat = 60,
                 backgroundColor: ApoorvaColor = .systemBackGround,
                 textColor: ApoorvaColor = .buttonTextColor,
@@ -37,6 +38,7 @@ public struct CustomButton: View {
         self.icon = icon
         self.action = action
         self.needLoader = needLoader
+        self._isLoading = isLoading
         self.backgroundColor = backgroundColor
         self.minHeight = minHeight
         self.textColor = textColor
@@ -61,12 +63,8 @@ public struct CustomButton: View {
         .onTapGesture {
             if needLoader {
                 guard !isLoading else { return }
-                isLoading = true
-                action()
-            } else {
-                action()
             }
-            
+            action()
         }
     }
     

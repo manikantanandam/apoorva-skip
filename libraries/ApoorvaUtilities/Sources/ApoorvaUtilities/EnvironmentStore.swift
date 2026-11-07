@@ -18,16 +18,22 @@ public struct EnvironmentStore: @unchecked Sendable {
     public var current: AppEnvironment {
         get {
             #if DEBUG
-            guard let raw = defaults.string(forKey: key),
+            let raw = defaults.string(forKey: key)
+            print("[EnvironmentStore] DEBUG build. raw value in defaults for key '\(key)': \(raw ?? "nil")")
+            guard let raw,
                   let env = AppEnvironment(rawValue: raw) else {
+                print("[EnvironmentStore] no valid stored value, falling back to defaultEnvironment: \(AppEnvironment.defaultEnvironment)")
                 return AppEnvironment.defaultEnvironment
             }
+            print("[EnvironmentStore] resolved stored environment: \(env)")
             return env
             #else
+            print("[EnvironmentStore] non-DEBUG build, forcing .production")
             return .production
             #endif
         }
         nonmutating set {
+            print("[EnvironmentStore] writing environment '\(newValue)' to key '\(key)'")
             defaults.set(newValue.rawValue, forKey: key)
         }
     }

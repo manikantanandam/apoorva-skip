@@ -33,7 +33,7 @@ struct EnvironmentSwitchView: View {
                     .foregroundStyle(.primary)
                 }
             } footer: {
-                Text("Switching signs you out. Relaunch the app to apply. Each environment uses its own Firebase project and local database.")
+                Text("Switching signs you out, clears local data for this device, and closes the app immediately. Reopen it to use the new environment.")
             }
 
             Section {
@@ -48,11 +48,6 @@ struct EnvironmentSwitchView: View {
             Button("Switch and sign out", role: .destructive) {
                 viewModel.confirmEnvironmentSwitch()
             }
-        }
-        .alert("Relaunch required", isPresented: $viewModel.showRestartNotice) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Close and reopen the app to use \(viewModel.pendingEnvironment.displayName).")
         }
         .alert("Error", isPresented: Binding(
             get: { viewModel.errorMessage != nil },

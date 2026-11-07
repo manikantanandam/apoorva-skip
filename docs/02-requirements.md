@@ -42,7 +42,7 @@
 | FR-36 | Devices list with remote sign-out | Firebase token revocation + device registry per member |
 | FR-37 | Accountant read-only role | Built-in role; rules deny writes |
 | FR-38 | Purchase return to supplier; read-only audited support sessions | Negative purchase reduces stock and dues; support session token with 30-min TTL and audit events |
-| FR-39 | Developer settings: switch Dev / Staging / Production backends, flag overrides, plan simulator, logs, crash test, sync tools | Debug builds always; release only with `developer` claim (see 07) |
+| FR-39 | Developer settings: switch Debug / Production backends, flag overrides, plan simulator, logs, crash test, sync tools | Debug builds always; release only with `developer` claim (see 07) |
 
 ## Non-functional requirements
 
