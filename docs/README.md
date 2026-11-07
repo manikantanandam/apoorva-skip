@@ -14,6 +14,7 @@ Offline-first shop/POS app (Swift + SwiftUI, Skip for Android). Local SQLite is 
 | 08 | [Security & compliance](08-security-and-compliance.md) | Auth, rules, data protection, privacy, optional tax |
 | 09 | [Roadmap & risks](09-roadmap-and-risks.md) | Milestones, risks, open questions, gaps |
 | 10 | [Admin & multi-tenancy](10-admin-and-multi-tenancy.md) | Org/store/roles, permissions, theme & flag admin, audit |
+| 11 | [Firestore data model](11-firestore-data-model.md) | As-is live schema snapshot, quirks, additive-only rules, migration notes |
 
 **Designs:** 140 screens in the Clean style (light + dark side by side), frozen for v1, in [`/designs`](../designs/README.md).
 
