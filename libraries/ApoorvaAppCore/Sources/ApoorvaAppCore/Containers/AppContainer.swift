@@ -43,7 +43,10 @@ public class AppContainer {
             environmentStore: environmentStore,
             tools: developerTools,
             logBuffer: logBuffer,
-            clearLocalDatabase: { try? FileManager.default.removeItem(atPath: dbPath) },
+            clearLocalDatabase: {
+                try? FileManager.default.removeItem(atPath: dbPath)
+                exit(0)
+            },
             terminateApp: { exit(0) }
         )
         #else

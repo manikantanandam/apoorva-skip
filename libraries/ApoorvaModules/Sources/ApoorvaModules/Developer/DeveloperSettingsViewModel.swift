@@ -47,10 +47,12 @@ public class DeveloperSettingsViewModel {
         self.flagOverrides = tools.flagOverrides
         self.isOfflineSimulated = tools.isOfflineSimulated
         self.showsScreenIdentifiers = tools.showsScreenIdentifiers
+        self.logLines = logBuffer.entries
+        self.logText = logBuffer.shareableText
     }
 
-    public var logLines: [String] { logBuffer.entries }
-    public var logText: String { logBuffer.shareableText }
+    public private(set) var logLines: [String]
+    public private(set) var logText: String
     public var canClearDatabase: Bool { activeEnvironment.allowsDestructiveTools }
     public var canSwitchEnvironment: Bool { pendingEnvironment != activeEnvironment }
 
@@ -60,7 +62,9 @@ public class DeveloperSettingsViewModel {
         guard canSwitchEnvironment else { return }
         do {
             try authService.logout()
-            clearLocalDatabaseAction()
+            if activeEnvironment.allowsDestructiveTools {
+                clearLocalDatabaseAction()
+            }
             if let bundleId = Bundle.main.bundleIdentifier {
                 UserDefaults.standard.removePersistentDomain(forName: bundleId)
             }
@@ -89,6 +93,8 @@ public class DeveloperSettingsViewModel {
 
     public func clearLogs() {
         logBuffer.clear()
+        logLines = logBuffer.entries
+        logText = logBuffer.shareableText
     }
 
     public func clearLocalDatabase() {

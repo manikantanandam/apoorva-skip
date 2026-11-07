@@ -30,15 +30,17 @@ let logger: Logger = Logger(subsystem: "com.apoorva.app", category: "Apoorva")
 
     /* SKIP @bridge */public func onInit() {
         logger.debug("onInit")
-        #if os(iOS)
+        #if os(iOS) || os(macOS)
         // Each environment uses its own Firebase project; resolve the bundled plist explicitly.
         if let path = LaunchEnvironment.firebasePlistPath(),
            let options = FirebaseOptions(contentsOfFile: path) {
             FirebaseApp.configure(options: options)
             return
         }
-        #endif
+        fatalError("Missing or invalid Firebase plist for environment \(LaunchEnvironment.current)")
+        #else
         FirebaseApp.configure()
+        #endif
     }
 
     /* SKIP @bridge */public func onLaunch() {

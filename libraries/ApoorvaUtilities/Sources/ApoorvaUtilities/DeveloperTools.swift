@@ -61,7 +61,7 @@ public final class LogBuffer: @unchecked Sendable {
     private var lines: [String] = []
 
     public init(capacity: Int = 500) {
-        self.capacity = capacity
+        self.capacity = max(0, capacity)
     }
 
     public func append(_ line: String) {

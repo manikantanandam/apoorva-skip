@@ -7,7 +7,7 @@ import Testing
 import Foundation
 @testable import ApoorvaUtilities
 
-@Suite("DeveloperTools Test")
+@Suite("DeveloperTools Test", .serialized)
 struct DeveloperToolsTests {
 
     private func makeTools() throws -> DeveloperTools {

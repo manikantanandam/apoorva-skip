@@ -23,12 +23,23 @@ public struct CustomButton: View {
     let backgroundColor: ApoorvaColor
     let textColor: ApoorvaColor
     let alignment: CustomButtonAlignment
-    @Binding var isLoading: Bool
+    private let externalIsLoading: Binding<Bool>?
+    @State private var internalIsLoading: Bool = false
+    private var isLoading: Bool {
+        get { externalIsLoading?.wrappedValue ?? internalIsLoading }
+        nonmutating set {
+            if let externalIsLoading {
+                externalIsLoading.wrappedValue = newValue
+            } else {
+                internalIsLoading = newValue
+            }
+        }
+    }
 
     public init(text: String,
                 icon: ApoorvaIcon? = nil,
                 needLoader: Bool = false,
-                isLoading: Binding<Bool> = .constant(false),
+                isLoading: Binding<Bool>? = nil,
                 minHeight: CGFloat = 60,
                 backgroundColor: ApoorvaColor = .systemBackGround,
                 textColor: ApoorvaColor = .buttonTextColor,
@@ -38,7 +49,7 @@ public struct CustomButton: View {
         self.icon = icon
         self.action = action
         self.needLoader = needLoader
-        self._isLoading = isLoading
+        self.externalIsLoading = isLoading
         self.backgroundColor = backgroundColor
         self.minHeight = minHeight
         self.textColor = textColor
