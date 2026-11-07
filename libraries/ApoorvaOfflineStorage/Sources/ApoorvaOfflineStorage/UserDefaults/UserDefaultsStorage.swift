@@ -11,6 +11,8 @@ public protocol UserDefaultsStorageProtocol: Sendable {
     func set<T: Encodable>(_ object: T, forKey key: String) throws
     func get<T: Decodable>(forKey key: String, as type: T.Type) throws -> T?
     func remove(forKey key: String)
+    /// Removes every stored key starting with `prefix`, without touching unrelated keys.
+    func removeAll(matchingPrefix prefix: String)
 }
 
 public final class UserDefaultsStorage: @unchecked UserDefaultsStorageProtocol {
@@ -32,5 +34,10 @@ public final class UserDefaultsStorage: @unchecked UserDefaultsStorageProtocol {
     
     public func remove(forKey key: String) {
         defaults.removeObject(forKey: key)
+    }
+
+    public func removeAll(matchingPrefix prefix: String) {
+        let matchingKeys = defaults.dictionaryRepresentation().keys.filter { $0.hasPrefix(prefix) }
+        matchingKeys.forEach { defaults.removeObject(forKey: $0) }
     }
 }

@@ -36,7 +36,8 @@ let package = Package(
             dependencies: [
                 "ApoorvaModules",
                 .product(name: "ApoorvaServices", package: "ApoorvaServices"),
-                .product(name: "ApoorvaModels", package: "ApoorvaModels")
+                .product(name: "ApoorvaModels", package: "ApoorvaModels"),
+                .product(name: "ApoorvaRepository", package: "ApoorvaRepository")
             ]
         ),
 

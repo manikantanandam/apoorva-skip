@@ -16,6 +16,7 @@ public class LoginViewModel {
     var username: String
     var password = "Apoorva@123"
     var isLoggingIn = false
+    var errorMessage: String?
 
     private var authService: AuthServicing
 
@@ -35,13 +36,14 @@ public class LoginViewModel {
     func loginPressed() {
         // Handle actual authentication logic here
         guard isLoginEnabled else { return }
+        errorMessage = nil
         isLoggingIn = true
         Task(name: "login task") {
             defer { isLoggingIn = false }
             do {
                 try await authService.login(email: username, password: password)
             } catch {
-                print("Error \(error)")
+                errorMessage = error.localizedDescription
             }
         }
     }

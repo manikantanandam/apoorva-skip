@@ -9,11 +9,15 @@ public protocol UserServiceProtocol: Sendable {
     var userSessionStream: AsyncStream<AppUser?> { get }
     
     var currentUser: AppUser? { get }
-    
+
     func updateSelectedOrganization(
         for user: AppUser,
         organization: OrganizationSnapshot
     ) async throws
+
+    func listUsers(orgId: String) async throws -> [AppUser]
+
+    func updateRole(userId: String, role: AppUserRole) async throws
 }
 
 @MainActor
@@ -117,6 +121,26 @@ public class UserService: UserServiceProtocol {
             
         } catch {
             print("❌ Update error: \(error)")
+            throw error
+        }
+    }
+
+    public func listUsers(orgId: String) async throws -> [AppUser] {
+        try await store.fetch(
+            AppUser.self,
+            collection: String.users,
+            query: StoreQuery(conditions: [.arrayContains(field: "assignedOrgIds", value: orgId)])
+        )
+    }
+
+    public func updateRole(userId: String, role: AppUserRole) async throws {
+        do {
+            try await store.updateData([
+                "role": role.rawValue,
+                "updatedTimestamp": Date().timeIntervalSince1970
+            ], path: "\(String.users)/\(userId)")
+        } catch {
+            print("❌ Update role error: \(error)")
             throw error
         }
     }

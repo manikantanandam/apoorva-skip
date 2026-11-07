@@ -47,6 +47,22 @@ public class ModulesContainer {
     
     public func makeProfileViewModel() -> ProfileViewModel {
         return ProfileViewModel(
+            userRepository: repositoryContainer.userRepository,
+            authService: servicesContainer.authService,
+            clearLocalData: { [repositoryContainer] in
+                try? repositoryContainer.clearLocalData()
+            }
+        )
+    }
+
+    public func makeUserListViewModel() -> UserListViewModel {
+        return UserListViewModel(
+            userRepository: repositoryContainer.userRepository
+        )
+    }
+
+    public func makeOrganizationListViewModel() -> OrganizationListViewModel {
+        return OrganizationListViewModel(
             userRepository: repositoryContainer.userRepository
         )
     }

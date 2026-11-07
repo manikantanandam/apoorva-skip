@@ -8,19 +8,35 @@
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaServices
 
 @MainActor
 @Observable
 public class ProfileViewModel {
-    
+
     public var appUser: AppUser?
     let userRepository: UserRepositoryProtocol
-    
+    private let authService: AuthServicing
+    private let clearLocalData: () -> Void
+
     var showAlert = false
     var alertMessage: String = ""
-    
-    public init(userRepository: UserRepositoryProtocol) {
+
+    public init(userRepository: UserRepositoryProtocol,
+                authService: AuthServicing,
+                clearLocalData: @escaping () -> Void) {
         self.userRepository = userRepository
+        self.authService = authService
+        self.clearLocalData = clearLocalData
+    }
+
+    func logoutPressed() {
+        do {
+            try authService.logout()
+            clearLocalData()
+        } catch {
+            print("Error \(error)")
+        }
     }
     
     func checkForUser() async {
@@ -71,5 +87,9 @@ public extension ProfileViewModel {
         guard let appUser else { return [] }
         return appUser.assignedOrgs
 
+    }
+
+    var canManageUsers: Bool {
+        appUser?.role == .admin || appUser?.role == .superAdmin
     }
 }

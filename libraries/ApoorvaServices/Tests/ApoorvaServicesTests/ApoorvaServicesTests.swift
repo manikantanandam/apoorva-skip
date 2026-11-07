@@ -54,6 +54,9 @@ final class MockFirestoreStore: FirestoreStoring, @unchecked Sendable {
             case let .isIn(field, values):
                 guard let value = data[field] as? String else { return false }
                 return values.contains(value)
+            case let .arrayContains(field, value):
+                guard let values = data[field] as? [String] else { return false }
+                return values.contains(value)
             }
         }
         return query.matchAny ? results.contains(true) : !results.contains(false)

@@ -77,4 +77,29 @@ struct UserServiceTests {
         #expect(store.updates.first?.fields["selectedOrganization"] != nil)
         #expect(store.updates.first?.fields["updatedTimestamp"] != nil)
     }
+
+    @Test func listUsersReturnsOnlyUsersInOrg() async throws {
+        let store = MockFirestoreStore()
+        store.documents["users/u1"] = ["id": "u1", "name": "A", "email": "a@a.com", "assignedOrgIds": ["orgX"]]
+        store.documents["users/u2"] = ["id": "u2", "name": "B", "email": "b@b.com", "assignedOrgIds": ["orgY"]]
+        let service = UserService(authService: StubAuthService(users: []), store: store)
+        let users = try await service.listUsers(orgId: "orgX")
+        #expect(users.map(\.id) == ["u1"])
+    }
+
+    @Test func listUsersExcludesDocsWithoutAssignedOrgIds() async throws {
+        let store = MockFirestoreStore()
+        store.documents["users/legacy"] = ["id": "legacy", "name": "No Org Ids", "email": "l@l.com"]
+        let service = UserService(authService: StubAuthService(users: []), store: store)
+        let users = try await service.listUsers(orgId: "orgX")
+        #expect(users.isEmpty)
+    }
+
+    @Test func updateRoleWritesRoleField() async throws {
+        let store = MockFirestoreStore()
+        let service = UserService(authService: StubAuthService(users: []), store: store)
+        try await service.updateRole(userId: "u1", role: .admin)
+        #expect(store.updates.first?.path == "users/u1")
+        #expect(store.updates.first?.fields["role"] as? String == "admin")
+    }
 }
