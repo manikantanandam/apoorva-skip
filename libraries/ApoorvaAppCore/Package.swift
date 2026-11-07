@@ -14,7 +14,8 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../ApoorvaModules")
+        .package(path: "../ApoorvaModules"),
+        .package(path: "../ApoorvaUtilities")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -22,7 +23,8 @@ let package = Package(
         .target(
             name: "ApoorvaAppCore",
             dependencies: [
-                .product(name: "ApoorvaModules", package: "ApoorvaModules")
+                .product(name: "ApoorvaModules", package: "ApoorvaModules"),
+                .product(name: "ApoorvaUtilities", package: "ApoorvaUtilities")
             ]
         ),
 

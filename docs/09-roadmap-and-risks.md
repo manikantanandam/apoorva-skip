@@ -4,10 +4,10 @@
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| M0 — Foundation | Docs finalised, design tokens + component kit, Dev/Stg Firebase projects, CI build job | Build green on both configs |
+| M0 — Foundation | Docs finalised, design tokens + component kit, Debug/Production Firebase projects, CI build job | Build green on both configs |
 | M1 — R1 Core | Sign-in (Google/phone/email), onboarding + opening balances, billing (4 verticals + Easy mode), payments setup, bills, customers, cashflow, offline sync | Offline bill + sync verified with 2 devices |
 | M2 — R2 Business | Inventory, suppliers & purchases, orders, expenses & profit, warranty, insights & reports, daily summary, devices | Reports match manual totals on test data |
-| M3 — Hardening | Crashlytics, flags, perf traces, rules tests, backup | Crash-free ≥ 99.5% in staging |
+| M3 — Hardening | Crashlytics, flags, perf traces, rules tests, backup | Crash-free ≥ 99.5% in debug |
 | M3b — R3 Growth & control | Admin (roles incl. Accountant, theme, font, flags, audit), plans, attendance & salary, offers, catalog share, widget, demo, platform console | One pilot shop per vertical bills end to end |
 | M4 — Pilot | 3–5 real shops per vertical | Zero data-loss incidents for 4 weeks |
 | M5 — Release | Store submission, staged rollout | Production stable for 2 weeks |
@@ -56,5 +56,5 @@ The v1 feature scope and 140 designs (Clean style) are frozen (see 01 "Small-sho
 ## 5. Next steps
 1. Answer open questions above.
 2. Build the SwiftUI component kit and ThemeStore from 04 and `/designs`.
-3. Create Dev/Stg Firebase projects and split config files (07).
+3. Create Debug/Production Firebase projects and split config files (07).
 4. Start M1 with the data model in 03.

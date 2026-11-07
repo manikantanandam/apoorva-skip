@@ -1,5 +1,6 @@
 import SwiftUI
 import ApoorvaModules
+import ApoorvaUtilities
 
 enum HomeViewTab: Int, CaseIterable, Identifiable {
     case pos
@@ -87,7 +88,10 @@ enum HomeViewTab: Int, CaseIterable, Identifiable {
         case .inventory:
             InventoryView(viewModel: container.modulesContainer.makeInventoryViewModel())
         case .profile:
-            ProfileView(viewModel: container.modulesContainer.makeProfileViewModel())
+            ProfileView(
+                viewModel: container.modulesContainer.makeProfileViewModel(),
+                developerViewModel: container.makeDeveloperSettingsViewModel()
+            )
         case .customers:
             CustomerListView(viewModel: container.modulesContainer.makeCustomerListViewModel())
         case .sales:
@@ -125,5 +129,10 @@ struct HomeView: View {
             }
         }
         .tint(.blue)
+        .overlay(alignment: .topTrailing) {
+            EnvironmentBadgeView(environment: container.environment)
+                .padding(.trailing, 8)
+                .allowsHitTesting(false)
+        }
     }
 }

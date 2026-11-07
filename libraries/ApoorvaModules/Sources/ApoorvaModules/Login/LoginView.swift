@@ -35,6 +35,7 @@ public struct LoginView: View {
                 
                 CustomButton(text: "Login",
                              needLoader: true,
+                             isLoading: $viewModel.isLoggingIn,
                              backgroundColor: .orange) {
                     viewModel.loginPressed()
                 }
