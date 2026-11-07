@@ -9,7 +9,7 @@
 
 Notes:
 - Bundle IDs above are proposals; confirm the real ones in `app/Darwin` and `app/Android` before use.
-- One `GoogleService-Info.plist` / `google-services.json` per environment, kept out of git (CI injects from secrets).
+- One plist/JSON per environment, kept out of git (CI injects from secrets): `GoogleService-Info-debug.plist` / `GoogleService-Info-production.plist` for iOS, `google-services.json` for Android.
 - Use `.xcconfig` files per config for the iOS app; Skip's `Skip.env` for shared Skip settings.
 - `SKIP_NO_ANDROID=1` is currently set — Android builds are off by default; flip per branch when testing Android.
 

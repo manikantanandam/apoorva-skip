@@ -38,7 +38,7 @@ public enum AppEnvironment: String, CaseIterable, Codable, Sendable, Identifiabl
     public var firebasePlistName: String {
         switch self {
         case .debug: return "GoogleService-Info-debug"
-        case .production: return "GoogleService-Info"
+        case .production: return "GoogleService-Info-production"
         }
     }
 

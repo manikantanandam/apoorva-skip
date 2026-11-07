@@ -31,7 +31,7 @@ let logger: Logger = Logger(subsystem: "com.apoorva.app", category: "Apoorva")
     /* SKIP @bridge */public func onInit() {
         logger.debug("onInit")
         #if os(iOS)
-        // Non-production environments use their own Firebase project when the plist is bundled.
+        // Each environment uses its own Firebase project; resolve the bundled plist explicitly.
         if let path = LaunchEnvironment.firebasePlistPath(),
            let options = FirebaseOptions(contentsOfFile: path) {
             FirebaseApp.configure(options: options)

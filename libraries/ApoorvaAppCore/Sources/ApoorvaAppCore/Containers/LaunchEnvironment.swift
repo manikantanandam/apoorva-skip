@@ -12,11 +12,9 @@ public enum LaunchEnvironment {
         EnvironmentStore().current
     }
 
-    /// Path of the bundled Firebase plist for a non-production environment.
-    /// `nil` means "use the default `GoogleService-Info.plist`" (production, or the plist is missing).
+    /// Path of the bundled Firebase plist for the current environment.
+    /// `nil` means the plist is missing from the bundle.
     public static func firebasePlistPath(in bundle: Bundle = .main) -> String? {
-        let environment = current
-        guard environment != .production else { return nil }
-        return bundle.path(forResource: environment.firebasePlistName, ofType: "plist")
+        bundle.path(forResource: current.firebasePlistName, ofType: "plist")
     }
 }

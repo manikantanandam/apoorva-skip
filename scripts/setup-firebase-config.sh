@@ -3,12 +3,12 @@
 # LaunchEnvironment (ApoorvaAppCore) picks the right one at RUNTIME based on
 # the AppEnvironment selected in Developer Settings:
 #   .debug      -> GoogleService-Info-debug.plist
-#   .production -> GoogleService-Info.plist (the default, no suffix)
+#   .production -> GoogleService-Info-production.plist
 # Both must be bundled as Resources for Bundle.main to find them.
 #
 # Local use:
 #   export GOOGLE_SERVICE_INFO_PLIST_DEBUG_B64=$(base64 -i /path/to/GoogleService-Info-debug.plist)
-#   export GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64=$(base64 -i /path/to/GoogleService-Info.plist)
+#   export GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64=$(base64 -i /path/to/GoogleService-Info-production.plist)
 #   scripts/setup-firebase-config.sh
 #
 # CI use (GitHub Actions secrets):
@@ -28,8 +28,8 @@ if [ -n "${GOOGLE_SERVICE_INFO_PLIST_DEBUG_B64:-}" ]; then
 fi
 
 if [ -n "${GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64:-}" ]; then
-  echo "$GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64" | base64 --decode > "$DARWIN_DIR/GoogleService-Info.plist"
-  echo "Wrote $DARWIN_DIR/GoogleService-Info.plist"
+  echo "$GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64" | base64 --decode > "$DARWIN_DIR/GoogleService-Info-production.plist"
+  echo "Wrote $DARWIN_DIR/GoogleService-Info-production.plist"
   wrote_any=1
 fi
 
