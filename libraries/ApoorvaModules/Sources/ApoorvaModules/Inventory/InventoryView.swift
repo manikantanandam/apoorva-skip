@@ -7,10 +7,11 @@
 
 import SwiftUI
 import ApoorvaModels
-import UIKit
+import ManiSwiftUIComponents
 
 public struct InventoryView: View {
-    
+    @Environment(\.maniTheme) private var theme
+
     @Bindable var viewModel: InventoryViewModel
     
     // Grid layout for top stats
@@ -26,33 +27,33 @@ public struct InventoryView: View {
     public var body: some View {
         VStack(spacing: 0) {
             ScrollView {
-                LazyVStack(spacing: 12) {
-                    
-                    // Modernized Stats Section
-                    LazyVGrid(columns: columns, spacing: 12) {
-                        InventoryStatBox(title: "Total Items", value: viewModel.itemsCount.string)
-                        InventoryStatBox(title: "Hot Items", value: viewModel.hotItemsCount.string)
-                        InventoryStatBox(title: "Items Sold", value: viewModel.totalItemsSold.string)
-                        InventoryStatBox(title: "Amount Sold", value: viewModel.totalSoldAmount.string)
+                LazyVStack(spacing: ManiSpacing.md) {
+
+                    // Stats section
+                    LazyVGrid(columns: columns, spacing: ManiSpacing.md) {
+                        ManiKPITile(title: "Total Items", value: viewModel.itemsCount.string)
+                        ManiKPITile(title: "Hot Items", value: viewModel.hotItemsCount.string)
+                        ManiKPITile(title: "Items Sold", value: viewModel.totalItemsSold.string)
+                        ManiKPITile(title: "Amount Sold", value: viewModel.totalSoldAmount.string, isHighlighted: true)
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 16)
-                    .padding(.bottom, 8)
-                    
+                    .padding(.horizontal, ManiSpacing.lg)
+                    .padding(.top, ManiSpacing.lg)
+                    .padding(.bottom, ManiSpacing.sm)
+
                     if viewModel.rows.isEmpty {
-                        Text("No inventory items found.")
-                            .foregroundColor(.secondary)
-                            .padding(.top, 40)
+                        ManiNote("No inventory items found.", kind: .warning)
+                            .padding(.horizontal, ManiSpacing.lg)
+                            .padding(.top, ManiSpacing.lg)
                     } else {
                         ForEach(viewModel.rows) { row in
                             InventoryItemCardRowView(row: row)
                         }
                     }
                 }
-                .padding(.bottom, 16)
+                .padding(.bottom, ManiSpacing.lg)
             }
         }
-        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+        .background(theme.base.background.ignoresSafeArea())
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -82,118 +83,33 @@ public struct InventoryView: View {
     }
 }
 
-// MARK: - Modern Subviews
-
-struct InventoryStatBox: View {
-    let title: String
-    let value: String
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-            
-            Text(value)
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundStyle(.primary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
-    }
-}
+// MARK: - Subviews
 
 struct InventoryItemCardRowView: View {
-    
+    @Environment(\.maniTheme) private var theme
+
     let row: InventoryItemRow
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header: Item Name & Hotkey Indicator
-            HStack(alignment: .top) {
-                Text(row.item.name)
-                    .font(.headline)
-                
-                Spacer()
-                
-                if row.item.isHotkey {
-                    Image(systemName: "star.fill")
-                        .foregroundColor(.red)
-                        .font(.body)
-                }
-            }
-            
-            Divider()
-            
-            // Middle: Core Metrics
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Stock")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(row.item.currentStock.string)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Items Sold")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(row.itemsSold.string)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Sold Amount")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(row.soldValue.string)
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundStyle(Color.green)
-                }
-            }
-            
-            Divider()
-            
-            // Footer: Dates
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Last Sold")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(row.item.lastSoldDateString)
-                        .font(.caption)
-                        .foregroundStyle(.primary)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("Updated At")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(row.item.updatedAtString)
-                        .font(.caption)
-                        .foregroundStyle(.primary)
-                }
+        ManiCard {
+            VStack(alignment: .leading, spacing: ManiSpacing.sm) {
+                ManiListRow(
+                    title: row.item.name,
+                    status: row.item.isHotkey ? ("Hot", .warning) : nil
+                )
+
+                Divider().overlay(theme.base.border)
+
+                ManiBreakdownRow(label: "Stock", value: row.item.currentStock.string)
+                ManiBreakdownRow(label: "Items Sold", value: row.itemsSold.string)
+                ManiBreakdownRow(label: "Sold Amount", value: row.soldValue.string, emphasis: .total)
+
+                Divider().overlay(theme.base.border)
+
+                ManiBreakdownRow(label: "Last Sold", value: row.item.lastSoldDateString)
+                ManiBreakdownRow(label: "Updated At", value: row.item.updatedAtString)
             }
         }
-        .padding(16)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.04), radius: 5, x: 0, y: 2)
-        .padding(.horizontal)
+        .padding(.horizontal, ManiSpacing.lg)
     }
 }

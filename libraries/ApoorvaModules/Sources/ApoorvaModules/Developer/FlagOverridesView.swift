@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import ManiSwiftUIComponents
 
 struct FlagOverridesView: View {
     @State var viewModel: DeveloperSettingsViewModel
@@ -13,7 +14,7 @@ struct FlagOverridesView: View {
         List {
             Section("Local overrides (never synced)") {
                 ForEach(viewModel.flagOverrides.keys.sorted(), id: \.self) { key in
-                    Toggle(key, isOn: Binding(
+                    ManiToggleRow(title: key, isOn: Binding(
                         get: { viewModel.flagOverrides[key] ?? false },
                         set: { viewModel.setFlag(key, value: $0) }
                     ))

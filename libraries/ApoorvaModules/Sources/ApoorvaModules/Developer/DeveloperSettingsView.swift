@@ -5,6 +5,7 @@
 
 import SwiftUI
 import ApoorvaUtilities
+import ManiSwiftUIComponents
 
 public struct DeveloperSettingsView: View {
     @State var viewModel: DeveloperSettingsViewModel
@@ -20,12 +21,7 @@ public struct DeveloperSettingsView: View {
                 NavigationLink {
                     EnvironmentSwitchView(viewModel: viewModel)
                 } label: {
-                    HStack {
-                        Text("Backend")
-                        Spacer()
-                        Text(viewModel.activeEnvironment.displayName)
-                            .foregroundStyle(.secondary)
-                    }
+                    ManiListRow(title: "Backend", value: viewModel.activeEnvironment.displayName)
                 }
             }
 
@@ -36,8 +32,8 @@ public struct DeveloperSettingsView: View {
                 NavigationLink("Logs") {
                     LogViewerView(viewModel: viewModel)
                 }
-                Toggle("Simulate offline", isOn: $viewModel.isOfflineSimulated)
-                Toggle("Screen ID overlay", isOn: $viewModel.showsScreenIdentifiers)
+                ManiToggleRow(title: "Simulate offline", isOn: $viewModel.isOfflineSimulated)
+                ManiToggleRow(title: "Screen ID overlay", isOn: $viewModel.showsScreenIdentifiers)
             }
 
             if viewModel.canClearDatabase {
@@ -67,13 +63,7 @@ public struct EnvironmentBadgeView: View {
 
     public var body: some View {
         if let badge = environment.badge {
-            Text(badge)
-                .font(.caption2.bold())
-                .padding(.horizontal, 8)
-                .padding(.vertical, 2)
-                .background(Color.orange)
-                .foregroundStyle(.white)
-                .clipShape(Capsule())
+            ManiStatusBadge(badge, kind: .warning)
         }
     }
 }

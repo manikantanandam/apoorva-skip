@@ -2,7 +2,7 @@
 import Foundation
 import SwiftUI
 import ApoorvaModels
-import UIKit
+import ManiSwiftUIComponents
 
 enum TransactionSheetAction: Identifiable {
     case add
@@ -33,7 +33,8 @@ enum SummarySheetAction: Identifiable {
 }
 
 public struct DailyCashFlowView: View {
-    
+    @Environment(\.maniTheme) private var theme
+
     @Bindable var viewModel: DailyCashFlowViewModel
     
     // Summary Sheet State
@@ -67,7 +68,7 @@ public struct DailyCashFlowView: View {
                 Button(action: { viewModel.prevDate() }) {
                     Image(systemName: "chevron.left.circle.fill")
                         .font(.title2)
-                        .foregroundStyle(Color.secondary.opacity(0.5))
+                        .foregroundStyle(theme.base.textSecondary.opacity(0.5))
                 }
                 
                 Spacer()
@@ -85,12 +86,12 @@ public struct DailyCashFlowView: View {
                 Button(action: { viewModel.nextDate() }) {
                     Image(systemName: "chevron.right.circle.fill")
                         .font(.title2)
-                        .foregroundStyle(Color.secondary.opacity(0.5))
+                        .foregroundStyle(theme.base.textSecondary.opacity(0.5))
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 12)
-            .background(Color(UIColor.systemBackground))
+            .padding(.horizontal, ManiSpacing.lg)
+            .padding(.vertical, ManiSpacing.md)
+            .background(theme.base.surface)
             
             // MARK: - Daily Content
             ScrollView {
@@ -98,33 +99,31 @@ public struct DailyCashFlowView: View {
                     
                     // MARK: - Opening Balance Section
                     if let summary = viewModel.currentSummary {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: ManiSpacing.sm) {
                             Text("Opening Balance")
-                                .font(.subheadline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.secondary)
+                                .font(theme.typography.secondary.weight(.bold))
+                                .foregroundStyle(theme.base.textSecondary)
                                 .textCase(.uppercase)
-                                .padding(.horizontal)
-                            
-                            LazyVGrid(columns: columns, spacing: 16) {
+                                .padding(.horizontal, ManiSpacing.lg)
+
+                            LazyVGrid(columns: columns, spacing: ManiSpacing.md) {
                                 ForEach(summary.openingBalances) { accountBalance in
-                                    ModernDailyStatBox(title: accountBalance.name, value: accountBalance.balance.description, color: .primary)
+                                    ManiKPITile(title: accountBalance.name, value: accountBalance.balance.description)
                                 }
                             }
-                            .padding(.horizontal)
+                            .padding(.horizontal, ManiSpacing.lg)
                         }
-                        .padding(.top, 24)
+                        .padding(.top, ManiSpacing.lg)
                     }
                     
                     // MARK: - Transactions Section
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: ManiSpacing.sm) {
                         HStack {
                             Text("Transactions")
-                                .font(.subheadline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.secondary)
+                                .font(theme.typography.secondary.weight(.bold))
+                                .foregroundStyle(theme.base.textSecondary)
                                 .textCase(.uppercase)
-                            
+
                             Spacer()
                             if viewModel.currentSummary?.locked != true {
                                 Button(action: {
@@ -133,17 +132,17 @@ public struct DailyCashFlowView: View {
                                     Image(systemName: "plus.circle.fill")
                                         .font(.body)
                                         .fontWeight(.bold)
-                                        .foregroundStyle(Color.accentColor)
+                                        .foregroundStyle(theme.accent.accent)
                                 }
                             }
                         }
-                        .padding(.horizontal)
-                        
+                        .padding(.horizontal, ManiSpacing.lg)
+
                         if viewModel.transactions.isEmpty {
                             Text("No transactions recorded on this date.")
-                                .font(.subheadline)
-                                .foregroundStyle(.tertiary)
-                                .padding(.horizontal)
+                                .font(theme.typography.secondary)
+                                .foregroundStyle(theme.base.textSecondary)
+                                .padding(.horizontal, ManiSpacing.lg)
                         } else {
                             ForEach(viewModel.transactions) { item in
                                 CashflowCardRowView(item: item)
@@ -174,42 +173,35 @@ public struct DailyCashFlowView: View {
                     
                     // MARK: - Closing Balance Section
                     if let summary = viewModel.currentSummary {
-                        VStack(alignment: .leading, spacing: 12) {
+                        VStack(alignment: .leading, spacing: ManiSpacing.sm) {
                             Text("Closing Balance")
-                                .font(.subheadline)
-                                .fontWeight(.bold)
-                                .foregroundColor(.secondary)
+                                .font(theme.typography.secondary.weight(.bold))
+                                .foregroundStyle(theme.base.textSecondary)
                                 .textCase(.uppercase)
-                                .padding(.horizontal)
-                            
-                            LazyVGrid(columns: columns, spacing: 16) {
+                                .padding(.horizontal, ManiSpacing.lg)
+
+                            LazyVGrid(columns: columns, spacing: ManiSpacing.md) {
                                 ForEach(summary.closingBalances) { accountBalance in
-                                    ModernDailyStatBox(title: accountBalance.name, value: accountBalance.balance.description, color: .primary)
+                                    ManiKPITile(title: accountBalance.name, value: accountBalance.balance.description, isHighlighted: true)
                                 }
                             }
-                            .padding(.horizontal)
+                            .padding(.horizontal, ManiSpacing.lg)
                         }
-                        .padding(.bottom, 32)
+                        .padding(.bottom, ManiSpacing.xl)
                     } else if !viewModel.isLoading {
-                        VStack(spacing: 12) {
-                            Image(systemName: "doc.text.magnifyingglass")
-                                .font(.system(size: 48))
-                                .foregroundStyle(.tertiary)
-                            Text("No summary recorded for this date.")
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.top, 40)
+                        ManiNote("No summary recorded for this date.", kind: .info)
+                            .padding(.horizontal, ManiSpacing.lg)
+                            .padding(.top, ManiSpacing.xl)
                     }
-                    
+
                     if viewModel.isLoading {
                         ProgressView()
-                            .padding(.top, 40)
+                            .padding(.top, ManiSpacing.xl)
                     }
                 }
             }
         }
-        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+        .background(theme.base.background.ignoresSafeArea())
         .toolbar {
             if let summary = viewModel.currentSummary, !summary.locked {
                 
@@ -219,10 +211,13 @@ public struct DailyCashFlowView: View {
                         Button(action: {
                             Task { await viewModel.toggleLockStatus() }
                         }) {
-                            Image(systemName: summary.locked ? "lock.fill" : "lock.open")
-                                .foregroundStyle(summary.locked ? .red : .green)
-                                .font(.system(size: 17, weight: .semibold))
-
+                            if summary.locked {
+                                ManiSwiftUIComponents.IconView(.lock, size: 17, color: theme.base.error)
+                            } else {
+                                Image(systemName: "lock.open")
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundStyle(theme.base.success)
+                            }
                         }
                         
                         Button(action: {
@@ -269,44 +264,3 @@ public struct DailyCashFlowView: View {
     }
 }
 
-// MARK: - Modern Subviews
-
-struct ModernDailyStatBox: View {
-    let title: String
-    let value: String
-    let color: Color
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: iconName(for: title))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                Text(title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            
-            Text(value)
-                .font(.system(.title3, design: .rounded))
-                .fontWeight(.bold)
-                .foregroundStyle(color)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.02), radius: 6, x: 0, y: 3)
-    }
-    
-    private func iconName(for name: String) -> String {
-        let lowercased = name.lowercased()
-        if lowercased.contains("cash") { return "banknote" }
-        if lowercased.contains("upi") || lowercased.contains("pay") { return "qrcode.viewfinder" }
-        if lowercased.contains("card") { return "creditcard" }
-        return "building.columns"
-    }
-}

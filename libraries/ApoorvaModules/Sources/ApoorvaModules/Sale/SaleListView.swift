@@ -112,32 +112,6 @@ public struct SaleListView: View {
 
 // MARK: - Subviews
 
-// NOTE: kept (unmigrated) because CashflowView.swift still uses it;
-// out of scope for this pass, which only covers SaleListView/POSView.
-struct ModernStatBox: View {
-    let title: String
-    let value: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-
-            Text(value)
-                .font(.title3)
-                .fontWeight(.semibold)
-                .foregroundStyle(.primary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
-    }
-}
-
 private struct SaleCardRowView: View {
     @Environment(\.maniTheme) private var theme
     let sale: Sale

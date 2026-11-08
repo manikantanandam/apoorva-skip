@@ -8,7 +8,7 @@
 import Foundation
 import SwiftUI
 import ApoorvaModels
-import UIKit
+import ManiSwiftUIComponents
 
 struct ExportItem: Identifiable {
     let id = UUID()
@@ -16,7 +16,8 @@ struct ExportItem: Identifiable {
 }
 
 public struct CashflowTransactionListView: View {
-    
+    @Environment(\.maniTheme) private var theme
+
     @Bindable var viewModel: CashflowTransactionListViewModel
     
     // State for CSV Export
@@ -46,12 +47,12 @@ public struct CashflowTransactionListView: View {
                         .labelsHidden()
                 }
                 .padding()
-                .background(Color(UIColor.secondarySystemBackground))
+                .background(theme.base.surface)
             }
-            
+
             // Horizontal Filter Bar
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: ManiSpacing.sm) {
                     // Type Filter
                     Menu {
                         Picker("Type", selection: $viewModel.typeFilter) {
@@ -62,7 +63,7 @@ public struct CashflowTransactionListView: View {
                     } label: {
                         FilterChip(title: viewModel.typeFilter == .all ? "Type" : viewModel.typeFilter.rawValue)
                     }
-                    
+
                     // Payment Mode Filter
                     Menu {
                         Picker("Mode", selection: $viewModel.paymentModeFilter) {
@@ -73,7 +74,7 @@ public struct CashflowTransactionListView: View {
                     } label: {
                         FilterChip(title: viewModel.paymentModeFilter == .all ? "Mode" : viewModel.paymentModeFilter.rawValue)
                     }
-                    
+
                     // Category Filter
                     Menu {
                         Picker("Category", selection: $viewModel.categoryFilter) {
@@ -84,7 +85,7 @@ public struct CashflowTransactionListView: View {
                     } label: {
                         FilterChip(title: viewModel.categoryFilter == "All" ? "Category" : viewModel.categoryFilter)
                     }
-                    
+
                     // SubCategory Filter
                     Menu {
                         Picker("Subcategory", selection: $viewModel.subCategoryFilter) {
@@ -96,29 +97,31 @@ public struct CashflowTransactionListView: View {
                         FilterChip(title: viewModel.subCategoryFilter == "All" ? "Subcategory" : viewModel.subCategoryFilter)
                     }
                 }
-                .padding(.horizontal)
-                .padding(.vertical, 10)
+                .padding(.horizontal, ManiSpacing.lg)
+                .padding(.vertical, ManiSpacing.sm)
             }
-            .background(Color(UIColor.systemGroupedBackground))
-            
+            .background(theme.base.background)
+
             ScrollView {
-                LazyVStack(spacing: 12) {
-                    ModernStatBox(title: "Total Transactions", value: viewModel.transactions.count.string)
-                    
+                LazyVStack(spacing: ManiSpacing.md) {
+                    ManiKPITile(title: "Total Transactions", value: viewModel.transactions.count.string, isHighlighted: true)
+                        .padding(.horizontal, ManiSpacing.lg)
+                        .padding(.top, ManiSpacing.sm)
+
                     if viewModel.transactions.isEmpty {
-                        Text("No transactions found for this period.")
-                            .foregroundColor(.secondary)
-                            .padding(.top, 40)
+                        ManiNote("No transactions found for this period.", kind: .warning)
+                            .padding(.horizontal, ManiSpacing.lg)
+                            .padding(.top, ManiSpacing.lg)
                     } else {
                         ForEach(viewModel.transactions) { item in
                             CashflowCardRowView(item: item)
                         }
                     }
                 }
-                .padding(.bottom, 16)
+                .padding(.bottom, ManiSpacing.lg)
             }
         }
-        .background(Color(UIColor.systemGroupedBackground).ignoresSafeArea())
+        .background(theme.base.background.ignoresSafeArea())
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
@@ -183,90 +186,51 @@ public struct CashflowTransactionListView: View {
     }
 }
 
-// MARK: - Modern Subviews
+// MARK: - Subviews
 
 struct CashflowCardRowView: View {
-    
+    @Environment(\.maniTheme) private var theme
+
     let item: CashflowTransaction
-    
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Header: Category & Date
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.category.rawValue)
-                        .font(.headline)
-                    
-                    if let subCategory = item.subCategory?.rawValue, !subCategory.isEmpty {
-                        Text(subCategory)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                
-                Spacer()
-                VStack {
-                    Text(item.timestamp.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                    
-                    Text(item.id)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-                
-            }
-            
-            Divider()
-            
-            // Footer: Details & Amount
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Type & Mode")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text("\(item.transactionType.rawValue) • \(item.paymentMode.rawValue)")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("Amount")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(item.amount.description)
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        // Optional: you can color code based on type (e.g., item.transactionType == .income ? .green : .primary)
-                        .foregroundStyle(item.transactionType == .credit ? Color.green : Color.red)
-                }
+        ManiCard {
+            VStack(alignment: .leading, spacing: ManiSpacing.sm) {
+                ManiListRow(
+                    title: item.category.rawValue,
+                    subtitle: item.subCategory?.rawValue.isEmpty == false ? item.subCategory?.rawValue : nil,
+                    value: item.amount.description,
+                    status: (item.transactionType.rawValue, item.transactionType == .credit ? .success : .error)
+                )
+
+                Divider().overlay(theme.base.border)
+
+                ManiBreakdownRow(label: "Mode", value: item.paymentMode.rawValue)
+                ManiBreakdownRow(label: "Date", value: item.timestamp.formatted(date: .abbreviated, time: .shortened))
             }
         }
-        .padding(16)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .shadow(color: Color.black.opacity(0.04), radius: 5, x: 0, y: 2)
-        .padding(.horizontal)
+        .padding(.horizontal, ManiSpacing.lg)
     }
 }
 
+/// Visually a chip, but used as a `Menu` label — the interaction itself
+/// stays a native `Menu`/`Picker` since these are 4 independent filters,
+/// not the single-selection set `ManiChipGroup` is built for.
 struct FilterChip: View {
+    @Environment(\.maniTheme) private var theme
     let title: String
-    
+
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: ManiSpacing.xs) {
             Text(title)
-            Image(systemName: "chevron.down")
-                .font(.caption2)
+                .font(theme.typography.secondary)
+            ManiSwiftUIComponents.IconView(.chevronDown, size: 10, color: theme.base.textSecondary)
         }
-        .font(.subheadline)
-        .foregroundColor(.primary)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(Color(UIColor.secondarySystemGroupedBackground))
+        .foregroundStyle(theme.base.text)
+        .padding(.horizontal, ManiSpacing.md)
+        .frame(minHeight: 32)
+        .background(theme.base.surface)
         .clipShape(Capsule())
-        .shadow(color: Color.black.opacity(0.04), radius: 2, x: 0, y: 1)
+        .overlay(Capsule().strokeBorder(theme.base.border, lineWidth: 1))
     }
 }
