@@ -1,73 +1,153 @@
 //
-//  File.swift
+//  POSViewModel.swift
 //  ApoorvaModules
 //
 //  Created by Manikanta Nandam on 10/10/26.
 //
 
 import Foundation
-import ApoorvaServices
 import ApoorvaModels
+import ApoorvaRepository
 
 @MainActor
 @Observable
 public class POSViewModel {
-    
-    var customerName: String = ""
-    var customerPhoneNumber: String = ""
 
-    /// Cart quantities keyed by item id. Drives `ManiItemTile`'s stepper;
-    /// there is no real checkout/sale logic behind it yet.
-    var quantities: [String: Int] = [:]
+    public var cart = PosCart()
+    public var hotkeyItems: [InventoryItem] = []
+    public var allCategories: [InventoryItem] = []
+    public var activeHeldBillId: String?
+    public var heldBillsCount: Int = 0
+    public var isHolding: Bool = false
+    public var errorMessage: String?
 
-    var items: [InventoryItem] = [
-        InventoryItem(name: "Bangles 12"),
-        InventoryItem(name: "Black Beads"),
-        InventoryItem(name: "Earrings"),
-        InventoryItem(name: "Rubber Bands"),
-        InventoryItem(name: "Necklace"),
-        InventoryItem(name: "Thadu"),
-        InventoryItem(name: "Rings"),
-        InventoryItem(name: "Stickers"),
-        InventoryItem(name: "Bracelets"),
-        InventoryItem(name: "Anklets"),
-        InventoryItem(name: "Watches"),
-        InventoryItem(name: "Pins")
+    private let inventoryRepository: InventoryItemRepositoryProtocol
+    private let heldBillRepository: HeldBillRepositoryProtocol
 
-    ]
-    
-    private var authService: AuthServicing
-    
-    public init(authService: AuthServicing) {
-        self.authService = authService
+    public init(inventoryRepository: InventoryItemRepositoryProtocol,
+                heldBillRepository: HeldBillRepositoryProtocol) {
+        self.inventoryRepository = inventoryRepository
+        self.heldBillRepository = heldBillRepository
     }
-    
-    func logoutPressed() {
+
+    public var customerName: String {
+        get { cart.customerName ?? "" }
+        set { cart.customerName = newValue.isEmpty ? nil : newValue }
+    }
+
+    public var customerPhoneNumber: String {
+        get { cart.customerPhone ?? "" }
+        set { cart.customerPhone = newValue.isEmpty ? nil : newValue }
+    }
+
+    public var cartItemCount: Int { cart.totalItemsCount }
+    public var totalPayable: Double { cart.totalPayable }
+
+    public func prepareData() async {
         do {
-            try authService.logout()
+            let items = try await inventoryRepository.getInventoryItems()
+            apply(items)
+            try await inventoryRepository.sync(force: false)
+            apply(try await inventoryRepository.getInventoryItems())
+            await refreshHeldBillsCount()
         } catch {
-            print("Error \(error)")
+            print("POS prepareData failed \(error.localizedDescription)")
         }
     }
 
-    func quantity(for item: InventoryItem) -> Int {
-        quantities[item.id] ?? 0
+    public func refreshHeldBillsCount() async {
+        do {
+            heldBillsCount = try await heldBillRepository.getHeldBills().count
+        } catch {
+            print("Failed to load held bills \(error.localizedDescription)")
+        }
     }
 
-    func increment(_ item: InventoryItem) {
-        quantities[item.id, default: 0] += 1
+    /// Looks up an existing cart line by category id — used to resolve `.lineEdit(itemId:)`
+    /// into either an add (not found) or edit (found) for the price calculator.
+    public func cartItem(forCategoryId id: String) -> (index: Int, item: CartItem)? {
+        guard let index = cart.items.firstIndex(where: { $0.category.id == id }) else { return nil }
+        return (index, cart.items[index])
     }
 
-    func decrement(_ item: InventoryItem) {
-        guard let current = quantities[item.id], current > 0 else { return }
-        quantities[item.id] = current - 1
+    public func addOrUpdate(_ item: CartItem) {
+        if let index = cart.items.firstIndex(where: { $0.category.id == item.category.id }) {
+            cart.items[index] = item
+        } else {
+            cart.items.append(item)
+        }
     }
 
-    var cartItems: [InventoryItem] {
-        items.filter { quantity(for: $0) > 0 }
+    public func remove(at index: Int) {
+        guard cart.items.indices.contains(index) else { return }
+        cart.items.remove(at: index)
     }
 
-    var cartItemCount: Int {
-        quantities.values.reduce(0, +)
+    public func holdCurrentBill() async {
+        guard !cart.items.isEmpty else { return }
+        isHolding = true
+        defer { isHolding = false }
+
+        let bill = HeldBill(
+            id: activeHeldBillId ?? UUID().uuidString,
+            customerName: cart.customerName ?? "",
+            customerPhone: cart.customerPhone ?? "",
+            items: cart.items,
+            total: cart.totalPayable
+        )
+        do {
+            if activeHeldBillId != nil {
+                try await heldBillRepository.updateHeldBill(bill)
+            } else {
+                try await heldBillRepository.saveHeldBill(bill)
+            }
+            clearCart()
+            await refreshHeldBillsCount()
+        } catch {
+            errorMessage = "Couldn't hold this bill. Please try again."
+        }
+    }
+
+    public func resume(heldBill: HeldBill) {
+        cart = PosCart(
+            items: heldBill.items,
+            customerPhone: heldBill.customerPhone.isEmpty ? nil : heldBill.customerPhone,
+            customerName: heldBill.customerName.isEmpty ? nil : heldBill.customerName
+        )
+        activeHeldBillId = heldBill.id
+    }
+
+    /// Rebuilds the cart from a past sale — the "Edit Sale" action on the receipt screen.
+    public func load(from sale: Sale) {
+        let items = sale.items.map { saleItem in
+            CartItem(
+                category: InventoryItem(id: saleItem.categoryId, name: saleItem.categoryName),
+                mrp: saleItem.stickerPrice,
+                discountPercent: saleItem.discountPercent,
+                quantity: saleItem.qty,
+                discountType: saleItem.discountType
+            )
+        }
+        cart = PosCart(
+            items: items,
+            customerPhone: sale.customerPhone.isEmpty ? nil : sale.customerPhone,
+            customerName: sale.customerName.isEmpty ? nil : sale.customerName
+        )
+        activeHeldBillId = nil
+    }
+
+    public func selectCustomer(_ customer: Customer?) {
+        cart.customerName = customer?.name
+        cart.customerPhone = customer?.phone
+    }
+
+    public func clearCart() {
+        cart = PosCart()
+        activeHeldBillId = nil
+    }
+
+    private func apply(_ items: [InventoryItem]) {
+        allCategories = items.sorted()
+        hotkeyItems = items.hotItems
     }
 }

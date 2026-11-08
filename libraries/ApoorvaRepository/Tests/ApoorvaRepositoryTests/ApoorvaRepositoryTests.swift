@@ -94,6 +94,10 @@ final class MockCustomerService: CustomerServiceProtocol, @unchecked Sendable {
         calls.append("since")
         return result
     }
+
+    func upsertCustomerAfterSale(phone: String, name: String, saleAmount: Double, saleDate: Date, for orgId: String) async throws {
+        calls.append("upsert")
+    }
 }
 
 // MARK: - Helpers

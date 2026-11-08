@@ -17,6 +17,7 @@ public protocol InventoryItemRepositoryProtocol: Sendable {
     func deleteInventoryItem(id: String) async throws // Hard delete
     func markAsDeleted(id: String) async throws  // Soft delete
     func sync(force: Bool) async throws
+    func lastSyncedAt() async throws -> Date?
 }
 
 
@@ -56,7 +57,14 @@ public final actor InventoryItemRepository: InventoryItemRepositoryProtocol {
     public func markAsDeleted(id: String) async throws {
         try await storage.markAsDeleted(id: id)
     }
-    
+
+    public func lastSyncedAt() async throws -> Date? {
+        guard let timestamp = try await syncStorage.getLastSyncTimestamp(for: InventoryItem.table.name) else {
+            return nil
+        }
+        return Date(timeIntervalSince1970: timestamp)
+    }
+
     public func sync(force: Bool) async throws {
         print("Started sync")
         let user = try await userRepository.getCurrentUser()

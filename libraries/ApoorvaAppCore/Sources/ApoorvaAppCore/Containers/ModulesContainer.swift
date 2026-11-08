@@ -42,7 +42,40 @@ public class ModulesContainer {
     
     public func makePOSViewModel() -> POSViewModel {
         return POSViewModel(
-            authService: servicesContainer.authService
+            inventoryRepository: repositoryContainer.inventoryRepository,
+            heldBillRepository: repositoryContainer.heldBillRepository
+        )
+    }
+
+    public func makeItemPriceCalculatorViewModel(category: InventoryItem, existingItem: CartItem?) -> ItemPriceCalculatorViewModel {
+        return ItemPriceCalculatorViewModel(category: category, existingItem: existingItem)
+    }
+
+    public func makeCustomerPickerViewModel() -> CustomerPickerViewModel {
+        return CustomerPickerViewModel(
+            repository: repositoryContainer.customerRepository
+        )
+    }
+
+    public func makeHeldBillsViewModel() -> HeldBillsViewModel {
+        return HeldBillsViewModel(
+            repository: repositoryContainer.heldBillRepository
+        )
+    }
+
+    public func makeCheckoutViewModel(cart: PosCart, heldBillId: String?) -> CheckoutViewModel {
+        return CheckoutViewModel(
+            cart: cart,
+            heldBillId: heldBillId,
+            saleRepository: repositoryContainer.saleRepository,
+            userRepository: repositoryContainer.userRepository
+        )
+    }
+
+    public func makeReceiptViewModel(saleId: String) -> ReceiptViewModel {
+        return ReceiptViewModel(
+            saleId: saleId,
+            saleRepository: repositoryContainer.saleRepository
         )
     }
     

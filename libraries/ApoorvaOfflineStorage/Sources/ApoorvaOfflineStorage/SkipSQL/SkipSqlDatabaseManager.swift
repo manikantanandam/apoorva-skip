@@ -31,6 +31,7 @@ public final class SkipSqlDatabase: @unchecked Sendable {
             try context.createTableIfNotExists(CashflowTransaction.self)
             try context.createTableIfNotExists(DailyCashflowSummary.self)
             try context.createTableIfNotExists(Organization.self)
+            try context.createTableIfNotExists(HeldBill.self)
 
             // Add other models here:
             // try context.createTableIfNotExists(Account.self)
@@ -47,5 +48,6 @@ public final class SkipSqlDatabase: @unchecked Sendable {
         try context.deleteAll(CashflowTransaction.self)
         try context.deleteAll(DailyCashflowSummary.self)
         try context.deleteAll(Organization.self)
+        try context.deleteAll(HeldBill.self)
     }
 }

@@ -7,40 +7,56 @@
 
 import Foundation
 
-public enum PaymentMode: String, Codable, Sendable {
+public enum PaymentMode: String, Codable, Sendable, CaseIterable {
     case cash
     case upi
     case card
     case credit
 }
 
-struct PosCart: Codable, Sendable {
-    var items: [CartItem] = []
-    var flatDiscount: Double = 0.0
-    var paymentMode: PaymentMode = .cash
-    var customerPhone: String?
-    var customerName: String?
-    var socialSource: String?
-    var billDateTime: Date = Date()
-    
+public struct PosCart: Codable, Sendable {
+    public var items: [CartItem] = []
+    public var flatDiscount: Double = 0.0
+    public var paymentMode: PaymentMode = .cash
+    public var customerPhone: String?
+    public var customerName: String?
+    public var socialSource: String?
+    public var billDateTime: Date = Date()
+
+    public init(items: [CartItem] = [],
+                flatDiscount: Double = 0.0,
+                paymentMode: PaymentMode = .cash,
+                customerPhone: String? = nil,
+                customerName: String? = nil,
+                socialSource: String? = nil,
+                billDateTime: Date = Date()) {
+        self.items = items
+        self.flatDiscount = flatDiscount
+        self.paymentMode = paymentMode
+        self.customerPhone = customerPhone
+        self.customerName = customerName
+        self.socialSource = socialSource
+        self.billDateTime = billDateTime
+    }
+
     // MARK: - Computed Properties
-    var totalPayable: Double {
+    public var totalPayable: Double {
         return max(totalFinalPrice - flatDiscount, 0.0)
     }
-    
-    var totalMRP: Double {
+
+    public var totalMRP: Double {
         return items.reduce(0.0) { $0 + ($1.mrp * Double($1.quantity)) }
     }
-    
-    var totalFinalPrice: Double {
+
+    public var totalFinalPrice: Double {
         return items.reduce(0.0) { $0 + ($1.finalPrice * Double($1.quantity)) }
     }
-    
-    var totalDiscountOnMRP: Double {
+
+    public var totalDiscountOnMRP: Double {
         return totalMRP - totalFinalPrice
     }
-    
-    var totalItemsCount: Int {
+
+    public var totalItemsCount: Int {
         return items.reduce(0) { $0 + $1.quantity }
     }
 }
