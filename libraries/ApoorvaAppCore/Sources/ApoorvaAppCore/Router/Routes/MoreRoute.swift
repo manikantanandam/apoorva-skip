@@ -19,6 +19,8 @@ enum MoreRoute: Hashable, Identifiable {
 
 enum SellRoute: Hashable {
     case orders
+    case orderAdd
+    case orderDetail(orderId: String)
     case heldBills
     case warranty
 }
@@ -26,12 +28,16 @@ enum SellRoute: Hashable {
 enum StockRoute: Hashable {
     case inventory(InventoryRoute)
     case suppliers
+    case supplierDetail(supplierId: String)
+    case supplierAdd
+    case purchaseAdd(supplierId: String?)
     case reorder
 }
 
 enum InventoryRoute: Hashable {
     case list
     case add
+    case edit(itemId: String)
     case item(itemId: String)
     case adjust(itemId: String)
     case categories
@@ -45,8 +51,18 @@ enum MoneyRoute: Hashable {
     case cashflowClose(date: Date)
     case transactions
     case expenses
+    case expenseAdd(expenseId: String?)
     case dailySummary
-    case insights
+    case insights(InsightsRoute)
+}
+
+enum InsightsRoute: Hashable {
+    case overview
+    case profit
+    case items
+    case customers
+    case staff
+    case reports
 }
 
 enum PeopleRoute: Hashable {
@@ -56,6 +72,7 @@ enum PeopleRoute: Hashable {
 }
 
 enum SettingsRoute: Hashable {
+    case hub
     case account
     case appearance
     case tax
@@ -70,6 +87,7 @@ enum SettingsRoute: Hashable {
 }
 
 enum AdminRoute: Hashable {
+    case home
     case stores
     case storeDetail(storeId: String)
     case members

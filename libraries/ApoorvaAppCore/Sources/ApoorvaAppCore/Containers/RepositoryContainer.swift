@@ -98,6 +98,9 @@ public class RepositoryContainer {
     public lazy var customerLedgerRepository = makeOrgCollectionRepository(CustomerLedgerEntry.self)
     public lazy var stockMovementRepository = makeOrgCollectionRepository(StockMovement.self)
     public lazy var auditLogger: AuditLogging = AuditLogger(repository: auditRepository, context: orgContext)
+    public lazy var settingsRepository = makeOrgCollectionRepository(OrgSettings.self)
+    public lazy var storeRepository = makeOrgCollectionRepository(Store.self)
+    public lazy var memberRepository = makeOrgCollectionRepository(Member.self)
 
     /// Pulls every collection down. Call on sign-in, on foreground, and on pull-to-refresh.
     public lazy var syncEngine: SyncEngine = {
@@ -114,6 +117,9 @@ public class RepositoryContainer {
             SyncAdapter("heldBills") { try await heldBills.sync(force: $0) },
             SyncAdapter("cashflow") { try await cashflow.sync(force: $0) },
             SyncAdapter("dailyCashflowSummaries") { try await dailyCashflow.sync(force: $0) },
+            settingsRepository,
+            storeRepository,
+            memberRepository,
             customerLedgerRepository,
             stockMovementRepository,
             auditRepository

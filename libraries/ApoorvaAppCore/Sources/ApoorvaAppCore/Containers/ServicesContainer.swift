@@ -32,6 +32,8 @@ public class ServicesContainer {
     public lazy var organizationService: OrganizationServiceProtocol = OrganizationService()
 
     public lazy var heldBillService: HeldBillServiceProtocol = HeldBillService()
+
+    public lazy var platformConfigService: PlatformConfigServicing = PlatformConfigService()
     
     
     public init() {}

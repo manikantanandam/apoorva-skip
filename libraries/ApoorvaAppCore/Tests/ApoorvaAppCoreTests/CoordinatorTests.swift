@@ -87,5 +87,29 @@ struct RouteHashableTests {
     @Test func moreRouteNestedEqualityIsByCase() {
         #expect(MoreRoute.admin(.members) == .admin(.members))
         #expect(MoreRoute.admin(.members) != .admin(.stores))
+        #expect(MoreRoute.money(.insights(.profit)) != .money(.insights(.items)))
+    }
+
+    @Test func globalBlockedRouteIsRecognised() {
+        #expect(GlobalRoute.blocked(status: "suspended").isBlockedRoute)
+        #expect(!GlobalRoute.forceUpdate.isBlockedRoute)
+    }
+}
+
+@MainActor
+struct OnboardingAndTabsCoordinatorTests {
+    @Test func onboardingStartsAtTheGivenRootAndResets() {
+        let coordinator = OnboardingCoordinator(container: AppContainer(), root: .chooseVertical)
+        #expect(coordinator.root == .chooseVertical)
+        coordinator.push(.shopSetup)
+        coordinator.reset(to: [.pickLook])
+        #expect(coordinator.path == [.pickLook])
+    }
+
+    @Test func tabsSelectAndPresentWithoutAppCoordinator() {
+        let tabs = HomeTabsCoordinator(container: AppContainer())
+        tabs.select(.customers)
+        #expect(tabs.selectedTab == .customers)
+        tabs.present(.search) // no app coordinator attached: must not crash
     }
 }

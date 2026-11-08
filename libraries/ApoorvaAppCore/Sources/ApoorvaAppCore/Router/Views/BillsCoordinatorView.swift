@@ -2,6 +2,7 @@ import SwiftUI
 import ApoorvaModules
 
 struct BillsCoordinatorView: View {
+    let tabs: HomeTabsCoordinator
     @Bindable var coordinator: BillsCoordinator
     let container: AppContainer
 
@@ -34,6 +35,10 @@ struct BillsCoordinatorView: View {
             NotBuiltView(PlaceholderScreen("Bill detail"))
         case .cancel:
             NotBuiltView(PlaceholderScreen("Cancel bill"))
+        case .edit:
+            NotBuiltView(PlaceholderScreen("Edit bill"))
+        case .receiptPreview:
+            NotBuiltView(PlaceholderScreen("Receipt preview"))
         }
     }
 }

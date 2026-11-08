@@ -2,6 +2,7 @@ import SwiftUI
 import ApoorvaModules
 
 struct CustomersCoordinatorView: View {
+    let tabs: HomeTabsCoordinator
     @Bindable var coordinator: CustomersCoordinator
     let container: AppContainer
 
@@ -24,7 +25,7 @@ struct CustomersCoordinatorView: View {
         switch route {
         case .detail:
             NotBuiltView(PlaceholderScreen("Customer ledger"))
-        case .add:
+        case .add, .edit:
             NotBuiltView(PlaceholderScreen("Add customer"))
         case .collect:
             NotBuiltView(PlaceholderScreen("Collect payment"))
@@ -32,6 +33,10 @@ struct CustomersCoordinatorView: View {
             NotBuiltView(PlaceholderScreen("WhatsApp reminder"))
         case .statement:
             NotBuiltView(PlaceholderScreen("Statement"))
+        case .importContacts:
+            NotBuiltView(PlaceholderScreen("Import contacts"))
+        case .offers:
+            NotBuiltView(PlaceholderScreen("Wishes & offers"))
         }
     }
 }
