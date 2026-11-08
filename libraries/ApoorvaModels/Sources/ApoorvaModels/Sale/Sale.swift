@@ -105,24 +105,24 @@ public struct Sale: Codable, Sendable, Identifiable {
         }
     
     // MARK: - Computed Properties
-    var totalMRP: Double {
+    public var totalMRP: Double {
         return items.reduce(0.0) { $0 + ($1.stickerPrice * Double($1.qty)) }
     }
-    
-    var totalItemsDiscount: Double {
+
+    public var totalItemsDiscount: Double {
         return items.reduce(0.0) { $0 + ($1.unitDiscountAmount * Double($1.qty)) }
     }
-    
+
     // Kept as subTotal (capital T) to mirror your Dart getter and avoid conflict with the stored subtotal
-    var subTotal: Double {
+    public var subTotal: Double {
         return totalMRP - totalItemsDiscount
     }
-    
-    var billAmount: Double {
+
+    public var billAmount: Double {
         return subTotal - overallDiscountAmount
     }
-    
-    var totalSavings: Double {
+
+    public var totalSavings: Double {
         return totalItemsDiscount + overallDiscountAmount + roundOff
     }
 }

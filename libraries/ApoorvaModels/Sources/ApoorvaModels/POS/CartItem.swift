@@ -14,32 +14,34 @@ public enum DiscountType: String, Codable, Sendable {
     case finalPrice
 }
 
-struct CartItem: Codable, Sendable {
-    let category: InventoryItem
-    let mrp: Double
-    let discountPercent: Double
-    let quantity: Int
-    let discountType: DiscountType
-    
+public struct CartItem: Codable, Sendable, Identifiable {
+    public let category: InventoryItem
+    public let mrp: Double
+    public let discountPercent: Double
+    public let quantity: Int
+    public let discountType: DiscountType
+
+    public var id: String { category.id }
+
     enum CodingKeys: String, CodingKey {
         case category, mrp, discountPercent, quantity, discountType
     }
-    
+
     // Standard Memberwise Initializer
-    init(category: InventoryItem,
-         mrp: Double,
-         discountPercent: Double = 0.0,
-         quantity: Int,
-         discountType: DiscountType = .percentage) {
+    public init(category: InventoryItem,
+                mrp: Double,
+                discountPercent: Double = 0.0,
+                quantity: Int,
+                discountType: DiscountType = .percentage) {
         self.category = category
         self.mrp = mrp
         self.discountPercent = discountPercent
         self.quantity = quantity
         self.discountType = discountType
     }
-    
+
     // Handles default values for discountPercent and discountType
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.category = try container.decode(InventoryItem.self, forKey: .category)
         self.mrp = try container.decode(Double.self, forKey: .mrp)
@@ -47,13 +49,13 @@ struct CartItem: Codable, Sendable {
         self.quantity = try container.decode(Int.self, forKey: .quantity)
         self.discountType = try container.decodeIfPresent(DiscountType.self, forKey: .discountType) ?? .percentage
     }
-    
+
     // MARK: - Computed Properties
-    var finalPrice: Double {
+    public var finalPrice: Double {
         return (mrp * (1 - (discountPercent / 100))).rounded()
     }
-    
-    var totalItemsPrice: Double {
+
+    public var totalItemsPrice: Double {
         return (Double(quantity) * finalPrice).rounded()
     }
 }

@@ -25,6 +25,22 @@ public struct SaleItem: Codable, Sendable, Identifiable {
         case discountType
     }
     
+    public init(id: String = UUID().uuidString,
+                categoryId: String,
+                categoryName: String,
+                qty: Int,
+                stickerPrice: Double,
+                finalPrice: Double,
+                discountType: DiscountType) {
+        self.id = id
+        self.categoryId = categoryId
+        self.categoryName = categoryName
+        self.qty = qty
+        self.stickerPrice = stickerPrice
+        self.finalPrice = finalPrice
+        self.discountType = discountType
+    }
+
     public init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
         self.id = UUID().uuidString
@@ -42,11 +58,11 @@ public struct SaleItem: Codable, Sendable, Identifiable {
         return ((stickerPrice - finalPrice) / stickerPrice) * 100
     }
     
-    var unitDiscountAmount: Double {
+    public var unitDiscountAmount: Double {
         return stickerPrice - finalPrice
     }
-    
-    var totalAmount: Double {
+
+    public var totalAmount: Double {
         return Double(qty) * finalPrice
     }
 }

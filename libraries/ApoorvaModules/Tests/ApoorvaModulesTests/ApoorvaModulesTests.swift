@@ -8,6 +8,7 @@ import Foundation
 import ApoorvaServices
 import ApoorvaModels
 import ApoorvaUtilities
+import ApoorvaRepository
 @testable import ApoorvaModules
 
 final class MockAuthService: AuthServicing, @unchecked Sendable {
@@ -125,26 +126,104 @@ struct ProfileViewModelTests {
     }
 }
 
+final class MockPOSInventoryRepository: InventoryItemRepositoryProtocol, @unchecked Sendable {
+    var items: [InventoryItem] = []
+    func getInventoryItems() async throws -> [InventoryItem] { items }
+    func saveInventoryItem(item: InventoryItem) async throws {}
+    func updateInventoryItem(_ item: InventoryItem) async throws {}
+    func deleteInventoryItem(id: String) async throws {}
+    func markAsDeleted(id: String) async throws {}
+    func sync(force: Bool) async throws {}
+    func lastSyncedAt() async throws -> Date? { nil }
+}
+
+final class MockPOSHeldBillRepository: HeldBillRepositoryProtocol, @unchecked Sendable {
+    var heldBills: [HeldBill] = []
+    var calls: [String] = []
+
+    func getHeldBills() async throws -> [HeldBill] { heldBills }
+    func saveHeldBill(_ heldBill: HeldBill) async throws { calls.append("save"); heldBills.append(heldBill) }
+    func updateHeldBill(_ heldBill: HeldBill) async throws { calls.append("update") }
+    func deleteHeldBill(id: String) async throws { calls.append("delete") }
+    func markAsDeleted(id: String) async throws { calls.append("markDeleted") }
+    func sync(force: Bool) async throws {}
+}
+
+let posTestCategory = InventoryItem(id: "cat-1", name: "Bangles")
+
+func makeCartItem(category: InventoryItem = posTestCategory, mrp: Double = 100, discountPercent: Double = 10, quantity: Int = 2) -> CartItem {
+    CartItem(category: category, mrp: mrp, discountPercent: discountPercent, quantity: quantity)
+}
+
 @MainActor
 struct POSViewModelTests {
-    @Test func startsWithQuickItems() {
-        let vm = POSViewModel(authService: MockAuthService())
-        #expect(!vm.items.isEmpty)
+    private func makeSUT() -> (POSViewModel, MockPOSHeldBillRepository) {
+        let heldBillRepository = MockPOSHeldBillRepository()
+        let vm = POSViewModel(
+            inventoryRepository: MockPOSInventoryRepository(),
+            heldBillRepository: heldBillRepository
+        )
+        return (vm, heldBillRepository)
+    }
+
+    @Test func startsWithEmptyCart() {
+        let (vm, _) = makeSUT()
+        #expect(vm.cart.items.isEmpty)
         #expect(vm.customerName.isEmpty)
     }
 
-    @Test func logoutPressedCallsService() {
-        let auth = MockAuthService()
-        let vm = POSViewModel(authService: auth)
-        vm.logoutPressed()
-        #expect(auth.logoutCount == 1)
+    @Test func addOrUpdateAddsNewLineThenReplacesSameCategory() {
+        let (vm, _) = makeSUT()
+        let item = makeCartItem(quantity: 1)
+        vm.addOrUpdate(item)
+        #expect(vm.cart.items.count == 1)
+
+        let updated = makeCartItem(quantity: 3)
+        vm.addOrUpdate(updated)
+        #expect(vm.cart.items.count == 1)
+        #expect(vm.cart.items[0].quantity == 3)
     }
 
-    @Test func logoutPressedSwallowsError() {
-        let auth = MockAuthService()
-        auth.shouldThrow = true
-        let vm = POSViewModel(authService: auth)
-        vm.logoutPressed()
-        #expect(auth.logoutCount == 1)
+    @Test func removeDropsTheLineAtIndex() {
+        let (vm, _) = makeSUT()
+        vm.addOrUpdate(makeCartItem())
+        vm.remove(at: 0)
+        #expect(vm.cart.items.isEmpty)
+    }
+
+    @Test func holdCurrentBillSavesAndClearsCart() async {
+        let (vm, heldBillRepository) = makeSUT()
+        vm.addOrUpdate(makeCartItem())
+        await vm.holdCurrentBill()
+        #expect(heldBillRepository.calls == ["save"])
+        #expect(vm.cart.items.isEmpty)
+    }
+
+    @Test func holdCurrentBillDoesNothingWhenCartEmpty() async {
+        let (vm, heldBillRepository) = makeSUT()
+        await vm.holdCurrentBill()
+        #expect(heldBillRepository.calls.isEmpty)
+    }
+
+    @Test func resumeRestoresCartFromHeldBill() {
+        let (vm, _) = makeSUT()
+        let bill = HeldBill(customerName: "Priya", customerPhone: "123", items: [makeCartItem()], total: 180)
+        vm.resume(heldBill: bill)
+        #expect(vm.cart.items.count == 1)
+        #expect(vm.customerName == "Priya")
+        #expect(vm.activeHeldBillId == bill.id)
+    }
+
+    @Test func loadFromSaleRebuildsCartItems() {
+        let (vm, _) = makeSUT()
+        let saleItem = SaleItem(categoryId: "c1", categoryName: "Earrings", qty: 2, stickerPrice: 50, finalPrice: 45, discountType: .percentage)
+        let sale = Sale(id: "s1", staffId: "u1", customerPhone: "999", customerName: "Arjun", items: [saleItem],
+                         subtotal: 90, overallDiscountPercent: 0, overallDiscountAmount: 0, roundOff: 0,
+                         netPayable: 90, payments: [.cash: 90], timestamp: Date(), source: "POS",
+                         status: "Completed", whatsappStatus: "unsent")
+        vm.load(from: sale)
+        #expect(vm.cart.items.count == 1)
+        #expect(vm.customerName == "Arjun")
+        #expect(vm.activeHeldBillId == nil)
     }
 }

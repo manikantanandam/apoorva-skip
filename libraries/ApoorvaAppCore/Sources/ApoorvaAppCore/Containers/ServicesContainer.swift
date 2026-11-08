@@ -30,6 +30,8 @@ public class ServicesContainer {
     public lazy var dailyCashflowService: DailyCashflowSummaryServiceProtocol = DailyCashflowSummaryService()
     
     public lazy var organizationService: OrganizationServiceProtocol = OrganizationService()
+
+    public lazy var heldBillService: HeldBillServiceProtocol = HeldBillService()
     
     
     public init() {}

@@ -9,37 +9,31 @@ import SwiftUI
 import ApoorvaUtilities
 import ManiSwiftUIComponents
 
-enum ProfileRoute: Hashable, Identifiable {
-    var id: String { UUID().uuidString }
-    case selectOrganization
-}
-
 public struct ProfileView: View {
     @Environment(\.maniTheme) private var theme
 
-    @State private var path: [ProfileRoute] = []
-    @State private var activeModal: ProfileRoute? = nil
-    
     @State var viewModel: ProfileViewModel
 
+    private let onSelectOrganization: () -> Void
+    private let onShowOrganizations: () -> Void
+    private let onShowTeamMembers: () -> Void
     /// Provided only when developer settings are available (debug builds).
-    private let developerViewModel: DeveloperSettingsViewModel?
-    private let makeUserListViewModel: () -> UserListViewModel
-    private let makeOrganizationListViewModel: () -> OrganizationListViewModel
+    private let onShowDeveloperSettings: (() -> Void)?
 
     public init(viewModel: ProfileViewModel,
-                developerViewModel: DeveloperSettingsViewModel? = nil,
-                makeUserListViewModel: @escaping () -> UserListViewModel,
-                makeOrganizationListViewModel: @escaping () -> OrganizationListViewModel) {
+                onSelectOrganization: @escaping () -> Void,
+                onShowOrganizations: @escaping () -> Void,
+                onShowTeamMembers: @escaping () -> Void,
+                onShowDeveloperSettings: (() -> Void)?) {
         self.viewModel = viewModel
-        self.developerViewModel = developerViewModel
-        self.makeUserListViewModel = makeUserListViewModel
-        self.makeOrganizationListViewModel = makeOrganizationListViewModel
+        self.onSelectOrganization = onSelectOrganization
+        self.onShowOrganizations = onShowOrganizations
+        self.onShowTeamMembers = onShowTeamMembers
+        self.onShowDeveloperSettings = onShowDeveloperSettings
     }
-    
+
     public var body: some View {
-        NavigationStack(path: $path) {
-            VStack(alignment: .leading, spacing: ManiSpacing.lg) {
+        VStack(alignment: .leading, spacing: ManiSpacing.lg) {
                 if let user = viewModel.appUser {
                     HStack(spacing: ManiSpacing.md) {
                         ManiAvatar(imageURL: user.imageURL, size: 60)
@@ -65,27 +59,21 @@ public struct ProfileView: View {
                     ManiListRow(
                         title: "Organization",
                         value: viewModel.currentOrganization,
-                        action: { self.activeModal = .selectOrganization }
+                        action: onSelectOrganization
                     )
 
-                    NavigationLink {
-                        OrganizationListView(viewModel: makeOrganizationListViewModel())
-                    } label: {
+                    Button(action: onShowOrganizations) {
                         ManiListRow(title: "Organizations")
                     }
 
                     if viewModel.canManageUsers {
-                        NavigationLink {
-                            UserListView(viewModel: makeUserListViewModel())
-                        } label: {
+                        Button(action: onShowTeamMembers) {
                             ManiListRow(title: "Team Members")
                         }
                     }
 
-                    if let developerViewModel {
-                        NavigationLink {
-                            DeveloperSettingsView(viewModel: developerViewModel)
-                        } label: {
+                    if let onShowDeveloperSettings {
+                        Button(action: onShowDeveloperSettings) {
                             ManiListRow(title: "Developer")
                         }
                     }
@@ -101,20 +89,8 @@ public struct ProfileView: View {
             }
             .padding(ManiSpacing.lg)
             .background(theme.base.background.ignoresSafeArea())
-        }
         .task {
             await viewModel.checkForUser()
-        }
-        .sheet(item: $activeModal, onDismiss: {
-            Task { await viewModel.checkForUser() }
-        }) { modalRoute in
-            // Wrap inside a new NavigationStack to allow navigation INSIDE the modal sheet
-            NavigationStack {
-                switch modalRoute {
-                case .selectOrganization:
-                    OrganizationListView(viewModel: makeOrganizationListViewModel())
-                }
-            }
         }
         .alert("", isPresented: $viewModel.showAlert) {
             Button("OK", role: .cancel) { }

@@ -7,7 +7,7 @@ Baseline of the **live** Firestore structure as read by this app. Derived from c
 - Tenancy is by **path**: everything lives under `organizations/{orgId}`. No `orgId`/`shopId` field on documents.
 - Auth: Firebase Auth email + password only (`AuthService.swift:32`).
 - The selected org comes from `users/{uid}.selectedOrganization.orgId`; `assignedOrgs` limits what can sync.
-- Sales, customers, inventory and orgs are **read-only** from this app. Writes: cashflow, daily summaries, `users/{uid}` (`selectedOrganization`, `updatedTimestamp`).
+- Inventory and orgs are **read-only** from this app. Writes: cashflow, daily summaries, `users/{uid}` (`selectedOrganization`, `updatedTimestamp`), plus — as of the POS selling flow — new `sales` docs (`SaleService.addSale`, never edits/deletes an existing sale) and scoped `customers` stat bumps after a sale (`CustomerService.upsertCustomerAfterSale`: creates the doc on first sale, otherwise increments `totalSales`/`totalAmountSpent` and sets `lastPurchaseDate`). A new `heldBills` collection (hold-bill/draft carts) is fully read-write from this app.
 - Data was created by a legacy (Dart/Flutter) app. This app reads it in place.
 
 ## 2. Collections
@@ -17,10 +17,11 @@ Baseline of the **live** Firestore structure as read by this app. Derived from c
 | `users/{uid}` | Firebase Auth uid | `UserService` |
 | `organizations/{orgId}` | org id | `OrganizationService` |
 | `organizations/{orgId}/inventory/{itemId}` | `InventoryItem.id` | `InventoryItemService` |
-| `organizations/{orgId}/customers/{?}` | **⚠ verify** (unknown; local key is `phone`) | `CustomerService` |
+| `organizations/{orgId}/customers/{phone}` | phone number (write path added by `CustomerService.upsertCustomerAfterSale`; **⚠ verify** against pre-existing legacy docs) | `CustomerService` |
 | `organizations/{orgId}/sales/{saleId}` | doc ID (not stored as a field) | `SaleService` |
 | `organizations/{orgId}/cashflow/{txId}` | UUID string | `CashflowTransactionService` |
 | `organizations/{orgId}/dailyCashflowSummaries/{dd-MM-yyyy}` | date string | `DailyCashflowSummaryService` |
+| `organizations/{orgId}/heldBills/{id}` | UUID string | `HeldBillService` (new, read-write) |
 
 Accounts are **embedded** in the org document (no subcollection). `InternalTransfer` has no Firestore collection. Collection-name constants: `FirebaseCollectionName.swift:10-17`; `"dailyCashflowSummaries"` is a literal.
 
@@ -100,8 +101,8 @@ Encoding: dates REAL epoch seconds; bools INT 0/1 (inventory uses TEXT "true"/"f
 
 ## 8. Known quirks (⚠ verify / fix separately)
 
-- Customer Firestore doc ID unknown; no write path.
-- Sale `payments`: Swift dictionary keyed by an enum encodes as a flat array on write, so never write sales without a custom encoder.
+- Customer Firestore doc ID is the phone number (`CustomerService.upsertCustomerAfterSale` writes to `organizations/{orgId}/customers/{phone}`) — ⚠ verify this matches how the legacy app keyed existing docs before relying on it for updates (only creates/increments, never renames a doc).
+- Sale `payments`: Swift dictionary keyed by an enum encodes as a flat array on write, so never write sales without a custom encoder — `SaleService.addSale` builds the payload by hand (`["payments": [mode.rawValue: amount]]`) instead of going through the generic `Firestore.Encoder()` path.
 - Daily summary cursor saves `Date.now` instead of max `updatedAt` (`DailyCashflowSummaryRepository.swift:85-88`).
 - Local bugs: `InventoryItemLocalStorage.swift:71,78` use table `Category` (actual `ItemCategory`); `CustomerLocalStorage.swift:88,95` use `WHERE id` (no such column); `InventoryItem+SkipSQL.swift:57-61` writes `updatedAt` from `lastSoldDate`; `Sale+SkipSQL.swift:86` writes `whatsappStatus` from `overallDiscountAmount`; `Customer+SkipSQL.swift:27` requires non-null `lastPurchaseDate`.
 - `FirestoreSyncService` appears to be unused.
@@ -116,7 +117,7 @@ The live app and production data must not be affected.
 3. Never change doc ID formats (`dd-MM-yyyy`, UUIDs, uid).
 4. Match the existing encoding when writing legacy-owned fields (Timestamp vs number). Do not "normalize" them.
 5. Put new features in new collections/field names, not overloaded existing ones.
-6. Don't write to collections that are read-only for this app (sales, customers, inventory, organizations) without explicit sign-off.
+6. Don't write to collections that are read-only for this app (inventory, organizations) without explicit sign-off. `sales` (new docs only) and scoped `customers` stat updates are signed off for the POS selling flow (§1) — stay within the exact shape `SaleService.addSale`/`CustomerService.upsertCustomerAfterSale` already use; anything broader needs its own sign-off.
 7. Develop and test against the Firebase Emulator or a separate project, never production.
 8. Don't deploy security rules or indexes without diffing against live config first.
 9. Keep lenient decoders; never make a decoded field stricter.

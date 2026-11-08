@@ -34,6 +34,12 @@ public class InventoryViewModel {
     var items: [InventoryItem] = []
     var rows: [InventoryItemRow] = []
     var sales: [Sale] = []
+    var lastSyncedAt: Date?
+
+    var lastSyncedText: String {
+        guard let lastSyncedAt else { return "Not synced yet" }
+        return "Last Synced: \(lastSyncedAt.formatted(date: .abbreviated, time: .shortened))"
+    }
     
     var itemsCount: Int = 0
     var hotItemsCount: Int = 0
@@ -76,6 +82,7 @@ public class InventoryViewModel {
     func prepareReport() async throws {
         self.items = try await inventoryRepository.getInventoryItems().sorted()
         self.sales = try await saleRepository.getSales()
+        self.lastSyncedAt = try? await inventoryRepository.lastSyncedAt()
         itemsCount = items.count
         hotItemsCount = items.hotItems.count
         
@@ -120,7 +127,8 @@ public class InventoryViewModel {
         do {
             try await inventoryRepository.sync(force: true)
             self.items = try await inventoryRepository.getInventoryItems().sorted()
-            
+            self.lastSyncedAt = try? await inventoryRepository.lastSyncedAt()
+
         } catch {
             print("Inventory items failed force sync \(error.localizedDescription)")
         }

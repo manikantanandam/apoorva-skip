@@ -66,7 +66,11 @@ public class OfflineStorageContainer {
     public lazy var organizationStorage: OrganizationStorageProtocol = OrganizationLocalStorage(
         database: skipSqlDatabase
     )
-    
+
+    public lazy var heldBillsLocalStorage: HeldBillStorageProtocol = HeldBillLocalStorage(
+        database: skipSqlDatabase
+    )
+
     public lazy var syncStorage: SyncStorage = SyncStorage(db: skipSqlDatabase)
     
     public init(environment: AppEnvironment = .production) {

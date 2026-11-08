@@ -13,46 +13,94 @@ public struct QuickItemsView: View {
     @Environment(\.maniTheme) private var theme
     @Bindable var viewModel: POSViewModel
     let spacing: CGFloat
+    let onSelectCategory: (InventoryItem) -> Void
 
-    public init(viewModel: POSViewModel, spacing: CGFloat = ManiSpacing.sm) {
+    @State private var isShowingCategoryPicker = false
+
+    public init(viewModel: POSViewModel, spacing: CGFloat = ManiSpacing.sm, onSelectCategory: @escaping (InventoryItem) -> Void) {
         self.viewModel = viewModel
         self.spacing = spacing
+        self.onSelectCategory = onSelectCategory
     }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: ManiSpacing.md) {
-            // Header Title Label
             Text("QUICK ITEMS")
                 .font(theme.typography.sectionHeader)
                 .foregroundStyle(theme.base.textSecondary)
                 .padding(.leading, ManiSpacing.xs)
 
-            // NOTE: kept as CustomButton — ManiButton v1 has no vertical
-            // icon-above-text layout with a caller-supplied minHeight,
-            // which this compact "FIND" tile needs.
-            CustomButton(text: "FIND",
-                         icon: .search,
-                         minHeight: 48,
-                         backgroundColor: .buttonBackground,
-                         alignment: .horizontal) {
-                print("Find tapped")
+            ManiButton("FIND", icon: .search, kind: .outline) {
+                isShowingCategoryPicker = true
             }
 
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: spacing)], spacing: spacing) {
-                ForEach(viewModel.items) { item in
-                    // NOTE: `priceText` is a placeholder — `InventoryItem`
-                    // has no price field yet, so there's no real value to show.
-                    ManiItemTile(
-                        title: item.name,
-                        priceText: "—",
-                        quantity: viewModel.quantity(for: item),
-                        onIncrement: { viewModel.increment(item) },
-                        onDecrement: { viewModel.decrement(item) }
-                    )
+                ForEach(viewModel.hotkeyItems) { item in
+                    ManiCategoryTile(title: item.name, isHotkey: item.isHotkey) {
+                        onSelectCategory(item)
+                    }
                 }
             }
         }
         .padding(ManiSpacing.lg)
         .background(theme.base.background)
+        .sheet(isPresented: $isShowingCategoryPicker) {
+            CategoryPickerSheet(categories: viewModel.allCategories) { item in
+                isShowingCategoryPicker = false
+                onSelectCategory(item)
+            }
+        }
+    }
+}
+
+/// Mirrors the Flutter app's full-category bottom sheet opened from the "FIND" tile —
+/// kept local to POS (not a coordinator route) since it's a search-and-pick overlay on
+/// the same screen, not a navigation push.
+private struct CategoryPickerSheet: View {
+    @Environment(\.maniTheme) private var theme
+    @Environment(\.dismiss) private var dismiss
+    let categories: [InventoryItem]
+    let onSelect: (InventoryItem) -> Void
+    @State private var searchText = ""
+
+    private var filteredCategories: [InventoryItem] {
+        guard !searchText.isEmpty else { return categories }
+        return categories.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: ManiSpacing.md) {
+                ManiSearchField(text: $searchText, placeholder: "Search categories")
+                    .padding(.horizontal, ManiSpacing.lg)
+                    .padding(.top, ManiSpacing.md)
+
+                ScrollView {
+                    if filteredCategories.isEmpty {
+                        ManiNote("No categories found.", kind: .warning)
+                            .padding(.horizontal, ManiSpacing.lg)
+                            .padding(.top, ManiSpacing.lg)
+                    } else {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: ManiSpacing.sm)], spacing: ManiSpacing.sm) {
+                            ForEach(filteredCategories) { item in
+                                ManiCategoryTile(title: item.name, isHotkey: item.isHotkey) {
+                                    onSelect(item)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, ManiSpacing.lg)
+                        .padding(.bottom, ManiSpacing.lg)
+                    }
+                }
+            }
+            .background(theme.base.background.ignoresSafeArea())
+            .navigationTitle("All Categories")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
     }
 }

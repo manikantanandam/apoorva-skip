@@ -31,6 +31,28 @@ final class MockSaleService: SaleServiceProtocol, @unchecked Sendable {
 
     func getSales(for orgId: String) async throws -> [Sale] { calls.append("all"); return result }
     func getSales(since lastSync: Date, for orgId: String) async throws -> [Sale] { calls.append("since"); return result }
+    func addSale(_ sale: Sale, for orgId: String) async throws { calls.append("add") }
+}
+
+final class MockCustomerServiceForSale: CustomerServiceProtocol, @unchecked Sendable {
+    var calls: [String] = []
+
+    func getCustomers(for orgId: String) async throws -> [Customer] { [] }
+    func getCustomers(since lastSync: Date, for orgId: String) async throws -> [Customer] { [] }
+    func upsertCustomerAfterSale(phone: String, name: String, saleAmount: Double, saleDate: Date, for orgId: String) async throws {
+        calls.append("upsert")
+    }
+}
+
+final class MockHeldBillRepositoryForSale: HeldBillRepositoryProtocol, @unchecked Sendable {
+    var calls: [String] = []
+
+    func getHeldBills() async throws -> [HeldBill] { [] }
+    func saveHeldBill(_ heldBill: HeldBill) async throws { calls.append("save") }
+    func updateHeldBill(_ heldBill: HeldBill) async throws { calls.append("update") }
+    func deleteHeldBill(id: String) async throws { calls.append("delete") }
+    func markAsDeleted(id: String) async throws { calls.append("markDeleted") }
+    func sync(force: Bool) async throws { calls.append("sync") }
 }
 
 func makeSale(updatedAt: Date? = nil) -> Sale {
@@ -50,17 +72,20 @@ func makeSale(updatedAt: Date? = nil) -> Sale {
 
 @MainActor
 struct SaleRepositoryTests {
-    private func makeSUT(user: AppUser?) throws -> (SaleRepository, MockSaleStorage, MockSaleService, SyncStorage) {
+    private func makeSUT(user: AppUser?) throws -> (SaleRepository, MockSaleStorage, MockSaleService, SyncStorage, MockCustomerServiceForSale, MockHeldBillRepositoryForSale) {
         let storage = MockSaleStorage()
         let service = MockSaleService()
+        let customerService = MockCustomerServiceForSale()
+        let heldBillRepository = MockHeldBillRepositoryForSale()
         let sync = SyncStorage(db: try SkipSqlDatabase(filepath: ":memory:"))
         return (SaleRepository(storage: storage, service: service,
+                               customerService: customerService, heldBillRepository: heldBillRepository,
                                userRepository: makeUserRepository(user: user), syncStorage: sync),
-                storage, service, sync)
+                storage, service, sync, customerService, heldBillRepository)
     }
 
     @Test func crudDelegatesToStorage() async throws {
-        let (sut, storage, _, _) = try makeSUT(user: nil)
+        let (sut, storage, _, _, _, _) = try makeSUT(user: nil)
         let sale = makeSale()
         try await sut.saveSale(sale: sale)
         try await sut.updateSale(sale)
@@ -71,13 +96,13 @@ struct SaleRepositoryTests {
     }
 
     @Test func syncSkipsWithoutOrganization() async throws {
-        let (sut, _, service, _) = try makeSUT(user: try makeUser())
+        let (sut, _, service, _, _, _) = try makeSUT(user: try makeUser())
         try await sut.sync(force: false)
         #expect(service.calls.isEmpty)
     }
 
     @Test func firstSyncStoresTimestamp() async throws {
-        let (sut, storage, service, sync) = try makeSUT(user: try makeUser(orgId: "o"))
+        let (sut, storage, service, sync, _, _) = try makeSUT(user: try makeUser(orgId: "o"))
         service.result = [makeSale(updatedAt: Date(timeIntervalSince1970: 400))]
         try await sut.sync(force: false)
         #expect(service.calls == ["all"])
@@ -86,11 +111,27 @@ struct SaleRepositoryTests {
     }
 
     @Test func incrementalAndForcedSync() async throws {
-        let (sut, _, service, sync) = try makeSUT(user: try makeUser(orgId: "o"))
+        let (sut, _, service, sync, _, _) = try makeSUT(user: try makeUser(orgId: "o"))
         try await sync.updateSyncTimestamp(for: Sale.table.name, timestamp: 5)
         try await sut.sync(force: false)
         try await sut.sync(force: true)
         #expect(service.calls == ["since", "all"])
+    }
+
+    @Test func confirmSaleWritesCustomerAndClearsHeldBill() async throws {
+        let (sut, storage, service, _, customerService, heldBillRepository) = try makeSUT(user: try makeUser(orgId: "o"))
+        let sale = makeSale()
+        try await sut.confirmSale(sale, heldBillId: "draft-1")
+        #expect(storage.calls.contains("save"))
+        #expect(service.calls.contains("add"))
+        #expect(customerService.calls.contains("upsert"))
+        #expect(heldBillRepository.calls.contains("delete"))
+    }
+
+    @Test func confirmSaleWithoutHeldBillLeavesHeldBillsUntouched() async throws {
+        let (sut, _, _, _, _, heldBillRepository) = try makeSUT(user: try makeUser(orgId: "o"))
+        try await sut.confirmSale(makeSale(), heldBillId: nil)
+        #expect(heldBillRepository.calls.isEmpty)
     }
 }
 

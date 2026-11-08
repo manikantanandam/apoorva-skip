@@ -29,6 +29,13 @@ public struct InventoryView: View {
             ScrollView {
                 LazyVStack(spacing: ManiSpacing.md) {
 
+                    Text(viewModel.lastSyncedText)
+                        .font(theme.typography.secondary)
+                        .foregroundStyle(theme.base.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, ManiSpacing.lg)
+                        .padding(.top, ManiSpacing.sm)
+
                     // Stats section
                     LazyVGrid(columns: columns, spacing: ManiSpacing.md) {
                         ManiKPITile(title: "Total Items", value: viewModel.itemsCount.string)

@@ -12,10 +12,12 @@ import ApoorvaServices
 
 public protocol SaleRepositoryProtocol: Sendable {
     func getSales() async throws -> [Sale]
+    func getSale(id: String) async throws -> Sale?
     func saveSale(sale: Sale) async throws
     func updateSale(_ sale: Sale) async throws
     func deleteSale(id: String) async throws // Hard delete
     func markAsDeleted(id: String) async throws  // Soft delete
+    func confirmSale(_ sale: Sale, heldBillId: String?) async throws
     func sync(force: Bool) async throws
 }
 
@@ -24,23 +26,57 @@ public final actor SaleRepository: SaleRepositoryProtocol {
 
     let storage: SaleStorageProtocol
     let service: SaleServiceProtocol
+    let customerService: CustomerServiceProtocol
+    let heldBillRepository: HeldBillRepositoryProtocol
     let userRepository: UserRepositoryProtocol
     let syncStorage: SyncStorage
-    
+
     public init(storage: SaleStorageProtocol,
                 service: SaleServiceProtocol,
+                customerService: CustomerServiceProtocol,
+                heldBillRepository: HeldBillRepositoryProtocol,
                 userRepository: UserRepositoryProtocol,
                 syncStorage: SyncStorage) {
         self.storage = storage
         self.service = service
+        self.customerService = customerService
+        self.heldBillRepository = heldBillRepository
         self.userRepository = userRepository
         self.syncStorage = syncStorage
     }
-    
+
     public func getSales() async throws -> [Sale] {
         try await storage.getSales()
     }
-    
+
+    public func getSale(id: String) async throws -> Sale? {
+        try await storage.getSale(id: id)
+    }
+
+    /// Writes the confirmed sale (local cache + Firestore), bumps the customer's running
+    /// stats, and clears the held bill it was resumed from, if any. Not atomic — there's no
+    /// Firestore batch primitive on `FirestoreStoring` yet — but each step is independently
+    /// idempotent-safe to retry.
+    public func confirmSale(_ sale: Sale, heldBillId: String?) async throws {
+        try await storage.saveSale(sale: sale)
+
+        let user = try await userRepository.getCurrentUser()
+        guard let orgId = user.selectedOrganization?.orgId else { return }
+
+        try await service.addSale(sale, for: orgId)
+        try await customerService.upsertCustomerAfterSale(
+            phone: sale.customerPhone,
+            name: sale.customerName,
+            saleAmount: sale.netPayable,
+            saleDate: sale.timestamp,
+            for: orgId
+        )
+
+        if let heldBillId {
+            try await heldBillRepository.deleteHeldBill(id: heldBillId)
+        }
+    }
+
     public func saveSale(sale: Sale) async throws {
         try await storage.saveSale(sale: sale)
     }
