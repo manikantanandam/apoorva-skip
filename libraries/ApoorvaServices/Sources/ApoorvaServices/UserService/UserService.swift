@@ -26,7 +26,7 @@ public class UserService: UserServiceProtocol {
     private let authService: AuthServicing
     private var sessionTask: Task<Void, Never>?
     
-    // The stream consumed by MainViewModel
+    // The stream consumed by AppCoordinator
     public let userSessionStream: AsyncStream<AppUser?>
     private let sessionContinuation: AsyncStream<AppUser?>.Continuation
     
