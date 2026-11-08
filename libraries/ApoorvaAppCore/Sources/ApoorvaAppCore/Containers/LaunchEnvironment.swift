@@ -5,6 +5,7 @@
 
 import Foundation
 import ApoorvaUtilities
+import ApoorvaEnvironment
 
 /// Resolves the environment chosen for this launch, before any container is built.
 public enum LaunchEnvironment {

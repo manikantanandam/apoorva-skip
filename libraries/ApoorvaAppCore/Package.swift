@@ -15,7 +15,8 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../ApoorvaModules"),
-        .package(path: "../ApoorvaUtilities")
+        .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
+        .package(path: "../ApoorvaEnvironment")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -24,7 +25,8 @@ let package = Package(
             name: "ApoorvaAppCore",
             dependencies: [
                 .product(name: "ApoorvaModules", package: "ApoorvaModules"),
-                .product(name: "ApoorvaUtilities", package: "ApoorvaUtilities")
+                .product(name: "ApoorvaUtilities", package: "ManiUtilities"),
+                .product(name: "ApoorvaEnvironment", package: "ApoorvaEnvironment")
             ]
         ),
 

@@ -8,6 +8,7 @@
 import Foundation
 import ApoorvaModules
 import ApoorvaUtilities
+import ApoorvaEnvironment
 
 @MainActor
 public class AppContainer {

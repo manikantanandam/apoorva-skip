@@ -5,7 +5,7 @@
 
 import Testing
 import Foundation
-@testable import ApoorvaUtilities
+@testable import ApoorvaEnvironment
 
 @Suite("DeveloperTools Test", .serialized)
 struct DeveloperToolsTests {
