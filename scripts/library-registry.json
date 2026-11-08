@@ -3,7 +3,7 @@
     "ManiSwiftUIComponents": {
       "folder": "ManiSwiftUIComponents",
       "remoteURL": "https://github.com/manikantanandam/ManiSwiftUIComponents.git",
-      "remoteVersion": "1.0.0",
+      "remoteVersion": "1.1.0",
       "versionConstraint": "exact",
       "productName": "ManiSwiftUIComponents",
       "consumers": [

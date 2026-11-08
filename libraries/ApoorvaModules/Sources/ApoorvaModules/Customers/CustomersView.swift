@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ApoorvaModels
 import ManiSwiftUIComponents
 
 public struct CustomerListView: View {
@@ -17,26 +18,52 @@ public struct CustomerListView: View {
     @State private var selectedFormat: FileFormat?
     @State private var exportURL: URL?
 
-    public init(viewModel: CustomerListViewModel) {
+    private let onSelectCustomer: (Customer) -> Void
+    private let onAddCustomer: () -> Void
+
+    public init(viewModel: CustomerListViewModel,
+                onSelectCustomer: @escaping (Customer) -> Void,
+                onAddCustomer: @escaping () -> Void) {
         self.viewModel = viewModel
+        self.onSelectCustomer = onSelectCustomer
+        self.onAddCustomer = onAddCustomer
     }
 
     public var body: some View {
         ScrollView {
             LazyVStack(spacing: ManiSpacing.md) {
-                if viewModel.customers.isEmpty {
+                ManiSearchField(text: $viewModel.searchText, placeholder: "Search by name or phone")
+                    .padding(.horizontal, ManiSpacing.lg)
+                    .padding(.top, ManiSpacing.sm)
+
+                if viewModel.filteredCustomers.isEmpty {
                     ManiNote("No customers found.", kind: .warning)
                         .padding(.horizontal, ManiSpacing.lg)
                         .padding(.top, ManiSpacing.lg)
                 } else {
-                    ForEach(viewModel.customers) { item in
+                    ForEach(viewModel.filteredCustomers) { item in
+                        Button {
+                            onSelectCustomer(item)
+                        } label: {
                         ManiCard {
                             VStack(alignment: .leading, spacing: ManiSpacing.sm) {
-                                ManiListRow(
-                                    avatar: ManiAvatar(initials: initials(for: item.name)),
-                                    title: item.name,
-                                    subtitle: item.phone
-                                )
+                                HStack(spacing: ManiSpacing.sm) {
+                                    ManiListRow(
+                                        avatar: ManiAvatar(initials: initials(for: item.name)),
+                                        title: item.name,
+                                        subtitle: item.phone
+                                    )
+                                    Button(action: { call(item) }) {
+                                        Image(systemName: "phone.fill")
+                                            .foregroundStyle(theme.accent.accent)
+                                    }
+                                    .buttonStyle(.plain)
+                                    Button(action: { onSelectCustomer(item) }) {
+                                        Image(systemName: "clock.arrow.circlepath")
+                                            .foregroundStyle(theme.base.textSecondary)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
 
                                 Divider().overlay(theme.base.border)
 
@@ -59,12 +86,25 @@ public struct CustomerListView: View {
                             }
                         }
                         .padding(.horizontal, ManiSpacing.lg)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
             .padding(.vertical, ManiSpacing.lg)
         }
         .background(theme.base.background.ignoresSafeArea())
+        .overlay(alignment: .bottomTrailing) {
+            Button(action: onAddCustomer) {
+                Image(systemName: "plus")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(theme.accent.on)
+                    .frame(width: 52, height: 52)
+                    .background(Circle().fill(theme.accent.accent))
+                    .shadow(radius: 4)
+            }
+            .padding(ManiSpacing.lg)
+        }
         .toolbar{
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: {
@@ -130,6 +170,11 @@ public struct CustomerListView: View {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return "?" }
         return String(trimmed.prefix(1)).uppercased()
+    }
+
+    private func call(_ customer: Customer) {
+        guard !customer.phone.isEmpty, let url = URL(string: "tel://\(customer.phone)") else { return }
+        UIApplication.shared.open(url)
     }
 }
 

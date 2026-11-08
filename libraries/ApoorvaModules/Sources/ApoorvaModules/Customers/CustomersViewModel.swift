@@ -36,12 +36,20 @@ public enum CustomerSortOption: String, CaseIterable {
 public class CustomerListViewModel {
     
     var customers: [Customer] = []
-    
+    var searchText: String = ""
+
     let repository: CustomerRepositoryProtocol
-    
+
     var sortOption: CustomerSortOption = .name {
         didSet {
             sortItems()
+        }
+    }
+
+    var filteredCustomers: [Customer] {
+        guard !searchText.isEmpty else { return customers }
+        return customers.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText) || $0.phone.contains(searchText)
         }
     }
     

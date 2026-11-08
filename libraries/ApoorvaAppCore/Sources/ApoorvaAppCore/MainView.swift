@@ -1,5 +1,5 @@
 //
-//  SwiftUIView.swift
+//  MainView.swift
 //  ApoorvaAppCore
 //
 //  Created by Manikanta Nandam on 04/10/26.
@@ -8,61 +8,34 @@
 import SwiftUI
 import ApoorvaModules
 
-@MainActor
-@Observable
-class MainViewModel {
-    enum State {
-        case login(LoginViewModel)
-        case pos(POSViewModel)
-        case home(AppContainer)
-        case loading
-    }
-    
-    var state: State = .loading
-    
-    let appContainer: AppContainer = AppContainer()
-    
-    init() {
-        Task {
-            await checkForLoggedInUser()
-        }
-    }
-    
-    func checkForLoggedInUser() async {
-        let userService = appContainer.servicesContainer.userService
-        for await user in userService.userSessionStream {
-            if user == nil {
-                state = .login(appContainer.modulesContainer.makeLoginViewModel())
-            } else {
-                state = .home(appContainer)
-            }
-
-        }
-    }
-}
-
 public struct MainView: View {
-    
-    @State var viewModel: MainViewModel = MainViewModel()
-    
+
+    @State private var coordinator = AppCoordinator()
+
     public init() {}
-    
+
     public var body: some View {
-        switch viewModel.state {
-        case .loading:
-            Text("Loading")
-        case .home(let container):
-            HomeView(container: container)
-        case .login(let viewModel):
-            LoginView(viewModel: viewModel)
-                .overlay(alignment: .topTrailing) {
-                    EnvironmentBadgeView(environment: self.viewModel.appContainer.environment)
-                        .padding(.trailing, 8)
-                        .allowsHitTesting(false)
-                }
-        case .pos(let viewModel):
-            POSView(viewModel: viewModel)
-            
+        Group {
+            switch coordinator.sessionState {
+            case .loading:
+                Text("Loading")
+            case .onboarding(let onboardingCoordinator):
+                OnboardingCoordinatorView(coordinator: onboardingCoordinator)
+            case .home(let homeTabsCoordinator):
+                HomeTabsCoordinatorView(coordinator: homeTabsCoordinator)
+            }
+        }
+        .environment(coordinator)
+        .overlay(alignment: .topTrailing) {
+            EnvironmentBadgeView(environment: coordinator.appContainer.environment)
+                .padding(.trailing, 8)
+                .allowsHitTesting(false)
+        }
+        .sheet(item: $coordinator.presentedGlobalRoute) { route in
+            GlobalRouteView(route: route)
+        }
+        .fullScreenCover(item: $coordinator.fullScreenBlockingRoute) { route in
+            GlobalRouteView(route: route)
         }
     }
 }

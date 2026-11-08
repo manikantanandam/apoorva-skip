@@ -14,13 +14,13 @@ public struct DailyCashflowListView: View {
     @Environment(\.maniTheme) private var theme
 
     @Bindable var viewModel: DailyCashFlowListViewModel
-    
-    var makeDailyCashFlowView: (Date) -> DailyCashFlowView
-    
+
+    var onSelectDate: (Date) -> Void
+
     public init(viewModel: DailyCashFlowListViewModel,
-                @ViewBuilder makeDailyCashFlowView: @escaping (Date) -> DailyCashFlowView) {
+                onSelectDate: @escaping (Date) -> Void) {
         self.viewModel = viewModel
-        self.makeDailyCashFlowView = makeDailyCashFlowView
+        self.onSelectDate = onSelectDate
     }
     
     public var body: some View {
@@ -63,8 +63,9 @@ public struct DailyCashflowListView: View {
                 LazyVStack(spacing: ManiSpacing.md) {
                     // Loop through the summaries provided by the view model[cite: 26, 27]
                     ForEach(viewModel.summaries, id: \.id) { summary in
-                        // 3. Wrap the card in a NavigationLink passing the summary's date
-                        NavigationLink(destination: makeDailyCashFlowView(summary.date)) {
+                        Button {
+                            onSelectDate(summary.date)
+                        } label: {
                             cashflowCard(for: summary)
                         }
                         .buttonStyle(.plain)
