@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  SkipSqlDatabaseManager.swift
 //  ApoorvaOfflineStorage
 //
 //  Created by Manikanta Nandam on 12/10/26.
@@ -11,43 +11,31 @@ import ApoorvaModels
 
 public final class SkipSqlDatabase: @unchecked Sendable {
     public let context: SQLContext
-    
+
     public init(filepath: String) throws {
-        
         self.context = try SQLContext(
             path: filepath, flags: [.create, .readWrite],
             configuration: .platform
         )
-        try createTables()
+        try migrate()
     }
-    
-    /// Call this once during app initialization
-        public func createTables() throws {
-            // Skip-SQL uses the SQLCodable conformance to automatically generate the schema
-            try context.createTableIfNotExists(InventoryItem.self)
-            try context.createTableIfNotExists(SyncState.self)
-            try context.createTableIfNotExists(Customer.self)
-            try context.createTableIfNotExists(Sale.self)
-            try context.createTableIfNotExists(CashflowTransaction.self)
-            try context.createTableIfNotExists(DailyCashflowSummary.self)
-            try context.createTableIfNotExists(Organization.self)
-            try context.createTableIfNotExists(HeldBill.self)
 
-            // Add other models here:
-            // try context.createTableIfNotExists(Account.self)
-            // try context.createTableIfNotExists(Sale.self)
-        }
+    /// Brings the schema up to date. Safe to call repeatedly.
+    public func migrate() throws {
+        try context.migrate(migrations: SchemaMigrations.all)
+    }
+
+    public var schemaVersion: Int64 {
+        context.userVersion
+    }
 
     /// Deletes all rows from every local table, in place, without touching the file or closing the connection.
     /// Safe to call while the app keeps running (unlike deleting the database file, which requires a restart).
     public func clearAllLocalData() throws {
-        try context.deleteAll(InventoryItem.self)
-        try context.deleteAll(SyncState.self)
-        try context.deleteAll(Customer.self)
-        try context.deleteAll(Sale.self)
-        try context.deleteAll(CashflowTransaction.self)
-        try context.deleteAll(DailyCashflowSummary.self)
-        try context.deleteAll(Organization.self)
-        try context.deleteAll(HeldBill.self)
+        try context.transaction {
+            for table in SchemaMigrations.tables {
+                try context.exec(sql: "DELETE FROM \(table.quotedName())")
+            }
+        }
     }
 }

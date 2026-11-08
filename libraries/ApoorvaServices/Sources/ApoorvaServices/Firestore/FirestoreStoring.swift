@@ -46,6 +46,12 @@ public protocol FirestoreStoring: Sendable {
     func updateData(_ fields: [String: Any], path: String) async throws
 }
 
+/// Values with special meaning to the store. Services use these so they don't import Firestore.
+public enum StoreSentinel {
+    /// Replaced by the server's commit time. Use for sync cursors — client clocks drift.
+    public static let serverTimestamp = "__apoorva_server_timestamp__"
+}
+
 public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable {
     private let db = Firestore.firestore()
 
@@ -80,11 +86,20 @@ public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable
     }
 
     public func setData(_ data: [String: Any], path: String, merge: Bool) throws {
-        db.document(path).setData(data, merge: merge)
+        db.document(path).setData(Self.resolvingSentinels(data), merge: merge)
     }
 
     public func updateData(_ fields: [String: Any], path: String) async throws {
-        try await db.document(path).updateData(fields)
+        try await db.document(path).updateData(Self.resolvingSentinels(fields))
+    }
+
+    private static func resolvingSentinels(_ data: [String: Any]) -> [String: Any] {
+        data.mapValues { value in
+            if let string = value as? String, string == StoreSentinel.serverTimestamp {
+                return FieldValue.serverTimestamp()
+            }
+            return value
+        }
     }
 }
 
@@ -95,7 +110,12 @@ extension FirestoreStoring {
         var records: [T] = []
         for document in documents {
             do {
-                records.append(try Firestore.Decoder().decode(type, from: document.data))
+                // Legacy docs don't store their own id as a field; fall back to the doc ID.
+                var data = document.data
+                if data["id"] == nil {
+                    data["id"] = document.id
+                }
+                records.append(try Firestore.Decoder().decode(type, from: data))
             } catch {
                 print("❌ Failed to decode \(type): \(document.id) - \(error)")
             }

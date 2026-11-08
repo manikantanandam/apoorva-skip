@@ -33,7 +33,7 @@ public class OfflineStorageContainer {
 
             print("DB Path: \(dbPath)")
 
-            // This will also trigger try createTables() as defined in SkipSqlDatabase
+            // Opening the database also runs any pending schema migrations.
             return try SkipSqlDatabase(filepath: dbPath)
         } catch {
             fatalError("Failed to initialize local database: \(error)")

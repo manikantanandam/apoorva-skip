@@ -22,6 +22,11 @@ Baseline of the **live** Firestore structure as read by this app. Derived from c
 | `organizations/{orgId}/cashflow/{txId}` | UUID string | `CashflowTransactionService` |
 | `organizations/{orgId}/dailyCashflowSummaries/{dd-MM-yyyy}` | date string | `DailyCashflowSummaryService` |
 | `organizations/{orgId}/heldBills/{id}` | UUID string | `HeldBillService` (new, read-write) |
+| `organizations/{orgId}/customerLedger/{id}` | UUID string | `OrgCollectionService<CustomerLedgerEntry>` (new; signed dues entries: sale, payment, opening, advance, reversal) |
+| `organizations/{orgId}/stockMovements/{id}` | UUID string | `OrgCollectionService<StockMovement>` (new; signed stock deltas with a reason) |
+| `organizations/{orgId}/auditEvents/{id}` | UUID string | `OrgCollectionService<AuditEvent>` (new; append-only by convention — not enforced until rules exist) |
+
+Every doc in a new org collection carries `updatedAt`, `isDeleted` and a server-set `serverUpdatedAt`.
 
 Accounts are **embedded** in the org document (no subcollection). `InternalTransfer` has no Firestore collection. Collection-name constants: `FirebaseCollectionName.swift:10-17`; `"dailyCashflowSummaries"` is a literal.
 
@@ -86,9 +91,12 @@ Optional/defaulted: `subCategory`, `fromAccountId`, `toAccountId` (`""`), `perso
 | Collection | Filter |
 |---|---|
 | cashflow | `updatedAt > t` |
-| sales | `timestamp > t` (edits to old sales never sync) |
+| sales | `timestamp > t OR updatedAt > t OR serverUpdatedAt > t` (cancels and edits bump `updatedAt`/`serverUpdatedAt`, so they reach other devices) |
 | customers | `updatedAt > t OR lastPurchaseDate > t` |
 | inventory | `updatedAt > t OR lastSoldDate > t` |
+| new org collections (`customerLedger`, `stockMovements`, `auditEvents`, …) | `serverUpdatedAt > t` (server commit time, immune to client clock drift) |
+
+Cursors store the newest date seen across every field the query matches, and each fetch re-reads a 10-minute overlap window (`SyncCursor`). Re-reads are harmless because local writes are upserts.
 | organizations | `id in [assigned] AND updatedAt > t` (≤30 ids; queries field `id`, not doc ID) |
 | dailyCashflowSummaries | `updatedAt > Timestamp(t)` — **⚠ verify**: model treats `updatedAt` as number, a Timestamp comparison won't match numeric values |
 
@@ -96,15 +104,28 @@ OR / `in`+range queries may need composite indexes managed outside the repo.
 
 ## 7. Local SQLite mapping (SkipSQL, active)
 
-Tables created by `SkipSqlDatabase.createTables()` (`SkipSqlDatabaseManager.swift:25-34`): `ItemCategory` (inventory), `Customer` (PK `phone`), `Sale`, `CashflowTransaction`, `DailyCashflowSummary`, `Organization`, `SyncState` (local only; cursor per table).
-Encoding: dates REAL epoch seconds; bools INT 0/1 (inventory uses TEXT "true"/"false"); nested arrays/maps as JSON TEXT. Users cached in `UserDefaults` (`user_{id}`). No migration mechanism: `createTableIfNotExists` cannot add columns.
+Schema is versioned by `SchemaMigrations` (`ApoorvaOfflineStorage/SkipSQL/Migrations/SchemaMigrations.swift`), run through SkipSQL's `migrate` and tracked in `PRAGMA user_version`. Steps are append-only; never edit a shipped step.
+Tables: `ItemCategory` (inventory), `Customer` (PK `phone`), `Sale`, `CashflowTransaction`, `DailyCashflowSummary`, `Organization`, `HeldBill`, `SyncState` (local only; cursor per table/collection), and `OrgDocument` (PK `collection, id`; one JSON payload per document for every new org collection, so adding a collection needs no migration).
+Encoding: dates REAL epoch seconds; bools INT 0/1 (inventory uses TEXT "true"/"false"); nested arrays/maps as JSON TEXT. Users cached in `UserDefaults` (`user_{id}`). Writes go through SkipSQL upserts, not hand-written column lists, so new columns aren't reset to NULL on sync.
+
+**Additive fields (v2 migration, all optional on Firestore and locally):**
+
+| Model | Fields |
+|---|---|
+| Sale | `cancelReason`, `cancelledAt`, `cancelledBy`, `editReason`, `editedAt`, `storeId`, `billNumber`, `returnOfSaleId`, plus `serverUpdatedAt` on new/edited docs |
+| InventoryItem | `barcode`, `sellPrice`, `costPrice`, `wholesalePrice`, `categoryId`, `unit`, `lowStockThreshold`, `imageURLs`, `designCode`, `variantsJSON`, `warrantyMonths` |
+| Customer | `creditLimit`, `birthday`, `dueBalance` (local cache of the ledger total), `priceTier`, `notes`, `whatsappReceipts` |
 
 ## 8. Known quirks (⚠ verify / fix separately)
 
 - Customer Firestore doc ID is the phone number (`CustomerService.upsertCustomerAfterSale` writes to `organizations/{orgId}/customers/{phone}`) — ⚠ verify this matches how the legacy app keyed existing docs before relying on it for updates (only creates/increments, never renames a doc).
 - Sale `payments`: Swift dictionary keyed by an enum encodes as a flat array on write, so never write sales without a custom encoder — `SaleService.addSale` builds the payload by hand (`["payments": [mode.rawValue: amount]]`) instead of going through the generic `Firestore.Encoder()` path.
 - Daily summary cursor saves `Date.now` instead of max `updatedAt` (`DailyCashflowSummaryRepository.swift:85-88`).
-- Local bugs: `InventoryItemLocalStorage.swift:71,78` use table `Category` (actual `ItemCategory`); `CustomerLocalStorage.swift:88,95` use `WHERE id` (no such column); `InventoryItem+SkipSQL.swift:57-61` writes `updatedAt` from `lastSoldDate`; `Sale+SkipSQL.swift:86` writes `whatsappStatus` from `overallDiscountAmount`; `Customer+SkipSQL.swift:27` requires non-null `lastPurchaseDate`.
+- ~~Local bugs~~ (fixed by the storage rewrite): inventory update/delete used table `Category`; customer delete used `WHERE id`; inventory wrote `updatedAt` from `lastSoldDate`; sales wrote `whatsappStatus` from `overallDiscountAmount`; customers required non-null dates.
+- ~~Sale ids~~ (fixed): legacy sale docs have no `id` field, so every sale decoded with `id = ""` and collapsed into one local row. `FirestoreStoring.fetch` now fills `id` from the doc ID, and the v2 migration forces a full sales re-sync.
+- ~~Sale payments read~~ (fixed): payments are stored as a string-keyed map; the decoder now reads that shape instead of expecting an array.
+- ~~Sync cursors~~ (fixed): sales, customers and inventory picked the *oldest* date as the cursor (inverted comparator), and sales stored `updatedAt` while querying `timestamp`.
+- `Customer.id` is now the phone number (it was a fresh UUID on every decode, so it couldn't be used to look a customer up).
 - `FirestoreSyncService` appears to be unused.
 - Planned designs in docs 03/08/10 (`orgs/{orgId}/stores`, `shopId`, claims, paise) do **not** match the live structure.
 
@@ -117,7 +138,11 @@ The live app and production data must not be affected.
 3. Never change doc ID formats (`dd-MM-yyyy`, UUIDs, uid).
 4. Match the existing encoding when writing legacy-owned fields (Timestamp vs number). Do not "normalize" them.
 5. Put new features in new collections/field names, not overloaded existing ones.
-6. Don't write to collections that are read-only for this app (inventory, organizations) without explicit sign-off. `sales` (new docs only) and scoped `customers` stat updates are signed off for the POS selling flow (§1) — stay within the exact shape `SaleService.addSale`/`CustomerService.upsertCustomerAfterSale` already use; anything broader needs its own sign-off.
+6. Writes to legacy collections are signed off only in these additive shapes:
+   - `sales`: new docs (`SaleService.addSale`); status change to `"Cancelled"` with `cancelReason`/`cancelledBy`/`cancelledAt` (`updateSaleStatus`, never deletes); edits of lines/totals/payments with `editReason`/`editedAt` (`updateSale`).
+   - `customers`: post-sale stat bumps (`upsertCustomerAfterSale`) and, from the customers screens, creating/updating a customer with the additive fields above.
+   - `inventory` and `organizations`: signed off for the inventory, shop setup and settings screens, additive optional fields only, `setData(merge: true)`; never retype or remove legacy fields.
+   Anything broader needs its own sign-off. The legacy Dart app must tolerate `status: "Cancelled"` and unknown fields — ⚠ verify before shipping cancel.
 7. Develop and test against the Firebase Emulator or a separate project, never production.
 8. Don't deploy security rules or indexes without diffing against live config first.
 9. Keep lenient decoders; never make a decoded field stricter.

@@ -18,6 +18,11 @@ public protocol SaleRepositoryProtocol: Sendable {
     func deleteSale(id: String) async throws // Hard delete
     func markAsDeleted(id: String) async throws  // Soft delete
     func confirmSale(_ sale: Sale, heldBillId: String?) async throws
+    /// Marks a sale cancelled with a reason (soft status change, never deleted). Returns the updated sale.
+    @discardableResult
+    func cancelSale(id: String, reason: String, by staffId: String) async throws -> Sale?
+    /// Saves an edited sale (lines, totals, payments) along with why it was edited.
+    func editSale(_ sale: Sale, reason: String) async throws
     func sync(force: Bool) async throws
 }
 
@@ -92,6 +97,38 @@ public final actor SaleRepository: SaleRepositoryProtocol {
     public func markAsDeleted(id: String) async throws {
         try await storage.markAsDeleted(id: id)
     }
+
+    @discardableResult
+    public func cancelSale(id: String, reason: String, by staffId: String) async throws -> Sale? {
+        guard var sale = try await storage.getSale(id: id), !sale.isCancelled else { return nil }
+        let now = Date()
+        sale.status = "Cancelled"
+        sale.cancelReason = reason
+        sale.cancelledBy = staffId
+        sale.cancelledAt = now
+        sale.updatedAt = now
+        try await storage.updateSale(sale: sale)
+
+        let user = try await userRepository.getCurrentUser()
+        if let orgId = user.selectedOrganization?.orgId {
+            try await service.updateSaleStatus(saleId: id, status: sale.status, reason: reason, by: staffId, at: now, for: orgId)
+        }
+        return sale
+    }
+
+    public func editSale(_ sale: Sale, reason: String) async throws {
+        var edited = sale
+        let now = Date()
+        edited.editReason = reason
+        edited.editedAt = now
+        edited.updatedAt = now
+        try await storage.updateSale(sale: edited)
+
+        let user = try await userRepository.getCurrentUser()
+        if let orgId = user.selectedOrganization?.orgId {
+            try await service.updateSale(edited, for: orgId)
+        }
+    }
     
     public func sync(force: Bool) async throws {
         let user = try await userRepository.getCurrentUser()
@@ -103,32 +140,14 @@ public final actor SaleRepository: SaleRepositoryProtocol {
         
         let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: Sale.table.name)
         if let lastUpdatedDate, !force {
-            sales = try await service.getSales(since: Date(timeIntervalSince1970: lastUpdatedDate), for: orgId)
+            sales = try await service.getSales(since: SyncCursor.queryStart(from: lastUpdatedDate), for: orgId)
         } else {
             sales = try await service.getSales(for: orgId)
         }
         try await storage.saveSales(sales: sales)
-        
-        guard
-            let saleWithMinUpdatedAt = sales.saleWithMaxDate
-        else { return }
-        
-        guard let lastUpdatedDate = saleWithMinUpdatedAt.updatedAt else { return }
 
-        try await syncStorage.updateSyncTimestamp(for: Sale.table.name, timestamp: lastUpdatedDate.timeIntervalSince1970)
-    }
-}
-
-
-private extension Array where Element == Sale {
-    var saleWithMaxDate: Sale? {
-        self.max(by: {
-            guard
-                let lastUpdatedDateItem1 = $0.updatedAt,
-                let lastUpdatedDateItem2 = $1.updatedAt
-            else { return false }
-            
-            return lastUpdatedDateItem1 > lastUpdatedDateItem2
-        })
+        // New sales match on `timestamp`, edits/cancellations on `updatedAt` — track whichever is newest.
+        guard let latest = SyncCursor.latest(sales.flatMap { [$0.timestamp, $0.updatedAt] }) else { return }
+        try await syncStorage.updateSyncTimestamp(for: Sale.table.name, timestamp: latest.timeIntervalSince1970)
     }
 }

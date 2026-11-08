@@ -81,7 +81,7 @@ public final actor InventoryItemRepository: InventoryItemRepositoryProtocol {
         
         if let lastUpdatedDate, !force {
             print("Fetching inventory items since \(Date(timeIntervalSince1970: lastUpdatedDate)) for \(orgId)")
-            items = try await service.getInventoryItems(since: Date(timeIntervalSince1970: lastUpdatedDate), for: orgId)
+            items = try await service.getInventoryItems(since: SyncCursor.queryStart(from: lastUpdatedDate), for: orgId)
             print("Received items")
         } else {
             print("Fetch all inventiry items \(orgId)")
@@ -89,29 +89,8 @@ public final actor InventoryItemRepository: InventoryItemRepositoryProtocol {
         }
         print("Saving inventory items")
         try await storage.saveInventoryItems(items: items)
-        guard
-            let itemWithMinUpdatedAt = items.itemWithMaxDate
-        else { return }
-        
-        print("item with min update \(itemWithMinUpdatedAt)")
-        
-        guard let lastUpdatedDate = itemWithMinUpdatedAt.updatedAt else { return }
-        print("saving lastUpdatedDate \(lastUpdatedDate)")
-
-        try await syncStorage.updateSyncTimestamp(for: InventoryItem.table.name, timestamp: lastUpdatedDate.timeIntervalSince1970)
-    }
-}
-
-
-private extension Array where Element == InventoryItem {
-    var itemWithMaxDate: InventoryItem? {
-        self.max(by: {
-            guard
-                let lastUpdatedDateItem1 = $0.updatedAt,
-                let lastUpdatedDateItem2 = $1.updatedAt
-            else { return false }
-            
-            return lastUpdatedDateItem1 > lastUpdatedDateItem2
-        })
+        // The query matches on updatedAt OR lastSoldDate, so the cursor tracks the newest of both.
+        guard let latest = SyncCursor.latest(items.flatMap { [$0.updatedAt, $0.lastSoldDate] }) else { return }
+        try await syncStorage.updateSyncTimestamp(for: InventoryItem.table.name, timestamp: latest.timeIntervalSince1970)
     }
 }

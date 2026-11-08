@@ -11,29 +11,19 @@ import SkipSQL
 extension Sale: @retroactive SQLCodable {
     
     public static var table: SQLTable {
-        SQLTable(
-            name: "Sale",
-            columns: [
-                idCol,
-                staffIdCol,
-                customerPhoneCol,
-                customerNameCol,
-                itemsCol,
-                subtotalCol,
-                overallDiscountPercentCol,
-                overallDiscountAmountCol,
-                roundOffCol,
-                netPayableCol,
-                paymentsCol,
-                timestampCol,
-                sourceCol,
-                statusCol,
-                whatsappStatusCol,
-                updatedAtCol,
-                isDeletedCol
-            ]
-        )
+        SQLTable(name: "Sale", columns: baseColumns + addedColumns)
     }
+
+    static let baseColumns: [SQLColumn] = [
+        idCol, staffIdCol, customerPhoneCol, customerNameCol, itemsCol, subtotalCol,
+        overallDiscountPercentCol, overallDiscountAmountCol, roundOffCol, netPayableCol,
+        paymentsCol, timestampCol, sourceCol, statusCol, whatsappStatusCol, updatedAtCol, isDeletedCol
+    ]
+
+    static let addedColumns: [SQLColumn] = [
+        cancelReasonCol, cancelledAtCol, cancelledByCol, editReasonCol, editedAtCol,
+        storeIdCol, billNumberCol, returnOfSaleIdCol
+    ]
     
     public init(row: SQLRow, context: SQLContext) throws {
         let id = try Self.idCol.textValueRequired(in: row)
@@ -70,7 +60,15 @@ extension Sale: @retroactive SQLCodable {
                   status: status,
                   whatsappStatus: whatsappStatus,
                   updatedAt: updatedAt?.date,
-                  isDeleted: isDeleted.boolValue)
+                  isDeleted: isDeleted.boolValue,
+                  cancelReason: Self.cancelReasonCol.textValue(in: row),
+                  cancelledAt: Self.cancelledAtCol.realValue(in: row)?.date,
+                  cancelledBy: Self.cancelledByCol.textValue(in: row),
+                  editReason: Self.editReasonCol.textValue(in: row),
+                  editedAt: Self.editedAtCol.realValue(in: row)?.date,
+                  storeId: Self.storeIdCol.textValue(in: row),
+                  billNumber: Self.billNumberCol.textValue(in: row),
+                  returnOfSaleId: Self.returnOfSaleIdCol.textValue(in: row))
     }
     
     public func encode(row: inout SkipSQLCore.SQLRow) throws {
@@ -89,16 +87,31 @@ extension Sale: @retroactive SQLCodable {
         row[Self.timestampCol] = SQLValue(self.timestamp.timeIntervalSince1970)
         row[Self.sourceCol] = SQLValue(self.source)
         row[Self.statusCol] = SQLValue(self.status)
-        row[Self.whatsappStatusCol] = SQLValue(self.overallDiscountAmount)
+        row[Self.whatsappStatusCol] = SQLValue(self.whatsappStatus)
         if let date = self.updatedAt {
             row[Self.updatedAtCol] = .real(date.timeIntervalSince1970)
         } else {
             row[Self.updatedAtCol] = .null
         }
         row[Self.isDeletedCol] = SQLValue(self.isDeleted.intValue)
-        
-
+        row[Self.cancelReasonCol] = cancelReason.map { SQLValue($0) } ?? .null
+        row[Self.cancelledAtCol] = cancelledAt.map { .real($0.timeIntervalSince1970) } ?? .null
+        row[Self.cancelledByCol] = cancelledBy.map { SQLValue($0) } ?? .null
+        row[Self.editReasonCol] = editReason.map { SQLValue($0) } ?? .null
+        row[Self.editedAtCol] = editedAt.map { .real($0.timeIntervalSince1970) } ?? .null
+        row[Self.storeIdCol] = storeId.map { SQLValue($0) } ?? .null
+        row[Self.billNumberCol] = billNumber.map { SQLValue($0) } ?? .null
+        row[Self.returnOfSaleIdCol] = returnOfSaleId.map { SQLValue($0) } ?? .null
     }
+
+    public static let cancelReasonCol = SQLColumn(name: "cancelReason", type: .text)
+    public static let cancelledAtCol = SQLColumn(name: "cancelledAt", type: .real)
+    public static let cancelledByCol = SQLColumn(name: "cancelledBy", type: .text)
+    public static let editReasonCol = SQLColumn(name: "editReason", type: .text)
+    public static let editedAtCol = SQLColumn(name: "editedAt", type: .real)
+    public static let storeIdCol = SQLColumn(name: "storeId", type: .text)
+    public static let billNumberCol = SQLColumn(name: "billNumber", type: .text)
+    public static let returnOfSaleIdCol = SQLColumn(name: "returnOfSaleId", type: .text)
     
     public static let idCol = SQLColumn(name: "id", type: .text, primaryKey: true)
     public static let staffIdCol = SQLColumn(name: "staffId", type: .text)
