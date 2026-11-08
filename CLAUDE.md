@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Quick Index
+
+- **Overview** — offline-first POS app, Swift/SwiftUI via Skip (iOS + Android), SQLite source of truth syncing to Firestore.
+- **Layout** — `app/` (Skip app shell) + `libraries/Apoorva*` (independent SwiftPM packages); open `app/Project.xcworkspace` in Xcode.
+- **Module dependency graph** — chain from `ApoorvaModels` up through `ApoorvaOfflineStorage` → `ApoorvaServices`/`ApoorvaRepository` → `ApoorvaModules` → `ApoorvaAppCore` → app.
+- **Commands** — **mandatory:** use `scripts/build.sh`/`scripts/toggle-library.sh`; never call `xcodebuild`, `swift build`, or `swift test` directly.
+- **Conventions** — Swift 6 strict concurrency; never edit generated Kotlin or anything under `.build/`; never write files via Bash heredoc or run `git merge`/`gh pr merge`.
+- **Docs** — `docs/01`–`docs/12` cover product/architecture/security/etc.; check before product or architecture decisions.
+
 ## Overview
 
 Apoorva is an offline-first POS / business management app written in Swift + SwiftUI and built for iOS and Android with [Skip](https://skip.dev). Local SQLite is the source of truth; data syncs to Firebase Firestore in the background.
