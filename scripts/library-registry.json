@@ -1,0 +1,27 @@
+{
+  "libraries": {
+    "ManiSwiftUIComponents": {
+      "folder": "ManiSwiftUIComponents",
+      "remoteURL": "https://github.com/manikantanandam/ManiSwiftUIComponents.git",
+      "remoteVersion": "1.0.0",
+      "versionConstraint": "exact",
+      "productName": "ManiSwiftUIComponents",
+      "consumers": [
+        "libraries/ApoorvaModules/Package.swift"
+      ]
+    },
+    "ApoorvaUtilities": {
+      "folder": "ManiUtilities",
+      "remoteURL": "https://github.com/manikantanandam/ManiUtilities.git",
+      "remoteVersion": "1.0.0",
+      "versionConstraint": "exact",
+      "productName": "ApoorvaUtilities",
+      "consumers": [
+        "libraries/ApoorvaModels/Package.swift",
+        "libraries/ApoorvaOfflineStorage/Package.swift",
+        "libraries/ApoorvaModules/Package.swift",
+        "libraries/ApoorvaAppCore/Package.swift"
+      ]
+    }
+  }
+}

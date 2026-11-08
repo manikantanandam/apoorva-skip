@@ -17,7 +17,8 @@ let package = Package(
         .package(path: "../ApoorvaRepository"),
         .package(path: "../ApoorvaServices"),
         .package(path: "../ApoorvaModels"),
-        .package(path: "../ApoorvaUtilities"),
+        .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
+        .package(path: "../ApoorvaEnvironment"),
         .package(url: "https://github.com/manikantanandam/ManiSwiftUIComponents.git", exact: "1.0.0")
     ],
     targets: [
@@ -27,7 +28,8 @@ let package = Package(
             name: "ApoorvaModules",
             dependencies: [
                 .product(name: "ApoorvaRepository", package: "ApoorvaRepository"),
-                .product(name: "ApoorvaUtilities", package: "ApoorvaUtilities"),
+                .product(name: "ApoorvaUtilities", package: "ManiUtilities"),
+                .product(name: "ApoorvaEnvironment", package: "ApoorvaEnvironment"),
                 .product(name: "ManiSwiftUIComponents", package: "ManiSwiftUIComponents")
             ]
         ),

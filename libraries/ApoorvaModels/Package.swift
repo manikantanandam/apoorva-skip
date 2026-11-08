@@ -16,7 +16,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../ApoorvaUtilities")
+        .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -24,14 +24,14 @@ let package = Package(
         .target(
             name: "ApoorvaModels",
             dependencies: [
-                .product(name: "ApoorvaUtilities", package: "ApoorvaUtilities")
+                .product(name: "ApoorvaUtilities", package: "ManiUtilities")
             ]
         ),
         .testTarget(
             name: "ApoorvaModelsTests",
             dependencies: [
                 "ApoorvaModels",
-                .product(name: "ApoorvaUtilities", package: "ApoorvaUtilities")
+                .product(name: "ApoorvaUtilities", package: "ManiUtilities")
             ]
         ),
 

@@ -11,6 +11,7 @@ import ApoorvaServices
 import ApoorvaRepository
 import ApoorvaModels
 import ApoorvaUtilities
+import ApoorvaEnvironment
 
 // In ApoorvaPOS Module
 @MainActor
