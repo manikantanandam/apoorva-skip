@@ -33,6 +33,7 @@ app (Apoorva) → ApoorvaAppCore → ApoorvaModules → ApoorvaRepository → Ap
 ```bash
 scripts/build.sh <Module|all> [build|test] [--coverage]               # prints SUCCESS/FAILED + root cause
 scripts/install-tools.sh                                              # one-time: installs xcbeautify
+scripts/toggle-library.sh {local|remote|status} [LibraryName]         # switch ManiSwiftUIComponents/ApoorvaUtilities between the sibling Libraries/ checkout and the pinned remote version; see ../CLAUDE.md
 ```
 
 - Run the script with exactly the arguments the task needs. Pass `--coverage` only when the user asked for coverage.
@@ -66,3 +67,8 @@ For the app: `skip test` runs parity tests (Swift + transpiled Kotlin). The "Apo
 - Tests use a mix of Swift Testing (`import Testing`) and XCTest; match the style already in the file or module you are editing. Date/number formatting tests must not depend on the machine locale.
 - Swift 6 tools / strict concurrency: `@MainActor`, `Sendable`, `async/await` throughout.
 - Never edit generated Kotlin or anything under `.build/`. Hand-written Kotlin lives only in `app/Android/app/src/main/kotlin/` and `app/Sources/Apoorva/Skip/`.
+- Do not write files via Bash (`cat >`, heredocs) or run `git merge`/`gh pr merge` — repo hooks block these. Use the Write/Edit tools for files; merges and PR merges are done by the user.
+
+## Docs
+
+`docs/01` through `docs/12` cover product vision, requirements, architecture (HLD), UI design, feature flags, observability, CI/CD, security, multi-tenancy, NFRs, and the Firestore data model. Check the relevant numbered doc before making product or architecture decisions.
