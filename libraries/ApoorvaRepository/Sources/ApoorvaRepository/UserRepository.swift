@@ -35,6 +35,13 @@ public protocol UserRepositoryProtocol: Sendable {
     func listUsers(orgId: String) async throws -> [AppUser]
 
     func updateUserRole(id: String, role: AppUserRole) async throws
+
+    /// Demo shop: returns this user (with no org) so every repository stays local-only.
+    func setDemoUser(_ user: AppUser?) async
+}
+
+public extension UserRepositoryProtocol {
+    func setDemoUser(_ user: AppUser?) async {}
 }
 
 
@@ -43,7 +50,12 @@ public final actor UserRepository: UserRepositoryProtocol {
     let userDefaults: UserDefaultsStorageProtocol
     let authService: AuthServicing
     let userService: UserServiceProtocol
-    
+    private var demoUser: AppUser?
+
+    public func setDemoUser(_ user: AppUser?) {
+        demoUser = user
+    }
+
     public init(
         userDefaults: UserDefaultsStorageProtocol,
         authService: AuthServicing,
@@ -55,6 +67,7 @@ public final actor UserRepository: UserRepositoryProtocol {
     }
     
     public func getCurrentUser() async throws -> AppUser {
+        if let demoUser { return demoUser }
         guard let user = await userService.currentUser else {
             throw UserError.userNotFound
         }
