@@ -154,6 +154,11 @@ public final class AppSession {
         if newOrgId != orgId {
             orgId = newOrgId
             actingMember = nil
+            // Drop the previous org's data so a legacy org without a settings doc doesn't inherit it.
+            settings = OrgSettings()
+            hasSettingsDoc = false
+            stores = []
+            member = nil
             currentStoreId = preferences.string(forKey: storeKey) ?? Store.defaultId
         }
         await reload()

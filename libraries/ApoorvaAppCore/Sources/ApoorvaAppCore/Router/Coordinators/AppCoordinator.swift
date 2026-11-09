@@ -21,6 +21,7 @@ public final class AppCoordinator {
     private var snapshot = SessionSnapshot(account: nil, profile: nil)
     private var platform = PlatformConfig()
     private var lastOrgId: String?
+    private var recomputeGeneration = 0
 
     public init(appContainer: AppContainer = AppContainer()) {
         self.appContainer = appContainer
@@ -49,6 +50,9 @@ public final class AppCoordinator {
     /// Re-derives the phase. Coordinators are only rebuilt when the phase key changes, so a
     /// profile update or a platform config change doesn't reset the user's navigation.
     func recompute() async {
+        // Each await below can let a newer recompute start. Only the latest one may touch the session or the phase.
+        recomputeGeneration += 1
+        let generation = recomputeGeneration
         let profile = snapshot.profile
         let orgId = profile?.selectedOrganization?.orgId
 
@@ -62,13 +66,16 @@ public final class AppCoordinator {
         }
 
         await session.configure(user: profile, platform: platform)
+        guard generation == recomputeGeneration else { return }
         if orgId != nil && !session.hasSettingsDoc {
             await session.syncOrgData()
+            guard generation == recomputeGeneration else { return }
         }
 
         var org: Organization?
         if let orgId {
             org = try? await appContainer.repositoryContainer.organizationRepository.getOrganization(orgId: orgId)
+            guard generation == recomputeGeneration else { return }
         }
         var effectivePlatform = platform
         if let orgMin = org?.minVersion, AppVersion(orgMin) > AppVersion(platform.minAppVersion) {
@@ -84,6 +91,7 @@ public final class AppCoordinator {
             appVersion: appContainer.appVersion,
             requireEmailVerification: session.isOn(.authEmailVerificationRequired)
         )
+        guard generation == recomputeGeneration else { return }
         appContainer.themeStore.apply(session: session)
         apply(newPhase)
     }
@@ -129,11 +137,11 @@ public final class AppCoordinator {
         }
     }
 
-    /// Pulls every collection, then refreshes session-derived state. Safe to call repeatedly.
+    /// Pulls every collection, then re-derives the phase so org status and min version changes take effect.
     func syncAll(force: Bool = false) async {
         await appContainer.repositoryContainer.syncEngine.syncAll(force: force)
-        await session.reload()
-        appContainer.themeStore.apply(session: session)
+        try? await appContainer.repositoryContainer.organizationRepository.sync(force: force)
+        await recompute()
     }
 
     func present(_ route: GlobalRoute) { presentedGlobalRoute = route }
