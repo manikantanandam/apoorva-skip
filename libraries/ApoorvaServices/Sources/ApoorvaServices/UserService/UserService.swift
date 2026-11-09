@@ -18,7 +18,12 @@ public struct SessionSnapshot: Sendable, Equatable {
             && lhs.profile?.id == rhs.profile?.id
             && lhs.profile?.selectedOrganization?.orgId == rhs.profile?.selectedOrganization?.orgId
             && lhs.profile?.role == rhs.profile?.role
-            && lhs.profile?.updatedTimestamp == rhs.profile?.updatedTimestamp
+            && encodedProfile(lhs.profile) == encodedProfile(rhs.profile)
+    }
+
+    /// Compares every profile field, not just the timestamp: console edits can change fields without bumping it.
+    private static func encodedProfile(_ profile: AppUser?) -> Data? {
+        profile.flatMap { try? JSONEncoder().encode($0) }
     }
 }
 

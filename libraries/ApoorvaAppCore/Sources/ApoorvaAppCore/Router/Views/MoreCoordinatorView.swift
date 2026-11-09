@@ -124,6 +124,7 @@ struct MoreCoordinatorView: View {
         case .account:
             ProfileView(
                 viewModel: container.modulesContainer.makeProfileViewModel(),
+                canManageTeam: session.can(.admin),
                 onSelectOrganization: { coordinator.present(.admin(.selectOrganization)) },
                 onShowOrganizations: { coordinator.push(.admin(.stores)) },
                 onShowTeamMembers: { coordinator.push(.admin(.members)) },
@@ -165,8 +166,11 @@ struct MoreCoordinatorView: View {
                 case .invite: coordinator.push(.admin(.invite))
                 }
             }
-        case .stores, .selectOrganization:
+        case .selectOrganization:
             OrganizationListView(viewModel: container.modulesContainer.makeOrganizationListViewModel())
+        case .stores:
+            // Store management isn't built yet. Keep it separate from organization selection.
+            NotBuiltView(PlaceholderScreen(title(for: .admin(route))))
         case .members:
             UserListView(viewModel: container.modulesContainer.makeUserListViewModel())
         default:

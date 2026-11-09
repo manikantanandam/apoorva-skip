@@ -43,7 +43,7 @@ public enum SessionPhase: Sendable, Equatable {
         case .signedOut: "signedOut"
         case .needsEmailVerification(let account): "verify:\(account.uid)"
         case .needsProfile(let account): "profile:\(account.uid)"
-        case .needsOrgSetup: "setup"
+        case .needsOrgSetup(let step): "setup:\(step.rawValue)"
         case .blocked(let status): "blocked:\(status)"
         case .forceUpdate: "forceUpdate"
         case .ready(let userId, let orgId): "ready:\(userId):\(orgId)"

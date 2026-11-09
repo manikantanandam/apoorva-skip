@@ -104,7 +104,14 @@ public final class AppSession {
     // MARK: - Access
 
     public func can(_ permission: Permission) -> Bool {
-        settings.permissions.allows(permission, for: role)
+        guard isEffectiveMemberActive else { return false }
+        return settings.permissions.allows(permission, for: role)
+    }
+
+    /// Invited or deactivated members get no permissions. Users without a member doc keep the legacy role.
+    private var isEffectiveMemberActive: Bool {
+        guard let effective = actingMember ?? member else { return true }
+        return effective.isActive && effective.status != "invited"
     }
 
     public func isOn(_ flag: FeatureFlag) -> Bool {
@@ -149,6 +156,11 @@ public final class AppSession {
         if newOrgId != orgId {
             orgId = newOrgId
             actingMember = nil
+            // Drop the previous org's data so a legacy org without a settings doc doesn't inherit it.
+            settings = OrgSettings()
+            hasSettingsDoc = false
+            stores = []
+            member = nil
             currentStoreId = preferences.string(forKey: storeKey) ?? Store.defaultId
         }
         await reload()
@@ -170,6 +182,10 @@ public final class AppSession {
             hasSettingsDoc = true
         }
         stores = (try? await storeRepository.all())?.sorted { $0.createdAt < $1.createdAt } ?? []
+        // A synced-away store must not stay selected: vertical and flags would keep reading its ID.
+        if !stores.contains(where: { $0.id == currentStoreId }), let fallback = stores.first {
+            selectStore(fallback.id)
+        }
         if let uid = user?.id {
             member = try? await memberRepository.get(id: uid)
         }
