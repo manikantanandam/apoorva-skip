@@ -102,7 +102,14 @@ public final class AppSession {
     // MARK: - Access
 
     public func can(_ permission: Permission) -> Bool {
-        settings.permissions.allows(permission, for: role)
+        guard isEffectiveMemberActive else { return false }
+        return settings.permissions.allows(permission, for: role)
+    }
+
+    /// Invited or deactivated members get no permissions. Users without a member doc keep the legacy role.
+    private var isEffectiveMemberActive: Bool {
+        guard let effective = actingMember ?? member else { return true }
+        return effective.isActive && effective.status != "invited"
     }
 
     public func isOn(_ flag: FeatureFlag) -> Bool {

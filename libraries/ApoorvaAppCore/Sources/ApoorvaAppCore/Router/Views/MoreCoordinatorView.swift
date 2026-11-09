@@ -115,6 +115,7 @@ struct MoreCoordinatorView: View {
         case .account:
             ProfileView(
                 viewModel: container.modulesContainer.makeProfileViewModel(),
+                canManageTeam: session.can(.admin),
                 onSelectOrganization: { coordinator.present(.admin(.selectOrganization)) },
                 onShowOrganizations: { coordinator.push(.admin(.stores)) },
                 onShowTeamMembers: { coordinator.push(.admin(.members)) },

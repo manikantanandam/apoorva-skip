@@ -26,8 +26,10 @@ struct HomeTabsCoordinatorView: View {
         }
         .tint(theme.accent.accent)
         .overlay(alignment: .bottom) {
-            newBillButton
-                .offset(y: -18)
+            if coordinator.container.appSession.can(.createBill) {
+                newBillButton
+                    .offset(y: -18)
+            }
         }
         .fullScreenCover(isPresented: $coordinator.isPresentingNewBill) {
             NewBillCoordinatorView(coordinator: coordinator.newBillCoordinator, container: coordinator.container)

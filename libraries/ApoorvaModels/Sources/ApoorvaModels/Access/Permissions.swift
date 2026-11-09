@@ -84,7 +84,10 @@ public struct PermissionMatrix: Codable, Sendable, Hashable {
     }
 
     public func allows(_ permission: Permission, for role: OrgRole) -> Bool {
+        // Locked cells ignore stored grants, so a hand-edited or decoded matrix can't override them.
         if role == .owner { return true }
+        if permission == .admin { return false }
+        if role == .cashier && permission == .createBill { return true }
         return grants[role.rawValue]?.contains(permission.rawValue) ?? false
     }
 
