@@ -1,17 +1,31 @@
 import SwiftUI
 import ApoorvaModules
+import ApoorvaModels
 
 struct MoreCoordinatorView: View {
+    let tabs: HomeTabsCoordinator
     @Bindable var coordinator: MoreCoordinator
     let container: AppContainer
+    @State private var counts = MoreMenuCounts()
+    @State private var memberCount = 0
+    @State private var lastSync: Date?
+
+    private var session: AppSession { container.appSession }
 
     var body: some View {
         NavigationStack(path: $coordinator.path) {
-            MoreMenuView(coordinator: coordinator)
-                .navigationTitle("More")
-                .navigationDestination(for: MoreRoute.self) { route in
-                    destination(for: route)
-                }
+            MoreMenuView(
+                session: session,
+                counts: counts,
+                showsDeveloper: container.showsDeveloperTools,
+                onSelect: select,
+                onSearch: { tabs.present(.search) }
+            )
+            .toolbar(.hidden, for: .navigationBar)
+            .navigationDestination(for: MoreRoute.self) { route in
+                destination(for: route)
+            }
+            .task { await loadCounts() }
         }
         .sheet(item: $coordinator.presentedSheet) { route in
             NavigationStack {
@@ -20,23 +34,45 @@ struct MoreCoordinatorView: View {
         }
     }
 
+    private func select(_ item: MoreMenuItem) {
+        switch item {
+        case .orders: coordinator.push(.sell(.orders))
+        case .heldBills: coordinator.push(.sell(.heldBills))
+        case .warranty: coordinator.push(.sell(.warranty))
+        case .inventory: coordinator.push(.stock(.inventory(.list)))
+        case .suppliers: coordinator.push(.stock(.suppliers))
+        case .reorder: coordinator.push(.stock(.reorder))
+        case .cashflow: coordinator.push(.money(.cashflowHistory))
+        case .expenses: coordinator.push(.money(.expenses))
+        case .summary: coordinator.push(.money(.dailySummary))
+        case .insights: coordinator.push(.money(.insights(.overview)))
+        case .staff: coordinator.push(.people(.staff))
+        case .attendance: coordinator.push(.people(.attendance))
+        case .salary: coordinator.push(.people(.salary))
+        case .settings: coordinator.push(.settings(.hub))
+        case .admin: coordinator.push(.admin(.home))
+        case .console: coordinator.push(.console(.home))
+        case .help: tabs.present(.help)
+        case .developer: coordinator.push(.developer(.hub))
+        }
+    }
+
+    private func loadCounts() async {
+        let repositories = container.repositoryContainer
+        let heldBills = (try? await repositories.heldBillRepository.getHeldBills().count) ?? 0
+        let lowStock = (try? await repositories.inventoryRepository.getInventoryItems().filter(\.isLowStock).count) ?? 0
+        counts = MoreMenuCounts(heldBills: heldBills, reorder: lowStock)
+        memberCount = (try? await repositories.memberRepository.all().count) ?? 0
+        lastSync = await repositories.syncEngine.lastSuccessfulSync
+    }
+
     @ViewBuilder
     private func destination(for route: MoreRoute) -> some View {
         switch route {
-        case .settings(.account):
-            ProfileView(
-                viewModel: container.modulesContainer.makeProfileViewModel(),
-                onSelectOrganization: { coordinator.present(.admin(.selectOrganization)) },
-                onShowOrganizations: { coordinator.push(.admin(.stores)) },
-                onShowTeamMembers: { coordinator.push(.admin(.members)) },
-                onShowDeveloperSettings: container.makeDeveloperSettingsViewModel() != nil
-                    ? { coordinator.push(.developer(.hub)) }
-                    : nil
-            )
-        case .admin(.stores), .admin(.selectOrganization):
-            OrganizationListView(viewModel: container.modulesContainer.makeOrganizationListViewModel())
-        case .admin(.members):
-            UserListView(viewModel: container.modulesContainer.makeUserListViewModel())
+        case .settings(let settingsRoute):
+            settingsDestination(for: settingsRoute)
+        case .admin(let adminRoute):
+            adminDestination(for: adminRoute)
         case .developer(.hub):
             if let developerViewModel = container.makeDeveloperSettingsViewModel() {
                 DeveloperSettingsView(viewModel: developerViewModel)
@@ -68,11 +104,77 @@ struct MoreCoordinatorView: View {
     }
 
     @ViewBuilder
+    private func settingsDestination(for route: SettingsRoute) -> some View {
+        switch route {
+        case .hub:
+            SettingsHubView(session: session) { item in
+                coordinator.push(.settings(settingsRoute(for: item)))
+            }
+        case .appearance:
+            AppearanceView(session: session, themeStore: container.themeStore)
+        case .account:
+            ProfileView(
+                viewModel: container.modulesContainer.makeProfileViewModel(),
+                canManageTeam: session.can(.admin),
+                onSelectOrganization: { coordinator.present(.admin(.selectOrganization)) },
+                onShowOrganizations: { coordinator.push(.admin(.stores)) },
+                onShowTeamMembers: { coordinator.push(.admin(.members)) },
+                onShowDeveloperSettings: container.showsDeveloperTools ? { coordinator.push(.developer(.hub)) } : nil
+            )
+        default:
+            NotBuiltView(PlaceholderScreen(title(for: .settings(route))))
+        }
+    }
+
+    private func settingsRoute(for item: SettingsItem) -> SettingsRoute {
+        switch item {
+        case .appearance: .appearance
+        case .tax: .tax
+        case .receipts: .receipts
+        case .payments: .payments
+        case .printer: .printer
+        case .language: .language
+        case .backup: .backup
+        case .account: .account
+        case .plan: .plan
+        case .devices: .devices
+        case .signInMethods: .signInMethods
+        }
+    }
+
+    @ViewBuilder
+    private func adminDestination(for route: AdminRoute) -> some View {
+        switch route {
+        case .home:
+            AdminHomeView(session: session, memberCount: memberCount, lastSync: lastSync) { item in
+                switch item {
+                case .stores: coordinator.push(.admin(.stores))
+                case .members: coordinator.push(.admin(.members))
+                case .permissions: coordinator.push(.admin(.permissions))
+                case .theme: coordinator.push(.admin(.theme))
+                case .features: coordinator.push(.admin(.features))
+                case .audit: coordinator.push(.admin(.audit))
+                case .invite: coordinator.push(.admin(.invite))
+                }
+            }
+        case .selectOrganization:
+            OrganizationListView(viewModel: container.modulesContainer.makeOrganizationListViewModel())
+        case .stores:
+            // Store management isn't built yet. Keep it separate from organization selection.
+            NotBuiltView(PlaceholderScreen(title(for: .admin(route))))
+        case .members:
+            UserListView(viewModel: container.modulesContainer.makeUserListViewModel())
+        default:
+            NotBuiltView(PlaceholderScreen(title(for: .admin(route))))
+        }
+    }
+
+    @ViewBuilder
     private func inventoryDestination(for route: InventoryRoute) -> some View {
         switch route {
         case .list:
             InventoryView(viewModel: container.modulesContainer.makeInventoryViewModel())
-        case .add:
+        case .add, .edit:
             NotBuiltView(PlaceholderScreen("Add inventory item"))
         case .item:
             NotBuiltView(PlaceholderScreen("Inventory item"))
@@ -97,55 +199,5 @@ struct MoreCoordinatorView: View {
         case .developer(let r): return "\(r)".capitalized
         case .help: return "Help"
         }
-    }
-}
-
-struct MoreMenuView: View {
-    @Bindable var coordinator: MoreCoordinator
-
-    var body: some View {
-        List {
-            Section("Sell") {
-                row("Orders") { coordinator.push(.sell(.orders)) }
-                row("Held bills") { coordinator.push(.sell(.heldBills)) }
-                row("Warranty") { coordinator.push(.sell(.warranty)) }
-            }
-            Section("Stock") {
-                row("Inventory") { coordinator.push(.stock(.inventory(.list))) }
-                row("Suppliers") { coordinator.push(.stock(.suppliers)) }
-                row("Reorder") { coordinator.push(.stock(.reorder)) }
-            }
-            Section("Money") {
-                row("Cashflow") { coordinator.push(.money(.cashflowHistory)) }
-                row("Expenses") { coordinator.push(.money(.expenses)) }
-                row("Summary") { coordinator.push(.money(.dailySummary)) }
-                row("Insights") { coordinator.push(.money(.insights)) }
-            }
-            Section("People") {
-                row("Staff") { coordinator.push(.people(.staff)) }
-                row("Attendance") { coordinator.push(.people(.attendance)) }
-                row("Salary") { coordinator.push(.people(.salary)) }
-            }
-            Section {
-                row("Settings") { coordinator.push(.settings(.account)) }
-                row("Admin") { coordinator.push(.admin(.stores)) }
-                row("Apoorva Console") { coordinator.push(.console(.home)) }
-                row("Help") { coordinator.push(.help) }
-                row("Developer") { coordinator.push(.developer(.hub)) }
-            }
-        }
-    }
-
-    private func row(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack {
-                Text(title)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(.primary)
     }
 }

@@ -28,6 +28,30 @@ public class AppContainer {
         repositoryContainer: repositoryContainer,
         environment: environment
     )
+    /// The signed-in member's org, store, role, flags and plan — read by every screen.
+    public lazy var appSession = AppSession(
+        settingsRepository: repositoryContainer.settingsRepository,
+        storeRepository: repositoryContainer.storeRepository,
+        memberRepository: repositoryContainer.memberRepository,
+        saleRepository: repositoryContainer.saleRepository,
+        developerTools: developerTools
+    )
+
+    public let themeStore = ThemeStore()
+
+    /// Whether developer tools are offered (debug builds only).
+    public var showsDeveloperTools: Bool {
+        #if DEBUG
+        true
+        #else
+        false
+        #endif
+    }
+
+    public var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+    }
+
     public init() {
         let environment = environmentStore.current
         print("[AppContainer] init resolved environment: \(environment)")

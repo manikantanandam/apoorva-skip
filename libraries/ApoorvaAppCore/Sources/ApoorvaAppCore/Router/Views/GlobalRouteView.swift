@@ -19,6 +19,12 @@ struct GlobalRouteView: View {
             NotBuiltView(PlaceholderScreen("Force update"))
         case .help:
             NotBuiltView(PlaceholderScreen("Help"))
+        case .planLimit:
+            NotBuiltView(PlaceholderScreen("Plan limit"))
+        case .trialEnding:
+            NotBuiltView(PlaceholderScreen("Trial ending"))
+        case .blocked:
+            NotBuiltView(PlaceholderScreen("Account paused"))
         }
     }
 }

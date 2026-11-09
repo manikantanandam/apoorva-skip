@@ -26,6 +26,11 @@ Baseline of the **live** Firestore structure as read by this app. Derived from c
 | `organizations/{orgId}/stockMovements/{id}` | UUID string | `OrgCollectionService<StockMovement>` (new; signed stock deltas with a reason) |
 | `organizations/{orgId}/auditEvents/{id}` | UUID string | `OrgCollectionService<AuditEvent>` (new; append-only by convention — not enforced until rules exist) |
 
+| `organizations/{orgId}/settings/org` | fixed id `org` | `OrgSettings`: profile (shop name, vertical, bill prefix, setup progress), tax, receipt, payments, theme (accent, Clean/Bold, font, lock), flags (org/store/role), permission matrix, plan. **Missing on legacy orgs** — the app treats that as "already set up" with defaults |
+| `organizations/{orgId}/stores/{id}` | UUID string (`default` for the implicit single store) | `Store`: name, vertical, address, prefix, accent |
+| `organizations/{orgId}/members/{uid}` | Firebase uid | `Member`: org role (owner/manager/cashier/accountant), store access, active/invited. Overrides the role derived from legacy `users.role`, which is never rewritten |
+| `platform/config` | fixed | `PlatformConfig`: app-level flags (incl. `auth.*`), `minAppVersion`, default visual style, trial/free/grace limits. Written only by superAdmin from the console |
+
 Every doc in a new org collection carries `updatedAt`, `isDeleted` and a server-set `serverUpdatedAt`.
 
 Accounts are **embedded** in the org document (no subcollection). `InternalTransfer` has no Firestore collection. Collection-name constants: `FirebaseCollectionName.swift:10-17`; `"dailyCashflowSummaries"` is a literal.

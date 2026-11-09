@@ -44,6 +44,25 @@ public protocol FirestoreStoring: Sendable {
     /// Not async on purpose: Firestore queues the write offline and only acknowledges it once online.
     func setData(_ data: [String: Any], path: String, merge: Bool) throws
     func updateData(_ fields: [String: Any], path: String) async throws
+    /// Live updates for one document; yields nil while it doesn't exist.
+    func listen(path: String) -> AsyncStream<StoreDocument?>
+}
+
+public extension FirestoreStoring {
+    /// One-shot fallback for stores without real-time support (tests).
+    func listen(path: String) -> AsyncStream<StoreDocument?> {
+        AsyncStream { continuation in
+            let task = Task {
+                continuation.yield(try? await getDocument(path: path))
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+}
+
+private struct SendableListener: @unchecked Sendable {
+    let value: ListenerRegistration
 }
 
 /// Values with special meaning to the store. Services use these so they don't import Firestore.
@@ -91,6 +110,17 @@ public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable
 
     public func updateData(_ fields: [String: Any], path: String) async throws {
         try await db.document(path).updateData(Self.resolvingSentinels(fields))
+    }
+
+    public func listen(path: String) -> AsyncStream<StoreDocument?> {
+        AsyncStream { continuation in
+            let registration = db.document(path).addSnapshotListener { snapshot, _ in
+                guard let snapshot else { return }
+                continuation.yield(snapshot.exists ? StoreDocument(id: snapshot.documentID, data: snapshot.data() ?? [:]) : nil)
+            }
+            let listener = SendableListener(value: registration)
+            continuation.onTermination = { _ in listener.value.remove() }
+        }
     }
 
     private static func resolvingSentinels(_ data: [String: Any]) -> [String: Any] {

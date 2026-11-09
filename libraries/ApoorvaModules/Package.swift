@@ -19,7 +19,7 @@ let package = Package(
         .package(path: "../ApoorvaModels"),
         .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
         .package(path: "../ApoorvaEnvironment"),
-        .package(url: "https://github.com/manikantanandam/ManiSwiftUIComponents.git", exact: "1.1.0")
+        .package(url: "https://github.com/manikantanandam/ManiSwiftUIComponents.git", exact: "1.2.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.

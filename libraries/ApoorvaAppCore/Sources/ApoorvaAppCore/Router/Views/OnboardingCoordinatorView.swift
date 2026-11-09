@@ -6,7 +6,7 @@ struct OnboardingCoordinatorView: View {
 
     var body: some View {
         NavigationStack(path: $coordinator.path) {
-            LoginView(viewModel: coordinator.container.modulesContainer.makeLoginViewModel())
+            destination(for: coordinator.root)
                 .navigationDestination(for: OnboardingRoute.self) { route in
                     destination(for: route)
                 }
@@ -16,12 +16,12 @@ struct OnboardingCoordinatorView: View {
     @ViewBuilder
     private func destination(for route: OnboardingRoute) -> some View {
         switch route {
-        case .signInHub:
+        case .signInHub, .splash:
             LoginView(viewModel: coordinator.container.modulesContainer.makeLoginViewModel())
-        case .splash:
-            NotBuiltView(PlaceholderScreen("Splash"))
         case .demoShop:
             NotBuiltView(PlaceholderScreen("Demo shop"))
+        case .otp:
+            NotBuiltView(PlaceholderScreen("Verify phone"))
         case .emailSignIn:
             NotBuiltView(PlaceholderScreen("Email sign-in"))
         case .register:

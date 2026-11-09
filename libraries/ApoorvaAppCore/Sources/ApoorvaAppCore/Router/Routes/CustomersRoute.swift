@@ -4,9 +4,12 @@ import Foundation
 enum CustomersRoute: Hashable, Identifiable {
     case detail(phone: String)
     case add
+    case edit(phone: String)
     case collect(phone: String)
     case reminder(phone: String)
     case statement(phone: String)
+    case importContacts
+    case offers
 
     var id: Self { self }
 }

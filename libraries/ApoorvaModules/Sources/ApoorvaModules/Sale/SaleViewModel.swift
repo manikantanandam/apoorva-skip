@@ -138,13 +138,15 @@ public class SaleListViewModel {
     }
     
     private func calculateStats() {
-        totalSalesCount = sales.count
-        
+        // Cancelled bills stay in the list for history but don't count toward totals.
+        let countable = sales.filter { !$0.isCancelled }
+        totalSalesCount = countable.count
+
         var tempSubtotal: Double = 0
         var tempDiscount: Double = 0
         var tempNetPayable: Double = 0
-        
-        for sale in sales {
+
+        for sale in countable {
             tempSubtotal += sale.subtotal
             tempDiscount += sale.overallDiscountAmount
             tempNetPayable += sale.netPayable

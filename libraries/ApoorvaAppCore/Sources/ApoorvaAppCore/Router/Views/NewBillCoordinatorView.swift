@@ -111,6 +111,14 @@ struct NewBillCoordinatorView: View {
             NotBuiltView(PlaceholderScreen("Return / exchange"))
         case .scan:
             NotBuiltView(PlaceholderScreen("Scan"))
+        case .receiptPreview:
+            NotBuiltView(PlaceholderScreen("Receipt preview"))
+        case .jewelItem:
+            NotBuiltView(PlaceholderScreen("Design detail"))
+        case .catalogShare:
+            NotBuiltView(PlaceholderScreen("Share catalog"))
+        case .parlourPackages:
+            NotBuiltView(PlaceholderScreen("Packages"))
         }
     }
 

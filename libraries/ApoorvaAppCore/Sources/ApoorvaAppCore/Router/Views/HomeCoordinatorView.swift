@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct HomeCoordinatorView: View {
+    let tabs: HomeTabsCoordinator
     @Bindable var coordinator: HomeCoordinator
     let container: AppContainer
 
