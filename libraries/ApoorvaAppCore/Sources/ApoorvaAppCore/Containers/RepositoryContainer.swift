@@ -103,6 +103,16 @@ public class RepositoryContainer {
     public lazy var memberRepository = makeOrgCollectionRepository(Member.self)
     public lazy var supplierRepository = makeOrgCollectionRepository(Supplier.self)
 
+    /// Keeps a bill's stock, dues and audit trail consistent across save / cancel / undo / edit.
+    public lazy var saleLifecycleRepository: SaleLifecycleRepositoryProtocol = SaleLifecycleRepository(
+        saleRepository: saleRepository,
+        inventoryRepository: inventoryRepository,
+        customerRepository: customerRepository,
+        stockMovements: stockMovementRepository,
+        ledger: customerLedgerRepository,
+        audit: auditLogger
+    )
+
     /// Pulls every collection down. Call on sign-in, on foreground, and on pull-to-refresh.
     public lazy var syncEngine: SyncEngine = {
         let inventory = inventoryRepository

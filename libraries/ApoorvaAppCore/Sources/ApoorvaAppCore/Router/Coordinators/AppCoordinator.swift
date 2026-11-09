@@ -142,6 +142,15 @@ public final class AppCoordinator {
         await appContainer.repositoryContainer.syncEngine.syncAll(force: force)
         await session.reload()
         appContainer.themeStore.apply(session: session)
+        presentTrialEndingIfNeeded()
+    }
+
+    /// Design 48, once a day in the last 3 days of the trial (owner only).
+    private func presentTrialEndingIfNeeded() {
+        guard session.planStatus.isTrialEnding, session.role == .owner, presentedGlobalRoute == nil else { return }
+        if let dismissed = session.settings.plan.trialEndingDismissedAt,
+           Date().timeIntervalSince(dismissed) < 86_400 { return }
+        present(.trialEnding)
     }
 
     // MARK: - Demo shop

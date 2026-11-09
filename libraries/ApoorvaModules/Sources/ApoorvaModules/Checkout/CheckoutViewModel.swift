@@ -30,17 +30,23 @@ public class CheckoutViewModel {
 
     private let saleRepository: SaleRepositoryProtocol
     private let userRepository: UserRepositoryProtocol
+    private let lifecycle: SaleLifecycleRepositoryProtocol?
+    private let session: AppSession?
 
     public init(
         cart: PosCart,
         heldBillId: String?,
         saleRepository: SaleRepositoryProtocol,
-        userRepository: UserRepositoryProtocol
+        userRepository: UserRepositoryProtocol,
+        lifecycle: SaleLifecycleRepositoryProtocol? = nil,
+        session: AppSession? = nil
     ) {
         self.cart = cart
         self.heldBillId = heldBillId
         self.saleRepository = saleRepository
         self.userRepository = userRepository
+        self.lifecycle = lifecycle
+        self.session = session
         syncSinglePaymentMode()
     }
 
@@ -128,9 +134,11 @@ public class CheckoutViewModel {
                 )
             }
 
+            let staffId = session?.actorId.isEmpty == false ? session!.actorId : user.id
+            let billNumber = await session?.nextBillNumber()
             let sale = Sale(
                 id: UUID().uuidString,
-                staffId: user.id,
+                staffId: staffId,
                 customerPhone: cart.customerPhone ?? "",
                 customerName: cart.customerName?.isEmpty == false ? cart.customerName! : "Walk-in",
                 items: saleItems,
@@ -143,10 +151,15 @@ public class CheckoutViewModel {
                 timestamp: cart.billDateTime,
                 source: "POS",
                 status: "Completed",
-                whatsappStatus: "unsent"
+                whatsappStatus: "unsent",
+                storeId: session?.currentStoreId,
+                billNumber: billNumber
             )
 
             try await saleRepository.confirmSale(sale, heldBillId: heldBillId)
+            // Stock out and credit dues; a failure here mustn't lose the confirmed sale.
+            try? await lifecycle?.recordEffects(of: sale, by: staffId)
+            await session?.refreshPlanUsage()
             return sale
         } catch {
             errorMessage = "Couldn't confirm this sale. Please try again."

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 import ApoorvaModels
 import ManiSwiftUIComponents
 
@@ -17,17 +18,27 @@ public struct ReceiptView: View {
     private let cameFromCheckout: Bool
     private let onEditSale: (Sale) -> Void
     private let onDone: () -> Void
+    /// Undo within 5 minutes of saving (design 49). Nil hides the bar.
+    private let onUndo: ((Sale) -> Void)?
+    @State private var now = Date()
+    private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     public init(
         viewModel: ReceiptViewModel,
         cameFromCheckout: Bool,
         onEditSale: @escaping (Sale) -> Void,
-        onDone: @escaping () -> Void
+        onDone: @escaping () -> Void,
+        onUndo: ((Sale) -> Void)? = nil
     ) {
         self.viewModel = viewModel
         self.cameFromCheckout = cameFromCheckout
         self.onEditSale = onEditSale
         self.onDone = onDone
+        self.onUndo = onUndo
+    }
+
+    private func undoSecondsLeft(for sale: Sale) -> Int {
+        max(0, Int(sale.timestamp.addingTimeInterval(5 * 60).timeIntervalSince(now)))
     }
 
     public var body: some View {
@@ -39,6 +50,15 @@ public struct ReceiptView: View {
                     .padding(.top, ManiSpacing.xl)
             }
         }
+        .safeAreaInset(edge: .bottom) {
+            if let sale = viewModel.sale, let onUndo, !sale.isCancelled, undoSecondsLeft(for: sale) > 0 {
+                let seconds = undoSecondsLeft(for: sale)
+                ManiUndoBanner(message: "Saved by mistake? \(seconds / 60):\(String(format: "%02d", seconds % 60)) left",
+                               actionTitle: "Undo bill") { onUndo(sale) }
+                    .padding(ManiSpacing.lg)
+            }
+        }
+        .onReceive(ticker) { now = $0 }
         .background(theme.base.background.ignoresSafeArea())
         .navigationTitle("Receipt")
         .navigationBarTitleDisplayMode(.inline)

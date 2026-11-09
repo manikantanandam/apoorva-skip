@@ -35,6 +35,8 @@ Baseline of the **live** Firestore structure as read by this app. Derived from c
 
 Every doc in a new org collection carries `updatedAt`, `isDeleted` and a server-set `serverUpdatedAt`.
 
+**Bill side effects** (`SaleLifecycleRepository`): confirming a sale decrements each item's `inventory.currentStock` (merge write of explicit fields via `InventoryItemService.upsertInventoryItem`) with a `stockMovements` record, and puts any credit portion on the customer's ledger and `dueBalance`. Cancel/undo reverse both; editing a bill applies the difference. Every cancel/undo/edit writes an `auditEvents` doc. Not atomic: each step is retry-safe, but a crash between steps can leave stock and the bill out of step until fixed by hand.
+
 Accounts are **embedded** in the org document (no subcollection). `InternalTransfer` has no Firestore collection. Collection-name constants: `FirebaseCollectionName.swift:10-17`; `"dailyCashflowSummaries"` is a literal.
 
 ## 3. Documents

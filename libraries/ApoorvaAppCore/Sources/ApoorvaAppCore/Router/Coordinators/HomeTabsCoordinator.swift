@@ -40,4 +40,29 @@ final class HomeTabsCoordinator {
     func showLocked(_ reason: String) {
         appCoordinator?.present(.lockedFeature(reason: reason))
     }
+
+    // MARK: - Cross-tab navigation
+
+    func showMore(_ route: MoreRoute) {
+        selectedTab = .more
+        moreCoordinator.popToRoot()
+        moreCoordinator.push(route)
+    }
+
+    func showCustomers(_ route: CustomersRoute? = nil) {
+        selectedTab = .customers
+        customersCoordinator.popToRoot()
+        if let route { customersCoordinator.push(route) }
+    }
+
+    func showBill(_ saleId: String) {
+        selectedTab = .bills
+        billsCoordinator.popToRoot()
+        billsCoordinator.push(.detail(billId: saleId))
+    }
+
+    func showBills() {
+        selectedTab = .bills
+        billsCoordinator.popToRoot()
+    }
 }

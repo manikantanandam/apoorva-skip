@@ -210,10 +210,30 @@ public final class AppSession {
 
     public func saveSettings(_ update: (inout OrgSettings) -> Void) async throws {
         var copy = settings
+        if !hasSettingsDoc {
+            // First settings write on a legacy org: it's already set up, so record that —
+            // otherwise the session would treat it as a half-finished onboarding.
+            copy.profile.setupCompletedAt = copy.profile.setupCompletedAt ?? Date()
+            if copy.profile.shopName.isEmpty { copy.profile.shopName = displayShopName }
+            if copy.profile.vertical == nil { copy.profile.vertical = .kirana }
+        }
         update(&copy)
         try await settingsRepository.save(copy)
         settings = copy
         hasSettingsDoc = true
+    }
+
+    /// Next bill number for the current store ("GG-1045"), advancing the shared counter.
+    /// Devices bill offline, so two phones can briefly reuse a number; the bill id stays unique.
+    public func nextBillNumber() async -> String {
+        let prefix = stores.first { $0.id == currentStoreId }?.billPrefix ?? settings.profile.billPrefix
+        let number = settings.receipt.nextBillNumber
+        if isDemo {
+            settings.receipt.nextBillNumber = number + 1
+        } else {
+            try? await saveSettings { $0.receipt.nextBillNumber = number + 1 }
+        }
+        return "\(prefix.isEmpty ? "A-" : prefix)\(number)"
     }
 
     public func selectStore(_ storeId: String) {

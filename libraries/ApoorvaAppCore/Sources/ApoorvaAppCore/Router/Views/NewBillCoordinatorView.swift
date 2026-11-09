@@ -13,6 +13,8 @@ struct NewBillCoordinatorView: View {
     /// Shared across `.checkout` and `.upiQR` — both routes act on the same in-progress
     /// sale, so they need the same view model instance, not a fresh one each push.
     @State private var checkoutViewModel: CheckoutViewModel?
+    @State private var isShowingPlanLimit = false
+    @State private var isPlanLimitAcknowledged = false
 
     init(coordinator: NewBillCoordinator, container: AppContainer) {
         self.coordinator = coordinator
@@ -29,11 +31,12 @@ struct NewBillCoordinatorView: View {
                 onEditItem: { _, item in coordinator.push(.lineEdit(itemId: item.category.id)) },
                 onOpenHeldBills: { coordinator.push(.held) },
                 onCheckout: {
-                    checkoutViewModel = container.modulesContainer.makeCheckoutViewModel(
-                        cart: posViewModel.cart,
-                        heldBillId: posViewModel.activeHeldBillId
-                    )
-                    coordinator.push(.checkout)
+                    // Free plan past its limit: explain before billing (grace bills still go through).
+                    if container.appSession.planStatus.isOverLimit && !isPlanLimitAcknowledged {
+                        isShowingPlanLimit = true
+                        return
+                    }
+                    openCheckout()
                 }
             )
             .toolbar {
@@ -45,6 +48,26 @@ struct NewBillCoordinatorView: View {
                 destination(for: route)
             }
         }
+        .sheet(isPresented: $isShowingPlanLimit) {
+            NavigationStack {
+                PlanLimitView(
+                    status: container.appSession.planStatus,
+                    onUpgrade: { isShowingPlanLimit = false; dismiss() },
+                    onContinue: {
+                        isShowingPlanLimit = false
+                        isPlanLimitAcknowledged = true
+                        openCheckout()
+                    },
+                    onRemindTomorrow: {
+                        isShowingPlanLimit = false
+                        isPlanLimitAcknowledged = true
+                        openCheckout()
+                    }
+                )
+            }
+            .presentationDetents([.large])
+        }
+        .maniTheme(from: container.themeStore)
     }
 
     @ViewBuilder
@@ -97,7 +120,15 @@ struct NewBillCoordinatorView: View {
                 onDone: {
                     coordinator.popToRoot()
                     dismiss()
-                }
+                },
+                onUndo: container.appSession.can(.undoOwnBill) ? { sale in
+                    Task {
+                        _ = try? await container.repositoryContainer.saleLifecycleRepository.undo(
+                            saleId: sale.id, by: container.appSession.actorId, now: Date())
+                        posViewModel.load(from: sale)
+                        coordinator.popToRoot()
+                    }
+                } : nil
             )
         case .held:
             HeldBillsView(
@@ -120,6 +151,15 @@ struct NewBillCoordinatorView: View {
         case .parlourPackages:
             NotBuiltView(PlaceholderScreen("Packages"))
         }
+    }
+
+    private func openCheckout() {
+        checkoutViewModel = container.modulesContainer.makeCheckoutViewModel(
+            cart: posViewModel.cart,
+            heldBillId: posViewModel.activeHeldBillId,
+            session: container.appSession
+        )
+        coordinator.push(.checkout)
     }
 
     private func handleSaleConfirmed(_ sale: Sale) {

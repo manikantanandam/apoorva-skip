@@ -35,11 +35,11 @@ public struct MainView: View {
                 .allowsHitTesting(false)
         }
         .sheet(item: $coordinator.presentedGlobalRoute) { route in
-            GlobalRouteView(route: route)
+            GlobalRouteView(route: route, coordinator: coordinator)
                 .maniTheme(from: coordinator.appContainer.themeStore)
         }
         .fullScreenCover(item: $coordinator.fullScreenBlockingRoute) { route in
-            GlobalRouteView(route: route)
+            GlobalRouteView(route: route, coordinator: coordinator)
                 .maniTheme(from: coordinator.appContainer.themeStore)
         }
         .maniTheme(from: coordinator.appContainer.themeStore)

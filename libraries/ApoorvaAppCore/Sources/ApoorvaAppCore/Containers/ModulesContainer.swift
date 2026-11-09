@@ -100,12 +100,14 @@ public class ModulesContainer {
         )
     }
 
-    public func makeCheckoutViewModel(cart: PosCart, heldBillId: String?) -> CheckoutViewModel {
+    public func makeCheckoutViewModel(cart: PosCart, heldBillId: String?, session: AppSession? = nil) -> CheckoutViewModel {
         return CheckoutViewModel(
             cart: cart,
             heldBillId: heldBillId,
             saleRepository: repositoryContainer.saleRepository,
-            userRepository: repositoryContainer.userRepository
+            userRepository: repositoryContainer.userRepository,
+            lifecycle: repositoryContainer.saleLifecycleRepository,
+            session: session
         )
     }
 
@@ -151,12 +153,34 @@ public class ModulesContainer {
         )
     }
     
-    public func makeSaleListViewModel() -> SaleListViewModel {
-        return SaleListViewModel(
-            repository: repositoryContainer.saleRepository
-        )
+    // MARK: - Home & bills
+
+    public func makeHomeViewModel(session: AppSession) -> HomeViewModel {
+        HomeViewModel(session: session,
+                      saleRepository: repositoryContainer.saleRepository,
+                      customerRepository: repositoryContainer.customerRepository,
+                      inventoryRepository: repositoryContainer.inventoryRepository,
+                      dailyCashflowRepository: repositoryContainer.dailyCashflowRepository)
     }
-    
+
+    public func makeBillsViewModel() -> BillsViewModel {
+        BillsViewModel(repository: repositoryContainer.saleRepository, memberRepository: repositoryContainer.memberRepository)
+    }
+
+    public func makeBillDetailViewModel(saleId: String) -> BillDetailViewModel {
+        BillDetailViewModel(saleId: saleId, repository: repositoryContainer.saleRepository,
+                            memberRepository: repositoryContainer.memberRepository)
+    }
+
+    public func makeCancelBillViewModel(saleId: String, actorId: String) -> CancelBillViewModel {
+        CancelBillViewModel(saleId: saleId, lifecycle: repositoryContainer.saleLifecycleRepository, actorId: actorId)
+    }
+
+    public func makeBillEditViewModel(saleId: String, actorId: String) -> BillEditViewModel {
+        BillEditViewModel(saleId: saleId, repository: repositoryContainer.saleRepository,
+                          lifecycle: repositoryContainer.saleLifecycleRepository, actorId: actorId)
+    }
+
     public func makeCashflowTransactionListViewModel() -> CashflowTransactionListViewModel {
         return CashflowTransactionListViewModel(
             repository: repositoryContainer.cashflowRepository
