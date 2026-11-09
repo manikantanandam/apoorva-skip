@@ -61,12 +61,8 @@ public final actor DuesRepository: DuesRepositoryProtocol {
     }
 
     public func recordCashIn(amount: Double, mode: PaymentMode, particulars: String, person: String?, at date: Date) async throws {
-        // Credit isn't money in hand, so it never reaches the cash book.
-        guard let cashflowRepository, amount > 0, mode != .credit else { return }
-        let account: CashflowTransaction.PaymentMode = mode == .cash ? .cash : .upi
-        try await cashflowRepository.saveCashflowTransaction(transaction: CashflowTransaction(
-            timestamp: date, particulars: particulars, amount: amount, transactionType: .credit,
-            paymentMode: account, category: .salesRevenue, fromAccountId: "", toAccountId: account.accountId,
-            person: person, timestampInMs: date.timeIntervalSince1970, updatedAtInMs: Date().timeIntervalSince1970))
+        // Credit isn't money in hand, so the cash book skips it.
+        try await CashBook(repository: cashflowRepository).record(.credit, amount: amount, mode: mode.rawValue, category: .salesRevenue,
+                                                                  particulars: particulars, person: person, at: date)
     }
 }
