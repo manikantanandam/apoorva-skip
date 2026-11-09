@@ -177,6 +177,10 @@ public final class AppSession {
             hasSettingsDoc = true
         }
         stores = (try? await storeRepository.all())?.sorted { $0.createdAt < $1.createdAt } ?? []
+        // A synced-away store must not stay selected: vertical and flags would keep reading its ID.
+        if !stores.contains(where: { $0.id == currentStoreId }), let fallback = stores.first {
+            selectStore(fallback.id)
+        }
         if let uid = user?.id {
             member = try? await memberRepository.get(id: uid)
         }

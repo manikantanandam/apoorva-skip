@@ -61,7 +61,7 @@ public struct SettingsHubView: View {
     private var taxSummary: String {
         switch session.settings.tax.mode {
         case .off: "Off"
-        case .sameForAll: "\(Int(session.settings.tax.ratePercent))%"
+        case .sameForAll: "\(session.settings.tax.ratePercent.formatted(.number.precision(.fractionLength(0...2))))%"
         case .perItem: "Per item"
         }
     }

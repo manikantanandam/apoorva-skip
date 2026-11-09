@@ -157,8 +157,11 @@ struct MoreCoordinatorView: View {
                 case .invite: coordinator.push(.admin(.invite))
                 }
             }
-        case .stores, .selectOrganization:
+        case .selectOrganization:
             OrganizationListView(viewModel: container.modulesContainer.makeOrganizationListViewModel())
+        case .stores:
+            // Store management isn't built yet. Keep it separate from organization selection.
+            NotBuiltView(PlaceholderScreen(title(for: .admin(route))))
         case .members:
             UserListView(viewModel: container.modulesContainer.makeUserListViewModel())
         default:

@@ -29,6 +29,12 @@ struct FlagResolverTests {
         #expect(warranty.source == .org)
     }
 
+    @Test func platformDisableBeatsOrgOptIn() {
+        let warranty = FlagResolver.resolve(.warranty, app: ["billing.warranty": false], org: ["billing.warranty": true])
+        #expect(!warranty.isOn)
+        #expect(warranty.source == .app)
+    }
+
     @Test func appOnlyFlagsIgnoreOrgAndRole() {
         let result = FlagResolver.resolve(.authEmailPassword, org: ["auth.email_password": false])
         #expect(result.isOn)
@@ -65,6 +71,16 @@ struct PermissionMatrixTests {
         var matrix = PermissionMatrix.standard
         matrix.set(.cancelBill, for: .cashier, to: true)
         #expect(matrix.allows(.cancelBill, for: .cashier))
+    }
+
+    @Test func decodedMatrixCannotOverrideLockedCells() {
+        // Grants come straight from storage, so they can't be trusted to respect the locks.
+        let matrix = PermissionMatrix(grants: [
+            OrgRole.manager.rawValue: [Permission.admin.rawValue],
+            OrgRole.cashier.rawValue: []
+        ])
+        #expect(!matrix.allows(.admin, for: .manager))
+        #expect(matrix.allows(.createBill, for: .cashier))
     }
 
     @Test func legacyRolesMapToOrgRoles() {

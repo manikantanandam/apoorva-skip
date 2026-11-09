@@ -90,8 +90,8 @@ public enum FlagResolver {
         guard !flag.isAppOnly else { return FlagResolution(isOn: value, source: source) }
 
         if let orgValue = org[flag.rawValue], orgValue != value {
-            // Orgs can switch off anything, and switch on features that are opt-in by default.
-            if !orgValue || !flag.defaultValue {
+            // Orgs can switch off anything. They can switch on an opt-in feature only when the platform left it unset.
+            if !orgValue || (!flag.defaultValue && app[flag.rawValue] == nil) {
                 value = orgValue
                 source = .org
             }

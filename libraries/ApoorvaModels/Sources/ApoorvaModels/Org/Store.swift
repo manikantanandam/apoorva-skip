@@ -98,4 +98,22 @@ public struct Member: OrgDocument {
         self.updatedAt = updatedAt
         self.isDeleted = isDeleted
     }
+
+    // Missing defaultable fields fall back to the init defaults. Role stays required, so a member never decodes without one.
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decodeIfPresent(String.self, forKey: .id) ?? ""
+        self.name = try container.decodeIfPresent(String.self, forKey: .name) ?? ""
+        self.phone = try container.decodeIfPresent(String.self, forKey: .phone) ?? ""
+        self.email = try container.decodeIfPresent(String.self, forKey: .email) ?? ""
+        self.role = try container.decode(OrgRole.self, forKey: .role)
+        self.storeIds = try container.decodeIfPresent([String].self, forKey: .storeIds) ?? [Store.defaultId]
+        self.isActive = try container.decodeIfPresent(Bool.self, forKey: .isActive) ?? true
+        self.status = try container.decodeIfPresent(String.self, forKey: .status) ?? "active"
+        self.commissionPercent = try container.decodeIfPresent(Double.self, forKey: .commissionPercent)
+        self.baseSalary = try container.decodeIfPresent(Double.self, forKey: .baseSalary)
+        self.joinedAt = try container.decodeIfPresent(Date.self, forKey: .joinedAt)
+        self.updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
+        self.isDeleted = try container.decodeIfPresent(Bool.self, forKey: .isDeleted) ?? false
+    }
 }
