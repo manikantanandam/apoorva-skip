@@ -66,8 +66,10 @@ public final actor SaleLifecycleRepository: SaleLifecycleRepositoryProtocol {
                             reason: reason, refId: sale.id, actorId: actorId)
         let credit = sale.payments[.credit] ?? 0
         if credit > 0 {
-            try await addDue(phone: sale.customerPhone, name: sale.customerName, amount: credit,
-                             kind: .sale, saleId: sale.id, note: "Bill \(sale.billNumber ?? sale.id.prefix(6).description)", actorId: actorId)
+            // A return refunded as store credit lowers what the customer owes.
+            try await addDue(phone: sale.customerPhone, name: sale.customerName, amount: sale.isReturn ? -credit : credit,
+                             kind: sale.isReturn ? .reversal : .sale, saleId: sale.id,
+                             note: "\(sale.isReturn ? "Return" : "Bill") \(sale.billNumber ?? sale.id.prefix(6).description)", actorId: actorId)
         }
     }
 
@@ -83,7 +85,7 @@ public final actor SaleLifecycleRepository: SaleLifecycleRepositoryProtocol {
                             reason: .cancel, refId: saleId, actorId: actorId)
         let credit = original.payments[.credit] ?? 0
         if credit > 0 {
-            try await addDue(phone: original.customerPhone, name: original.customerName, amount: -credit,
+            try await addDue(phone: original.customerPhone, name: original.customerName, amount: original.isReturn ? credit : -credit,
                              kind: .reversal, saleId: saleId, note: "Cancelled: \(reason)", actorId: actorId)
         }
         await audit.log(.bills, action: reason == "Undo" ? "bill.undo" : "bill.cancel",
@@ -135,7 +137,8 @@ public final actor SaleLifecycleRepository: SaleLifecycleRepositoryProtocol {
         guard !lines.isEmpty else { return }
         let items = try await inventoryRepository.getInventoryItems()
         var movements: [StockMovement] = []
-        for line in lines where line.delta != 0 {
+        // Quick items ("custom-…") and packages ("package:…") aren't stocked.
+        for line in lines where line.delta != 0 && !line.id.hasPrefix("custom-") && !line.id.hasPrefix("package:") {
             movements.append(StockMovement(itemId: line.id, itemName: line.name, delta: line.delta, reason: reason,
                                            refId: refId, createdBy: actorId))
             guard var item = items.first(where: { $0.id == line.id }) else { continue }

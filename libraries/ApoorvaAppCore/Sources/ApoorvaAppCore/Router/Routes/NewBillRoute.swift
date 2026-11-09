@@ -1,10 +1,11 @@
 import Foundation
 
 enum NewBillRoute: Hashable, Identifiable {
-    case verticalPicker
     case customerPicker
-    case lineEdit(itemId: String)
-    case discount
+    /// Edit an existing bill line (design 33).
+    case lineEdit(lineId: String)
+    /// Add an item that has no price on file yet (design 33, new line).
+    case newLine(itemId: String)
     case checkout
     case split
     case upiQR
@@ -20,13 +21,12 @@ enum NewBillRoute: Hashable, Identifiable {
     var id: Self { self }
 }
 
-/// Bottom sheets over the POS screen (designs 27, 28, 32, 34, 41).
+/// Bottom sheets over the POS screen (designs 27, 28, 32, 34). Price tier (41) is inline.
 enum NewBillSheet: Hashable, Identifiable {
     case weight(itemId: String)
     case customItem
     case variant(itemId: String)
     case discount
-    case priceTier
 
     var id: Self { self }
 }

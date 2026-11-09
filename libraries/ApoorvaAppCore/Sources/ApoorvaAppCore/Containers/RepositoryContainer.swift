@@ -102,6 +102,39 @@ public class RepositoryContainer {
     public lazy var storeRepository = makeOrgCollectionRepository(Store.self)
     public lazy var memberRepository = makeOrgCollectionRepository(Member.self)
     public lazy var supplierRepository = makeOrgCollectionRepository(Supplier.self)
+    public lazy var servicePackageRepository = makeOrgCollectionRepository(ServicePackage.self)
+    public lazy var customerPackageRepository = makeOrgCollectionRepository(CustomerPackage.self)
+    public lazy var orderRepository = makeOrgCollectionRepository(Order.self)
+    public lazy var warrantyClaimRepository = makeOrgCollectionRepository(WarrantyClaim.self)
+    public lazy var categoryRepository = makeOrgCollectionRepository(ItemCategory.self)
+    public lazy var purchaseRepository = makeOrgCollectionRepository(Purchase.self)
+    public lazy var supplierLedgerRepository = makeOrgCollectionRepository(SupplierLedgerEntry.self)
+    public lazy var expenseRepository = makeOrgCollectionRepository(Expense.self)
+    public lazy var dayCloseRepository = makeOrgCollectionRepository(DayClose.self)
+    public lazy var attendanceRepository = makeOrgCollectionRepository(AttendanceRecord.self)
+    public lazy var salaryPaymentRepository = makeOrgCollectionRepository(SalaryPayment.self)
+
+    public lazy var cashBook = CashBook(repository: cashflowRepository)
+
+    public lazy var stockRepository: StockRepositoryProtocol = StockRepository(
+        inventoryRepository: inventoryRepository, movements: stockMovementRepository, purchases: purchaseRepository,
+        supplierLedger: supplierLedgerRepository, cashBook: cashBook, audit: auditLogger)
+
+    public lazy var moneyRepository: MoneyRepositoryProtocol = MoneyRepository(
+        expenses: expenseRepository, dayCloses: dayCloseRepository, summaries: dailyCashflowRepository,
+        cashBook: cashBook, audit: auditLogger)
+
+    public lazy var peopleRepository: PeopleRepositoryProtocol = PeopleRepository(
+        attendance: attendanceRepository, salaryPayments: salaryPaymentRepository, expenses: expenseRepository,
+        cashBook: cashBook, audit: auditLogger)
+
+    /// Collecting dues: ledger, customer balance, cash book, audit.
+    public lazy var duesRepository: DuesRepositoryProtocol = DuesRepository(
+        customerRepository: customerRepository,
+        ledgerRepository: customerLedgerRepository,
+        cashflowRepository: cashflowRepository,
+        audit: auditLogger
+    )
 
     /// Keeps a bill's stock, dues and audit trail consistent across save / cancel / undo / edit.
     public lazy var saleLifecycleRepository: SaleLifecycleRepositoryProtocol = SaleLifecycleRepository(
@@ -132,6 +165,17 @@ public class RepositoryContainer {
             storeRepository,
             memberRepository,
             supplierRepository,
+            servicePackageRepository,
+            customerPackageRepository,
+            orderRepository,
+            warrantyClaimRepository,
+            categoryRepository,
+            purchaseRepository,
+            supplierLedgerRepository,
+            expenseRepository,
+            dayCloseRepository,
+            attendanceRepository,
+            salaryPaymentRepository,
             customerLedgerRepository,
             stockMovementRepository,
             auditRepository

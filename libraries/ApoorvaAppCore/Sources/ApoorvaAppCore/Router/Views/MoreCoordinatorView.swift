@@ -49,7 +49,7 @@ struct MoreCoordinatorView: View {
         case .inventory: coordinator.push(.stock(.inventory(.list)))
         case .suppliers: coordinator.push(.stock(.suppliers))
         case .reorder: coordinator.push(.stock(.reorder))
-        case .cashflow: coordinator.push(.money(.cashflowHistory))
+        case .cashflow: coordinator.push(.money(.cashflowDay(date: Date())))
         case .expenses: coordinator.push(.money(.expenses))
         case .summary: coordinator.push(.money(.dailySummary))
         case .insights: coordinator.push(.money(.insights(.overview)))
@@ -88,27 +88,54 @@ struct MoreCoordinatorView: View {
             } else {
                 NotBuiltView(PlaceholderScreen("Developer"))
             }
+        case .sell(let sellRoute):
+            sellDestination(for: sellRoute)
         case .stock(.inventory(let inventoryRoute)):
             inventoryDestination(for: inventoryRoute)
-        case .money(.cashflowHistory):
-            DailyCashflowListView(
-                viewModel: container.modulesContainer.makeDailyCashflowListViewModel(),
-                onSelectDate: { date in coordinator.push(.money(.cashflowDay(date: date))) }
-            )
-        case .money(.cashflowDay(let date)):
-            DailyCashFlowView(
-                viewModel: container.modulesContainer.makeDailyCashflowViewModel(selectedDate: date),
-                makeAddUpdateSummaryViewModel: { date, summary in
-                    container.modulesContainer.makeAddUpdateDailyCashflowViewModel(existingSummary: summary, date: date)
-                },
-                makeAddUpdateTransactionViewModel: { date, transaction in
-                    container.modulesContainer.makeAddUpdateCashflowTransactionViewModel(existingTransaction: transaction, defaultDate: date)
-                }
-            )
+        case .stock(let stockRoute):
+            stockDestination(for: stockRoute)
         case .money(.transactions):
             CashflowTransactionListView(viewModel: container.modulesContainer.makeCashflowTransactionListViewModel())
+        case .money(let moneyRoute):
+            moneyDestination(for: moneyRoute)
+        case .people(let peopleRoute):
+            peopleDestination(for: peopleRoute)
         default:
             NotBuiltView(PlaceholderScreen(title(for: route)))
+        }
+    }
+
+    @ViewBuilder
+    private func sellDestination(for route: SellRoute) -> some View {
+        switch route {
+        case .orders:
+            Retained(container.modulesContainer.makeOrdersViewModel()) { viewModel in
+                OrdersListView(viewModel: viewModel,
+                               onAdd: { coordinator.push(.sell(.orderAdd)) },
+                               onSelect: { order in coordinator.push(.sell(.orderDetail(orderId: order.id))) })
+            }
+        case .orderAdd:
+            Retained(container.modulesContainer.makeOrderFormViewModel(session: session)) { viewModel in
+                OrderFormView(viewModel: viewModel) { order in
+                    coordinator.pop()
+                    coordinator.push(.sell(.orderDetail(orderId: order.id)))
+                }
+            }
+        case .orderDetail(let orderId):
+            Retained(container.modulesContainer.makeOrderDetailViewModel(orderId: orderId, session: session)) { viewModel in
+                OrderDetailView(viewModel: viewModel) { cart in tabs.startBill(with: cart) }
+            }
+        case .heldBills:
+            HeldBillsView(viewModel: container.modulesContainer.makeHeldBillsViewModel()) { bill in
+                tabs.startBill(with: PosCart(items: bill.items,
+                                             customerPhone: bill.customerPhone.isEmpty ? nil : bill.customerPhone,
+                                             customerName: bill.customerName.isEmpty ? nil : bill.customerName),
+                               heldBillId: bill.id)
+            }
+        case .warranty:
+            Retained(container.modulesContainer.makeWarrantyViewModel(actorId: session.actorId)) { viewModel in
+                WarrantyView(viewModel: viewModel)
+            }
         }
     }
 
@@ -180,19 +207,172 @@ struct MoreCoordinatorView: View {
 
     @ViewBuilder
     private func inventoryDestination(for route: InventoryRoute) -> some View {
+        let canEdit = session.can(.editInventory) && session.isOn(.inventoryEdit)
         switch route {
         case .list:
-            InventoryView(viewModel: container.modulesContainer.makeInventoryViewModel())
-        case .add, .edit:
-            NotBuiltView(PlaceholderScreen("Add inventory item"))
-        case .item:
-            NotBuiltView(PlaceholderScreen("Inventory item"))
-        case .adjust:
-            NotBuiltView(PlaceholderScreen("Adjust stock"))
+            Retained(container.modulesContainer.makeInventoryViewModel()) { viewModel in
+                InventoryView(viewModel: viewModel,
+                              onSelect: { item in coordinator.push(.stock(.inventory(.item(itemId: item.id)))) },
+                              onAdd: canEdit ? { coordinator.push(.stock(.inventory(.add))) } : nil,
+                              onMenu: { menu in
+                                  switch menu {
+                                  case .categories: coordinator.push(.stock(.inventory(.categories)))
+                                  case .bulkImport: coordinator.push(.stock(.inventory(.bulkImport)))
+                                  case .reorder: coordinator.push(.stock(.reorder))
+                                  case .suppliers: coordinator.push(.stock(.suppliers))
+                                  }
+                              })
+            }
+        case .add:
+            Retained(container.modulesContainer.makeItemFormViewModel(itemId: nil)) { viewModel in
+                ItemFormView(viewModel: viewModel, showsWholesale: session.isOn(.wholesalePrice), showsWarranty: session.isOn(.warranty)) { item in
+                    coordinator.pop()
+                    coordinator.push(.stock(.inventory(.item(itemId: item.id))))
+                }
+            }
+        case .edit(let itemId):
+            Retained(container.modulesContainer.makeItemFormViewModel(itemId: itemId)) { viewModel in
+                ItemFormView(viewModel: viewModel, showsWholesale: session.isOn(.wholesalePrice), showsWarranty: session.isOn(.warranty),
+                             onSaved: { _ in coordinator.pop() },
+                             onDeleted: { coordinator.path = [.stock(.inventory(.list))] })
+            }
+        case .item(let itemId):
+            Retained(container.modulesContainer.makeInventoryItemViewModel(itemId: itemId)) { viewModel in
+                InventoryItemView(viewModel: viewModel, canEdit: canEdit,
+                                  onAdjust: { coordinator.push(.stock(.inventory(.adjust(itemId: itemId)))) },
+                                  onEdit: { coordinator.push(.stock(.inventory(.edit(itemId: itemId)))) })
+            }
+        case .adjust(let itemId):
+            Retained(container.modulesContainer.makeStockAdjustViewModel(itemId: itemId, actorId: session.actorId)) { viewModel in
+                StockAdjustView(viewModel: viewModel) { coordinator.pop() }
+            }
         case .categories:
-            NotBuiltView(PlaceholderScreen("Inventory categories"))
+            Retained(container.modulesContainer.makeCategoriesViewModel()) { viewModel in
+                CategoriesView(viewModel: viewModel)
+            }
         case .bulkImport:
-            NotBuiltView(PlaceholderScreen("Bulk import"))
+            Retained(container.modulesContainer.makeItemImportViewModel()) { viewModel in
+                ItemImportView(viewModel: viewModel) { _ in coordinator.pop() }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func stockDestination(for route: StockRoute) -> some View {
+        switch route {
+        case .inventory(let inventoryRoute):
+            inventoryDestination(for: inventoryRoute)
+        case .suppliers:
+            Retained(container.modulesContainer.makeSuppliersViewModel()) { viewModel in
+                SuppliersView(viewModel: viewModel,
+                              onAdd: { coordinator.push(.stock(.supplierAdd)) },
+                              onSelect: { supplier in coordinator.push(.stock(.supplierDetail(supplierId: supplier.id))) })
+            }
+        case .supplierAdd:
+            Retained(container.modulesContainer.makeSupplierFormViewModel()) { viewModel in
+                SupplierFormView(viewModel: viewModel) { supplier in
+                    coordinator.pop()
+                    coordinator.push(.stock(.supplierDetail(supplierId: supplier.id)))
+                }
+            }
+        case .supplierDetail(let supplierId):
+            Retained(container.modulesContainer.makeSupplierDetailViewModel(supplierId: supplierId, actorId: session.actorId)) { viewModel in
+                SupplierDetailView(viewModel: viewModel) { coordinator.push(.stock(.purchaseAdd(supplierId: supplierId))) }
+            }
+        case .purchaseAdd(let supplierId, let lines):
+            Retained(container.modulesContainer.makePurchaseFormViewModel(supplierId: supplierId, lines: lines, actorId: session.actorId)) { viewModel in
+                PurchaseFormView(viewModel: viewModel,
+                                 onSaved: { _ in coordinator.pop() },
+                                 onAddSupplier: { coordinator.push(.stock(.supplierAdd)) })
+            }
+        case .reorder:
+            Retained(container.modulesContainer.makeReorderViewModel(session: session)) { viewModel in
+                ReorderView(viewModel: viewModel) { supplierId, lines in
+                    coordinator.push(.stock(.purchaseAdd(supplierId: supplierId, lines: lines)))
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func moneyDestination(for route: MoneyRoute) -> some View {
+        switch route {
+        case .cashflowDay(let date):
+            Retained(container.modulesContainer.makeCashDayViewModel(date: date)) { viewModel in
+                CashDayView(viewModel: viewModel, canClose: session.can(.dayClose),
+                            onAdd: { coordinator.push(.money(.cashflowAdd(date: date))) },
+                            onClose: { coordinator.push(.money(.cashflowClose(date: date))) },
+                            onHistory: { coordinator.push(.money(.cashflowHistory)) })
+            }
+        case .cashflowAdd:
+            Retained(container.modulesContainer.makeCashEntryViewModel(actorId: session.actorId)) { viewModel in
+                CashEntryView(viewModel: viewModel) { coordinator.pop() }
+            }
+        case .cashflowClose(let date):
+            Retained(container.modulesContainer.makeDayCloseViewModel(date: date, session: session)) { viewModel in
+                DayCloseView(viewModel: viewModel) {
+                    coordinator.pop()
+                    coordinator.push(.money(.dailySummary))
+                }
+            }
+        case .cashflowHistory:
+            Retained(container.modulesContainer.makeCashHistoryViewModel(actorId: session.actorId)) { viewModel in
+                CashHistoryView(viewModel: viewModel, canReopen: session.can(.dayReopen)) { date in
+                    coordinator.push(.money(.cashflowDay(date: date)))
+                }
+            }
+        case .transactions:
+            CashflowTransactionListView(viewModel: container.modulesContainer.makeCashflowTransactionListViewModel())
+        case .expenses:
+            Retained(container.modulesContainer.makeExpensesViewModel()) { viewModel in
+                ExpensesView(viewModel: viewModel,
+                             onAdd: { coordinator.push(.money(.expenseAdd(expenseId: nil))) },
+                             onSelect: { expense in coordinator.push(.money(.expenseAdd(expenseId: expense.id))) })
+            }
+        case .expenseAdd(let expenseId):
+            Retained(container.modulesContainer.makeExpenseFormViewModel(expenseId: expenseId, actorId: session.actorId)) { viewModel in
+                ExpenseFormView(viewModel: viewModel) { coordinator.pop() }
+            }
+        case .dailySummary:
+            Retained(container.modulesContainer.makeDailySummaryViewModel(session: session)) { viewModel in
+                DailySummaryView(viewModel: viewModel)
+            }
+        case .insights(let insightsRoute):
+            Retained(container.modulesContainer.makeInsightsViewModel(session: session)) { viewModel in
+                InsightsView(viewModel: viewModel, tab: insightsTab(for: insightsRoute),
+                             isServiceShop: session.vertical.billingStyle == .services,
+                             canExport: session.can(.exportReports) && session.isOn(.insightsExport))
+            }
+        }
+    }
+
+    private func insightsTab(for route: InsightsRoute) -> InsightsTab {
+        switch route {
+        case .overview: .overview
+        case .profit: .profit
+        case .items: .items
+        case .customers: .customers
+        case .staff: .staff
+        case .reports: .reports
+        }
+    }
+
+    @ViewBuilder
+    private func peopleDestination(for route: PeopleRoute) -> some View {
+        switch route {
+        case .staff:
+            Retained(container.modulesContainer.makeInsightsViewModel(session: session)) { viewModel in
+                InsightsView(viewModel: viewModel, tab: .staff, isServiceShop: session.vertical.billingStyle == .services,
+                             canExport: session.can(.exportReports) && session.isOn(.insightsExport))
+            }
+        case .attendance:
+            Retained(container.modulesContainer.makeAttendanceViewModel(actorId: session.actorId)) { viewModel in
+                AttendanceView(viewModel: viewModel, canMark: session.can(.markAttendance))
+            }
+        case .salary:
+            Retained(container.modulesContainer.makeSalaryViewModel(actorId: session.actorId)) { viewModel in
+                SalaryView(viewModel: viewModel)
+            }
         }
     }
 
