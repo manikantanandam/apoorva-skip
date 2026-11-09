@@ -1,4 +1,5 @@
 import Foundation
+import ApoorvaModels
 
 /// Root of the "More" tab. Groups per docs/04-ui-design.md §2:
 /// Sell · Stock · Money · People · Settings · Admin (owner/org admin) ·
@@ -30,7 +31,7 @@ enum StockRoute: Hashable {
     case suppliers
     case supplierDetail(supplierId: String)
     case supplierAdd
-    case purchaseAdd(supplierId: String?)
+    case purchaseAdd(supplierId: String?, lines: [PurchaseLine] = [])
     case reorder
 }
 

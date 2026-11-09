@@ -34,10 +34,19 @@ Baseline of the **live** Firestore structure as read by this app. Derived from c
 | `organizations/{orgId}/customerPackages/{id}` | UUID string | `CustomerPackage`: package snapshot, customer phone/name, sessions/sessionsUsed, purchasedAt, validUntil, saleId. Created after a bill with a `package:` line is saved; "Use 1 session" increments `sessionsUsed` and writes an audit event |
 | `organizations/{orgId}/orders/{id}` | UUID string | `Order`: number (`O-0001`, from the local count, so offline devices can collide like bill numbers), customer phone/name, details, total, advance + mode, readyBy, pickup/delivery, status `open`/`ready`/`delivered`/`cancelled`, readyAt/deliveredAt, saleId |
 | `organizations/{orgId}/warrantyClaims/{id}` | UUID string | `WarrantyClaim`: saleId, billNumber, item id/name, customer phone, action `replace`/`repair`/`refund`, note |
+| `organizations/{orgId}/categories/{id}` | UUID string | `ItemCategory`: name, sortOrder (billing chip order). Items point at it via `inventory.categoryId` |
+| `organizations/{orgId}/purchases/{id}` | UUID string | `Purchase`: number (`P-001`), supplier id/name, isReturn, lines (item, qty, unit cost; empty for "total only"), total, paid + mode, note |
+| `organizations/{orgId}/supplierLedger/{id}` | UUID string | `SupplierLedgerEntry`: supplierId, kind `purchase`/`payment`/`purchaseReturn`, signed amount (+ = shop owes more), mode, purchaseId. Owed = `Supplier.openingDue` + sum |
+| `organizations/{orgId}/expenses/{id}` | UUID string | `Expense`: title, category, amount, mode `cash`/`upi`/`bank`, date, repeatsMonthly |
+| `organizations/{orgId}/dayCloses/{dd-MM-yyyy}` | day key | `DayClose`: expected and counted cash, note, carryForward, closedBy/Name/At. Reopen soft-deletes it |
+| `organizations/{orgId}/attendance/{dd-MM-yyyy_memberId}` | day + member | `AttendanceRecord`: status `present`/`half`/`absent`/`leave`, inAt, markedBy |
+| `organizations/{orgId}/salaryPayments/{id}` | UUID string | `SalaryPayment`: member, month `yyyy-MM`, kind `salary`/`advance`, amount, mode |
 | `invites/{token}` | 8-char code | `Invite` (top-level: the joiner doesn't know the org yet). Org, store, role, inviter, 72 h `expiresAt` (checked on the client only), `acceptedBy`/`acceptedAt` |
 | `platform/config` | fixed | `PlatformConfig`: app-level flags (incl. `auth.*`), `minAppVersion`, default visual style, trial/free/grace limits. Written only by superAdmin from the console |
 
 Every doc in a new org collection carries `updatedAt`, `isDeleted` and a server-set `serverUpdatedAt`.
+
+**Cash book** (`CashBook`, writing the legacy `cashflow` collection): cash entries, expenses (once, when first saved), supplier payments and paid parts of purchases, salary and advances post a debit. Dues collected and order advances post a credit. Cash goes to the cash account; UPI, card and bank go to the bank account; credit is never posted. Closing a day also writes the legacy `dailyCashflowSummaries/{dd-MM-yyyy}` doc: `locked: true`, with the counted cash as the cash account's closing balance (and tomorrow's opening, when carried forward). A paid salary also creates a `Salary` expense. Bill sales are not copied into `cashflow`; screens add them from `sales`. Inventory writes now include item add/edit/delete, adjustments and purchases (explicit-field merge, as before).
 
 **Dues and advances** (`DuesRepository`): collecting a due writes a `customerLedger` `payment` entry (negative amount), lowers the customer's `dueBalance` (floored at 0), adds a `cashflow` credit (`Sales Revenue`; card is booked to the bank account; credit never is) and an audit event. An order advance is booked as a cashflow credit when taken; delivering the order bills only the balance as a `custom-order-<orderId>` line, and saving that bill marks the order delivered.
 
