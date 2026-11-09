@@ -1,4 +1,5 @@
 import Foundation
+import ApoorvaModels
 
 @MainActor
 @Observable
@@ -25,6 +26,14 @@ final class HomeTabsCoordinator {
     }
 
     func newBillTapped() {
+        isPresentingNewBill = true
+    }
+
+    /// Opens New Bill with a cart already filled in: a customer attached, an order's balance, a held bill.
+    func startBill(with cart: PosCart, heldBillId: String? = nil) {
+        newBillCoordinator.pendingCart = cart
+        newBillCoordinator.pendingHeldBillId = heldBillId
+        newBillCoordinator.popToRoot()
         isPresentingNewBill = true
     }
 

@@ -9,6 +9,7 @@ import SwiftUI
 import ApoorvaModels
 import ManiSwiftUIComponents
 
+/// Customers with dues filter (design 61).
 public struct CustomerListView: View {
     @Environment(\.maniTheme) private var theme
 
@@ -20,125 +21,71 @@ public struct CustomerListView: View {
 
     private let onSelectCustomer: (Customer) -> Void
     private let onAddCustomer: () -> Void
+    private let onImport: (() -> Void)?
+    private let onOffers: (() -> Void)?
 
     public init(viewModel: CustomerListViewModel,
                 onSelectCustomer: @escaping (Customer) -> Void,
-                onAddCustomer: @escaping () -> Void) {
+                onAddCustomer: @escaping () -> Void,
+                onImport: (() -> Void)? = nil,
+                onOffers: (() -> Void)? = nil) {
         self.viewModel = viewModel
         self.onSelectCustomer = onSelectCustomer
         self.onAddCustomer = onAddCustomer
+        self.onImport = onImport
+        self.onOffers = onOffers
     }
 
     public var body: some View {
-        ScrollView {
-            LazyVStack(spacing: ManiSpacing.md) {
-                ManiSearchField(text: $viewModel.searchText, placeholder: "Search by name or phone")
-                    .padding(.horizontal, ManiSpacing.lg)
-                    .padding(.top, ManiSpacing.sm)
-
-                if viewModel.filteredCustomers.isEmpty {
-                    ManiNote("No customers found.", kind: .warning)
-                        .padding(.horizontal, ManiSpacing.lg)
-                        .padding(.top, ManiSpacing.lg)
-                } else {
+        ScreenScroll(spacing: ManiSpacing.md) {
+            ScreenSubtitle(text: viewModel.subtitle)
+            ManiSearchField(text: $viewModel.searchText, placeholder: "Name or phone")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: ManiSpacing.sm) {
+                    ForEach(CustomerFilter.allCases, id: \.self) { filter in
+                        ManiChip(filter.rawValue, isSelected: viewModel.filter == filter) { viewModel.filter = filter }
+                    }
+                }
+            }
+            if viewModel.filteredCustomers.isEmpty {
+                ManiEmptyState(icon: .customers,
+                               title: viewModel.customers.isEmpty ? "No customers yet" : "No match",
+                               message: viewModel.customers.isEmpty ? "Customers are added when you bill them, or add one now." : nil,
+                               actionTitle: viewModel.customers.isEmpty ? "Add customer" : nil,
+                               action: viewModel.customers.isEmpty ? onAddCustomer : nil)
+            } else {
+                RowsCard {
                     ForEach(viewModel.filteredCustomers) { item in
-                        Button {
-                            onSelectCustomer(item)
-                        } label: {
-                        ManiCard {
-                            VStack(alignment: .leading, spacing: ManiSpacing.sm) {
-                                HStack(spacing: ManiSpacing.sm) {
-                                    ManiListRow(
-                                        avatar: ManiAvatar(initials: initials(for: item.name)),
-                                        title: item.name,
-                                        subtitle: item.phone
-                                    )
-                                    Button(action: { call(item) }) {
-                                        Image(systemName: "phone.fill")
-                                            .foregroundStyle(theme.accent.accent)
-                                    }
-                                    .buttonStyle(.plain)
-                                    Button(action: { onSelectCustomer(item) }) {
-                                        Image(systemName: "clock.arrow.circlepath")
-                                            .foregroundStyle(theme.base.textSecondary)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-
-                                Divider().overlay(theme.base.border)
-
-                                ManiBreakdownRow(label: "Total Sales", value: "\(item.totalSales)")
-                                ManiBreakdownRow(label: "Total Spent", value: "\(item.totalAmountSpent)")
-                                ManiBreakdownRow(
-                                    label: "Created Date",
-                                    value: Date(timeIntervalSince1970: item.createdAt)
-                                        .toString(format: "dd-MM-yyyy") ?? ""
-                                )
-                                if let lastPurchaseDate = item.lastPurchaseDate {
-                                    ManiBreakdownRow(
-                                        label: "Last Purchased Date",
-                                        value: Date(timeIntervalSince1970: lastPurchaseDate)
-                                            .toString(format: "dd-MM-yyyy") ?? ""
-                                    )
-                                } else {
-                                    ManiBreakdownRow(label: "Last Purchased Date", value: "No purchase")
-                                }
+                        ManiListRow(avatar: ManiAvatar(initials: initials(for: item.name)),
+                                    title: item.name,
+                                    subtitle: "\(item.phone) · \(item.lastVisitText)",
+                                    value: item.dueBalance > 0 ? Money.format(item.dueBalance) : "—",
+                                    status: item.dueBalance > 0 ? ("Due", .warning) : nil) { onSelectCustomer(item) }
+                            .contextMenu {
+                                Button("Call") { call(item) }
                             }
-                        }
-                        .padding(.horizontal, ManiSpacing.lg)
-                        }
-                        .buttonStyle(.plain)
                     }
                 }
             }
-            .padding(.vertical, ManiSpacing.lg)
         }
-        .background(theme.base.background.ignoresSafeArea())
-        .overlay(alignment: .bottomTrailing) {
-            Button(action: onAddCustomer) {
-                Image(systemName: "plus")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(theme.accent.on)
-                    .frame(width: 52, height: 52)
-                    .background(Circle().fill(theme.accent.accent))
-                    .shadow(radius: 4)
-            }
-            .padding(ManiSpacing.lg)
-        }
-        .toolbar{
+        .refreshable { await viewModel.forceSync() }
+        .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button(action: {
-                    Task {
-                        await viewModel.forceSync()
-                    }
-                }) {
-                    Label("Sync", systemImage: "arrow.clockwise")
+                Button(action: onAddCustomer) {
+                    ManiSwiftUIComponents.IconView(.plus, size: 18, color: theme.base.text)
                 }
+                .accessibilityLabel("Add customer")
             }
-            
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Picker("Sort By", selection: $viewModel.sortOption) {
-                        ForEach(CustomerSortOption.allCases, id: \.self) { option in
-                            Text(option.rawValue).tag(option)
-                        }
-                    }
+                    if let onImport { Button("Import from contacts", action: onImport) }
+                    if let onOffers { Button("Wishes & offers", action: onOffers) }
+                    Button("Export") { isShowingFormatSheet = true }
+                    Button("Sync now") { Task { await viewModel.forceSync() } }
                 } label: {
-                    Label("Sort", systemImage: "arrow.up.arrow.down")
+                    ManiSwiftUIComponents.IconView(.more, size: 18, color: theme.base.text)
                 }
             }
-            
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(action: {
-                    Task {
-                        isShowingFormatSheet = true
-                    }
-                }) {
-                    Label("Export", systemImage: "square.and.arrow.up")
-                }
-            }
-            
-
         }
         .task {
             await viewModel.prepareDate()
