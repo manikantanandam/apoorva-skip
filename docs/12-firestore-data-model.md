@@ -29,6 +29,8 @@ Baseline of the **live** Firestore structure as read by this app. Derived from c
 | `organizations/{orgId}/settings/org` | fixed id `org` | `OrgSettings`: profile (shop name, vertical, bill prefix, setup progress), tax, receipt, payments, theme (accent, Clean/Bold, font, lock), flags (org/store/role), permission matrix, plan. **Missing on legacy orgs** — the app treats that as "already set up" with defaults |
 | `organizations/{orgId}/stores/{id}` | UUID string (`default` for the implicit single store) | `Store`: name, vertical, address, prefix, accent |
 | `organizations/{orgId}/members/{uid}` | Firebase uid | `Member`: org role (owner/manager/cashier/accountant), store access, active/invited. Overrides the role derived from legacy `users.role`, which is never rewritten |
+| `organizations/{orgId}/suppliers/{id}` | UUID string | `Supplier`: name, phone, opening due (written by onboarding opening balances; purchases/ledger in a later phase) |
+| `invites/{token}` | 8-char code | `Invite` (top-level: the joiner doesn't know the org yet). Org, store, role, inviter, 72 h `expiresAt` (checked on the client only), `acceptedBy`/`acceptedAt` |
 | `platform/config` | fixed | `PlatformConfig`: app-level flags (incl. `auth.*`), `minAppVersion`, default visual style, trial/free/grace limits. Written only by superAdmin from the console |
 
 Every doc in a new org collection carries `updatedAt`, `isDeleted` and a server-set `serverUpdatedAt`.
@@ -146,6 +148,8 @@ The live app and production data must not be affected.
 6. Writes to legacy collections are signed off only in these additive shapes:
    - `sales`: new docs (`SaleService.addSale`); status change to `"Cancelled"` with `cancelReason`/`cancelledBy`/`cancelledAt` (`updateSaleStatus`, never deletes); edits of lines/totals/payments with `editReason`/`editedAt` (`updateSale`).
    - `customers`: post-sale stat bumps (`upsertCustomerAfterSale`) and, from the customers screens, creating/updating a customer with the additive fields above.
+   - `organizations/{newId}`: onboarding creates new org docs in the legacy shape (`OrganizationSetupService.createShop`); it never edits existing ones except the console's `status` change.
+   - `users/{uid}`: onboarding and invite acceptance write the full profile for **new** accounts (and `assignedOrgs`/`selectedOrganization` when joining); legacy profiles are only updated, never replaced.
    - `inventory` and `organizations`: signed off for the inventory, shop setup and settings screens, additive optional fields only, `setData(merge: true)`; never retype or remove legacy fields.
    Anything broader needs its own sign-off. The legacy Dart app must tolerate `status: "Cancelled"` and unknown fields — ⚠ verify before shipping cancel.
 7. Develop and test against the Firebase Emulator or a separate project, never production.

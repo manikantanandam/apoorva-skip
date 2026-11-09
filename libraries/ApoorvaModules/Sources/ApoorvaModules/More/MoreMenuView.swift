@@ -14,6 +14,7 @@ public enum MoreMenuItem: Hashable, Sendable {
     case cashflow, expenses, summary, insights
     case staff, attendance, salary
     case settings, admin, console, help, developer
+    case switchStaff, exitDemo
 }
 
 /// Counts shown next to menu chips ("Orders · 4"). Nil hides the count.
@@ -61,6 +62,11 @@ public struct MoreMenuView: View {
             }
             ScreenSubtitle(text: "\(session.displayShopName) · \(session.role.title)")
 
+            if session.isDemo {
+                ManiNote("You're in a sample shop. Nothing here is saved.", kind: .info)
+                ManiButton("Exit demo & create my shop") { onSelect(.exitDemo) }
+            }
+
             group("Sell", items: sellItems)
             group("Stock", items: stockItems)
             group("Money", items: moneyItems)
@@ -68,6 +74,10 @@ public struct MoreMenuView: View {
 
             RowsCard {
                 NavRow(icon: .settings, title: "Settings", subtitle: "Billing style, printer, tax, language") { onSelect(.settings) }
+                Divider()
+                NavRow(icon: .people, title: "Switch staff", subtitle: session.actingMember.map { "Billing as \($0.name)" } ?? "Shared phone? Switch with a PIN") {
+                    onSelect(.switchStaff)
+                }
                 if session.can(.admin) {
                     Divider()
                     NavRow(icon: .shield, title: "Admin", subtitle: "Stores, staff & roles, theme") { onSelect(.admin) }

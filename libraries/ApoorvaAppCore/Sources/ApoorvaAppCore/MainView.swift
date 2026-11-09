@@ -43,6 +43,7 @@ public struct MainView: View {
                 .maniTheme(from: coordinator.appContainer.themeStore)
         }
         .maniTheme(from: coordinator.appContainer.themeStore)
+        .onOpenURL { url in coordinator.handle(url: url) }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, case .ready = coordinator.phase {
                 Task { await coordinator.syncAll() }

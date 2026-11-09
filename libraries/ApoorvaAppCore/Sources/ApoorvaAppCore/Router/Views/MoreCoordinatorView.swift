@@ -9,6 +9,7 @@ struct MoreCoordinatorView: View {
     @State private var counts = MoreMenuCounts()
     @State private var memberCount = 0
     @State private var lastSync: Date?
+    @State private var isSwitchingStaff = false
 
     private var session: AppSession { container.appSession }
 
@@ -30,6 +31,12 @@ struct MoreCoordinatorView: View {
         .sheet(item: $coordinator.presentedSheet) { route in
             NavigationStack {
                 destination(for: route)
+            }
+        }
+        .sheet(isPresented: $isSwitchingStaff) {
+            NavigationStack {
+                PinSwitchView(viewModel: container.modulesContainer.makePinSwitchViewModel(session: session),
+                              onSwitched: { isSwitchingStaff = false })
             }
         }
     }
@@ -54,6 +61,8 @@ struct MoreCoordinatorView: View {
         case .console: coordinator.push(.console(.home))
         case .help: tabs.present(.help)
         case .developer: coordinator.push(.developer(.hub))
+        case .switchStaff: isSwitchingStaff = true
+        case .exitDemo: Task { await tabs.appCoordinator?.exitDemo() }
         }
     }
 
