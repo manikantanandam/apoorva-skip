@@ -21,6 +21,8 @@ public final class AppCoordinator {
     private var snapshot = SessionSnapshot(account: nil, profile: nil)
     private var platform = PlatformConfig()
     private var lastOrgId: String?
+    /// Invite code from an `apoorva://join/<code>` link, consumed by onboarding.
+    var pendingInviteCode: String?
 
     public init(appContainer: AppContainer = AppContainer()) {
         self.appContainer = appContainer
@@ -49,6 +51,7 @@ public final class AppCoordinator {
     /// Re-derives the phase. Coordinators are only rebuilt when the phase key changes, so a
     /// profile update or a platform config change doesn't reset the user's navigation.
     func recompute() async {
+        guard !session.isDemo else { return }
         let profile = snapshot.profile
         let orgId = profile?.selectedOrganization?.orgId
 
@@ -110,18 +113,23 @@ public final class AppCoordinator {
         case .loading:
             sessionState = .loading
         case .signedOut:
-            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .splash))
+            let onboarding = OnboardingCoordinator(container: appContainer, root: .splash, appCoordinator: self)
+            if let code = pendingInviteCode { onboarding.push(.staffJoin(inviteToken: code)) }
+            sessionState = .onboarding(onboarding)
         case .needsEmailVerification:
-            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .verifyEmail))
+            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .verifyEmail, appCoordinator: self))
         case .needsProfile, .needsOrgSetup(.chooseVertical):
-            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .chooseVertical))
+            // Arrived from an invite link: join that shop instead of creating one.
+            let root: OnboardingRoute = pendingInviteCode.map { .staffJoin(inviteToken: $0) } ?? .chooseVertical
+            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: root, appCoordinator: self))
         case .needsOrgSetup(.shopSetup):
-            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .shopSetup))
+            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .shopSetup, appCoordinator: self))
         case .needsOrgSetup(.pickLook):
-            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .pickLook))
+            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .pickLook, appCoordinator: self))
         case .needsOrgSetup(.openingBalances):
-            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .openingBalances))
+            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .openingBalances, appCoordinator: self))
         case .ready:
+            pendingInviteCode = nil
             sessionState = .home(HomeTabsCoordinator(container: appContainer, appCoordinator: self))
             Task { await syncAll() }
         case .forceUpdate, .blocked:
@@ -134,6 +142,47 @@ public final class AppCoordinator {
         await appContainer.repositoryContainer.syncEngine.syncAll(force: force)
         await session.reload()
         appContainer.themeStore.apply(session: session)
+    }
+
+    // MARK: - Demo shop
+
+    /// Opens a local-only sample shop (design 02). Only offered while signed out.
+    func enterDemo(_ vertical: Vertical) async {
+        let repositories = appContainer.repositoryContainer
+        try? repositories.clearLocalData()
+        // Repositories see a user with no org, so nothing is ever written to Firestore.
+        let localUser = AppUser(id: "demo", name: "Demo owner", email: "", role: .admin, status: "active",
+                                assignedOrgs: [], createdAt: Date())
+        await repositories.userRepository.setDemoUser(localUser)
+        try? await appContainer.modulesContainer.makeDemoSeeder().seed(vertical)
+
+        let sessionUser = AppUser(id: "demo", name: "Demo owner", email: "", role: .admin, status: "active",
+                                  assignedOrgs: [], createdAt: Date(),
+                                  selectedOrganization: OrganizationSnapshot(orgId: "demo", name: DemoSeeder.shopName(for: vertical)))
+        await session.startDemo(user: sessionUser, settings: DemoSeeder.settings(for: vertical))
+        appContainer.themeStore.apply(session: session)
+        phase = .ready(userId: "demo", orgId: "demo")
+        sessionState = .home(HomeTabsCoordinator(container: appContainer, appCoordinator: self))
+    }
+
+    func exitDemo() async {
+        try? appContainer.repositoryContainer.clearLocalData()
+        await appContainer.repositoryContainer.userRepository.setDemoUser(nil)
+        session.endDemo()
+        phase = .loading
+        await recompute()
+    }
+
+    // MARK: - Deep links
+
+    func handle(url: URL) {
+        // apoorva://join/<code>
+        guard url.scheme == "apoorva", url.host == "join", let code = url.pathComponents.last, code != "/" else { return }
+        pendingInviteCode = code
+        // Signed in already: the code is picked up when the account next needs an org.
+        if case .onboarding(let onboarding) = sessionState {
+            onboarding.push(.staffJoin(inviteToken: code))
+        }
     }
 
     func present(_ route: GlobalRoute) { presentedGlobalRoute = route }

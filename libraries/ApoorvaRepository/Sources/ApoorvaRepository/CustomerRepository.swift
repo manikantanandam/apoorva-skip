@@ -12,6 +12,7 @@ import ApoorvaServices
 
 public protocol CustomerRepositoryProtocol: Sendable {
     func getCustomers() async throws -> [Customer]
+    func getCustomer(phone: String) async throws -> Customer?
     func saveCustomer(customer: Customer) async throws
     func updateCustomer(_ customer: Customer) async throws
     func deleteCustomer(phoneNumber: String) async throws // Hard delete
@@ -19,6 +20,12 @@ public protocol CustomerRepositoryProtocol: Sendable {
     func sync(force: Bool) async throws
 }
 
+
+public extension CustomerRepositoryProtocol {
+    func getCustomer(phone: String) async throws -> Customer? {
+        try await getCustomers().first { $0.phone == phone }
+    }
+}
 
 public final actor CustomerRepository: CustomerRepositoryProtocol {
 
@@ -43,10 +50,21 @@ public final actor CustomerRepository: CustomerRepositoryProtocol {
     
     public func saveCustomer(customer: Customer) async throws {
         try await storage.saveCustomer(customer: customer)
+        try await pushRemote(customer)
     }
-    
+
     public func updateCustomer(_ customer: Customer) async throws {
         try await storage.updateCustomer(customer: customer)
+        try await pushRemote(customer)
+    }
+
+    public func getCustomer(phone: String) async throws -> Customer? {
+        try await storage.getCustomer(phoneNumber: phone)
+    }
+
+    private func pushRemote(_ customer: Customer) async throws {
+        guard let orgId = try? await userRepository.getCurrentUser().selectedOrganization?.orgId else { return }
+        try service.upsertCustomer(customer, for: orgId)
     }
     
     public func deleteCustomer(phoneNumber: String) async throws {

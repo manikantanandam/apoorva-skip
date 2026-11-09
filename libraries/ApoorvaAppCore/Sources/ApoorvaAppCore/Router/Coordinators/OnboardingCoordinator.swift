@@ -4,13 +4,15 @@ import Foundation
 @Observable
 final class OnboardingCoordinator {
     let container: AppContainer
+    weak var appCoordinator: AppCoordinator?
     /// First screen shown, decided by the session phase (splash, verify email, or a setup step).
     let root: OnboardingRoute
     var path: [OnboardingRoute] = []
 
-    init(container: AppContainer, root: OnboardingRoute = .splash) {
+    init(container: AppContainer, root: OnboardingRoute = .splash, appCoordinator: AppCoordinator? = nil) {
         self.container = container
         self.root = root
+        self.appCoordinator = appCoordinator
     }
 
     func push(_ route: OnboardingRoute) { path.append(route) }

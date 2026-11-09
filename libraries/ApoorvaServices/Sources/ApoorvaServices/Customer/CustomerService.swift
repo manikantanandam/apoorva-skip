@@ -11,6 +11,12 @@ public protocol CustomerServiceProtocol: Sendable {
     func getCustomers(for orgId: String) async throws -> [Customer]
     func getCustomers(since lastSync: Date, for orgId: String) async throws -> [Customer]
     func upsertCustomerAfterSale(phone: String, name: String, saleAmount: Double, saleDate: Date, for orgId: String) async throws
+    /// Creates or updates a customer from the customers screens (merge; never removes legacy fields).
+    func upsertCustomer(_ customer: Customer, for orgId: String) throws
+}
+
+public extension CustomerServiceProtocol {
+    func upsertCustomer(_ customer: Customer, for orgId: String) throws {}
 }
 
 
@@ -28,6 +34,25 @@ public final class CustomerService: CustomerServiceProtocol {
 
     public func getCustomers(since lastSync: Date, for orgId: String) async throws -> [Customer] {
         try await customers(since: lastSync, for: orgId)
+    }
+
+    public func upsertCustomer(_ customer: Customer, for orgId: String) throws {
+        guard !customer.phone.isEmpty else { return }
+        var data: [String: Any] = [
+            "name": customer.name,
+            "phone": customer.phone,
+            "createdAt": Date(timeIntervalSince1970: customer.createdAt),
+            "updatedAt": Date(),
+            "isDeleted": customer.isDeleted,
+            "dueBalance": customer.dueBalance,
+            "whatsappReceipts": customer.whatsappReceipts,
+            "serverUpdatedAt": StoreSentinel.serverTimestamp
+        ]
+        if let creditLimit = customer.creditLimit { data["creditLimit"] = creditLimit }
+        if let birthday = customer.birthday { data["birthday"] = Date(timeIntervalSince1970: birthday) }
+        if let priceTier = customer.priceTier { data["priceTier"] = priceTier }
+        if let notes = customer.notes { data["notes"] = notes }
+        try store.setData(data, path: "\(String.orgPath(orgId, .customers))/\(customer.phone)", merge: true)
     }
 
     /// Creates the customer doc if it's the first sale for this phone number, otherwise bumps

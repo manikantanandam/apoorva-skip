@@ -40,6 +40,43 @@ public class ModulesContainer {
         )
     }
     
+    // MARK: - Onboarding & auth
+
+    public func makeAuthFlowViewModel() -> AuthFlowViewModel {
+        AuthFlowViewModel(authService: servicesContainer.authService)
+    }
+
+    public func makeShopSetupViewModel(trialDays: @escaping () -> Int) -> ShopSetupViewModel {
+        ShopSetupViewModel(authService: servicesContainer.authService,
+                           setupService: servicesContainer.organizationSetupService,
+                           platformTrialDays: trialDays)
+    }
+
+    public func makeOpeningBalancesViewModel(session: AppSession) -> OpeningBalancesViewModel {
+        OpeningBalancesViewModel(session: session,
+                                 customerRepository: repositoryContainer.customerRepository,
+                                 ledgerRepository: repositoryContainer.customerLedgerRepository,
+                                 supplierRepository: repositoryContainer.supplierRepository,
+                                 dailyCashflowRepository: repositoryContainer.dailyCashflowRepository,
+                                 organizationRepository: repositoryContainer.organizationRepository)
+    }
+
+    public func makeStaffJoinViewModel(code: String, currentOrgs: @escaping () -> [OrganizationSnapshot]) -> StaffJoinViewModel {
+        StaffJoinViewModel(code: code, setupService: servicesContainer.organizationSetupService,
+                           authService: servicesContainer.authService, currentOrgs: currentOrgs)
+    }
+
+    public func makePinSwitchViewModel(session: AppSession) -> PinSwitchViewModel {
+        PinSwitchViewModel(session: session, memberRepository: repositoryContainer.memberRepository,
+                           pinStore: servicesContainer.pinStore, biometrics: servicesContainer.biometrics)
+    }
+
+    public func makeDemoSeeder() -> DemoSeeder {
+        DemoSeeder(inventoryRepository: repositoryContainer.inventoryRepository,
+                   customerRepository: repositoryContainer.customerRepository,
+                   saleRepository: repositoryContainer.saleRepository)
+    }
+
     public func makePOSViewModel() -> POSViewModel {
         return POSViewModel(
             inventoryRepository: repositoryContainer.inventoryRepository,

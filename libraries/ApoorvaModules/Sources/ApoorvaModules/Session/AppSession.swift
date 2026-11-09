@@ -50,6 +50,8 @@ public final class AppSession {
     public private(set) var planStatus = PlanStatus(tier: .trial, trialDaysLeft: 30, billsUsed: 0, freeBillLimit: 100, graceBills: 10, proPrice: 199)
     /// Set by the PIN switch on shared phones; otherwise the signed-in user.
     public private(set) var actingMember: Member?
+    /// Sample shop from the demo screen: everything is local and discarded on exit.
+    public private(set) var isDemo = false
 
     private let settingsRepository: any OrgCollectionRepositoryProtocol<OrgSettings>
     private let storeRepository: any OrgCollectionRepositoryProtocol<Store>
@@ -159,7 +161,10 @@ public final class AppSession {
 
     /// Re-reads local org data (cheap) — call after sync or after a settings screen saves.
     public func reload() async {
-        guard orgId != nil else { return }
+        guard orgId != nil, !isDemo else {
+            await refreshPlanUsage()
+            return
+        }
         if let loaded = try? await settingsRepository.get(id: OrgSettings.documentId) {
             settings = loaded
             hasSettingsDoc = true
@@ -226,6 +231,28 @@ public final class AppSession {
     }
 
     private var storeKey: String { "apoorva.store.\(orgId ?? "none")" }
+
+    // MARK: - Demo
+
+    public func startDemo(user: AppUser, settings: OrgSettings) async {
+        isDemo = true
+        self.user = user
+        orgId = user.selectedOrganization?.orgId
+        self.settings = settings
+        hasSettingsDoc = true
+        stores = []
+        member = nil
+        actingMember = nil
+        await refreshPlanUsage()
+    }
+
+    public func endDemo() {
+        isDemo = false
+        user = nil
+        orgId = nil
+        settings = OrgSettings()
+        hasSettingsDoc = false
+    }
 
     // MARK: - Test support
 

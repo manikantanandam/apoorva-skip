@@ -34,6 +34,12 @@ public class ServicesContainer {
     public lazy var heldBillService: HeldBillServiceProtocol = HeldBillService()
 
     public lazy var platformConfigService: PlatformConfigServicing = PlatformConfigService()
+
+    public lazy var organizationSetupService: OrganizationSetupServicing = OrganizationSetupService()
+
+    public lazy var pinStore: PinStoring = KeychainPinStore()
+
+    public lazy var biometrics: BiometricAuthenticating = DeviceBiometrics()
     
     
     public init() {}

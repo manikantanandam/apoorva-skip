@@ -101,6 +101,7 @@ public class RepositoryContainer {
     public lazy var settingsRepository = makeOrgCollectionRepository(OrgSettings.self)
     public lazy var storeRepository = makeOrgCollectionRepository(Store.self)
     public lazy var memberRepository = makeOrgCollectionRepository(Member.self)
+    public lazy var supplierRepository = makeOrgCollectionRepository(Supplier.self)
 
     /// Pulls every collection down. Call on sign-in, on foreground, and on pull-to-refresh.
     public lazy var syncEngine: SyncEngine = {
@@ -120,6 +121,7 @@ public class RepositoryContainer {
             settingsRepository,
             storeRepository,
             memberRepository,
+            supplierRepository,
             customerLedgerRepository,
             stockMovementRepository,
             auditRepository
