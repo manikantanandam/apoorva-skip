@@ -8,6 +8,8 @@
 import Foundation
 import ApoorvaServices
 import ApoorvaRepository
+import ApoorvaModels
+import ApoorvaOfflineStorage
 
 // In ApoorvaAppCore
 @MainActor
@@ -77,6 +79,46 @@ public class RepositoryContainer {
         userRepository: userRepository,
         syncStorage: offlineStorageContainer.syncStorage
     )
+
+    // MARK: - Org collections (local-first, synced under organizations/{orgId}/...)
+
+    public lazy var orgContext: OrgContextProviding = UserRepositoryOrgContext(userRepository: userRepository)
+
+    /// Builds a repository for any `OrgDocument` collection, sharing the local DB and sync cursors.
+    public func makeOrgCollectionRepository<Document: OrgDocument>(_ type: Document.Type) -> OrgCollectionRepository<Document> {
+        OrgCollectionRepository<Document>(
+            storage: OrgCollectionLocalStorage(database: offlineStorageContainer.skipSqlDatabase),
+            service: OrgCollectionService(),
+            context: orgContext,
+            syncStorage: offlineStorageContainer.syncStorage
+        )
+    }
+
+    public lazy var auditRepository = makeOrgCollectionRepository(AuditEvent.self)
+    public lazy var customerLedgerRepository = makeOrgCollectionRepository(CustomerLedgerEntry.self)
+    public lazy var stockMovementRepository = makeOrgCollectionRepository(StockMovement.self)
+    public lazy var auditLogger: AuditLogging = AuditLogger(repository: auditRepository, context: orgContext)
+
+    /// Pulls every collection down. Call on sign-in, on foreground, and on pull-to-refresh.
+    public lazy var syncEngine: SyncEngine = {
+        let inventory = inventoryRepository
+        let customers = customerRepository
+        let sales = saleRepository
+        let heldBills = heldBillRepository
+        let cashflow = cashflowRepository
+        let dailyCashflow = dailyCashflowRepository
+        return SyncEngine(repositories: [
+            SyncAdapter("inventory") { try await inventory.sync(force: $0) },
+            SyncAdapter("customers") { try await customers.sync(force: $0) },
+            SyncAdapter("sales") { try await sales.sync(force: $0) },
+            SyncAdapter("heldBills") { try await heldBills.sync(force: $0) },
+            SyncAdapter("cashflow") { try await cashflow.sync(force: $0) },
+            SyncAdapter("dailyCashflowSummaries") { try await dailyCashflow.sync(force: $0) },
+            customerLedgerRepository,
+            stockMovementRepository,
+            auditRepository
+        ])
+    }()
 
     /// Clears all local SQLite tables and the cached-user UserDefaults keys, in place, no restart needed.
     public func clearLocalData() throws {

@@ -1,21 +1,32 @@
 import Foundation
 
-public struct Customer: Codable, Sendable, Identifiable {
-    public let id: String
-    public let name: String
+public struct Customer: Codable, Sendable, Identifiable, Hashable {
+    /// Phone is the stable key: it's the SQLite primary key and the Firestore doc ID.
+    public var id: String { phone }
+    public var name: String
     public let phone: String
     public let createdAt: TimeInterval
-    public let lastPurchaseDate: TimeInterval?
-    public let totalSales: Int
-    public let totalAmountSpent: Double
-    
+    public var lastPurchaseDate: TimeInterval?
+    public var totalSales: Int
+    public var totalAmountSpent: Double
+
+    public var creditLimit: Double?
+    public var birthday: TimeInterval?
+    /// Local cache of what the customer owes, derived from the customer ledger.
+    public var dueBalance: Double
+    public var priceTier: String?
+    public var notes: String?
+    public var whatsappReceipts: Bool
+
     public var updatedAt: TimeInterval?
     public var isDeleted: Bool
-    
+
     public enum CodingKeys: String, CodingKey {
         case name, phone, createdAt, lastPurchaseDate, totalSales, totalAmountSpent, updatedAt, isDeleted
+        case creditLimit, birthday, dueBalance, priceTier, notes, whatsappReceipts
+        case documentId = "id"
     }
-    
+
     public init(name: String,
                 phone: String,
                 createdAt: TimeInterval,
@@ -23,8 +34,13 @@ public struct Customer: Codable, Sendable, Identifiable {
                 totalSales: Int,
                 totalAmountSpent: Double,
                 updatedAt: TimeInterval?,
-                isDeleted: Bool) {
-        self.id = UUID().uuidString
+                isDeleted: Bool,
+                creditLimit: Double? = nil,
+                birthday: TimeInterval? = nil,
+                dueBalance: Double = 0,
+                priceTier: String? = nil,
+                notes: String? = nil,
+                whatsappReceipts: Bool = true) {
         self.name = name
         self.phone = phone
         self.createdAt = createdAt
@@ -33,31 +49,66 @@ public struct Customer: Codable, Sendable, Identifiable {
         self.totalAmountSpent = totalAmountSpent
         self.updatedAt = updatedAt
         self.isDeleted = isDeleted
+        self.creditLimit = creditLimit
+        self.birthday = birthday
+        self.dueBalance = dueBalance
+        self.priceTier = priceTier
+        self.notes = notes
+        self.whatsappReceipts = whatsappReceipts
     }
-    
+
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = UUID().uuidString
-        self.name = try container.decode(String.self, forKey: .name)
-        self.phone = try container.decode(String.self, forKey: .phone)
-        let createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        self.name = (try? container.decodeIfPresent(String.self, forKey: .name)) ?? ""
+        let phone = try? container.decodeIfPresent(String.self, forKey: .phone)
+        let documentId = try? container.decodeIfPresent(String.self, forKey: .documentId)
+        self.phone = phone ?? documentId ?? ""
+        let createdAt = try? container.decodeIfPresent(Date.self, forKey: .createdAt)
         self.createdAt = createdAt?.timeIntervalSince1970 ?? 0
-        
-        let lastPurchaseDate = try container.decodeIfPresent(Date.self, forKey: .lastPurchaseDate)
+
+        let lastPurchaseDate = try? container.decodeIfPresent(Date.self, forKey: .lastPurchaseDate)
         self.lastPurchaseDate = lastPurchaseDate?.timeIntervalSince1970
-        
-        self.totalSales = try container.decodeIfPresent(Int.self, forKey: .totalSales) ?? 0
-        self.totalAmountSpent = try container.decodeIfPresent(Double.self, forKey: .totalAmountSpent) ?? 0.0
-        
-        let updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
+
+        self.totalSales = (try? container.decodeIfPresent(Int.self, forKey: .totalSales)) ?? 0
+        self.totalAmountSpent = (try? container.decodeIfPresent(Double.self, forKey: .totalAmountSpent)) ?? 0.0
+
+        let updatedAt = try? container.decodeIfPresent(Date.self, forKey: .updatedAt)
         self.updatedAt = updatedAt?.timeIntervalSince1970 ?? 0
-        self.isDeleted = try container.decodeIfPresent(Bool.self, forKey: .isDeleted) ?? false
+        self.isDeleted = (try? container.decodeIfPresent(Bool.self, forKey: .isDeleted)) ?? false
+
+        self.creditLimit = try? container.decodeIfPresent(Double.self, forKey: .creditLimit)
+        let birthday = try? container.decodeIfPresent(Date.self, forKey: .birthday)
+        self.birthday = birthday?.timeIntervalSince1970
+        self.dueBalance = (try? container.decodeIfPresent(Double.self, forKey: .dueBalance)) ?? 0
+        self.priceTier = try? container.decodeIfPresent(String.self, forKey: .priceTier)
+        self.notes = try? container.decodeIfPresent(String.self, forKey: .notes)
+        self.whatsappReceipts = (try? container.decodeIfPresent(Bool.self, forKey: .whatsappReceipts)) ?? true
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        try container.encode(phone, forKey: .phone)
+        try container.encode(Date(timeIntervalSince1970: createdAt), forKey: .createdAt)
+        try container.encodeIfPresent(lastPurchaseDate.map { Date(timeIntervalSince1970: $0) }, forKey: .lastPurchaseDate)
+        try container.encode(totalSales, forKey: .totalSales)
+        try container.encode(totalAmountSpent, forKey: .totalAmountSpent)
+        try container.encodeIfPresent(updatedAt.map { Date(timeIntervalSince1970: $0) }, forKey: .updatedAt)
+        try container.encode(isDeleted, forKey: .isDeleted)
+        try container.encodeIfPresent(creditLimit, forKey: .creditLimit)
+        try container.encodeIfPresent(birthday.map { Date(timeIntervalSince1970: $0) }, forKey: .birthday)
+        try container.encode(dueBalance, forKey: .dueBalance)
+        try container.encodeIfPresent(priceTier, forKey: .priceTier)
+        try container.encodeIfPresent(notes, forKey: .notes)
+        try container.encode(whatsappReceipts, forKey: .whatsappReceipts)
     }
     
     public var tenure: String {
         let now = Date()
         let createdAt = Date(timeIntervalSince1970: createdAt)
-        let components = Calendar.current.dateComponents([.day], from: createdAt, to: now)
+        let calendar = Calendar.current
+        // Compare calendar days, not elapsed seconds, so a DST change doesn't drop a day.
+        let components = calendar.dateComponents([.day], from: calendar.startOfDay(for: createdAt), to: calendar.startOfDay(for: now))
         let days = components.day ?? 0
         
         if days < 30 {

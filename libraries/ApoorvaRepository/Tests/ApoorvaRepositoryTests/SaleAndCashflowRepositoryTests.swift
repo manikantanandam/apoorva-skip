@@ -15,12 +15,13 @@ import ApoorvaServices
 final class MockSaleStorage: SaleStorageProtocol, @unchecked Sendable {
     var sales: [Sale] = []
     var calls: [String] = []
+    var lastUpdated: Sale?
 
     func getSales() async throws -> [Sale] { calls.append("get"); return sales }
     func saveSales(sales: [Sale]) async throws { calls.append("saveMany"); self.sales = sales }
     func saveSale(sale: Sale) async throws { calls.append("save") }
-    func getSale(id: String) async throws -> Sale? { nil }
-    func updateSale(sale: Sale) async throws { calls.append("update") }
+    func getSale(id: String) async throws -> Sale? { sales.first { $0.id == id } }
+    func updateSale(sale: Sale) async throws { calls.append("update"); lastUpdated = sale }
     func deleteSale(id: String) async throws { calls.append("delete") }
     func markAsDeleted(id: String) async throws { calls.append("markDeleted") }
 }
@@ -32,6 +33,10 @@ final class MockSaleService: SaleServiceProtocol, @unchecked Sendable {
     func getSales(for orgId: String) async throws -> [Sale] { calls.append("all"); return result }
     func getSales(since lastSync: Date, for orgId: String) async throws -> [Sale] { calls.append("since"); return result }
     func addSale(_ sale: Sale, for orgId: String) async throws { calls.append("add") }
+    func updateSaleStatus(saleId: String, status: String, reason: String, by staffId: String, at date: Date, for orgId: String) async throws {
+        calls.append("status:\(status)")
+    }
+    func updateSale(_ sale: Sale, for orgId: String) async throws { calls.append("updateRemote") }
 }
 
 final class MockCustomerServiceForSale: CustomerServiceProtocol, @unchecked Sendable {
@@ -126,6 +131,36 @@ struct SaleRepositoryTests {
         #expect(service.calls.contains("add"))
         #expect(customerService.calls.contains("upsert"))
         #expect(heldBillRepository.calls.contains("delete"))
+    }
+
+    @Test func syncCursorTracksNewestOfTimestampAndUpdatedAt() async throws {
+        let (sut, _, service, sync, _, _) = try makeSUT(user: try makeUser(orgId: "o"))
+        let newSale = Sale(id: "n", staffId: "s", customerPhone: "1", customerName: "C", items: [], subtotal: 1,
+                           overallDiscountPercent: 0, overallDiscountAmount: 0, roundOff: 0, netPayable: 1,
+                           payments: [:], timestamp: Date(timeIntervalSince1970: 900), source: "pos",
+                           status: "done", whatsappStatus: "none", updatedAt: Date(timeIntervalSince1970: 50))
+        service.result = [makeSale(updatedAt: Date(timeIntervalSince1970: 400)), newSale]
+        try await sut.sync(force: true)
+        #expect(try await sync.getLastSyncTimestamp(for: Sale.table.name) == 900)
+    }
+
+    @Test func cancelSaleMarksCancelledLocallyAndRemotely() async throws {
+        let (sut, storage, service, _, _, _) = try makeSUT(user: try makeUser(orgId: "o"))
+        let sale = makeSale()
+        storage.sales = [sale]
+        let cancelled = try await sut.cancelSale(id: sale.id, reason: "Wrong items", by: "u1")
+        #expect(cancelled?.isCancelled == true)
+        #expect(storage.lastUpdated?.cancelReason == "Wrong items")
+        #expect(service.calls.contains("status:Cancelled"))
+    }
+
+    @Test func cancelSaleIsNoOpWhenAlreadyCancelled() async throws {
+        let (sut, storage, service, _, _, _) = try makeSUT(user: try makeUser(orgId: "o"))
+        var sale = makeSale()
+        sale.status = "Cancelled"
+        storage.sales = [sale]
+        #expect(try await sut.cancelSale(id: sale.id, reason: "again", by: "u1") == nil)
+        #expect(service.calls.isEmpty)
     }
 
     @Test func confirmSaleWithoutHeldBillLeavesHeldBillsUntouched() async throws {

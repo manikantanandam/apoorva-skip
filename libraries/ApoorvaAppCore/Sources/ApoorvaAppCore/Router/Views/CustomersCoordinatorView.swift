@@ -9,7 +9,7 @@ struct CustomersCoordinatorView: View {
         NavigationStack(path: $coordinator.path) {
             CustomerListView(
                 viewModel: container.modulesContainer.makeCustomerListViewModel(),
-                onSelectCustomer: { customer in coordinator.push(.detail(customerId: customer.id)) },
+                onSelectCustomer: { customer in coordinator.push(.detail(phone: customer.phone)) },
                 onAddCustomer: { coordinator.push(.add) }
             )
             .navigationTitle("Customers")

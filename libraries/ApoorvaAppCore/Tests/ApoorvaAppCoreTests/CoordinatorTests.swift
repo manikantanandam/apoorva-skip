@@ -79,9 +79,9 @@ struct HomeTabsCoordinatorTests {
 
 struct RouteHashableTests {
     @Test func customersRouteEqualityIsByCase() {
-        #expect(CustomersRoute.detail(customerId: "1") == .detail(customerId: "1"))
-        #expect(CustomersRoute.detail(customerId: "1") != .detail(customerId: "2"))
-        #expect(CustomersRoute.detail(customerId: "1") != .add)
+        #expect(CustomersRoute.detail(phone: "1") == .detail(phone: "1"))
+        #expect(CustomersRoute.detail(phone: "1") != .detail(phone: "2"))
+        #expect(CustomersRoute.detail(phone: "1") != .add)
     }
 
     @Test func moreRouteNestedEqualityIsByCase() {

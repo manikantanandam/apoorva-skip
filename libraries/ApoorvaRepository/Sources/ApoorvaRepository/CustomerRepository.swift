@@ -73,7 +73,7 @@ public final actor CustomerRepository: CustomerRepositoryProtocol {
         
         if let lastUpdatedDate, !force {
             print("Fetching inventory customers since \(Date(timeIntervalSince1970: lastUpdatedDate)) for \(orgId)")
-            customers = try await service.getCustomers(since: Date(timeIntervalSince1970: lastUpdatedDate), for: orgId)
+            customers = try await service.getCustomers(since: SyncCursor.queryStart(from: lastUpdatedDate), for: orgId)
             print("Received customers")
         } else {
             print("Fetch all customers \(orgId)")
@@ -81,29 +81,11 @@ public final actor CustomerRepository: CustomerRepositoryProtocol {
         }
         print("Saving inventory customers")
         try await storage.saveCustomers(customers: customers)
-        guard
-            let customerWithMinUpdatedAt = customers.customerWithMaxDate
-        else { return }
-        
-        print("customer with min update \(customerWithMinUpdatedAt)")
-        
-        guard let lastUpdatedDate = customerWithMinUpdatedAt.updatedAt else { return }
-        print("saving lastUpdatedDate \(lastUpdatedDate)")
-
-        try await syncStorage.updateSyncTimestamp(for: Customer.table.name, timestamp: lastUpdatedDate)
-    }
-}
-
-
-private extension Array where Element == Customer {
-    var customerWithMaxDate: Customer? {
-        self.max(by: {
-            guard
-                let lastUpdatedDateItem1 = $0.lastPurchaseDate,
-                let lastUpdatedDateItem2 = $1.lastPurchaseDate
-            else { return false }
-            
-            return lastUpdatedDateItem1 > lastUpdatedDateItem2
-        })
+        // The query matches on updatedAt OR lastPurchaseDate, so the cursor tracks the newest of both.
+        let dates = customers.flatMap { customer in
+            [customer.updatedAt, customer.lastPurchaseDate].map { $0.map(Date.init(timeIntervalSince1970:)) }
+        }
+        guard let latest = SyncCursor.latest(dates) else { return }
+        try await syncStorage.updateSyncTimestamp(for: Customer.table.name, timestamp: latest.timeIntervalSince1970)
     }
 }

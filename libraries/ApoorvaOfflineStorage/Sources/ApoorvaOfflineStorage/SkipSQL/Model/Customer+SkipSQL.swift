@@ -1,68 +1,61 @@
 //
-//  File.swift
+//  Customer+SkipSQL.swift
 //  ApoorvaOfflineStorage
-//
-//  Created by Manikanta Nandam on 12/10/26.
 //
 
 import ApoorvaModels
+import ApoorvaUtilities
 import SkipSQL
 
 extension Customer: @retroactive SQLCodable {
-    
+
     public static var table: SQLTable {
-        SQLTable(
-            name: "Customer",
-            columns: [
-                phoneCol,
-                nameCol,
-                createdAtCol,
-                lastPurchaseDateCol,
-                totalSalesCol,
-                totalAmountSpentCol,
-                updatedAtCol,
-                isDeletedCol
-            ]
-        )
+        SQLTable(name: "Customer", columns: baseColumns + addedColumns)
     }
-    
+
+    static let baseColumns: [SQLColumn] = [
+        phoneCol, nameCol, createdAtCol, lastPurchaseDateCol, totalSalesCol, totalAmountSpentCol, updatedAtCol, isDeletedCol
+    ]
+
+    /// Columns added after v1 — created by `SchemaMigrations`, never by the initial table DDL on old installs.
+    static let addedColumns: [SQLColumn] = [
+        creditLimitCol, birthdayCol, dueBalanceCol, priceTierCol, notesCol, whatsappReceiptsCol
+    ]
+
     public init(row: SQLRow, context: SQLContext) throws {
-        let phone = try Self.phoneCol.textValueRequired(in: row)
-        let name = try Self.nameCol.textValueRequired(in: row)
-        let createdAt = try Self.createdAtCol.realValueRequired(in: row)
-        let lastPurchaseDate = try Self.lastPurchaseDateCol.realValueRequired(in: row)
-        let totalSales = try Self.totalSalesCol.longValueRequired(in: row)
-        let totalAmountSpent = try Self.totalAmountSpentCol.realValueRequired(in: row)
-        let updatedAt = try Self.updatedAtCol.realValueRequired(in: row)
-        let isDeleted = try Self.isDeletedCol.longValueRequired(in: row)
-        
-        self.init(name: name,
-                  phone: phone,
-                  createdAt: createdAt,
-                  lastPurchaseDate: lastPurchaseDate,
-                  totalSales: totalSales.intValue,
-                  totalAmountSpent: totalAmountSpent,
-                  updatedAt: updatedAt,
-                  isDeleted: isDeleted.boolValue)
+        self.init(name: Self.nameCol.textValue(in: row) ?? "",
+                  phone: try Self.phoneCol.textValueRequired(in: row),
+                  createdAt: Self.createdAtCol.realValue(in: row) ?? 0,
+                  lastPurchaseDate: Self.lastPurchaseDateCol.realValue(in: row),
+                  totalSales: Int(Self.totalSalesCol.longValue(in: row) ?? 0),
+                  totalAmountSpent: Self.totalAmountSpentCol.realValue(in: row) ?? 0,
+                  updatedAt: Self.updatedAtCol.realValue(in: row),
+                  isDeleted: (Self.isDeletedCol.longValue(in: row) ?? 0).boolValue,
+                  creditLimit: Self.creditLimitCol.realValue(in: row),
+                  birthday: Self.birthdayCol.realValue(in: row),
+                  dueBalance: Self.dueBalanceCol.realValue(in: row) ?? 0,
+                  priceTier: Self.priceTierCol.textValue(in: row),
+                  notes: Self.notesCol.textValue(in: row),
+                  whatsappReceipts: (Self.whatsappReceiptsCol.longValue(in: row) ?? 1).boolValue)
     }
-    
+
     public func encode(row: inout SkipSQLCore.SQLRow) throws {
-        row[Self.nameCol] = SQLValue(self.name)
-        row[Self.phoneCol] = SQLValue(self.phone)
-        row[Self.createdAtCol] = SQLValue(self.createdAt)
-        // 1. Safe Optional Binding
-        if let date = self.lastPurchaseDate {
-            row[Self.lastPurchaseDateCol] = .real(date)
-        } else {
-            row[Self.lastPurchaseDateCol] = .null
-        }
-        row[Self.totalSalesCol] = SQLValue(self.totalSales)
-        row[Self.totalAmountSpentCol] = SQLValue(self.totalAmountSpent)
-        row[Self.updatedAtCol] = SQLValue(self.updatedAt)
-        row[Self.isDeletedCol] = SQLValue(self.isDeleted.intValue)
+        row[Self.phoneCol] = SQLValue(phone)
+        row[Self.nameCol] = SQLValue(name)
+        row[Self.createdAtCol] = SQLValue(createdAt)
+        row[Self.lastPurchaseDateCol] = lastPurchaseDate.map { SQLValue($0) } ?? .null
+        row[Self.totalSalesCol] = SQLValue(totalSales)
+        row[Self.totalAmountSpentCol] = SQLValue(totalAmountSpent)
+        row[Self.updatedAtCol] = updatedAt.map { SQLValue($0) } ?? .null
+        row[Self.isDeletedCol] = SQLValue(isDeleted.intValue)
+        row[Self.creditLimitCol] = creditLimit.map { SQLValue($0) } ?? .null
+        row[Self.birthdayCol] = birthday.map { SQLValue($0) } ?? .null
+        row[Self.dueBalanceCol] = SQLValue(dueBalance)
+        row[Self.priceTierCol] = priceTier.map { SQLValue($0) } ?? .null
+        row[Self.notesCol] = notes.map { SQLValue($0) } ?? .null
+        row[Self.whatsappReceiptsCol] = SQLValue(whatsappReceipts.intValue)
     }
-    
-    
+
     public static let phoneCol = SQLColumn(name: "phone", type: .text, primaryKey: true)
     public static let nameCol = SQLColumn(name: "name", type: .text)
     public static let createdAtCol = SQLColumn(name: "createdAt", type: .real)
@@ -71,4 +64,10 @@ extension Customer: @retroactive SQLCodable {
     public static let totalAmountSpentCol = SQLColumn(name: "totalAmountSpent", type: .real)
     public static let updatedAtCol = SQLColumn(name: "updatedAt", type: .real)
     public static let isDeletedCol = SQLColumn(name: "isDeleted", type: .long)
+    public static let creditLimitCol = SQLColumn(name: "creditLimit", type: .real)
+    public static let birthdayCol = SQLColumn(name: "birthday", type: .real)
+    public static let dueBalanceCol = SQLColumn(name: "dueBalance", type: .real)
+    public static let priceTierCol = SQLColumn(name: "priceTier", type: .text)
+    public static let notesCol = SQLColumn(name: "notes", type: .text)
+    public static let whatsappReceiptsCol = SQLColumn(name: "whatsappReceipts", type: .long)
 }

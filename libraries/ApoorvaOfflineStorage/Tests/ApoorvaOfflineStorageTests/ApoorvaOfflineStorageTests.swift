@@ -64,11 +64,20 @@ struct CustomerLocalStorageTests {
         #expect(try await sut.getCustomers().map(\.name) == ["Amy", "Zed"])
     }
 
-    @Test func readingCustomerWithNullDatesFails() async throws {
+    @Test func readingCustomerWithNullDatesSucceeds() async throws {
         let sut = CustomerLocalStorage(database: try makeDatabase())
         try await sut.saveCustomer(customer: customer("Nil", phone: "9", lastPurchase: nil, updatedAt: nil))
-        // Known source bug: nullable date columns are decoded as non-optional.
-        await withKnownIssue { _ = try await sut.getCustomer(phoneNumber: "9") }
+        let loaded = try await sut.getCustomer(phoneNumber: "9")
+        #expect(loaded?.name == "Nil")
+        #expect(loaded?.lastPurchaseDate == nil)
+    }
+
+    @Test func markAsDeletedHidesCustomerByPhone() async throws {
+        let sut = CustomerLocalStorage(database: try makeDatabase())
+        try await sut.saveCustomer(customer: customer("Asha", phone: "5"))
+        try await sut.markAsDeleted(id: "5")
+        #expect(try await sut.getCustomers().isEmpty)
+        #expect(try await sut.getCustomer(phoneNumber: "5")?.isDeleted == true)
     }
 
     @Test func saveCustomersWithEmptyListIsNoOp() async throws {
@@ -112,25 +121,29 @@ struct InventoryItemLocalStorageTests {
     @Test func updateChangesFields() async throws {
         let sut = InventoryItemLocalStorage(database: try makeDatabase())
         try await sut.saveInventoryItem(item: InventoryItem(id: "1", name: "Pen"))
-        // Known source bug: update queries a non-existent "Category" table.
-        await withKnownIssue {
-            try await sut.updateInventoryItem(item: InventoryItem(id: "1", name: "Pencil", currentStock: 9,
-                                                                  lastSoldDate: Date(), updatedAt: Date()))
-        }
+        try await sut.updateInventoryItem(item: InventoryItem(id: "1", name: "Pencil", currentStock: 9,
+                                                              lastSoldDate: Date(), updatedAt: Date(),
+                                                              barcode: "890", sellPrice: 12))
+        let loaded = try await sut.getInventoryItem(id: "1")
+        #expect(loaded?.name == "Pencil")
+        #expect(loaded?.currentStock == 9)
+        #expect(loaded?.barcode == "890")
+        #expect(loaded?.sellPrice == 12)
     }
 
     @Test func deleteRemovesItem() async throws {
         let sut = InventoryItemLocalStorage(database: try makeDatabase())
         try await sut.saveInventoryItem(item: InventoryItem(id: "1", name: "Pen"))
-        // Known source bug: delete queries a non-existent "Category" table.
-        await withKnownIssue { try await sut.deleteInventoryItem(id: "1") }
+        try await sut.deleteInventoryItem(id: "1")
+        #expect(try await sut.getInventoryItem(id: "1") == nil)
     }
 
     @Test func markAsDeletedFlagsItem() async throws {
         let sut = InventoryItemLocalStorage(database: try makeDatabase())
         try await sut.saveInventoryItem(item: InventoryItem(id: "1", name: "Pen"))
-        // Known source bug: markAsDeleted queries a non-existent "Category" table.
-        await withKnownIssue { try await sut.markAsDeleted(id: "1") }
+        try await sut.markAsDeleted(id: "1")
+        #expect(try await sut.getInventoryItems().isEmpty)
+        #expect(try await sut.getInventoryItem(id: "1")?.isDeleted == true)
     }
 }
 

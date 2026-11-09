@@ -4,20 +4,35 @@ import ApoorvaUtilities
 public struct InventoryItem: Codable, Sendable, Identifiable {
     public var id: String
     
-    public let name: String
-    public let currentStock: Int
-    public let billMachineNumber: Int
-    public let lastSoldDate: Date?
-    public let isHotkey: Bool
-    
+    public var name: String
+    public var currentStock: Int
+    public var billMachineNumber: Int
+    public var lastSoldDate: Date?
+    public var isHotkey: Bool
+
     public var updatedAt: Date?
     public var isDeleted: Bool
-    
+
+    public var barcode: String?
+    public var sellPrice: Double?
+    public var costPrice: Double?
+    public var wholesalePrice: Double?
+    public var categoryId: String?
+    /// "pc", "pack", "kg", "g", "l", "m"
+    public var unit: String?
+    public var lowStockThreshold: Int?
+    public var imageURLs: [String]?
+    public var designCode: String?
+    /// JSON-encoded variant options (sizes/colours), kept opaque so legacy readers ignore it.
+    public var variantsJSON: String?
+    public var warrantyMonths: Int?
+
     // 2. Define standard CodingKeys
     enum CodingKeys: String, CodingKey {
         case id, name, currentStock, billMachineNumber, lastSoldDate, isHotkey, updatedAt, isDeleted
+        case barcode, sellPrice, costPrice, wholesalePrice, categoryId, unit, lowStockThreshold, imageURLs, designCode, variantsJSON, warrantyMonths
     }
-    
+
     // Standard Initializer
     public init(id: String = UUID().uuidString,
                 name: String,
@@ -26,7 +41,18 @@ public struct InventoryItem: Codable, Sendable, Identifiable {
                 lastSoldDate: Date? = nil,
                 isHotkey: Bool = false,
                 updatedAt: Date? = nil,
-                isDeleted: Bool = false) {
+                isDeleted: Bool = false,
+                barcode: String? = nil,
+                sellPrice: Double? = nil,
+                costPrice: Double? = nil,
+                wholesalePrice: Double? = nil,
+                categoryId: String? = nil,
+                unit: String? = nil,
+                lowStockThreshold: Int? = nil,
+                imageURLs: [String]? = nil,
+                designCode: String? = nil,
+                variantsJSON: String? = nil,
+                warrantyMonths: Int? = nil) {
         self.id = id
         self.name = name
         self.currentStock = currentStock
@@ -35,6 +61,21 @@ public struct InventoryItem: Codable, Sendable, Identifiable {
         self.isHotkey = isHotkey
         self.updatedAt = updatedAt
         self.isDeleted = isDeleted
+        self.barcode = barcode
+        self.sellPrice = sellPrice
+        self.costPrice = costPrice
+        self.wholesalePrice = wholesalePrice
+        self.categoryId = categoryId
+        self.unit = unit
+        self.lowStockThreshold = lowStockThreshold
+        self.imageURLs = imageURLs
+        self.designCode = designCode
+        self.variantsJSON = variantsJSON
+        self.warrantyMonths = warrantyMonths
+    }
+
+    public var isLowStock: Bool {
+        currentStock <= (lowStockThreshold ?? 5)
     }
     
     // 3. The Bulletproof Decoder
@@ -55,6 +96,18 @@ public struct InventoryItem: Codable, Sendable, Identifiable {
         // Dates (If legacy Dart saved these as strings, the 'try?' safely ignores the crash and sets them to nil)
         self.lastSoldDate = try? container.decodeIfPresent(Date.self, forKey: .lastSoldDate)
         self.updatedAt = try? container.decodeIfPresent(Date.self, forKey: .updatedAt)
+
+        self.barcode = try? container.decodeIfPresent(String.self, forKey: .barcode)
+        self.sellPrice = try? container.decodeIfPresent(Double.self, forKey: .sellPrice)
+        self.costPrice = try? container.decodeIfPresent(Double.self, forKey: .costPrice)
+        self.wholesalePrice = try? container.decodeIfPresent(Double.self, forKey: .wholesalePrice)
+        self.categoryId = try? container.decodeIfPresent(String.self, forKey: .categoryId)
+        self.unit = try? container.decodeIfPresent(String.self, forKey: .unit)
+        self.lowStockThreshold = try? container.decodeIfPresent(Int.self, forKey: .lowStockThreshold)
+        self.imageURLs = try? container.decodeIfPresent([String].self, forKey: .imageURLs)
+        self.designCode = try? container.decodeIfPresent(String.self, forKey: .designCode)
+        self.variantsJSON = try? container.decodeIfPresent(String.self, forKey: .variantsJSON)
+        self.warrantyMonths = try? container.decodeIfPresent(Int.self, forKey: .warrantyMonths)
     }
 }
 
