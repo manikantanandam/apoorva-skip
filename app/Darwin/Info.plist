@@ -17,5 +17,7 @@
 	<string>Switch back to your account on a shared phone.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Scan item barcodes to add them to the bill.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Pick contacts to add as customers. Only names and numbers are imported.</string>
 </dict>
 </plist>

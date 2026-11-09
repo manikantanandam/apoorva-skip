@@ -88,6 +88,8 @@ struct MoreCoordinatorView: View {
             } else {
                 NotBuiltView(PlaceholderScreen("Developer"))
             }
+        case .sell(let sellRoute):
+            sellDestination(for: sellRoute)
         case .stock(.inventory(let inventoryRoute)):
             inventoryDestination(for: inventoryRoute)
         case .money(.cashflowHistory):
@@ -109,6 +111,40 @@ struct MoreCoordinatorView: View {
             CashflowTransactionListView(viewModel: container.modulesContainer.makeCashflowTransactionListViewModel())
         default:
             NotBuiltView(PlaceholderScreen(title(for: route)))
+        }
+    }
+
+    @ViewBuilder
+    private func sellDestination(for route: SellRoute) -> some View {
+        switch route {
+        case .orders:
+            Retained(container.modulesContainer.makeOrdersViewModel()) { viewModel in
+                OrdersListView(viewModel: viewModel,
+                               onAdd: { coordinator.push(.sell(.orderAdd)) },
+                               onSelect: { order in coordinator.push(.sell(.orderDetail(orderId: order.id))) })
+            }
+        case .orderAdd:
+            Retained(container.modulesContainer.makeOrderFormViewModel(session: session)) { viewModel in
+                OrderFormView(viewModel: viewModel) { order in
+                    coordinator.pop()
+                    coordinator.push(.sell(.orderDetail(orderId: order.id)))
+                }
+            }
+        case .orderDetail(let orderId):
+            Retained(container.modulesContainer.makeOrderDetailViewModel(orderId: orderId, session: session)) { viewModel in
+                OrderDetailView(viewModel: viewModel) { cart in tabs.startBill(with: cart) }
+            }
+        case .heldBills:
+            HeldBillsView(viewModel: container.modulesContainer.makeHeldBillsViewModel()) { bill in
+                tabs.startBill(with: PosCart(items: bill.items,
+                                             customerPhone: bill.customerPhone.isEmpty ? nil : bill.customerPhone,
+                                             customerName: bill.customerName.isEmpty ? nil : bill.customerName),
+                               heldBillId: bill.id)
+            }
+        case .warranty:
+            Retained(container.modulesContainer.makeWarrantyViewModel(actorId: session.actorId)) { viewModel in
+                WarrantyView(viewModel: viewModel)
+            }
         }
     }
 

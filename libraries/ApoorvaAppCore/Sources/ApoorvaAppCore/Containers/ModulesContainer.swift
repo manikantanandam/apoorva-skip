@@ -183,6 +183,68 @@ public class ModulesContainer {
             repository: repositoryContainer.customerRepository
         )
     }
+
+    // MARK: - Customers (62–69)
+
+    public func makeCustomerDetailViewModel(phone: String) -> CustomerDetailViewModel {
+        CustomerDetailViewModel(phone: phone, customerRepository: repositoryContainer.customerRepository,
+                                saleRepository: repositoryContainer.saleRepository, dues: repositoryContainer.duesRepository)
+    }
+
+    public func makeCustomerFormViewModel(phone: String?) -> CustomerFormViewModel {
+        CustomerFormViewModel(phone: phone, repository: repositoryContainer.customerRepository)
+    }
+
+    public func makeCollectDueViewModel(phone: String, actorId: String) -> CollectDueViewModel {
+        CollectDueViewModel(phone: phone, customerRepository: repositoryContainer.customerRepository,
+                            dues: repositoryContainer.duesRepository, actorId: actorId)
+    }
+
+    public func makeDueReminderViewModel(phone: String, session: AppSession) -> DueReminderViewModel {
+        DueReminderViewModel(phone: phone, customerRepository: repositoryContainer.customerRepository,
+                             shopName: session.displayShopName, upiId: session.settings.payments.upiId)
+    }
+
+    public func makeStatementViewModel(phone: String, session: AppSession) -> StatementViewModel {
+        StatementViewModel(phone: phone, customerRepository: repositoryContainer.customerRepository,
+                           dues: repositoryContainer.duesRepository, shopName: session.displayShopName)
+    }
+
+    public func makeImportContactsViewModel() -> ImportContactsViewModel {
+        ImportContactsViewModel(provider: DeviceContactsProvider(), repository: repositoryContainer.customerRepository)
+    }
+
+    public func makeOffersViewModel(session: AppSession) -> OffersViewModel {
+        OffersViewModel(repository: repositoryContainer.customerRepository, shopName: session.displayShopName)
+    }
+
+    // MARK: - Sell (58–60, 63)
+
+    public func makeOrdersViewModel() -> OrdersViewModel {
+        OrdersViewModel(repository: repositoryContainer.orderRepository)
+    }
+
+    public func makeOrderFormViewModel(session: AppSession) -> OrderFormViewModel {
+        OrderFormViewModel(orders: repositoryContainer.orderRepository, customerRepository: repositoryContainer.customerRepository,
+                           dues: repositoryContainer.duesRepository, audit: repositoryContainer.auditLogger,
+                           actorId: session.actorId, actorName: session.actorName)
+    }
+
+    public func makeOrderDetailViewModel(orderId: String, session: AppSession) -> OrderDetailViewModel {
+        OrderDetailViewModel(orderId: orderId, repository: repositoryContainer.orderRepository,
+                             audit: repositoryContainer.auditLogger, shopName: session.displayShopName)
+    }
+
+    public func markOrdersDelivered(in sale: Sale) async {
+        await OrderDeliveries.markDelivered(in: sale, repository: repositoryContainer.orderRepository,
+                                            audit: repositoryContainer.auditLogger)
+    }
+
+    public func makeWarrantyViewModel(actorId: String) -> WarrantyViewModel {
+        WarrantyViewModel(saleRepository: repositoryContainer.saleRepository,
+                          claimRepository: repositoryContainer.warrantyClaimRepository,
+                          audit: repositoryContainer.auditLogger, actorId: actorId)
+    }
     
     // MARK: - Home & bills
 

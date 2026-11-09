@@ -23,7 +23,14 @@ struct NewBillCoordinatorView: View {
     init(coordinator: NewBillCoordinator, container: AppContainer) {
         self.coordinator = coordinator
         self.container = container
-        self._posViewModel = State(initialValue: container.modulesContainer.makePOSViewModel())
+        let posViewModel = container.modulesContainer.makePOSViewModel()
+        // Started from elsewhere (customer page, order delivery, held bills): begin with that cart.
+        // It's cleared on appear, not here, so the view's init stays free of state writes.
+        if let cart = coordinator.pendingCart {
+            posViewModel.cart = cart
+            posViewModel.activeHeldBillId = coordinator.pendingHeldBillId
+        }
+        self._posViewModel = State(initialValue: posViewModel)
     }
 
     private var session: AppSession { container.appSession }
@@ -89,6 +96,11 @@ struct NewBillCoordinatorView: View {
             Button("Keep billing", role: .cancel) {}
         }
         .maniTheme(from: container.themeStore)
+        .onAppear {
+            if coordinator.takePendingCart() != nil {
+                Task { await posViewModel.reloadCustomer() }
+            }
+        }
     }
 
     private func close() {
@@ -143,7 +155,10 @@ struct NewBillCoordinatorView: View {
         posViewModel.clearCart()
         checkoutViewModel = nil
         coordinator.path = [.receipt(saleId: sale.id)]
-        Task { await container.modulesContainer.recordPackagePurchases(in: sale) }
+        Task {
+            await container.modulesContainer.recordPackagePurchases(in: sale)
+            await container.modulesContainer.markOrdersDelivered(in: sale)
+        }
     }
 
     private var customerSubtitle: String? {
