@@ -9,8 +9,8 @@ import SwiftUI
 import ApoorvaModels
 import ManiSwiftUIComponents
 
+/// Held bills: park and resume (design 51).
 public struct HeldBillsView: View {
-    @Environment(\.maniTheme) private var theme
     @Bindable private var viewModel: HeldBillsViewModel
     private let onResume: (HeldBill) -> Void
 
@@ -20,38 +20,28 @@ public struct HeldBillsView: View {
     }
 
     public var body: some View {
-        ScrollView {
-            LazyVStack(spacing: ManiSpacing.sm) {
-                if viewModel.heldBills.isEmpty {
-                    ManiNote("No bills on hold.", kind: .info)
-                        .padding(.top, ManiSpacing.lg)
-                } else {
+        ScreenScroll {
+            ScreenSubtitle(text: "\(viewModel.heldBills.count) parked · auto-clears at day close")
+            if viewModel.heldBills.isEmpty {
+                ManiEmptyState(icon: .pause, title: "No held bills",
+                               message: "Hold a bill from checkout to serve the next customer, then resume it here.")
+            } else {
+                RowsCard {
                     ForEach(viewModel.heldBills) { bill in
-                        ManiCard {
-                            HStack(spacing: ManiSpacing.md) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(bill.customerName.isEmpty ? "Walk-in customer" : bill.customerName)
-                                        .font(theme.typography.body.weight(.medium))
-                                        .foregroundStyle(theme.base.text)
-                                    Text("\(bill.items.count) items · ₹\(bill.total.moneyString)")
-                                        .font(theme.typography.secondary)
-                                        .foregroundStyle(theme.base.textSecondary)
-                                }
-                                Spacer()
-                                ManiButton("Resume", icon: .check, kind: .outline, action: { onResume(bill) })
-                                    .frame(width: 120)
+                        ManiListRow(title: bill.customerName.isEmpty ? "Walk-in" : bill.customerName,
+                                    subtitle: "\(bill.items.count) items · \(bill.createdAt.timeOnly)",
+                                    value: Money.format(bill.total),
+                                    status: ("Held", .warning)) { onResume(bill) }
+                            .contextMenu {
+                                Button("Discard", role: .destructive) { Task { await viewModel.delete(bill) } }
                             }
-                        }
                     }
                 }
+                ManiNote("Tap a bill to resume. Long-press to discard.", kind: .info)
             }
-            .padding(ManiSpacing.lg)
         }
-        .background(theme.base.background.ignoresSafeArea())
-        .navigationTitle("Held Bills")
+        .navigationTitle("Held bills")
         .navigationBarTitleDisplayMode(.inline)
-        .task {
-            await viewModel.prepareData()
-        }
+        .task { await viewModel.prepareData() }
     }
 }

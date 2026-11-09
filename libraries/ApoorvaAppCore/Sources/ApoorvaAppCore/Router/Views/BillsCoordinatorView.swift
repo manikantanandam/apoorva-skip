@@ -59,18 +59,17 @@ struct BillsCoordinatorView: View {
                 onLocked: { reason in tabs.showLocked(reason) }
             )
         case .cancel(let billId):
-            CancelBillView(viewModel: container.modulesContainer.makeCancelBillViewModel(saleId: billId, actorId: session.actorId)) {
-                coordinator.pop()
+            Retained(container.modulesContainer.makeCancelBillViewModel(saleId: billId, actorId: session.actorId)) { viewModel in
+                CancelBillView(viewModel: viewModel) { coordinator.pop() }
             }
         case .edit(let billId):
-            BillEditView(viewModel: container.modulesContainer.makeBillEditViewModel(saleId: billId, actorId: session.actorId)) {
-                coordinator.pop()
+            Retained(container.modulesContainer.makeBillEditViewModel(saleId: billId, actorId: session.actorId)) { viewModel in
+                BillEditView(viewModel: viewModel) { coordinator.pop() }
             }
         case .receiptPreview(let billId):
-            ReceiptView(viewModel: container.modulesContainer.makeReceiptViewModel(saleId: billId),
-                        cameFromCheckout: false,
-                        onEditSale: { sale in coordinator.push(.edit(billId: sale.id)) },
-                        onDone: { coordinator.pop() })
+            Retained(container.modulesContainer.makeReceiptViewModel(saleId: billId, session: session)) { viewModel in
+                ReceiptPreviewView(viewModel: viewModel, printerName: session.settings.receipt.printerName)
+            }
         }
     }
 }

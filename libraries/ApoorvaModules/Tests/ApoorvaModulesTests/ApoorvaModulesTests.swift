@@ -78,7 +78,10 @@ struct LoginViewModelTests {
         vm.username = "a@b.com"
         vm.password = "pw"
         vm.loginPressed()
-        try await Task.sleep(nanoseconds: 100_000_000)
+        // Poll rather than a fixed sleep: under a busy parallel run 100 ms isn't always enough.
+        for _ in 0..<40 where vm.errorMessage == nil {
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
         #expect(auth.loginCalls.count == 1)
         #expect(vm.errorMessage != nil)
     }

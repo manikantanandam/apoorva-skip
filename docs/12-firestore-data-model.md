@@ -30,6 +30,8 @@ Baseline of the **live** Firestore structure as read by this app. Derived from c
 | `organizations/{orgId}/stores/{id}` | UUID string (`default` for the implicit single store) | `Store`: name, vertical, address, prefix, accent |
 | `organizations/{orgId}/members/{uid}` | Firebase uid | `Member`: org role (owner/manager/cashier/accountant), store access, active/invited. Overrides the role derived from legacy `users.role`, which is never rewritten |
 | `organizations/{orgId}/suppliers/{id}` | UUID string | `Supplier`: name, phone, opening due (written by onboarding opening balances; purchases/ledger in a later phase) |
+| `organizations/{orgId}/servicePackages/{id}` | UUID string | `ServicePackage`: name, details, price, sessions (0 = membership), validityDays |
+| `organizations/{orgId}/customerPackages/{id}` | UUID string | `CustomerPackage`: package snapshot, customer phone/name, sessions/sessionsUsed, purchasedAt, validUntil, saleId. Created after a bill with a `package:` line is saved; "Use 1 session" increments `sessionsUsed` and writes an audit event |
 | `invites/{token}` | 8-char code | `Invite` (top-level: the joiner doesn't know the org yet). Org, store, role, inviter, 72 h `expiresAt` (checked on the client only), `acceptedBy`/`acceptedAt` |
 | `platform/config` | fixed | `PlatformConfig`: app-level flags (incl. `auth.*`), `minAppVersion`, default visual style, trial/free/grace limits. Written only by superAdmin from the console |
 
@@ -72,7 +74,9 @@ Keys: `name`, `phone`, `createdAt`, `lastPurchaseDate`, `totalSales` int, `total
 ### sales (`Sale`)
 `staffId` (`Unknown`), `customerPhone`, `customerName` (`Walk-in`), `items` [SaleItem], `subtotal`, `overallDiscountPercent`, `overallDiscountAmount`, `roundOff`, `netPayable` (num), `payments` map PaymentMode→num, `timestamp` TS, `source` (`Unknown`), `status` (`Completed`), `whatsappStatus` (`unsent`), `updatedAt` TS?, `isDeleted`.
 
-`SaleItem`: `cat_id` (→ categoryId), `categoryName`, `qty`, `stickerPrice`, `finalPrice`, `discountType` (`percentage`|`amount`|`finalPrice`).
+`SaleItem`: `cat_id` (→ categoryId), `categoryName`, `qty`, `stickerPrice`, `finalPrice`, `discountType` (`percentage`|`amount`|`finalPrice`). Optional, additive: `doneByStaffId`/`doneByName` (parlour commission), `warrantyMonths`, `variant` ("2.4 · Ruby"), `weight` + `unit` (loose items: `qty` is 1 and `stickerPrice`/`finalPrice` hold the whole line amount, so legacy readers still total correctly). `cat_id` prefixes `custom-` (quick item, not stocked) and `package:` (parlour package) never match an inventory doc.
+
+Return bills (`source: "Return"`) carry `returnOfSaleId`, positive `qty`/amounts, and the refund in `payments` (`cash`, or `credit` = store credit, which lowers the customer's due). Totals subtract them. Exchanges are ordinary bills with negative-`qty` lines for the items taken back.
 `PaymentMode`: `cash`, `upi`, `card`, `credit`.
 
 ### cashflow (`CashflowTransaction`)

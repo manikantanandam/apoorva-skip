@@ -15,5 +15,7 @@
 	</array>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Switch back to your account on a shared phone.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Scan item barcodes to add them to the bill.</string>
 </dict>
 </plist>

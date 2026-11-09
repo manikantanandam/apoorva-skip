@@ -95,11 +95,13 @@ public final class BillsViewModel {
     }
 
     public var todayTotal: Double {
-        allSales.filter { !$0.isCancelled && Calendar.current.isDateInToday($0.timestamp) }.reduce(0) { $0 + $1.netPayable }
+        // Return bills store a positive amount; they come off the day's takings.
+        allSales.filter { !$0.isCancelled && Calendar.current.isDateInToday($0.timestamp) }
+            .reduce(0) { $0 + ($1.isReturn ? -$1.netPayable : $1.netPayable) }
     }
 
     public var todayCount: Int {
-        allSales.filter { !$0.isCancelled && Calendar.current.isDateInToday($0.timestamp) }.count
+        allSales.filter { !$0.isCancelled && !$0.isReturn && Calendar.current.isDateInToday($0.timestamp) }.count
     }
 
     public var staffOptions: [(id: String, name: String)] {
@@ -185,14 +187,7 @@ public final class BillDetailViewModel {
 
     public var shareText: String {
         guard let sale else { return "" }
-        var lines = ["Bill \(sale.displayNumber) · \(sale.timestamp.formatted(date: .abbreviated, time: .shortened))"]
-        for item in sale.items {
-            lines.append("\(item.categoryName) × \(item.qty)  \(Money.format(item.totalAmount))")
-        }
-        lines.append("Total: \(Money.format(sale.netPayable))")
-        if sale.isDue { lines.append("Balance due: \(Money.format(sale.dueAmount))") }
-        lines.append("Thank you!")
-        return lines.joined(separator: "\n")
+        return ReceiptFormatter.shareText(for: sale)
     }
 }
 

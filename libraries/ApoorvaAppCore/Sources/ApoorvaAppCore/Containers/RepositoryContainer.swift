@@ -102,6 +102,8 @@ public class RepositoryContainer {
     public lazy var storeRepository = makeOrgCollectionRepository(Store.self)
     public lazy var memberRepository = makeOrgCollectionRepository(Member.self)
     public lazy var supplierRepository = makeOrgCollectionRepository(Supplier.self)
+    public lazy var servicePackageRepository = makeOrgCollectionRepository(ServicePackage.self)
+    public lazy var customerPackageRepository = makeOrgCollectionRepository(CustomerPackage.self)
 
     /// Keeps a bill's stock, dues and audit trail consistent across save / cancel / undo / edit.
     public lazy var saleLifecycleRepository: SaleLifecycleRepositoryProtocol = SaleLifecycleRepository(
@@ -132,6 +134,8 @@ public class RepositoryContainer {
             storeRepository,
             memberRepository,
             supplierRepository,
+            servicePackageRepository,
+            customerPackageRepository,
             customerLedgerRepository,
             stockMovementRepository,
             auditRepository

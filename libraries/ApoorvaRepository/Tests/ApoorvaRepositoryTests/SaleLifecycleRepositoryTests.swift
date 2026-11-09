@@ -147,6 +147,24 @@ struct SaleLifecycleRepositoryTests {
         #expect(sut.audit.box.actions == ["bill.undo"])
     }
 
+    @Test func storeCreditReturnPutsStockBackAndLowersDue() async throws {
+        let sut = try makeSUT()
+        let bill = sale(qty: 3, credit: 30)
+        try await sut.sales.confirmSale(bill, heldBillId: nil)
+        try await sut.lifecycle.recordEffects(of: bill, by: "u1")
+        var returned = Sale(id: "r1", staffId: "u1", customerPhone: "9", customerName: "Asha",
+                            items: [SaleItem(categoryId: "pen", categoryName: "Pen", qty: 1, stickerPrice: 10, finalPrice: 10, discountType: .percentage),
+                                    SaleItem(categoryId: "custom-1", categoryName: "Misc", qty: 1, stickerPrice: 0, finalPrice: 0, discountType: .percentage)],
+                            subtotal: 10, overallDiscountPercent: 0, overallDiscountAmount: 0, roundOff: 0, netPayable: 10,
+                            payments: [.credit: 10], timestamp: Date(), source: "Return", status: "Completed", whatsappStatus: "unsent")
+        returned.returnOfSaleId = "s1"
+        try await sut.lifecycle.recordEffects(of: returned, by: "u1")
+
+        #expect(sut.inventory.items["pen"]?.currentStock == 8)
+        #expect(sut.customers.customers["9"]?.dueBalance == 20)
+        #expect(try await sut.movements.all().allSatisfy { $0.itemId == "pen" })
+    }
+
     @Test func editAdjustsStockByTheDifference() async throws {
         let sut = try makeSUT()
         let bill = sale(qty: 3)

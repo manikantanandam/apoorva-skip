@@ -80,12 +80,41 @@ public class ModulesContainer {
     public func makePOSViewModel() -> POSViewModel {
         return POSViewModel(
             inventoryRepository: repositoryContainer.inventoryRepository,
-            heldBillRepository: repositoryContainer.heldBillRepository
+            heldBillRepository: repositoryContainer.heldBillRepository,
+            memberRepository: repositoryContainer.memberRepository,
+            customerRepository: repositoryContainer.customerRepository
         )
     }
 
-    public func makeItemPriceCalculatorViewModel(category: InventoryItem, existingItem: CartItem?) -> ItemPriceCalculatorViewModel {
-        return ItemPriceCalculatorViewModel(category: category, existingItem: existingItem)
+    public func makeLineEditViewModel(line: CartItem, isNew: Bool) -> LineEditViewModel {
+        LineEditViewModel(line: line, isNew: isNew)
+    }
+
+    /// Bill discount capped by the member's role; managers and owners on this device can approve more.
+    public func makeBillDiscountViewModel(cart: PosCart, session: AppSession) async -> BillDiscountViewModel {
+        let approvers = ((try? await repositoryContainer.memberRepository.all()) ?? [])
+            .filter { $0.isActive && ($0.role == .owner || $0.role == .manager) }
+        return BillDiscountViewModel(subtotal: cart.totalFinalPrice, currentAmount: cart.flatDiscount,
+                                     currentPercent: cart.discountPercent,
+                                     limitPercent: session.can(.discountAboveLimit) ? 100 : session.discountLimitPercent,
+                                     managers: approvers, pinStore: servicesContainer.pinStore)
+    }
+
+    public func makePackagesViewModel(customerPhone: String?, customerName: String) -> PackagesViewModel {
+        PackagesViewModel(customerPhone: customerPhone, customerName: customerName,
+                          packages: repositoryContainer.servicePackageRepository,
+                          customerPackages: repositoryContainer.customerPackageRepository,
+                          audit: repositoryContainer.auditLogger)
+    }
+
+    public func recordPackagePurchases(in sale: Sale) async {
+        await PackagesViewModel.recordPurchases(in: sale, packages: repositoryContainer.servicePackageRepository,
+                                                customerPackages: repositoryContainer.customerPackageRepository)
+    }
+
+    public func makeReturnViewModel(saleId: String, session: AppSession) -> ReturnViewModel {
+        ReturnViewModel(saleId: saleId, saleRepository: repositoryContainer.saleRepository,
+                        lifecycle: repositoryContainer.saleLifecycleRepository, session: session)
     }
 
     public func makeCustomerPickerViewModel() -> CustomerPickerViewModel {
@@ -111,10 +140,12 @@ public class ModulesContainer {
         )
     }
 
-    public func makeReceiptViewModel(saleId: String) -> ReceiptViewModel {
+    public func makeReceiptViewModel(saleId: String, session: AppSession? = nil, cashReceived: Double? = nil) -> ReceiptViewModel {
         return ReceiptViewModel(
             saleId: saleId,
-            saleRepository: repositoryContainer.saleRepository
+            saleRepository: repositoryContainer.saleRepository,
+            session: session,
+            cashReceived: cashReceived
         )
     }
     
