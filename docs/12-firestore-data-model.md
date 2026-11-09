@@ -30,10 +30,27 @@ Baseline of the **live** Firestore structure as read by this app. Derived from c
 | `organizations/{orgId}/stores/{id}` | UUID string (`default` for the implicit single store) | `Store`: name, vertical, address, prefix, accent |
 | `organizations/{orgId}/members/{uid}` | Firebase uid | `Member`: org role (owner/manager/cashier/accountant), store access, active/invited. Overrides the role derived from legacy `users.role`, which is never rewritten |
 | `organizations/{orgId}/suppliers/{id}` | UUID string | `Supplier`: name, phone, opening due (written by onboarding opening balances; purchases/ledger in a later phase) |
+| `organizations/{orgId}/servicePackages/{id}` | UUID string | `ServicePackage`: name, details, price, sessions (0 = membership), validityDays |
+| `organizations/{orgId}/customerPackages/{id}` | UUID string | `CustomerPackage`: package snapshot, customer phone/name, sessions/sessionsUsed, purchasedAt, validUntil, saleId. Created after a bill with a `package:` line is saved; "Use 1 session" increments `sessionsUsed` and writes an audit event |
+| `organizations/{orgId}/orders/{id}` | UUID string | `Order`: number (`O-0001`, from the local count, so offline devices can collide like bill numbers), customer phone/name, details, total, advance + mode, readyBy, pickup/delivery, status `open`/`ready`/`delivered`/`cancelled`, readyAt/deliveredAt, saleId |
+| `organizations/{orgId}/warrantyClaims/{id}` | UUID string | `WarrantyClaim`: saleId, billNumber, item id/name, customer phone, action `replace`/`repair`/`refund`, note |
+| `organizations/{orgId}/categories/{id}` | UUID string | `ItemCategory`: name, sortOrder (billing chip order). Items point at it via `inventory.categoryId` |
+| `organizations/{orgId}/purchases/{id}` | UUID string | `Purchase`: number (`P-001`), supplier id/name, isReturn, lines (item, qty, unit cost; empty for "total only"), total, paid + mode, note |
+| `organizations/{orgId}/supplierLedger/{id}` | UUID string | `SupplierLedgerEntry`: supplierId, kind `purchase`/`payment`/`purchaseReturn`, signed amount (+ = shop owes more), mode, purchaseId. Owed = `Supplier.openingDue` + sum |
+| `organizations/{orgId}/expenses/{id}` | UUID string | `Expense`: title, category, amount, mode `cash`/`upi`/`bank`, date, repeatsMonthly |
+| `organizations/{orgId}/dayCloses/{dd-MM-yyyy}` | day key | `DayClose`: expected and counted cash, note, carryForward, closedBy/Name/At. Reopen soft-deletes it |
+| `organizations/{orgId}/attendance/{dd-MM-yyyy_memberId}` | day + member | `AttendanceRecord`: status `present`/`half`/`absent`/`leave`, inAt, markedBy |
+| `organizations/{orgId}/salaryPayments/{id}` | UUID string | `SalaryPayment`: member, month `yyyy-MM`, kind `salary`/`advance`, amount, mode |
 | `invites/{token}` | 8-char code | `Invite` (top-level: the joiner doesn't know the org yet). Org, store, role, inviter, 72 h `expiresAt` (checked on the client only), `acceptedBy`/`acceptedAt` |
 | `platform/config` | fixed | `PlatformConfig`: app-level flags (incl. `auth.*`), `minAppVersion`, default visual style, trial/free/grace limits. Written only by superAdmin from the console |
 
 Every doc in a new org collection carries `updatedAt`, `isDeleted` and a server-set `serverUpdatedAt`.
+
+**Cash book** (`CashBook`, writing the legacy `cashflow` collection): cash entries, expenses (once, when first saved), supplier payments and paid parts of purchases, salary and advances post a debit. Dues collected and order advances post a credit. Cash goes to the cash account; UPI, card and bank go to the bank account; credit is never posted. Closing a day also writes the legacy `dailyCashflowSummaries/{dd-MM-yyyy}` doc: `locked: true`, with the counted cash as the cash account's closing balance (and tomorrow's opening, when carried forward). A paid salary also creates a `Salary` expense. Bill sales are not copied into `cashflow`; screens add them from `sales`. Inventory writes now include item add/edit/delete, adjustments and purchases (explicit-field merge, as before).
+
+**Dues and advances** (`DuesRepository`): collecting a due writes a `customerLedger` `payment` entry (negative amount), lowers the customer's `dueBalance` (floored at 0), adds a `cashflow` credit (`Sales Revenue`; card is booked to the bank account; credit never is) and an audit event. An order advance is booked as a cashflow credit when taken; delivering the order bills only the balance as a `custom-order-<orderId>` line, and saving that bill marks the order delivered.
+
+**Bill side effects** (`SaleLifecycleRepository`): confirming a sale decrements each item's `inventory.currentStock` (merge write of explicit fields via `InventoryItemService.upsertInventoryItem`) with a `stockMovements` record, and puts any credit portion on the customer's ledger and `dueBalance`. Cancel/undo reverse both; editing a bill applies the difference. Every cancel/undo/edit writes an `auditEvents` doc. Not atomic: each step is retry-safe, but a crash between steps can leave stock and the bill out of step until fixed by hand.
 
 Accounts are **embedded** in the org document (no subcollection). `InternalTransfer` has no Firestore collection. Collection-name constants: `FirebaseCollectionName.swift:10-17`; `"dailyCashflowSummaries"` is a literal.
 
@@ -70,7 +87,9 @@ Keys: `name`, `phone`, `createdAt`, `lastPurchaseDate`, `totalSales` int, `total
 ### sales (`Sale`)
 `staffId` (`Unknown`), `customerPhone`, `customerName` (`Walk-in`), `items` [SaleItem], `subtotal`, `overallDiscountPercent`, `overallDiscountAmount`, `roundOff`, `netPayable` (num), `payments` map PaymentMode→num, `timestamp` TS, `source` (`Unknown`), `status` (`Completed`), `whatsappStatus` (`unsent`), `updatedAt` TS?, `isDeleted`.
 
-`SaleItem`: `cat_id` (→ categoryId), `categoryName`, `qty`, `stickerPrice`, `finalPrice`, `discountType` (`percentage`|`amount`|`finalPrice`).
+`SaleItem`: `cat_id` (→ categoryId), `categoryName`, `qty`, `stickerPrice`, `finalPrice`, `discountType` (`percentage`|`amount`|`finalPrice`). Optional, additive: `doneByStaffId`/`doneByName` (parlour commission), `warrantyMonths`, `variant` ("2.4 · Ruby"), `weight` + `unit` (loose items: `qty` is 1 and `stickerPrice`/`finalPrice` hold the whole line amount, so legacy readers still total correctly). `cat_id` prefixes `custom-` (quick item, not stocked) and `package:` (parlour package) never match an inventory doc.
+
+Return bills (`source: "Return"`) carry `returnOfSaleId`, positive `qty`/amounts, and the refund in `payments` (`cash`, or `credit` = store credit, which lowers the customer's due). Totals subtract them. Exchanges are ordinary bills with negative-`qty` lines for the items taken back.
 `PaymentMode`: `cash`, `upi`, `card`, `credit`.
 
 ### cashflow (`CashflowTransaction`)

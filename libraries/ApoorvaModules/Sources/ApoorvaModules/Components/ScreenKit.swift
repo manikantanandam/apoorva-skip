@@ -183,7 +183,7 @@ struct FlowLayout: Layout {
 }
 
 /// Formats rupee amounts with en-IN grouping: ₹1,23,450.
-enum Money {
+public enum Money {
     private static let formatter: NumberFormatter = {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
@@ -192,7 +192,7 @@ enum Money {
         return formatter
     }()
 
-    static func format(_ amount: Double) -> String {
+    public static func format(_ amount: Double) -> String {
         let sign = amount < 0 ? "-" : ""
         return sign + "₹" + (formatter.string(from: NSNumber(value: abs(amount).rounded())) ?? "0")
     }

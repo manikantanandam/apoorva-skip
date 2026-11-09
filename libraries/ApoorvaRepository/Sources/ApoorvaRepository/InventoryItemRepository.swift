@@ -44,18 +44,29 @@ public final actor InventoryItemRepository: InventoryItemRepositoryProtocol {
     
     public func saveInventoryItem(item: InventoryItem) async throws {
         try await storage.saveInventoryItem(item: item)
+        try await pushRemote(item)
     }
-    
+
     public func updateInventoryItem(_ item: InventoryItem) async throws {
         try await storage.updateInventoryItem(item: item)
+        try await pushRemote(item)
     }
-    
+
     public func deleteInventoryItem(id: String) async throws {
         try await storage.deleteInventoryItem(id: id)
     }
-    
+
+    /// Soft delete, so other devices drop the item on their next sync.
     public func markAsDeleted(id: String) async throws {
         try await storage.markAsDeleted(id: id)
+        if let item = try await storage.getInventoryItem(id: id) {
+            try await pushRemote(item)
+        }
+    }
+
+    private func pushRemote(_ item: InventoryItem) async throws {
+        guard let orgId = try? await userRepository.getCurrentUser().selectedOrganization?.orgId else { return }
+        try service.upsertInventoryItem(item, for: orgId)
     }
 
     public func lastSyncedAt() async throws -> Date? {

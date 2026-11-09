@@ -94,7 +94,7 @@ public final class SaleService: SaleServiceProtocol {
         }
 
         let itemsPayload: [[String: Any]] = sale.items.map { item in
-            [
+            var line: [String: Any] = [
                 "cat_id": item.categoryId,
                 "categoryName": item.categoryName,
                 "qty": item.qty,
@@ -102,6 +102,13 @@ public final class SaleService: SaleServiceProtocol {
                 "finalPrice": item.finalPrice,
                 "discountType": item.discountType.rawValue
             ]
+            if let doneByStaffId = item.doneByStaffId { line["doneByStaffId"] = doneByStaffId }
+            if let doneByName = item.doneByName { line["doneByName"] = doneByName }
+            if let warrantyMonths = item.warrantyMonths { line["warrantyMonths"] = warrantyMonths }
+            if let weight = item.weight { line["weight"] = weight }
+            if let unit = item.unit { line["unit"] = unit }
+            if let variant = item.variant { line["variant"] = variant }
+            return line
         }
 
         return [
