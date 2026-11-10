@@ -14,6 +14,7 @@ public class DeveloperSettingsViewModel {
     private let authService: AuthServicing
     private let environmentStore: EnvironmentStore
     private var tools: DeveloperToolsProtocol
+    private let remoteConfigService: RemoteConfigServicing
     private let logBuffer: LogBuffer
     private let clearLocalDatabaseAction: () -> Void
     private let terminateAppAction: () -> Void
@@ -24,6 +25,7 @@ public class DeveloperSettingsViewModel {
     public var errorMessage: String?
 
     public var flagOverrides: [String: Bool]
+    public var remoteConfigOverrides: [String: String]
     public var isOfflineSimulated: Bool {
         didSet { tools.isOfflineSimulated = isOfflineSimulated }
     }
@@ -34,18 +36,21 @@ public class DeveloperSettingsViewModel {
     public init(authService: AuthServicing,
                 environmentStore: EnvironmentStore,
                 tools: DeveloperToolsProtocol,
+                remoteConfigService: RemoteConfigServicing,
                 logBuffer: LogBuffer,
                 clearLocalDatabase: @escaping () -> Void,
                 terminateApp: @escaping () -> Void) {
         self.authService = authService
         self.environmentStore = environmentStore
         self.tools = tools
+        self.remoteConfigService = remoteConfigService
         self.logBuffer = logBuffer
         self.clearLocalDatabaseAction = clearLocalDatabase
         self.terminateAppAction = terminateApp
         self.activeEnvironment = environmentStore.current
         self.pendingEnvironment = environmentStore.current
         self.flagOverrides = tools.flagOverrides
+        self.remoteConfigOverrides = tools.remoteConfigOverrides
         self.isOfflineSimulated = tools.isOfflineSimulated
         self.showsScreenIdentifiers = tools.showsScreenIdentifiers
         self.logLines = logBuffer.entries
@@ -90,6 +95,30 @@ public class DeveloperSettingsViewModel {
     public func resetFlags() {
         tools.clearFlagOverrides()
         flagOverrides = [:]
+    }
+
+    public func setRemoteConfigOverride(_ key: String, value: String?) {
+        tools.setRemoteConfigOverride(key, value: value)
+        remoteConfigOverrides = tools.remoteConfigOverrides
+    }
+
+    public func addRemoteConfigOverride(_ key: String, value: String) {
+        let trimmedKey = key.trimmingCharacters(in: .whitespaces)
+        guard !trimmedKey.isEmpty else { return }
+        setRemoteConfigOverride(trimmedKey, value: value)
+    }
+
+    public func resetRemoteConfigOverrides() {
+        tools.clearRemoteConfigOverrides()
+        remoteConfigOverrides = [:]
+    }
+
+    public func fetchRemoteConfigNow() async {
+        do {
+            try await remoteConfigService.fetchAndActivate()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     public func clearLogs() {

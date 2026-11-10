@@ -61,6 +61,7 @@ public final class AppSession {
     private let preferences: UserDefaults
     private let analyticsService: AnalyticsServicing
     private let crashReportingService: CrashReportingServicing
+    private let remoteConfigService: RemoteConfigServicing
 
     public init(settingsRepository: any OrgCollectionRepositoryProtocol<OrgSettings>,
                 storeRepository: any OrgCollectionRepositoryProtocol<Store>,
@@ -69,7 +70,8 @@ public final class AppSession {
                 developerTools: DeveloperToolsProtocol,
                 preferences: UserDefaults = .standard,
                 analyticsService: AnalyticsServicing = NoOpAnalyticsService(),
-                crashReportingService: CrashReportingServicing = NoOpCrashReportingService()) {
+                crashReportingService: CrashReportingServicing = NoOpCrashReportingService(),
+                remoteConfigService: RemoteConfigServicing = NoOpRemoteConfigService()) {
         self.settingsRepository = settingsRepository
         self.storeRepository = storeRepository
         self.memberRepository = memberRepository
@@ -78,6 +80,7 @@ public final class AppSession {
         self.preferences = preferences
         self.analyticsService = analyticsService
         self.crashReportingService = crashReportingService
+        self.remoteConfigService = remoteConfigService
     }
 
     // MARK: - Identity
@@ -125,8 +128,10 @@ public final class AppSession {
     }
 
     public func resolution(of flag: FeatureFlag) -> FlagResolution {
-        FlagResolver.resolve(flag,
-                             app: platform.flags,
+        var appFlags = platform.flags
+        appFlags[flag.rawValue] = remoteConfigService.boolValue(forKey: flag.rawValue)
+        return FlagResolver.resolve(flag,
+                             app: appFlags,
                              org: settings.flags.org,
                              store: settings.flags.stores[currentStoreId] ?? [:],
                              role: settings.flags.roles[role.rawValue] ?? [:],
