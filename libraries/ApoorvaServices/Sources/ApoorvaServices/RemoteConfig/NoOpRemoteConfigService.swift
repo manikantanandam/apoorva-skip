@@ -33,6 +33,12 @@ public final class NoOpRemoteConfigService: RemoteConfigServicing, @unchecked Se
         return nil
     }
 
+    public func jsonValue<T: Decodable>(forKey key: String, as type: T.Type) -> T? {
+        lock.lock(); defer { lock.unlock() }
+        guard case .json(let data) = defaults[key] else { return nil }
+        return try? JSONDecoder().decode(T.self, from: data)
+    }
+
     public func setDefaults(_ defaults: [String: RemoteConfigDefaultValue]) {
         lock.lock(); defer { lock.unlock() }
         self.defaults = defaults

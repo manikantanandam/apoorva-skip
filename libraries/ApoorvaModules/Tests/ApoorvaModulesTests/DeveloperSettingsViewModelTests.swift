@@ -70,4 +70,16 @@ struct DeveloperSettingsViewModelTests {
         #expect(viewModel.setRemoteConfigOverride(for: row, rawValue: "2.0.0"))
         #expect(viewModel.remoteConfigRows.first { $0.id == "min_app_version" }?.overrideValue == "2.0.0")
     }
+
+    @Test func versionGateOverrideRoundTrips() {
+        let remoteConfig = NoOpRemoteConfigService()
+        remoteConfig.setDefaults(["test.gate": .json(try! JSONEncoder().encode(VersionGateValue(enabled: false)))])
+        let viewModel = makeViewModel(remoteConfig: remoteConfig)
+
+        #expect(viewModel.versionGateRemoteValue(forKey: "test.gate") == VersionGateValue(enabled: false))
+        #expect(viewModel.versionGateOverrideValue(forKey: "test.gate") == nil)
+
+        viewModel.setVersionGateOverride(key: "test.gate", value: VersionGateValue(enabled: true, minVersion: "2.3.0"))
+        #expect(viewModel.versionGateOverrideValue(forKey: "test.gate") == VersionGateValue(enabled: true, minVersion: "2.3.0"))
+    }
 }

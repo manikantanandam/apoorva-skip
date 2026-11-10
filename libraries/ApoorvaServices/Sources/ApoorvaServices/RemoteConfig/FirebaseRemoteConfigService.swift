@@ -3,6 +3,7 @@
 //  ApoorvaServices
 //
 
+import Foundation
 import FirebaseRemoteConfig
 
 public final class FirebaseRemoteConfigService: RemoteConfigServicing {
@@ -25,6 +26,11 @@ public final class FirebaseRemoteConfigService: RemoteConfigServicing {
         RemoteConfig.remoteConfig().configValue(forKey: key).numberValue.doubleValue
     }
 
+    public func jsonValue<T: Decodable>(forKey key: String, as type: T.Type) -> T? {
+        let data = RemoteConfig.remoteConfig().configValue(forKey: key).dataValue
+        return try? JSONDecoder().decode(T.self, from: data)
+    }
+
     public func setDefaults(_ defaults: [String: RemoteConfigDefaultValue]) {
         var bridged: [String: NSObject] = [:]
         for (key, value) in defaults {
@@ -32,6 +38,7 @@ public final class FirebaseRemoteConfigService: RemoteConfigServicing {
             case .bool(let bool): bridged[key] = bool as NSNumber
             case .string(let string): bridged[key] = string as NSString
             case .number(let number): bridged[key] = number as NSNumber
+            case .json(let data): bridged[key] = data as NSData
             }
         }
         RemoteConfig.remoteConfig().setDefaults(bridged)

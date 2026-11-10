@@ -54,10 +54,37 @@ struct RemoteConfigCatalogTests {
         #expect(holdBills?.defaultBool == FeatureFlag.holdBills.defaultValue)
     }
 
-    @Test func includesNonFlagKeysLikeMinAppVersion() {
-        let minVersion = RemoteConfigCatalog.all.first { $0.key == "min_app_version" }
+    @Test func minAppVersionIsAFeatureFlagCase() {
+        #expect(FeatureFlag.allCases.contains(.minAppVersion))
+        #expect(FeatureFlag.minAppVersion.kind == .string)
+        #expect(FeatureFlag.minAppVersion.isAppOnly)
+
+        let minVersion = RemoteConfigCatalog.all.first { $0.key == FeatureFlag.minAppVersion.rawValue }
         #expect(minVersion?.kind == .string)
         #expect(minVersion?.defaultString == "1.0.0")
+    }
+
+    /// Protects `AdminHomeView.featuresOn`, which only resolves non-app-only flags through
+    /// `FlagResolver` (bool-only) — a non-bool flag that forgot to be app-only would break it.
+    @Test func everyNonBoolFlagIsAppOnly() {
+        #expect(FeatureFlag.allCases.allSatisfy { $0.kind == .bool || $0.isAppOnly })
+    }
+}
+
+struct VersionGateValueTests {
+    @Test func disabledIsAlwaysOff() {
+        #expect(!VersionGateValue(enabled: false, minVersion: "1.0.0").isOn(currentAppVersion: "9.0.0"))
+    }
+
+    @Test func enabledWithNoMinVersionIsOn() {
+        #expect(VersionGateValue(enabled: true).isOn(currentAppVersion: "0.1.0"))
+    }
+
+    @Test func enabledGatesOnCurrentVersion() {
+        let gate = VersionGateValue(enabled: true, minVersion: "2.3.0")
+        #expect(!gate.isOn(currentAppVersion: "2.2.9"))
+        #expect(gate.isOn(currentAppVersion: "2.3.0"))
+        #expect(gate.isOn(currentAppVersion: "2.3.1"))
     }
 }
 

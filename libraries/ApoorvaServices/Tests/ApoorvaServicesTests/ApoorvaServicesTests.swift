@@ -268,3 +268,20 @@ struct RemoteConfigCatalogDefaultsTests {
         #expect(minVersion == "1.0.0")
     }
 }
+
+struct RemoteConfigJSONRoundTripTests {
+    @Test func versionGateDefaultRoundTripsThroughJSONValue() {
+        let definition = RemoteConfigKeyDefinition.versionGate("test.gate", title: "Test Gate",
+                                                                 default: VersionGateValue(enabled: true, minVersion: "2.3.0"))
+        let service = NoOpRemoteConfigService()
+        service.setDefaults([definition.key: .json(try! JSONEncoder().encode(definition.defaultVersionGate))])
+
+        let decoded = service.jsonValue(forKey: definition.key, as: VersionGateValue.self)
+        #expect(decoded == VersionGateValue(enabled: true, minVersion: "2.3.0"))
+    }
+
+    @Test func missingKeyReturnsNil() {
+        let service = NoOpRemoteConfigService()
+        #expect(service.jsonValue(forKey: "missing", as: VersionGateValue.self) == nil)
+    }
+}

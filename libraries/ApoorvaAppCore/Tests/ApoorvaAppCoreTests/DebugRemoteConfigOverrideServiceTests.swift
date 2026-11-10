@@ -4,6 +4,8 @@
 //
 
 import Testing
+import Foundation
+import ApoorvaModels
 import ApoorvaServices
 import ApoorvaEnvironment
 @testable import ApoorvaAppCore
@@ -37,5 +39,24 @@ struct DebugRemoteConfigOverrideServiceTests {
         let service = DebugRemoteConfigOverrideService(base: base, developerTools: StubDeveloperTools())
 
         #expect(!service.boolValue(forKey: "kill.sync_writes"))
+    }
+
+    @Test func jsonOverrideWinsOverBase() {
+        let base = NoOpRemoteConfigService()
+        base.setDefaults(["test.gate": .json(try! JSONEncoder().encode(VersionGateValue(enabled: false)))])
+        let tools = StubDeveloperTools()
+        let overrideJSON = String(data: try! JSONEncoder().encode(VersionGateValue(enabled: true, minVersion: "2.3.0")), encoding: .utf8)!
+        tools.remoteConfigOverrides = ["test.gate": overrideJSON]
+        let service = DebugRemoteConfigOverrideService(base: base, developerTools: tools)
+
+        #expect(service.jsonValue(forKey: "test.gate", as: VersionGateValue.self) == VersionGateValue(enabled: true, minVersion: "2.3.0"))
+    }
+
+    @Test func jsonFallsBackToBaseWhenNoOverride() {
+        let base = NoOpRemoteConfigService()
+        base.setDefaults(["test.gate": .json(try! JSONEncoder().encode(VersionGateValue(enabled: false)))])
+        let service = DebugRemoteConfigOverrideService(base: base, developerTools: StubDeveloperTools())
+
+        #expect(service.jsonValue(forKey: "test.gate", as: VersionGateValue.self) == VersionGateValue(enabled: false))
     }
 }

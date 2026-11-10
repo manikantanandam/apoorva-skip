@@ -3,6 +3,7 @@
 //  ApoorvaServices
 //
 
+import Foundation
 import ApoorvaModels
 
 /// Builds Remote Config's compiled defaults from the single local `RemoteConfigCatalog`,
@@ -15,6 +16,7 @@ public enum RemoteConfigCatalogDefaults {
             case .bool: value = .bool(definition.defaultBool)
             case .string: value = .string(definition.defaultString)
             case .number: value = .number(definition.defaultNumber)
+            case .versionGate: value = .json((try? JSONEncoder().encode(definition.defaultVersionGate)) ?? Data())
             }
             return (definition.key, value)
         })

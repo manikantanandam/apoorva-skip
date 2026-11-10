@@ -35,8 +35,19 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
     case authApple = "auth.apple"
     case authEmailVerificationRequired = "auth.email_verification_required"
     case authRegistrationsOpen = "auth.registrations_open"
+    case minAppVersion = "min_app_version"
+
+    /// The shape of this flag's value. Non-bool flags are always app-level only (see `isAppOnly`)
+    /// since `FlagResolver`'s org/store/role layering is bool-only.
+    public var kind: RemoteConfigValueKind {
+        switch self {
+        case .minAppVersion: return .string
+        default: return .bool
+        }
+    }
 
     /// Compiled default. Google and phone OTP ship off: their SDKs/console setup aren't in place yet.
+    /// Only meaningful when `kind == .bool` — see `defaultStringValue`/`defaultNumberValue`/`defaultVersionGateValue` otherwise.
     public var defaultValue: Bool {
         switch self {
         case .warranty, .bluetoothPrinting, .insightsExport, .summaryWhatsAppAuto,
@@ -48,9 +59,24 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
         }
     }
 
-    /// App-level only: orgs/stores/roles can't change these.
+    /// Only meaningful when `kind == .string`.
+    public var defaultStringValue: String {
+        switch self {
+        case .minAppVersion: return "1.0.0"
+        default: return ""
+        }
+    }
+
+    /// Only meaningful when `kind == .number`. No number-kind flag exists yet.
+    public var defaultNumberValue: Double { 0 }
+
+    /// Only meaningful when `kind == .versionGate`. No version-gated flag exists yet.
+    public var defaultVersionGateValue: VersionGateValue { VersionGateValue(enabled: false) }
+
+    /// App-level only: orgs/stores/roles can't change these. Non-bool flags are always app-only —
+    /// `FlagResolver`'s org/store/role layering only understands bool values.
     public var isAppOnly: Bool {
-        rawValue.hasPrefix("auth.") || rawValue.hasPrefix("kill.")
+        kind != .bool || rawValue.hasPrefix("auth.") || rawValue.hasPrefix("kill.")
     }
 
     public var title: String {

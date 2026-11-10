@@ -3,6 +3,7 @@
 //  ApoorvaAppCore
 //
 
+import Foundation
 import ApoorvaServices
 import ApoorvaEnvironment
 
@@ -38,6 +39,15 @@ public final class DebugRemoteConfigOverrideService: RemoteConfigServicing {
             return number
         }
         return base.numberValue(forKey: key)
+    }
+
+    public func jsonValue<T: Decodable>(forKey key: String, as type: T.Type) -> T? {
+        if let override = developerTools.remoteConfigOverrides[key],
+           let data = override.data(using: .utf8),
+           let decoded = try? JSONDecoder().decode(T.self, from: data) {
+            return decoded
+        }
+        return base.jsonValue(forKey: key, as: type)
     }
 
     public func setDefaults(_ defaults: [String: RemoteConfigDefaultValue]) {
