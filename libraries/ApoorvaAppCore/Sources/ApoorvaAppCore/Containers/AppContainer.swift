@@ -34,7 +34,9 @@ public class AppContainer {
         storeRepository: repositoryContainer.storeRepository,
         memberRepository: repositoryContainer.memberRepository,
         saleRepository: repositoryContainer.saleRepository,
-        developerTools: developerTools
+        developerTools: developerTools,
+        analyticsService: servicesContainer.analyticsService,
+        crashReportingService: servicesContainer.crashReportingService
     )
 
     public let themeStore = ThemeStore()
@@ -57,6 +59,8 @@ public class AppContainer {
         print("[AppContainer] init resolved environment: \(environment)")
         self.environment = environment
         self.offlineStorageContainer = OfflineStorageContainer(environment: environment)
+        servicesContainer.crashReportingService.setLaunchContext(appVersion: appVersion, buildFlavor: environment.rawValue)
+        servicesContainer.analyticsService.setAnalyticsCollectionEnabled(environment == .production)
     }
 
     /// Developer settings are only offered in debug builds.

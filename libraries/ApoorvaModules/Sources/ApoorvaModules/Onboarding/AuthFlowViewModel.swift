@@ -24,9 +24,11 @@ public final class AuthFlowViewModel {
     public private(set) var resendAvailableAt: Date?
 
     private let authService: AuthServicing
+    private let crashReportingService: CrashReportingServicing
 
-    public init(authService: AuthServicing) {
+    public init(authService: AuthServicing, crashReportingService: CrashReportingServicing = NoOpCrashReportingService()) {
         self.authService = authService
+        self.crashReportingService = crashReportingService
     }
 
     // MARK: Validation
@@ -82,7 +84,7 @@ public final class AuthFlowViewModel {
     /// Returns true once the email is verified.
     public func checkVerified() async -> Bool {
         var verified = false
-        _ = await run {
+        _ = await run(context: "auth.refresh") {
             verified = try await self.authService.reloadAccount()?.isEmailVerified ?? false
             if !verified { self.infoMessage = "Not verified yet. Tap the link in your email, then try again." }
         }
@@ -128,7 +130,7 @@ public final class AuthFlowViewModel {
         infoMessage = nil
     }
 
-    private func run(_ work: @escaping () async throws -> Void) async -> Bool {
+    private func run(context: String? = nil, _ work: @escaping () async throws -> Void) async -> Bool {
         clearMessages()
         isWorking = true
         defer { isWorking = false }
@@ -137,6 +139,9 @@ public final class AuthFlowViewModel {
             return true
         } catch {
             errorMessage = error.localizedDescription
+            if let context {
+                crashReportingService.recordNonFatal(error, context: context)
+            }
             return false
         }
     }

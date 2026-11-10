@@ -56,7 +56,8 @@ public class RepositoryContainer {
         customerService: servicesContainer.customerService,
         heldBillRepository: heldBillRepository,
         userRepository: userRepository,
-        syncStorage: offlineStorageContainer.syncStorage
+        syncStorage: offlineStorageContainer.syncStorage,
+        performanceMonitoringService: servicesContainer.performanceMonitoringService
     )
     
     public lazy var cashflowRepository: CashflowTransactionRepositoryProtocol = CashflowTransactionRepository(
@@ -179,7 +180,8 @@ public class RepositoryContainer {
             customerLedgerRepository,
             stockMovementRepository,
             auditRepository
-        ])
+        ], performanceMonitoringService: servicesContainer.performanceMonitoringService,
+           crashReportingService: servicesContainer.crashReportingService)
     }()
 
     /// Clears all local SQLite tables and the cached-user UserDefaults keys, in place, no restart needed.

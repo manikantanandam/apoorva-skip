@@ -35,19 +35,22 @@ public final actor SaleRepository: SaleRepositoryProtocol {
     let heldBillRepository: HeldBillRepositoryProtocol
     let userRepository: UserRepositoryProtocol
     let syncStorage: SyncStorage
+    let performanceMonitoringService: PerformanceMonitoringServicing
 
     public init(storage: SaleStorageProtocol,
                 service: SaleServiceProtocol,
                 customerService: CustomerServiceProtocol,
                 heldBillRepository: HeldBillRepositoryProtocol,
                 userRepository: UserRepositoryProtocol,
-                syncStorage: SyncStorage) {
+                syncStorage: SyncStorage,
+                performanceMonitoringService: PerformanceMonitoringServicing = NoOpPerformanceMonitoringService()) {
         self.storage = storage
         self.service = service
         self.customerService = customerService
         self.heldBillRepository = heldBillRepository
         self.userRepository = userRepository
         self.syncStorage = syncStorage
+        self.performanceMonitoringService = performanceMonitoringService
     }
 
     public func getSales() async throws -> [Sale] {
@@ -68,7 +71,9 @@ public final actor SaleRepository: SaleRepositoryProtocol {
         let user = try await userRepository.getCurrentUser()
         guard let orgId = user.selectedOrganization?.orgId else { return }
 
-        try await service.addSale(sale, for: orgId)
+        try await performanceMonitoringService.measure("sync_push") {
+            try await service.addSale(sale, for: orgId)
+        }
         try await customerService.upsertCustomerAfterSale(
             phone: sale.customerPhone,
             name: sale.customerName,

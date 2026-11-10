@@ -20,9 +20,11 @@ public class LoginViewModel {
     public var onNeedsLinking: ((String) -> Void)?
 
     private var authService: AuthServicing
+    private let analyticsService: AnalyticsServicing
 
-    public init(authService: AuthServicing, environment: AppEnvironment) {
+    public init(authService: AuthServicing, environment: AppEnvironment, analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.authService = authService
+        self.analyticsService = analyticsService
         #if DEBUG
         // Test accounts are prefilled only in debug builds.
         switch environment {
@@ -48,6 +50,7 @@ public class LoginViewModel {
             defer { isLoggingIn = false }
             do {
                 try await authService.login(email: username.trimmingCharacters(in: .whitespaces), password: password)
+                analyticsService.log(.signInMethod("email"))
             } catch AuthServiceError.accountExistsWithDifferentCredential(let email) {
                 onNeedsLinking?(email)
             } catch {

@@ -2,7 +2,7 @@
 
 ## 1. Crash & error reporting — Firebase Crashlytics
 - Integrated for iOS via `firebase-ios-sdk`; Android via Skip's Firebase bridge (verify before relying on it).
-- Enable **non-fatal logging** for: sync failures, DB migration errors, print failures, auth refresh failures.
+- **Implemented** behind `CrashReportingServicing` (`ApoorvaServices/Observability`), wired in `ServicesContainer`: non-fatal logging for sync failures (`SyncEngine`) and auth refresh failures (`AuthFlowViewModel.checkVerified`); `shopId` (hashed via `stableHash`), `appVersion`, `buildFlavor` custom keys set at launch/org-change; one breadcrumb call (`AppSession.configure`). DB migration errors, print failures and per-screen breadcrumbs are deferred follow-up.
 - Custom keys per crash: `shopId` (hashed), `appVersion`, `buildFlavor`, `syncState`, relevant flag values.
 - Breadcrumbs: screen name + last user action (no PII).
 - dSYM upload on every release build (Crashlytics run-script or CI step).
@@ -17,6 +17,7 @@
 - Export to CSV/PDF behind the `insights.export` flag. Role-scoped: managers see their own store; staff see only their own stats.
 
 ### 2b. App analytics (for us, Firebase Analytics → BigQuery)
+**Implemented** behind a provider-agnostic `AnalyticsServicing` abstraction (`ApoorvaServices/Observability`) — Firebase Analytics today, swappable for another vendor later without touching call sites. Wired: `sign_in_method` (`LoginViewModel`), `bill_saved` (`CheckoutViewModel`), `trial_started` (`ShopSetupViewModel`). `subscribed` is defined in `AnalyticsEvent` for schema completeness but left unwired — no real purchase/upgrade flow exists yet. The rest of the event table below is deferred follow-up.
 No PII, no customer names, no per-customer amounts. Every event carries `vertical`, `role`, `app_version` and `plan` as user properties.
 
 | Area | Events / metrics |
@@ -34,6 +35,7 @@ Dashboards: activation per vertical, time-to-first-bill, feature adoption vs fla
 ## 3. Performance — Firebase Performance Monitoring
 Custom traces: `save_bill`, `sync_push`, `sync_pull`, `dashboard_load`, `local_db_migration`.
 Targets from 02 (NFR-02, NFR-05).
+**Implemented**, behind `PerformanceMonitoringServicing` (`ApoorvaServices/Observability`): `save_bill` (`CheckoutViewModel.confirmSale`), `sync_push` (`SaleRepository.confirmSale`), `sync_pull` (`SyncEngine`, covers every registered repository). `dashboard_load` and `local_db_migration` are deferred follow-up.
 
 ## 4. Logging
 - Local `os.Logger` categories per module (`Storage`, `Sync`, `Auth`, `UI`).

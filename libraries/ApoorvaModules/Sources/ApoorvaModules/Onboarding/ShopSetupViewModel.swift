@@ -28,11 +28,14 @@ public final class ShopSetupViewModel {
     private let authService: AuthServicing
     private let setupService: OrganizationSetupServicing
     private let platformTrialDays: () -> Int
+    private let analyticsService: AnalyticsServicing
 
-    public init(authService: AuthServicing, setupService: OrganizationSetupServicing, platformTrialDays: @escaping () -> Int = { 30 }) {
+    public init(authService: AuthServicing, setupService: OrganizationSetupServicing, platformTrialDays: @escaping () -> Int = { 30 },
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.authService = authService
         self.setupService = setupService
         self.platformTrialDays = platformTrialDays
+        self.analyticsService = analyticsService
     }
 
     public func choose(_ vertical: Vertical) {
@@ -72,6 +75,7 @@ public final class ShopSetupViewModel {
                 theme: OrgSettings.Theme(accent: accent, style: style),
                 trialDays: platformTrialDays()
             ), owner: account)
+            analyticsService.log(.trialStarted(days: platformTrialDays()))
             return true
         } catch {
             errorMessage = "Couldn't create your shop. Check your connection and try again."

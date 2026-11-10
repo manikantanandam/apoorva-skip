@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import ApoorvaServices
 
 public struct SyncStatus: Sendable, Equatable {
     public let key: String
@@ -25,8 +26,14 @@ public actor SyncEngine {
 
     private var repositories: [any SyncableRepository] = []
     private(set) var statuses: [String: SyncStatus] = [:]
+    private let performanceMonitoringService: PerformanceMonitoringServicing
+    private let crashReportingService: CrashReportingServicing
 
-    public init(repositories: [any SyncableRepository] = []) {
+    public init(repositories: [any SyncableRepository] = [],
+                performanceMonitoringService: PerformanceMonitoringServicing = NoOpPerformanceMonitoringService(),
+                crashReportingService: CrashReportingServicing = NoOpCrashReportingService()) {
+        self.performanceMonitoringService = performanceMonitoringService
+        self.crashReportingService = crashReportingService
         for repository in repositories where !self.repositories.contains(where: { $0.syncKey == repository.syncKey }) {
             self.repositories.append(repository)
             statuses[repository.syncKey] = SyncStatus(key: repository.syncKey)
@@ -67,11 +74,14 @@ public actor SyncEngine {
         let key = repository.syncKey
         statuses[key, default: SyncStatus(key: key)].isSyncing = true
         do {
-            try await repository.sync(force: force)
+            try await performanceMonitoringService.measure("sync_pull") {
+                try await repository.sync(force: force)
+            }
             statuses[key]?.lastSuccess = Date()
             statuses[key]?.lastError = nil
         } catch {
             statuses[key]?.lastError = error.localizedDescription
+            crashReportingService.recordNonFatal(error, context: "sync.\(key)")
         }
         statuses[key]?.isSyncing = false
     }
