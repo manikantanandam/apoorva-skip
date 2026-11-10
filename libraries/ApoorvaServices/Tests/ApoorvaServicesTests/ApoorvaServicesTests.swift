@@ -251,3 +251,20 @@ struct DailyCashflowSummaryServiceTests {
         #expect(store.writes.map(\.merge) == [false, true])
     }
 }
+
+struct RemoteConfigCatalogDefaultsTests {
+    @Test func buildsTypedDefaultsFromCatalogue() {
+        let defaults = RemoteConfigCatalogDefaults.make()
+        guard case .bool(let holdBills) = defaults[FeatureFlag.holdBills.rawValue] else {
+            Issue.record("expected a bool default for \(FeatureFlag.holdBills.rawValue)")
+            return
+        }
+        #expect(holdBills == FeatureFlag.holdBills.defaultValue)
+
+        guard case .string(let minVersion) = defaults["min_app_version"] else {
+            Issue.record("expected a string default for min_app_version")
+            return
+        }
+        #expect(minVersion == "1.0.0")
+    }
+}

@@ -82,7 +82,7 @@ public class AppContainer {
             authService: servicesContainer.authService,
             environmentStore: environmentStore,
             tools: developerTools,
-            remoteConfigService: resolvedRemoteConfigService,
+            remoteConfigService: servicesContainer.remoteConfigService,
             logBuffer: logBuffer,
             clearLocalDatabase: {
                 try? FileManager.default.removeItem(atPath: dbPath)

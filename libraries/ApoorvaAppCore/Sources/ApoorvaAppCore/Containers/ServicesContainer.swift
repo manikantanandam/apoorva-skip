@@ -49,7 +49,7 @@ public class ServicesContainer {
 
     public lazy var remoteConfigService: RemoteConfigServicing = {
         let service = FirebaseRemoteConfigService()
-        service.setDefaults(FeatureFlagRemoteConfigDefaults.make())
+        service.setDefaults(RemoteConfigCatalogDefaults.make())
         return service
     }()
 

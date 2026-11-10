@@ -47,6 +47,20 @@ struct FlagResolverTests {
     }
 }
 
+struct RemoteConfigCatalogTests {
+    @Test func includesEveryFeatureFlagAsABoolKey() {
+        let holdBills = RemoteConfigCatalog.all.first { $0.key == FeatureFlag.holdBills.rawValue }
+        #expect(holdBills?.kind == .bool)
+        #expect(holdBills?.defaultBool == FeatureFlag.holdBills.defaultValue)
+    }
+
+    @Test func includesNonFlagKeysLikeMinAppVersion() {
+        let minVersion = RemoteConfigCatalog.all.first { $0.key == "min_app_version" }
+        #expect(minVersion?.kind == .string)
+        #expect(minVersion?.defaultString == "1.0.0")
+    }
+}
+
 struct PermissionMatrixTests {
     @Test func standardMatrixMatchesDocs() {
         let matrix = PermissionMatrix.standard

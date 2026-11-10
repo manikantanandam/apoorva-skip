@@ -9,8 +9,6 @@ import ManiSwiftUIComponents
 struct FlagOverridesView: View {
     @State var viewModel: DeveloperSettingsViewModel
     @State private var newFlag = ""
-    @State private var newRemoteConfigKey = ""
-    @State private var newRemoteConfigValue = ""
 
     var body: some View {
         List {
@@ -40,30 +38,9 @@ struct FlagOverridesView: View {
                     viewModel.resetFlags()
                 }
             }
-            Section("Remote Config overrides (local only, never synced)") {
-                ForEach(viewModel.remoteConfigOverrides.keys.sorted(), id: \.self) { key in
-                    HStack {
-                        Text(key)
-                        Spacer()
-                        Text(viewModel.remoteConfigOverrides[key] ?? "")
-                            .foregroundStyle(.secondary)
-                    }
-                    .swipeActions {
-                        Button("Remove", role: .destructive) {
-                            viewModel.setRemoteConfigOverride(key, value: nil)
-                        }
-                    }
-                }
-                HStack {
-                    TextField("Key", text: $newRemoteConfigKey)
-                        .autocorrectionDisabled()
-                    TextField("Value", text: $newRemoteConfigValue)
-                        .autocorrectionDisabled()
-                    Button("Add") {
-                        viewModel.addRemoteConfigOverride(newRemoteConfigKey, value: newRemoteConfigValue)
-                        newRemoteConfigKey = ""
-                        newRemoteConfigValue = ""
-                    }
+            Section("Remote Config") {
+                ForEach(viewModel.remoteConfigRows) { row in
+                    RemoteConfigKeyRow(row: row, viewModel: viewModel)
                 }
                 Button("Fetch now") {
                     Task { await viewModel.fetchRemoteConfigNow() }
@@ -74,5 +51,61 @@ struct FlagOverridesView: View {
             }
         }
         .navigationTitle("Feature flags")
+    }
+}
+
+/// One Remote Config key: its live remote value, an editable override, and an "Overridden" indicator.
+private struct RemoteConfigKeyRow: View {
+    let row: RemoteConfigRowDisplay
+    let viewModel: DeveloperSettingsViewModel
+    @State private var text: String = ""
+    @State private var invalidEntry = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(row.title)
+                if row.isOverridden {
+                    Text("Overridden")
+                        .font(.caption2)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.orange.opacity(0.2))
+                        .foregroundStyle(.orange)
+                        .clipShape(Capsule())
+                }
+            }
+            Text("Remote: \(row.remoteDisplayValue)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if row.kind == .bool {
+                Toggle("Override", isOn: Binding(
+                    get: { row.effectiveDisplayValue == "On" },
+                    set: { viewModel.setRemoteConfigOverride(row.id, value: $0 ? "true" : "false") }
+                ))
+            } else {
+                HStack {
+                    TextField("Override value", text: $text)
+                        .autocorrectionDisabled()
+                        .onAppear { text = row.overrideValue ?? row.remoteDisplayValue }
+                    Button("Set") {
+                        invalidEntry = !viewModel.setRemoteConfigOverride(for: row, rawValue: text)
+                    }
+                }
+                if invalidEntry {
+                    Text("Invalid value for this key's type")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+        }
+        .swipeActions {
+            if row.isOverridden {
+                Button("Clear override", role: .destructive) {
+                    viewModel.setRemoteConfigOverride(row.id, value: nil)
+                }
+            }
+        }
     }
 }
