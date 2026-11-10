@@ -101,7 +101,7 @@ struct LoginViewModelTests {
 
 @MainActor
 struct ProfileViewModelTests {
-    @Test func logoutPressedCallsServiceAndClearsLocalData() {
+    @Test func logoutPressedCallsServiceAndClearsLocalData() async {
         let auth = MockAuthService()
         var clearedLocalData = false
         let vm = ProfileViewModel(
@@ -109,12 +109,12 @@ struct ProfileViewModelTests {
             authService: auth,
             clearLocalData: { clearedLocalData = true }
         )
-        vm.logoutPressed()
+        await vm.logoutPressed()
         #expect(auth.logoutCount == 1)
         #expect(clearedLocalData)
     }
 
-    @Test func logoutPressedSkipsClearOnServiceError() {
+    @Test func logoutPressedSkipsClearOnServiceError() async {
         let auth = MockAuthService()
         auth.shouldThrow = true
         var clearedLocalData = false
@@ -123,7 +123,7 @@ struct ProfileViewModelTests {
             authService: auth,
             clearLocalData: { clearedLocalData = true }
         )
-        vm.logoutPressed()
+        await vm.logoutPressed()
         #expect(auth.logoutCount == 1)
         #expect(!clearedLocalData)
     }

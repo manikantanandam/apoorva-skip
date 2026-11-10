@@ -18,9 +18,11 @@ public final actor HeldBillLocalStorage: HeldBillStorageProtocol {
         self.database = database
     }
 
-    public func getHeldBills() throws -> [HeldBill] {
+    public func getHeldBills() async throws -> [HeldBill] {
         do {
-            let allHeldBills: [HeldBill] = try database.context.fetchAll(HeldBill.self)
+            let allHeldBills: [HeldBill] = try await database.withContext { context in
+                try context.fetchAll(HeldBill.self)
+            }
             return allHeldBills.filter { !$0.isDeleted }.sorted()
         } catch let error {
             if let error = error as? SQLError {
@@ -30,15 +32,19 @@ public final actor HeldBillLocalStorage: HeldBillStorageProtocol {
         }
     }
 
-    public func getHeldBill(id: String) throws -> HeldBill? {
-        return try database.context.fetch(HeldBill.self, primaryKeys: [.text(id)])
+    public func getHeldBill(id: String) async throws -> HeldBill? {
+        try await database.withContext { context in
+            try context.fetch(HeldBill.self, primaryKeys: [.text(id)])
+        }
     }
 
-    public func saveHeldBill(heldBill: HeldBill) throws {
-        try database.context.insert(heldBill)
+    public func saveHeldBill(heldBill: HeldBill) async throws {
+        try await database.withContext { context in
+            try context.insert(heldBill)
+        }
     }
 
-    public func updateHeldBill(heldBill: HeldBill) throws {
+    public func updateHeldBill(heldBill: HeldBill) async throws {
         let query = """
         UPDATE \(HeldBill.table.name)
         SET customerName = ?, customerPhone = ?, items = ?, total = ?, createdAt = ?, updatedAt = ?, isDeleted = ?
@@ -52,32 +58,38 @@ public final actor HeldBillLocalStorage: HeldBillStorageProtocol {
             updatedAt = .null
         }
 
-        try database.context.exec(sql: query, parameters: [
-            .text(heldBill.customerName),
-            .text(heldBill.customerPhone),
-            .text(heldBill.items.string),
-            .real(heldBill.total),
-            .real(heldBill.createdAt.timeIntervalSince1970),
-            updatedAt,
-            .long(heldBill.isDeleted.int64Value),
-            .text(heldBill.id)
-        ])
+        try await database.withContext { context in
+            try context.exec(sql: query, parameters: [
+                .text(heldBill.customerName),
+                .text(heldBill.customerPhone),
+                .text(heldBill.items.string),
+                .real(heldBill.total),
+                .real(heldBill.createdAt.timeIntervalSince1970),
+                updatedAt,
+                .long(heldBill.isDeleted.int64Value),
+                .text(heldBill.id)
+            ])
+        }
     }
 
-    public func deleteHeldBill(id: String) throws {
+    public func deleteHeldBill(id: String) async throws {
         let query = "DELETE FROM \(HeldBill.table.name) WHERE id = ?;"
-        try database.context.exec(sql: query, parameters: [.text(id)])
+        try await database.withContext { context in
+            try context.exec(sql: query, parameters: [.text(id)])
+        }
     }
 
-    public func markAsDeleted(id: String) throws {
+    public func markAsDeleted(id: String) async throws {
         let query = "UPDATE \(HeldBill.table.name) SET isDeleted = 1, updatedAt = ? WHERE id = ?;"
-        try database.context.exec(sql: query, parameters: [
-            .real(Date().timeIntervalSince1970),
-            .text(id)
-        ])
+        try await database.withContext { context in
+            try context.exec(sql: query, parameters: [
+                .real(Date().timeIntervalSince1970),
+                .text(id)
+            ])
+        }
     }
 
-    public func saveHeldBills(heldBills: [HeldBill]) throws {
+    public func saveHeldBills(heldBills: [HeldBill]) async throws {
         guard !heldBills.isEmpty else { return }
 
         let query = """
@@ -86,31 +98,31 @@ public final actor HeldBillLocalStorage: HeldBillStorageProtocol {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
         """
 
-        try database.context.exec(sql: "BEGIN TRANSACTION;")
-
         do {
-            for heldBill in heldBills {
-                let updatedAt: SQLValue
-                if let _updatedAt = heldBill.updatedAt {
-                    updatedAt = .real(_updatedAt.timeIntervalSince1970)
-                } else {
-                    updatedAt = .null
-                }
+            try await database.withContext { context in
+                try context.transaction {
+                    for heldBill in heldBills {
+                        let updatedAt: SQLValue
+                        if let _updatedAt = heldBill.updatedAt {
+                            updatedAt = .real(_updatedAt.timeIntervalSince1970)
+                        } else {
+                            updatedAt = .null
+                        }
 
-                try database.context.exec(sql: query, parameters: [
-                    .text(heldBill.id),
-                    .text(heldBill.customerName),
-                    .text(heldBill.customerPhone),
-                    .text(heldBill.items.string),
-                    .real(heldBill.total),
-                    .real(heldBill.createdAt.timeIntervalSince1970),
-                    updatedAt,
-                    .long(heldBill.isDeleted.int64Value)
-                ])
+                        try context.exec(sql: query, parameters: [
+                            .text(heldBill.id),
+                            .text(heldBill.customerName),
+                            .text(heldBill.customerPhone),
+                            .text(heldBill.items.string),
+                            .real(heldBill.total),
+                            .real(heldBill.createdAt.timeIntervalSince1970),
+                            updatedAt,
+                            .long(heldBill.isDeleted.int64Value)
+                        ])
+                    }
+                }
             }
-            try database.context.exec(sql: "COMMIT;")
         } catch {
-            try? database.context.exec(sql: "ROLLBACK;")
             if let error = error as? SQLError {
                 print("Saving held bills failed: \(error.msg)")
             }

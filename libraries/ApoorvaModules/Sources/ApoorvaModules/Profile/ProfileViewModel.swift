@@ -17,23 +17,23 @@ public class ProfileViewModel {
     public var appUser: AppUser?
     let userRepository: UserRepositoryProtocol
     private let authService: AuthServicing
-    private let clearLocalData: () -> Void
+    private let clearLocalData: () async -> Void
 
     var showAlert = false
     var alertMessage: String = ""
 
     public init(userRepository: UserRepositoryProtocol,
                 authService: AuthServicing,
-                clearLocalData: @escaping () -> Void) {
+                clearLocalData: @escaping () async -> Void) {
         self.userRepository = userRepository
         self.authService = authService
         self.clearLocalData = clearLocalData
     }
 
-    func logoutPressed() {
+    func logoutPressed() async {
         do {
             try authService.logout()
-            clearLocalData()
+            await clearLocalData()
         } catch {
             print("Error \(error)")
         }

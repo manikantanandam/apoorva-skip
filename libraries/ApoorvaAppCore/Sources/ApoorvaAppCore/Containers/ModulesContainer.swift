@@ -163,7 +163,7 @@ public class ModulesContainer {
             userRepository: repositoryContainer.userRepository,
             authService: servicesContainer.authService,
             clearLocalData: { [repositoryContainer] in
-                try? repositoryContainer.clearLocalData()
+                try? await repositoryContainer.clearLocalData()
             }
         )
     }

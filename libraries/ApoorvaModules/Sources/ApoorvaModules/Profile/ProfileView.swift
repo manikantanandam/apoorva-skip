@@ -83,7 +83,7 @@ public struct ProfileView: View {
                     }
 
                     ManiButton("Logout", kind: .outline) {
-                        viewModel.logoutPressed()
+                        Task { await viewModel.logoutPressed() }
                     }
 
                     Spacer()
