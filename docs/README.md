@@ -19,4 +19,6 @@ Offline-first shop/POS app (Swift + SwiftUI, Skip for Android). Local SQLite is 
 
 **Designs:** 140 screens in the Clean style (light + dark side by side), frozen for v1, in [`/designs`](../designs/README.md).
 
+**Decisions log:** dated exploration/decision records (distinct from the numbered docs above) in [`/decisions`](decisions/README.md) — check there before re-exploring a topic.
+
 Diagrams are Mermaid and render in GitHub and most Markdown previews.

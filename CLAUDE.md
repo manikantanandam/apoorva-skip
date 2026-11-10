@@ -10,6 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Commands** — **mandatory:** use `scripts/build.sh`/`scripts/toggle-library.sh`; never call `xcodebuild`, `swift build`, or `swift test` directly.
 - **Conventions** — Swift 6 strict concurrency; never edit generated Kotlin or anything under `.build/`; never write files via Bash heredoc or run `git merge`/`gh pr merge`.
 - **Docs** — `docs/01`–`docs/12` cover product/architecture/security/etc.; check before product or architecture decisions.
+- **Decisions log** — `docs/decisions/`: check before re-exploring a topic; a `Stop` hook blocks ending a session that explored code or exited plan mode without adding an entry there.
 
 ## Overview
 
@@ -81,3 +82,5 @@ For the app: `skip test` runs parity tests (Swift + transpiled Kotlin). The "Apo
 ## Docs
 
 `docs/01` through `docs/12` cover product vision, requirements, architecture (HLD), UI design, feature flags, observability, CI/CD, security, multi-tenancy, NFRs, and the Firestore data model. Check the relevant numbered doc before making product or architecture decisions.
+
+`docs/decisions/` is a separate, dated log of exploration findings and decisions (one file per topic) — check it before re-exploring something that may already have been researched. A `Stop` hook enforces writing an entry there whenever a session explored code or exited plan mode.
