@@ -36,20 +36,23 @@ public class ModulesContainer {
     public func makeLoginViewModel() -> LoginViewModel {
         return LoginViewModel(
             authService: servicesContainer.authService,
-            environment: environment
+            environment: environment,
+            analyticsService: servicesContainer.analyticsService
         )
     }
-    
+
     // MARK: - Onboarding & auth
 
     public func makeAuthFlowViewModel() -> AuthFlowViewModel {
-        AuthFlowViewModel(authService: servicesContainer.authService)
+        AuthFlowViewModel(authService: servicesContainer.authService,
+                          crashReportingService: servicesContainer.crashReportingService)
     }
 
     public func makeShopSetupViewModel(trialDays: @escaping () -> Int) -> ShopSetupViewModel {
         ShopSetupViewModel(authService: servicesContainer.authService,
                            setupService: servicesContainer.organizationSetupService,
-                           platformTrialDays: trialDays)
+                           platformTrialDays: trialDays,
+                           analyticsService: servicesContainer.analyticsService)
     }
 
     public func makeOpeningBalancesViewModel(session: AppSession) -> OpeningBalancesViewModel {
@@ -140,7 +143,9 @@ public class ModulesContainer {
             saleRepository: repositoryContainer.saleRepository,
             userRepository: repositoryContainer.userRepository,
             lifecycle: repositoryContainer.saleLifecycleRepository,
-            session: session
+            session: session,
+            analyticsService: servicesContainer.analyticsService,
+            performanceMonitoringService: servicesContainer.performanceMonitoringService
         )
     }
 

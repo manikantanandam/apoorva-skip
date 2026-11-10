@@ -7,6 +7,7 @@ import Foundation
 import SwiftUI
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaServices
 
 public enum CheckoutMode: String, CaseIterable, Sendable {
     case cash = "Cash", upi = "UPI", card = "Card", credit = "Credit", split = "Split"
@@ -49,6 +50,8 @@ public class CheckoutViewModel {
     private let userRepository: UserRepositoryProtocol
     private let lifecycle: SaleLifecycleRepositoryProtocol?
     private let session: AppSession?
+    private let analyticsService: AnalyticsServicing
+    private let performanceMonitoringService: PerformanceMonitoringServicing
 
     public init(
         cart: PosCart,
@@ -56,7 +59,9 @@ public class CheckoutViewModel {
         saleRepository: SaleRepositoryProtocol,
         userRepository: UserRepositoryProtocol,
         lifecycle: SaleLifecycleRepositoryProtocol? = nil,
-        session: AppSession? = nil
+        session: AppSession? = nil,
+        analyticsService: AnalyticsServicing = NoOpAnalyticsService(),
+        performanceMonitoringService: PerformanceMonitoringServicing = NoOpPerformanceMonitoringService()
     ) {
         self.cart = cart
         self.heldBillId = heldBillId
@@ -65,6 +70,8 @@ public class CheckoutViewModel {
         self.lifecycle = lifecycle
         self.session = session
         self.roundOffEnabled = session?.settings.payments.roundOff ?? true
+        self.analyticsService = analyticsService
+        self.performanceMonitoringService = performanceMonitoringService
     }
 
     // MARK: - Totals
@@ -193,10 +200,13 @@ public class CheckoutViewModel {
                 returnOfSaleId: cart.returnOfSaleId
             )
 
-            try await saleRepository.confirmSale(sale, heldBillId: heldBillId)
-            // Stock out and credit dues; a failure here mustn't lose the confirmed sale.
-            try? await lifecycle?.recordEffects(of: sale, by: staffId)
+            try await performanceMonitoringService.measure("save_bill") {
+                try await saleRepository.confirmSale(sale, heldBillId: heldBillId)
+                // Stock out and credit dues; a failure here mustn't lose the confirmed sale.
+                try? await lifecycle?.recordEffects(of: sale, by: staffId)
+            }
             await session?.refreshPlanUsage()
+            analyticsService.log(.billSaved(itemCount: sale.items.count, mode: mode.rawValue))
             return sale
         } catch {
             errorMessage = "Couldn't confirm this sale. Please try again."

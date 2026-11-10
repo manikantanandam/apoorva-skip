@@ -40,7 +40,12 @@ public class ServicesContainer {
     public lazy var pinStore: PinStoring = KeychainPinStore()
 
     public lazy var biometrics: BiometricAuthenticating = DeviceBiometrics()
-    
-    
+
+    public lazy var analyticsService: AnalyticsServicing = FirebaseAnalyticsService()
+
+    public lazy var crashReportingService: CrashReportingServicing = FirebaseCrashReportingService()
+
+    public lazy var performanceMonitoringService: PerformanceMonitoringServicing = FirebasePerformanceMonitoringService()
+
     public init() {}
 }

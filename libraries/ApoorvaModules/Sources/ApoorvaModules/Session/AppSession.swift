@@ -59,19 +59,25 @@ public final class AppSession {
     private let saleRepository: SaleRepositoryProtocol
     private let developerTools: DeveloperToolsProtocol
     private let preferences: UserDefaults
+    private let analyticsService: AnalyticsServicing
+    private let crashReportingService: CrashReportingServicing
 
     public init(settingsRepository: any OrgCollectionRepositoryProtocol<OrgSettings>,
                 storeRepository: any OrgCollectionRepositoryProtocol<Store>,
                 memberRepository: any OrgCollectionRepositoryProtocol<Member>,
                 saleRepository: SaleRepositoryProtocol,
                 developerTools: DeveloperToolsProtocol,
-                preferences: UserDefaults = .standard) {
+                preferences: UserDefaults = .standard,
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService(),
+                crashReportingService: CrashReportingServicing = NoOpCrashReportingService()) {
         self.settingsRepository = settingsRepository
         self.storeRepository = storeRepository
         self.memberRepository = memberRepository
         self.saleRepository = saleRepository
         self.developerTools = developerTools
         self.preferences = preferences
+        self.analyticsService = analyticsService
+        self.crashReportingService = crashReportingService
     }
 
     // MARK: - Identity
@@ -162,8 +168,14 @@ public final class AppSession {
             stores = []
             member = nil
             currentStoreId = preferences.string(forKey: storeKey) ?? Store.defaultId
+            crashReportingService.setShopId(newOrgId)
+            analyticsService.setUserId(user?.id)
         }
         await reload()
+        analyticsService.setUserProperty(settings.profile.vertical?.rawValue, forName: "vertical")
+        analyticsService.setUserProperty(role.rawValue, forName: "role")
+        analyticsService.setUserProperty(planStatus.tier.rawValue, forName: "plan")
+        crashReportingService.leaveBreadcrumb(screen: "Session", action: "configure")
     }
 
     public func updatePlatform(_ platform: PlatformConfig) {

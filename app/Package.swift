@@ -22,6 +22,9 @@ let package = Package(
                 .product(name: "SkipFuseUI", package: "skip-fuse-ui"),
                 .product(name: "SkipFirebaseFirestore", package: "skip-firebase"),
                 .product(name: "SkipFirebaseAuth", package: "skip-firebase"),
+                .product(name: "SkipFirebaseAnalytics", package: "skip-firebase"),
+                .product(name: "SkipFirebaseCrashlytics", package: "skip-firebase"),
+                .product(name: "SkipFirebasePerformance", package: "skip-firebase"),
                 .product(name: "ApoorvaAppCore", package: "ApoorvaAppCore")
             ],
             resources: [
