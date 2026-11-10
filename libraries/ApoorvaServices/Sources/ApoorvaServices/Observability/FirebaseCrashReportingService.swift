@@ -10,6 +10,8 @@ public final class FirebaseCrashReportingService: CrashReportingServicing {
     public init() {}
 
     public func recordNonFatal(_ error: Error, context: String) {
+        // Last non-fatal context only — not cleared, so a later fatal or unrelated
+        // non-fatal may still carry a stale value here.
         Crashlytics.crashlytics().setCustomValue(context, forKey: "lastErrorContext")
         Crashlytics.crashlytics().record(error: error)
     }

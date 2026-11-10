@@ -31,7 +31,7 @@ app (Apoorva) → ApoorvaAppCore → ApoorvaModules → ApoorvaRepository → Ap
 
 - **ApoorvaModels** — pure data models (`Codable`, `SQLCodable`).
 - **ApoorvaOfflineStorage** — local DB layer. Contains two backends: `SkipSQL/` (`SkipSqlDatabase`, currently wired into the app) and `GRDB/` (`AppDatabase`, migrations, `+GRDB` model extensions). DAOs are protocol-based (e.g. `InventoryItemLocalStorageProtocol`).
-- **ApoorvaServices** — Firebase (Auth, Firestore) via `firebase-ios-sdk` directly, e.g. `FirestoreSyncService`, `AuthService`; also `Observability/` for Analytics/Crashlytics/Performance (`AnalyticsServicing` is provider-agnostic, `CrashReportingServicing`/`PerformanceMonitoringServicing` are Firebase-specific).
+- **ApoorvaServices** — Firebase (Auth, Firestore) via `firebase-ios-sdk` directly, e.g. `FirestoreSyncService`, `AuthService`; also `Observability/` for Analytics/Crashlytics/Performance (`AnalyticsServicing`, `CrashReportingServicing` and `PerformanceMonitoringServicing` are provider-agnostic; the `Firebase*Service` classes are the Firebase implementations).
 - **ApoorvaRepository** — offline-first coordination between local storage and services.
 - **ApoorvaModules** — feature SwiftUI views + `@Observable` view models (POS, Cashflow, DailyCashflowSummary, Inventory, Customers, Sale, Login, Profile).
 - **ApoorvaAppCore** — composition root. `Containers/AppContainer.swift` builds `ServicesContainer`, `OfflineStorageContainer`, `RepositoryContainer`, `ModulesContainer` with lazy properties; no singletons. New dependencies get wired here and injected downward — the Analytics/Crashlytics/Performance services are wired in `ServicesContainer` the same way. Also holds `Router/` and the root `MainView`/`HomeView`.

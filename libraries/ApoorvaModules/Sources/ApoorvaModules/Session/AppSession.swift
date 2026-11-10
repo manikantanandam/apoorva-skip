@@ -169,8 +169,8 @@ public final class AppSession {
             member = nil
             currentStoreId = preferences.string(forKey: storeKey) ?? Store.defaultId
             crashReportingService.setShopId(newOrgId)
-            analyticsService.setUserId(user?.id)
         }
+        analyticsService.setUserId(user?.id)
         await reload()
         analyticsService.setUserProperty(settings.profile.vertical?.rawValue, forName: "vertical")
         analyticsService.setUserProperty(role.rawValue, forName: "role")
@@ -276,6 +276,7 @@ public final class AppSession {
 
     public func actAs(_ member: Member?) {
         actingMember = member
+        analyticsService.setUserProperty(role.rawValue, forName: "role")
     }
 
     private var storeKey: String { "apoorva.store.\(orgId ?? "none")" }

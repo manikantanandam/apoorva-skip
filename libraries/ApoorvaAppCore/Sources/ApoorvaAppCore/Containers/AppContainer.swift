@@ -60,7 +60,7 @@ public class AppContainer {
         self.environment = environment
         self.offlineStorageContainer = OfflineStorageContainer(environment: environment)
         servicesContainer.crashReportingService.setLaunchContext(appVersion: appVersion, buildFlavor: environment.rawValue)
-        servicesContainer.analyticsService.setAnalyticsCollectionEnabled(true)
+        servicesContainer.analyticsService.setAnalyticsCollectionEnabled(environment == .production)
     }
 
     /// Developer settings are only offered in debug builds.
