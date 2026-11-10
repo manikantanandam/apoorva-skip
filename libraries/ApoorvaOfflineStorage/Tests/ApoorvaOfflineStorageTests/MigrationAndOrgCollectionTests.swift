@@ -33,7 +33,7 @@ struct SchemaMigrationTests {
         try makeLegacyDatabase(at: path)
 
         let database = try SkipSqlDatabase(filepath: path)
-        #expect(database.schemaVersion == Int64(SchemaMigrations.all.count))
+        #expect(await database.schemaVersion == Int64(SchemaMigrations.all.count))
 
         let storage = CustomerLocalStorage(database: database)
         let legacy = try await storage.getCustomer(phoneNumber: "99")
@@ -50,8 +50,8 @@ struct SchemaMigrationTests {
         try makeLegacyDatabase(at: path)
         _ = try SkipSqlDatabase(filepath: path)
         let reopened = try SkipSqlDatabase(filepath: path)
-        try reopened.migrate()
-        #expect(reopened.schemaVersion == Int64(SchemaMigrations.all.count))
+        try await reopened.migrate()
+        #expect(await reopened.schemaVersion == Int64(SchemaMigrations.all.count))
     }
 
     @Test func clearAllLocalDataEmptiesEveryTable() async throws {
@@ -62,7 +62,7 @@ struct SchemaMigrationTests {
         let ledger = OrgCollectionLocalStorage<CustomerLedgerEntry>(database: database)
         try await ledger.upsert(CustomerLedgerEntry(customerPhone: "1", customerName: "A", kind: .opening, amount: 10, createdBy: "u"))
 
-        try database.clearAllLocalData()
+        try await database.clearAllLocalData()
 
         #expect(try await storage.getCustomers().isEmpty)
         #expect(try await ledger.all().isEmpty)

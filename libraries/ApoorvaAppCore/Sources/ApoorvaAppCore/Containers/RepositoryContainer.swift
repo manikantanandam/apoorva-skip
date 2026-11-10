@@ -185,8 +185,8 @@ public class RepositoryContainer {
     }()
 
     /// Clears all local SQLite tables and the cached-user UserDefaults keys, in place, no restart needed.
-    public func clearLocalData() throws {
-        try offlineStorageContainer.skipSqlDatabase.clearAllLocalData()
+    public func clearLocalData() async throws {
+        try await offlineStorageContainer.skipSqlDatabase.clearAllLocalData()
         offlineStorageContainer.userDefaultsStorage.removeAll(matchingPrefix: "user_")
     }
 }

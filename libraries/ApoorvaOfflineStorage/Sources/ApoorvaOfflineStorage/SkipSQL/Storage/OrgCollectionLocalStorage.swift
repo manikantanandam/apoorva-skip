@@ -27,42 +27,52 @@ public final actor OrgCollectionLocalStorage<Document: OrgDocument>: OrgCollecti
         self.database = database
     }
 
-    public func all(includeDeleted: Bool = false) throws -> [Document] {
-        let records = try database.context.fetchAll(
-            OrgDocumentRecord.self,
-            where: OrgDocumentRecord.collectionCol.equals(SQLValue(Document.collection))
-        )
+    public func all(includeDeleted: Bool = false) async throws -> [Document] {
+        let records = try await database.withContext { context in
+            try context.fetchAll(
+                OrgDocumentRecord.self,
+                where: OrgDocumentRecord.collectionCol.equals(SQLValue(Document.collection))
+            )
+        }
         return records
             .filter { includeDeleted || !$0.isDeleted }
             .compactMap { decode($0) }
     }
 
-    public func get(id: String) throws -> Document? {
-        guard let record = try database.context.fetch(
-            OrgDocumentRecord.self,
-            primaryKeys: [.text(Document.collection), .text(id)]
-        ) else { return nil }
+    public func get(id: String) async throws -> Document? {
+        guard let record = try await database.withContext({ context in
+            try context.fetch(
+                OrgDocumentRecord.self,
+                primaryKeys: [.text(Document.collection), .text(id)]
+            )
+        }) else { return nil }
         return decode(record)
     }
 
-    public func upsert(_ document: Document) throws {
-        try database.context.insert(try record(for: document), upsert: true)
+    public func upsert(_ document: Document) async throws {
+        let record = try record(for: document)
+        try await database.withContext { context in
+            try context.insert(record, upsert: true)
+        }
     }
 
-    public func upsertAll(_ documents: [Document]) throws {
+    public func upsertAll(_ documents: [Document]) async throws {
         guard !documents.isEmpty else { return }
-        try database.context.transaction {
-            for document in documents {
-                try database.context.insert(try record(for: document), upsert: true)
+        let records = try documents.map { try record(for: $0) }
+        try await database.withContext { context in
+            try context.transaction {
+                for record in records {
+                    try context.insert(record, upsert: true)
+                }
             }
         }
     }
 
-    public func markDeleted(id: String) throws {
-        guard var document = try get(id: id) else { return }
+    public func markDeleted(id: String) async throws {
+        guard var document = try await get(id: id) else { return }
         document.isDeleted = true
         document.updatedAt = Date()
-        try upsert(document)
+        try await upsert(document)
     }
 
     private func record(for document: Document) throws -> OrgDocumentRecord {

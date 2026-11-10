@@ -257,3 +257,36 @@ struct DailyCashflowSummaryLocalStorageTests {
         #expect(try await sut.getDailyCashflowSummary(id: a.id) == nil)
     }
 }
+
+// MARK: - Concurrent access across different DAO actors sharing one SkipSqlDatabase
+
+struct SkipSqlDatabaseConcurrencyTests {
+    /// Regression test for "BUG IN CLIENT OF libsqlite3.dylib: illegal multi-threaded
+    /// access to database connection": two independent DAO actors sharing the same
+    /// `SkipSqlDatabase` hammered concurrently must not crash or drop writes, since all
+    /// access is now serialized through `SkipSqlDatabase.withContext`.
+    @Test func concurrentWritesFromDifferentDAOsDoNotRace() async throws {
+        let database = try makeDatabase()
+        let inventory = InventoryItemLocalStorage(database: database)
+        let customers = CustomerLocalStorage(database: database)
+
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for i in 0..<100 {
+                group.addTask {
+                    try await inventory.saveInventoryItem(item: InventoryItem(id: "item-\(i)", name: "Item \(i)"))
+                }
+                group.addTask {
+                    try await customers.saveCustomer(customer: Customer(
+                        name: "Customer \(i)", phone: "phone-\(i)", createdAt: 1,
+                        lastPurchaseDate: nil, totalSales: 0, totalAmountSpent: 0,
+                        updatedAt: nil, isDeleted: false
+                    ))
+                }
+            }
+            try await group.waitForAll()
+        }
+
+        #expect(try await inventory.getInventoryItems().count == 100)
+        #expect(try await customers.getCustomers().count == 100)
+    }
+}

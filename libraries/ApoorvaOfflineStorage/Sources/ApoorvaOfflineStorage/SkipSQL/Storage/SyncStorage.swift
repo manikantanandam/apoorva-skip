@@ -16,40 +16,48 @@ public final actor SyncStorage: Sendable {
 
     /// Fetches the last successful sync timestamp for a given entity collection (e.g., "InventoryItem").
     /// Returns 0 if the entity has never been synced.
-    public func getLastSyncTimestamp(for entityName: String) throws -> TimeInterval? {
+    public func getLastSyncTimestamp(for entityName: String) async throws -> TimeInterval? {
         print("Getting last sync date for \(entityName)")
-        let entity = try db.context.fetch(SyncState.self, primaryKeys: [.text(entityName)])
+        let entity = try await db.withContext { context in
+            try context.fetch(SyncState.self, primaryKeys: [.text(entityName)])
+        }
         return entity?.lastSyncTimestamp
     }
 
     /// Upserts the sync timestamp for a given entity.
     /// Safely creates the row if it doesn't exist, or updates it if it does.
-    public func updateSyncTimestamp(for entityName: String, timestamp: TimeInterval) throws {
+    public func updateSyncTimestamp(for entityName: String, timestamp: TimeInterval) async throws {
         let query = """
-        INSERT INTO \(SyncState.table.name) (entityName, lastSyncTimestamp) 
+        INSERT INTO \(SyncState.table.name) (entityName, lastSyncTimestamp)
         VALUES (?, ?)
         ON CONFLICT(entityName) DO UPDATE SET lastSyncTimestamp = excluded.lastSyncTimestamp;
         """
-        
-        try db.context.exec(sql: query,
-                            parameters: [
-                                .text(entityName),
-                                .real(timestamp)
-                            ]
-        )
+
+        try await db.withContext { context in
+            try context.exec(sql: query,
+                              parameters: [
+                                  .text(entityName),
+                                  .real(timestamp)
+                              ]
+            )
+        }
     }
 
     /// Clears the sync state for a specific entity, forcing a full fetch on the next sync.
-    public func resetSyncState(for entityName: String) throws {
+    public func resetSyncState(for entityName: String) async throws {
         let query = "DELETE FROM \(SyncState.table.name) WHERE entityName = ?"
-        try db.context.exec(sql: query, parameters: [
-            .text(entityName)
-        ])
+        try await db.withContext { context in
+            try context.exec(sql: query, parameters: [
+                .text(entityName)
+            ])
+        }
     }
-    
+
     /// Clears all sync states (Useful for when a user logs out or switches organizations).
-    public func resetAllSyncStates() throws {
+    public func resetAllSyncStates() async throws {
         let query = "DELETE FROM \(SyncState.table.name);"
-        try db.context.exec(sql: query)
+        try await db.withContext { context in
+            try context.exec(sql: query)
+        }
     }
 }

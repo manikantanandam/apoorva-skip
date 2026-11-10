@@ -62,7 +62,7 @@ public final class AppCoordinator {
         if orgId != lastOrgId {
             if lastOrgId != nil {
                 // Switching orgs: never mix two orgs' data in the local cache.
-                try? appContainer.repositoryContainer.clearLocalData()
+                try? await appContainer.repositoryContainer.clearLocalData()
                 try? await appContainer.offlineStorageContainer.syncStorage.resetAllSyncStates()
             }
             lastOrgId = orgId
@@ -168,7 +168,7 @@ public final class AppCoordinator {
     /// Opens a local-only sample shop (design 02). Only offered while signed out.
     func enterDemo(_ vertical: Vertical) async {
         let repositories = appContainer.repositoryContainer
-        try? repositories.clearLocalData()
+        try? await repositories.clearLocalData()
         // Repositories see a user with no org, so nothing is ever written to Firestore.
         let localUser = AppUser(id: "demo", name: "Demo owner", email: "", role: .admin, status: "active",
                                 assignedOrgs: [], createdAt: Date())
@@ -185,7 +185,7 @@ public final class AppCoordinator {
     }
 
     func exitDemo() async {
-        try? appContainer.repositoryContainer.clearLocalData()
+        try? await appContainer.repositoryContainer.clearLocalData()
         await appContainer.repositoryContainer.userRepository.setDemoUser(nil)
         session.endDemo()
         phase = .loading

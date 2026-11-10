@@ -15,9 +15,11 @@ public final actor CustomerLocalStorage: CustomerStorageProtocol {
         self.database = database
     }
 
-    public func getCustomers() throws -> [Customer] {
+    public func getCustomers() async throws -> [Customer] {
         do {
-            let allCustomers: [Customer] = try database.context.fetchAll(Customer.self)
+            let allCustomers: [Customer] = try await database.withContext { context in
+                try context.fetchAll(Customer.self)
+            }
             return allCustomers.filter { !$0.isDeleted }.sorted { $0.name < $1.name }
         } catch {
             print("SQL Error \(error.localizedDescription)")
@@ -25,39 +27,53 @@ public final actor CustomerLocalStorage: CustomerStorageProtocol {
         }
     }
 
-    public func getCustomer(phoneNumber: String) throws -> Customer? {
-        try database.context.fetch(Customer.self, primaryKeys: [.text(phoneNumber)])
+    public func getCustomer(phoneNumber: String) async throws -> Customer? {
+        try await database.withContext { context in
+            try context.fetch(Customer.self, primaryKeys: [.text(phoneNumber)])
+        }
     }
 
-    public func getCustomer(name: String) throws -> Customer? {
-        try database.context.fetchAll(Customer.self, where: Customer.nameCol.equals(SQLValue(name))).first
+    public func getCustomer(name: String) async throws -> Customer? {
+        try await database.withContext { context in
+            try context.fetchAll(Customer.self, where: Customer.nameCol.equals(SQLValue(name))).first
+        }
     }
 
-    public func saveCustomer(customer: Customer) throws {
-        try database.context.insert(customer, upsert: true)
+    public func saveCustomer(customer: Customer) async throws {
+        try await database.withContext { context in
+            try context.insert(customer, upsert: true)
+        }
     }
 
-    public func updateCustomer(customer: Customer) throws {
-        try database.context.insert(customer, upsert: true)
+    public func updateCustomer(customer: Customer) async throws {
+        try await database.withContext { context in
+            try context.insert(customer, upsert: true)
+        }
     }
 
-    public func deleteCustomer(phoneNumber: String) throws {
-        try database.context.delete(Customer.self, where: Customer.phoneCol.equals(SQLValue(phoneNumber)))
+    public func deleteCustomer(phoneNumber: String) async throws {
+        try await database.withContext { context in
+            try context.delete(Customer.self, where: Customer.phoneCol.equals(SQLValue(phoneNumber)))
+        }
     }
 
     /// `id` is the customer's phone number (see `Customer.id`).
-    public func markAsDeleted(id: String) throws {
-        guard var customer = try getCustomer(phoneNumber: id) else { return }
+    public func markAsDeleted(id: String) async throws {
+        guard var customer = try await getCustomer(phoneNumber: id) else { return }
         customer.isDeleted = true
         customer.updatedAt = Date().timeIntervalSince1970
-        try database.context.insert(customer, upsert: true)
+        try await database.withContext { context in
+            try context.insert(customer, upsert: true)
+        }
     }
 
-    public func saveCustomers(customers: [Customer]) throws {
+    public func saveCustomers(customers: [Customer]) async throws {
         guard !customers.isEmpty else { return }
-        try database.context.transaction {
-            for customer in customers {
-                try database.context.insert(customer, upsert: true)
+        try await database.withContext { context in
+            try context.transaction {
+                for customer in customers {
+                    try context.insert(customer, upsert: true)
+                }
             }
         }
     }
