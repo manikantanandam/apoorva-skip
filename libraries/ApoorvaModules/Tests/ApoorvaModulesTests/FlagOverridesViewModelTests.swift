@@ -80,6 +80,46 @@ struct FlagOverridesViewModelTests {
         #expect(row?.effectiveDisplayValue == "Off")
     }
 
+    @Test func overridingBackToRemoteValueClearsTheOverride() {
+        let remoteConfig = NoOpRemoteConfigService()
+        remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
+        let tools = StubDeveloperTools()
+        let viewModel = makeViewModel(remoteConfig: remoteConfig, tools: tools)
+        let key = FeatureFlag.holdBills.rawValue
+
+        viewModel.setRemoteConfigOverride(key, value: "false")
+        #expect(viewModel.remoteConfigRows.first { $0.id == key }?.isOverridden == true)
+
+        viewModel.setRemoteConfigOverride(key, value: "true")
+        #expect(viewModel.remoteConfigRows.first { $0.id == key }?.isOverridden == false)
+        #expect(tools.remoteConfigOverrides.isEmpty)
+    }
+
+    @Test func stringOverrideEqualToRemoteValueIsNotStored() {
+        let remoteConfig = NoOpRemoteConfigService()
+        remoteConfig.setDefaults([FeatureFlag.minAppVersion.rawValue: .string("2.0.0")])
+        let viewModel = makeViewModel(remoteConfig: remoteConfig)
+        guard let row = viewModel.remoteConfigRows.first(where: { $0.id == "min_app_version" }) else {
+            Issue.record("expected min_app_version in the catalogue")
+            return
+        }
+
+        #expect(viewModel.setRemoteConfigOverride(for: row, rawValue: "2.0.0"))
+        #expect(viewModel.remoteConfigRows.first { $0.id == "min_app_version" }?.isOverridden == false)
+    }
+
+    @Test func clearingOverrideStillNotifiesChange() {
+        var changes = 0
+        let remoteConfig = NoOpRemoteConfigService()
+        remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
+        let viewModel = FlagOverridesViewModel(tools: StubDeveloperTools(), remoteConfigService: remoteConfig,
+                                               onChange: { changes += 1 })
+
+        viewModel.setRemoteConfigOverride(FeatureFlag.holdBills.rawValue, value: "true")
+
+        #expect(changes == 1)
+    }
+
     @Test func resetRevertsToRemoteValue() {
         let remoteConfig = NoOpRemoteConfigService()
         remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
