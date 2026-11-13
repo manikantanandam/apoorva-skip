@@ -1,7 +1,6 @@
 import SwiftUI
 import ApoorvaModules
 import ApoorvaModels
-import ManiLogger
 
 struct MoreCoordinatorView: View {
     let tabs: HomeTabsCoordinator
@@ -84,7 +83,8 @@ struct MoreCoordinatorView: View {
         case .admin(let adminRoute):
             adminDestination(for: adminRoute)
         case .developer(let developerRoute):
-            developerDestination(for: developerRoute)
+            DeveloperRouteView(route: developerRoute, container: container,
+                               push: { coordinator.push(.developer($0)) })
         case .sell(let sellRoute):
             sellDestination(for: sellRoute)
         case .stock(.inventory(let inventoryRoute)):
@@ -384,62 +384,6 @@ struct MoreCoordinatorView: View {
         case .console(let r): return "\(r)".capitalized
         case .developer(let r): return "\(r)".capitalized
         case .help: return "Help"
-        }
-    }
-}
-
-// MARK: - Developer
-
-extension MoreCoordinatorView {
-    @ViewBuilder
-    fileprivate func developerDestination(for route: DeveloperRoute) -> some View {
-        switch route {
-        case .hub:
-            DeveloperHubRouteView(
-                container: container,
-                onOpenEnvironment: { coordinator.push(.developer(.environment)) },
-                onOpenFlags: { coordinator.push(.developer(.flags)) },
-                onOpenLogs: { coordinator.push(.developer(.logs)) }
-            )
-        case .environment:
-            if let viewModel = container.makeDeveloperSettingsViewModel() {
-                EnvironmentSwitchView(viewModel: viewModel)
-            } else {
-                NotBuiltView(PlaceholderScreen("Environment"))
-            }
-        case .flags:
-            if let viewModel = container.makeFlagOverridesViewModel() {
-                FlagOverridesView(viewModel: viewModel)
-            } else {
-                NotBuiltView(PlaceholderScreen("Feature flags"))
-            }
-        case .logs:
-            if let viewModel = container.makeLogViewerViewModel() {
-                LogViewerView(viewModel: viewModel)
-            } else {
-                NotBuiltView(PlaceholderScreen("Logs"))
-            }
-        }
-    }
-}
-
-/// Holds the hub's view model so it isn't rebuilt each time the navigation destination re-evaluates.
-private struct DeveloperHubRouteView: View {
-    @State private var viewModel: DeveloperSettingsViewModel?
-    let container: AppContainer
-    let onOpenEnvironment: () -> Void
-    let onOpenFlags: () -> Void
-    let onOpenLogs: () -> Void
-
-    var body: some View {
-        if let viewModel {
-            DeveloperSettingsView(viewModel: viewModel,
-                                  onOpenEnvironment: onOpenEnvironment,
-                                  onOpenFlags: onOpenFlags,
-                                  onOpenLogs: onOpenLogs)
-        } else {
-            NotBuiltView(PlaceholderScreen("Developer"))
-                .task { viewModel = container.makeDeveloperSettingsViewModel() }
         }
     }
 }

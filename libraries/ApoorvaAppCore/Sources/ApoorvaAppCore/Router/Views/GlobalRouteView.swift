@@ -7,6 +7,7 @@ struct GlobalRouteView: View {
     let coordinator: AppCoordinator
 
     private var session: AppSession { coordinator.appContainer.appSession }
+    @State private var showsDeveloper = false
 
     var body: some View {
         NavigationStack {
@@ -28,7 +29,11 @@ struct GlobalRouteView: View {
             NotBuiltView(PlaceholderScreen("Locked feature"))
         case .forceUpdate:
             if case .forceUpdate(let required, let current) = coordinator.phase {
-                ForceUpdateView(requiredVersion: required, currentVersion: current)
+                ForceUpdateView(requiredVersion: required, currentVersion: current,
+                                onOpenDeveloper: coordinator.appContainer.showsDeveloperTools ? { showsDeveloper = true } : nil)
+                    .sheet(isPresented: $showsDeveloper) {
+                        DeveloperCoordinatorView(container: coordinator.appContainer)
+                    }
             }
         case .help:
             NotBuiltView(PlaceholderScreen("Help"))

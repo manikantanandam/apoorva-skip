@@ -20,6 +20,8 @@ public class AppContainer {
     public let environmentStore = EnvironmentStore()
     public let environment: AppEnvironment
     public let developerTools: DeveloperToolsProtocol = DeveloperTools()
+    /// Set by `AppCoordinator`; fired when a debug override or fetch may have changed an effective config value.
+    public var onConfigChanged: (() -> Void)?
     public let logBuffer: LogBuffer
     public let fileLogSink: FileLogSink
     public let servicesContainer = ServicesContainer()
@@ -116,7 +118,8 @@ public class AppContainer {
     public func makeFlagOverridesViewModel() -> FlagOverridesViewModel? {
         #if DEBUG
         // Unwrapped service: the screen shows the real remote value next to the override.
-        return FlagOverridesViewModel(tools: developerTools, remoteConfigService: servicesContainer.remoteConfigService)
+        return FlagOverridesViewModel(tools: developerTools, remoteConfigService: servicesContainer.remoteConfigService,
+                                      onChange: { [weak self] in self?.onConfigChanged?() })
         #else
         return nil
         #endif

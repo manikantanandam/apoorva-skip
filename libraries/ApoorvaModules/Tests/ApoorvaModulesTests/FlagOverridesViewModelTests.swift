@@ -51,6 +51,20 @@ struct FlagOverridesViewModelTests {
         #expect(viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }?.isFromRemote == true)
     }
 
+    @Test func onChangeFiresWhenOverridesChange() async {
+        var changes = 0
+        let viewModel = FlagOverridesViewModel(tools: StubDeveloperTools(), remoteConfigService: NoOpRemoteConfigService(),
+                                               onChange: { changes += 1 })
+
+        viewModel.setRemoteConfigOverride("min_app_version", value: "9.0.0")
+        viewModel.resetRemoteConfigOverrides()
+        viewModel.setFlag("x", value: true)
+        viewModel.resetFlags()
+        await viewModel.fetchRemoteConfigNow()
+
+        #expect(changes == 5)
+    }
+
     @Test func rowShowsOverrideAndIsMarkedOverridden() {
         let remoteConfig = NoOpRemoteConfigService()
         remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])

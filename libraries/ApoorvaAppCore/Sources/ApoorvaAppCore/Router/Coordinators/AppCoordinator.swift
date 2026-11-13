@@ -29,6 +29,7 @@ public final class AppCoordinator {
         self.appContainer = appContainer
         Task { await observeSession() }
         Task { await observePlatform() }
+        appContainer.onConfigChanged = { [weak self] in Task { await self?.recompute() } }
         Task { await fetchRemoteConfig() }
     }
 

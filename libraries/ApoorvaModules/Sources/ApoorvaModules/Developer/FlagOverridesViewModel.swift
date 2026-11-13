@@ -28,14 +28,18 @@ public struct RemoteConfigRowDisplay: Identifiable, Sendable {
 public class FlagOverridesViewModel {
     private let tools: DeveloperToolsProtocol
     private let remoteConfigService: RemoteConfigServicing
+    /// Called after anything that can change an effective flag value, so the app can re-evaluate (e.g. force update).
+    private let onChange: () -> Void
 
     public var errorMessage: String?
     public var flagOverrides: [String: Bool]
     public var remoteConfigOverrides: [String: String]
 
-    public init(tools: DeveloperToolsProtocol, remoteConfigService: RemoteConfigServicing) {
+    public init(tools: DeveloperToolsProtocol, remoteConfigService: RemoteConfigServicing,
+                onChange: @escaping () -> Void = {}) {
         self.tools = tools
         self.remoteConfigService = remoteConfigService
+        self.onChange = onChange
         self.flagOverrides = tools.flagOverrides
         self.remoteConfigOverrides = tools.remoteConfigOverrides
     }
@@ -43,6 +47,7 @@ public class FlagOverridesViewModel {
     public func setFlag(_ key: String, value: Bool?) {
         tools.setFlagOverride(key, value: value)
         flagOverrides = tools.flagOverrides
+        onChange()
     }
 
     public func addFlag(_ key: String) {
@@ -54,6 +59,7 @@ public class FlagOverridesViewModel {
     public func resetFlags() {
         tools.clearFlagOverrides()
         flagOverrides = [:]
+        onChange()
     }
 
     /// The locally declared Remote Config keys with their live remote value and, if set, override.
@@ -101,6 +107,7 @@ public class FlagOverridesViewModel {
     public func setRemoteConfigOverride(_ key: String, value: String?) {
         tools.setRemoteConfigOverride(key, value: value)
         remoteConfigOverrides = tools.remoteConfigOverrides
+        onChange()
     }
 
     /// Validates `rawValue` against `row.kind` before storing it as the override.
@@ -141,11 +148,13 @@ public class FlagOverridesViewModel {
     public func resetRemoteConfigOverrides() {
         tools.clearRemoteConfigOverrides()
         remoteConfigOverrides = [:]
+        onChange()
     }
 
     public func fetchRemoteConfigNow() async {
         do {
             try await remoteConfigService.fetchAndActivate()
+            onChange()
         } catch {
             errorMessage = error.localizedDescription
         }

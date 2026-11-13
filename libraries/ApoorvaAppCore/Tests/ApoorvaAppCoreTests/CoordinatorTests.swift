@@ -63,6 +63,18 @@ struct MoreCoordinatorTests {
 }
 
 @MainActor
+struct DeveloperCoordinatorTests {
+    @Test func pushAndPop() {
+        let coordinator = DeveloperCoordinator()
+        coordinator.push(.flags)
+        coordinator.push(.logs)
+        #expect(coordinator.path == [.flags, .logs])
+        coordinator.pop()
+        #expect(coordinator.path == [.flags])
+    }
+}
+
+@MainActor
 struct BillsCoordinatorTests {
     @Test func filtersPresentationToggles() {
         let coordinator = BillsCoordinator()
