@@ -74,7 +74,7 @@ struct AppSessionTests {
             saleRepository: saleRepository,
             developerTools: tools,
             preferences: UserDefaults(suiteName: "AppSessionTests-\(UUID().uuidString)")!,
-            remoteConfigService: remoteConfig
+            appConfig: AppConfig(service: remoteConfig)
         )
     }
 

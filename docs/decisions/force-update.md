@@ -1,6 +1,6 @@
 # Force update & flag overrides
 
-- Force update is decided only by the `min_app_version` flag (`FeatureFlag.minAppVersion`), read via `AppContainer.minAppVersion` (override-aware in Debug). `PlatformConfig.minAppVersion` and `org.minVersion` no longer feed `SessionPhaseReducer`.
+- Force update is decided only by the `min_app_version` flag (`FeatureFlag.minAppVersion`), read via `AppContainer.appConfig.minAppVersion` (override-aware in Debug). `PlatformConfig.minAppVersion` and `org.minVersion` no longer feed `SessionPhaseReducer`.
 - `SessionPhaseReducer.phase` takes `minAppVersion: String` instead of `platform:`.
 - `ForceUpdateView` (ApoorvaModules/ForceUpdate) shows required vs installed version; `GlobalRouteView` reads them from `AppCoordinator.phase`.
 - Known gap: the phase is recomputed on session/platform emissions, not when a Remote Config fetch or a debug override changes — a recompute trigger is not wired yet.

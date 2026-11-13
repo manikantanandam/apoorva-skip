@@ -86,7 +86,7 @@ public final class AppCoordinator {
             profile: profile,
             orgStatus: org?.status,
             orgSettings: session.hasSettingsDoc ? session.settings : nil,
-            minAppVersion: appContainer.minAppVersion,
+            minAppVersion: appContainer.appConfig.minAppVersion,
             appVersion: appContainer.appVersion,
             requireEmailVerification: session.isOn(.authEmailVerificationRequired)
         )

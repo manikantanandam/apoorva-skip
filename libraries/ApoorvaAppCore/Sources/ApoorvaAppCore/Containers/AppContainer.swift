@@ -43,19 +43,19 @@ public class AppContainer {
         developerTools: developerTools,
         analyticsService: servicesContainer.analyticsService,
         crashReportingService: servicesContainer.crashReportingService,
-        remoteConfigService: resolvedRemoteConfigService
+        appConfig: appConfig
     )
 
     public let themeStore = ThemeStore()
 
-    /// The app's Remote Config, wrapped with local debug overrides in Debug builds only.
-    private var resolvedRemoteConfigService: RemoteConfigServicing {
+    /// The single typed read path for app-level config, wrapped with local debug overrides in Debug builds only.
+    public lazy var appConfig: AppConfig = {
         #if DEBUG
-        DebugRemoteConfigOverrideService(base: servicesContainer.remoteConfigService, developerTools: developerTools)
+        AppConfig(service: DebugRemoteConfigOverrideService(base: servicesContainer.remoteConfigService, developerTools: developerTools))
         #else
-        servicesContainer.remoteConfigService
+        AppConfig(service: servicesContainer.remoteConfigService)
         #endif
-    }
+    }()
 
     /// Whether developer tools are offered (debug builds only).
     public var showsDeveloperTools: Bool {
@@ -64,12 +64,6 @@ public class AppContainer {
         #else
         false
         #endif
-    }
-
-    /// Minimum supported app version from the `min_app_version` flag (honours debug overrides).
-    public var minAppVersion: String {
-        let flag = FeatureFlag.minAppVersion
-        return resolvedRemoteConfigService.stringValue(forKey: flag.rawValue) ?? flag.defaultStringValue
     }
 
     public var appVersion: String {

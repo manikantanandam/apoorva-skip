@@ -41,3 +41,9 @@
 - Added a 4th value kind, `versionGate`, for features gated by app version rather than a flat bool: `VersionGateValue { enabled: Bool, minVersion: String? }`, with `isOn(currentAppVersion:)` reusing the existing `AppVersion` comparator (`ApoorvaModels/Session/SessionPhase.swift`). Scope: app-level only, same as `min_app_version` — no org/store/role layering.
 - `RemoteConfigServicing` gained `jsonValue<T: Decodable>(forKey:as:)` and `RemoteConfigDefaultValue` gained `.json(Data)`, so any future object-shaped kind can reuse the same fetch/default/override plumbing (`FirebaseRemoteConfigService`, `NoOpRemoteConfigService`, `DebugRemoteConfigOverrideService`) just by adding a new `RemoteConfigValueKind` case and a Codable value type — not specific to version gates.
 - No concrete version-gated `FeatureFlag` case exists yet (nothing named a real feature needing it) — the mechanism is fully built and tested (`VersionGateValueTests`, `RemoteConfigJSONRoundTripTests`, `DebugRemoteConfigOverrideServiceTests.json*`, `DeveloperSettingsViewModelTests.versionGateOverrideRoundTrips`) so adding a real one is a one-line addition to `FeatureFlag`.
+
+## Update 2026-11-13: `AppConfig` is the single typed read path
+
+- `AppConfig` (`ApoorvaServices/RemoteConfig`) wraps the override-aware `RemoteConfigServicing` and is keyed by `FeatureFlag` (`bool(_:)`, `string(_:)`, `minAppVersion`), applying compiled defaults so callers never read raw keys or repeat the fallback.
+- One container-owned instance (`AppContainer.appConfig`), injected into `AppSession` (exposed as `session.config`) and `AppCoordinator`; deliberately not a static singleton (repo rule: no singletons).
+- Bool flags still go through `session.isOn(_:)`; non-bool flags through `session.config`. `FlagOverridesViewModel` keeps the undecorated service to show remote vs override.
