@@ -51,7 +51,12 @@ public class AppContainer {
     /// The single typed read path for app-level config, wrapped with local debug overrides in Debug builds only.
     public lazy var appConfig: AppConfig = {
         #if DEBUG
-        AppConfig(service: DebugRemoteConfigOverrideService(base: servicesContainer.remoteConfigService, developerTools: developerTools))
+        AppConfig(
+            service: DebugRemoteConfigOverrideService(
+                base: servicesContainer.remoteConfigService,
+                developerTools: developerTools
+            )
+        )
         #else
         AppConfig(service: servicesContainer.remoteConfigService)
         #endif

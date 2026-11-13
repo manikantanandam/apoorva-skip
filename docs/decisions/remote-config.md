@@ -47,3 +47,8 @@
 - `AppConfig` (`ApoorvaServices/RemoteConfig`) wraps the override-aware `RemoteConfigServicing` and is keyed by `FeatureFlag` (`bool(_:)`, `string(_:)`, `minAppVersion`), applying compiled defaults so callers never read raw keys or repeat the fallback.
 - One container-owned instance (`AppContainer.appConfig`), injected into `AppSession` (exposed as `session.config`) and `AppCoordinator`; deliberately not a static singleton (repo rule: no singletons).
 - Bool flags still go through `session.isOn(_:)`; non-bool flags through `session.config`. `FlagOverridesViewModel` keeps the undecorated service to show remote vs override.
+
+## Update 2026-11-13: fetch logging and launch fetch
+
+- `FirebaseRemoteConfigService.fetchAndActivate` logs (category `config`, info) fetch start, result status + duration, and one line with every catalogue key as `key=value(source)` (source remote/default/static); failures log an error and rethrow. Covers both the launch fetch and Developer "Fetch now". Formatting is in `RemoteConfigLogFormatter` for testability.
+- `AppCoordinator` fetches once at launch and recomputes the phase afterwards, so a changed `min_app_version` applies without waiting for another session emission.

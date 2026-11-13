@@ -5,13 +5,69 @@
 
 import Foundation
 import FirebaseRemoteConfig
+import ApoorvaModels
+import ManiLogger
+
+private let logger = AppLogger(category: .config)
 
 public final class FirebaseRemoteConfigService: RemoteConfigServicing {
 
     public init() {}
 
     public func fetchAndActivate() async throws {
-        _ = try await RemoteConfig.remoteConfig().fetchAndActivate()
+        logger.info("Remote Config fetch started")
+        let start = Date()
+        do {
+            let status = try await RemoteConfig.remoteConfig().fetchAndActivate()
+            logger.info("Remote Config fetch finished: status=\(Self.describe(status)) duration=\(Self.milliseconds(since: start))ms")
+            logger.info(RemoteConfigLogFormatter.summary(resolvedEntries()))
+        } catch {
+            logger.error("Remote Config fetch failed: \(error.localizedDescription) duration=\(Self.milliseconds(since: start))ms")
+            throw error
+        }
+    }
+
+    private func resolvedEntries() -> [RemoteConfigLogEntry] {
+        let remoteConfig = RemoteConfig.remoteConfig()
+        var entries = RemoteConfigCatalog.all.map { definition -> RemoteConfigLogEntry in
+            let value = remoteConfig.configValue(forKey: definition.key)
+            let text: String
+            switch definition.kind {
+            case .bool: text = String(value.boolValue)
+            case .string, .versionGate: text = value.stringValue
+            case .number: text = String(value.numberValue.doubleValue)
+            }
+            return RemoteConfigLogEntry(key: definition.key, value: text, source: Self.source(of: value))
+        }
+        // Raw keys Firebase returned, including any the app doesn't know (e.g. a misnamed console parameter).
+        let known = Set(RemoteConfigCatalog.all.map(\.key))
+        for key in remoteConfig.allKeys(from: .remote).sorted() where !known.contains(key) {
+            entries.append(RemoteConfigLogEntry(key: key, value: remoteConfig.configValue(forKey: key).stringValue,
+                                                source: .remote, isInCatalogue: false))
+        }
+        return entries
+    }
+
+    private static func source(of value: RemoteConfigValue) -> RemoteConfigValueSource {
+        switch value.source {
+        case .remote: return .remote
+        case .default: return .default
+        case .static: return .static
+        @unknown default: return .static
+        }
+    }
+
+    private static func describe(_ status: RemoteConfigFetchAndActivateStatus) -> String {
+        switch status {
+        case .successFetchedFromRemote: return "fetchedFromRemote"
+        case .successUsingPreFetchedData: return "usingPreFetchedData"
+        case .error: return "error"
+        @unknown default: return "unknown"
+        }
+    }
+
+    private static func milliseconds(since start: Date) -> Int {
+        Int(Date().timeIntervalSince(start) * 1000)
     }
 
     public func boolValue(forKey key: String) -> Bool {

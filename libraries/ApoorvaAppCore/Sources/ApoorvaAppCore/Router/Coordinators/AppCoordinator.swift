@@ -29,6 +29,7 @@ public final class AppCoordinator {
         self.appContainer = appContainer
         Task { await observeSession() }
         Task { await observePlatform() }
+        Task { await fetchRemoteConfig() }
     }
 
     var session: AppSession { appContainer.appSession }
@@ -38,6 +39,16 @@ public final class AppCoordinator {
             guard snapshot != self.snapshot || phase == .loading else { continue }
             self.snapshot = snapshot
             await recompute()
+        }
+    }
+
+    /// Launch fetch; the service logs the outcome. A changed `min_app_version` only matters once it is activated.
+    private func fetchRemoteConfig() async {
+        do {
+            try await appContainer.appConfig.fetchAndActivate()
+            await recompute()
+        } catch {
+            // Already logged by the service; the compiled defaults and last activated values stay in effect.
         }
     }
 
