@@ -7,11 +7,15 @@ import SwiftUI
 import ApoorvaModels
 import ManiSwiftUIComponents
 
-struct FlagOverridesView: View {
-    @State var viewModel: DeveloperSettingsViewModel
+public struct FlagOverridesView: View {
+    @State var viewModel: FlagOverridesViewModel
     @State private var newFlag = ""
 
-    var body: some View {
+    public init(viewModel: FlagOverridesViewModel) {
+        self.viewModel = viewModel
+    }
+
+    public var body: some View {
         List {
             Section("Local overrides (never synced)") {
                 ForEach(viewModel.flagOverrides.keys.sorted(), id: \.self) { key in
@@ -59,7 +63,7 @@ struct FlagOverridesView: View {
 /// The edit control itself varies by `row.kind` — see the per-kind subviews below.
 private struct RemoteConfigKeyRow: View {
     let row: RemoteConfigRowDisplay
-    let viewModel: DeveloperSettingsViewModel
+    let viewModel: FlagOverridesViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -100,7 +104,7 @@ private struct RemoteConfigKeyRow: View {
 
 private struct BoolOverrideControl: View {
     let row: RemoteConfigRowDisplay
-    let viewModel: DeveloperSettingsViewModel
+    let viewModel: FlagOverridesViewModel
 
     var body: some View {
         Toggle("Override", isOn: Binding(
@@ -112,7 +116,7 @@ private struct BoolOverrideControl: View {
 
 private struct TextOverrideControl: View {
     let row: RemoteConfigRowDisplay
-    let viewModel: DeveloperSettingsViewModel
+    let viewModel: FlagOverridesViewModel
     @State private var text: String = ""
     @State private var invalidEntry = false
 
@@ -137,7 +141,7 @@ private struct TextOverrideControl: View {
 
 private struct VersionGateOverrideControl: View {
     let row: RemoteConfigRowDisplay
-    let viewModel: DeveloperSettingsViewModel
+    let viewModel: FlagOverridesViewModel
     @State private var enabled = false
     @State private var minVersion = ""
 

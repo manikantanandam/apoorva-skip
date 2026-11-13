@@ -80,17 +80,13 @@ public final class AppCoordinator {
             org = try? await appContainer.repositoryContainer.organizationRepository.getOrganization(orgId: orgId)
             guard generation == recomputeGeneration else { return }
         }
-        var effectivePlatform = platform
-        if let orgMin = org?.minVersion, AppVersion(orgMin) > AppVersion(platform.minAppVersion) {
-            effectivePlatform.minAppVersion = orgMin
-        }
 
         let newPhase = SessionPhaseReducer.phase(
             account: snapshot.account,
             profile: profile,
             orgStatus: org?.status,
             orgSettings: session.hasSettingsDoc ? session.settings : nil,
-            platform: effectivePlatform,
+            minAppVersion: appContainer.minAppVersion,
             appVersion: appContainer.appVersion,
             requireEmailVerification: session.isOn(.authEmailVerificationRequired)
         )

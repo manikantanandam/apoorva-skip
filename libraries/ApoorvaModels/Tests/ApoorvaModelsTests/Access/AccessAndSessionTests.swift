@@ -186,7 +186,7 @@ struct SessionPhaseReducerTests {
                        settings: OrgSettings? = nil, minVersion: String = "0.0.0", version: String = "1.0.0",
                        requireVerification: Bool = true) -> SessionPhase {
         SessionPhaseReducer.phase(account: account, profile: profile, orgStatus: status, orgSettings: settings,
-                                  platform: PlatformConfig(minAppVersion: minVersion), appVersion: version,
+                                  minAppVersion: minVersion, appVersion: version,
                                   requireEmailVerification: requireVerification)
     }
 

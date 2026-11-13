@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ApoorvaModels
 import ApoorvaModules
 import ApoorvaUtilities
 import ApoorvaEnvironment
@@ -65,6 +66,12 @@ public class AppContainer {
         #endif
     }
 
+    /// Minimum supported app version from the `min_app_version` flag (honours debug overrides).
+    public var minAppVersion: String {
+        let flag = FeatureFlag.minAppVersion
+        return resolvedRemoteConfigService.stringValue(forKey: flag.rawValue) ?? flag.defaultStringValue
+    }
+
     public var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
     }
@@ -96,15 +103,29 @@ public class AppContainer {
             authService: servicesContainer.authService,
             environmentStore: environmentStore,
             tools: developerTools,
-            remoteConfigService: servicesContainer.remoteConfigService,
-            logBuffer: logBuffer,
-            fileLogSink: fileLogSink,
             clearLocalDatabase: {
                 try? FileManager.default.removeItem(atPath: dbPath)
                 exit(0)
             },
             terminateApp: { exit(0) }
         )
+        #else
+        return nil
+        #endif
+    }
+
+    public func makeFlagOverridesViewModel() -> FlagOverridesViewModel? {
+        #if DEBUG
+        // Unwrapped service: the screen shows the real remote value next to the override.
+        return FlagOverridesViewModel(tools: developerTools, remoteConfigService: servicesContainer.remoteConfigService)
+        #else
+        return nil
+        #endif
+    }
+
+    public func makeLogViewerViewModel() -> LogViewerViewModel? {
+        #if DEBUG
+        return LogViewerViewModel(logBuffer: logBuffer, fileLogSink: fileLogSink)
         #else
         return nil
         #endif

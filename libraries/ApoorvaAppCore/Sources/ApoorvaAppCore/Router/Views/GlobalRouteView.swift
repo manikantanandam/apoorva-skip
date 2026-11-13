@@ -27,7 +27,9 @@ struct GlobalRouteView: View {
         case .lockedFeature:
             NotBuiltView(PlaceholderScreen("Locked feature"))
         case .forceUpdate:
-            NotBuiltView(PlaceholderScreen("Force update"))
+            if case .forceUpdate(let required, let current) = coordinator.phase {
+                ForceUpdateView(requiredVersion: required, currentVersion: current)
+            }
         case .help:
             NotBuiltView(PlaceholderScreen("Help"))
         case .planLimit:
