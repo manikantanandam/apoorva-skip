@@ -89,30 +89,54 @@ public struct QuickGridPOSView: View {
             ManiEmptyState(icon: .box, title: "No items yet", message: "Bill it anyway as a quick item.",
                            actionTitle: "Quick item") { onAction(.customItem) }
         } else {
+            // Plain rows instead of LazyVGrid: a lazy grid inside a height-fixed HStack sizes to its
+            // content and leaves the tiles too narrow.
             HStack(alignment: .top, spacing: ManiSpacing.sm) {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: ManiSpacing.sm), count: 4),
-                          spacing: ManiSpacing.sm) {
-                    ForEach(viewModel.quickItems) { item in
-                        QuickItemTile(title: item.name, quantity: viewModel.quantity(of: item)) {
-                            onAction(viewModel.quickAction(for: item))
+                VStack(spacing: ManiSpacing.sm) {
+                    ForEach(Array(quickRows.enumerated()), id: \.offset) { _, row in
+                        HStack(spacing: ManiSpacing.sm) {
+                            ForEach(0..<Self.quickColumns, id: \.self) { column in
+                                if column < row.count {
+                                    let item = row[column]
+                                    QuickItemTile(title: item.name, quantity: viewModel.quantity(of: item)) {
+                                        onAction(viewModel.quickAction(for: item))
+                                    }
+                                } else {
+                                    Color.clear.frame(maxWidth: .infinity)
+                                }
+                            }
                         }
                     }
                 }
+                .frame(maxWidth: .infinity)
                 findTile
             }
             .fixedSize(horizontal: false, vertical: true)
         }
     }
 
+    private static let quickColumns = 4
+
+    /// Quick items split into rows of four; the last row is padded so tiles keep the same width.
+    private var quickRows: [[InventoryItem]] {
+        let items = viewModel.quickItems
+        return stride(from: 0, to: items.count, by: Self.quickColumns).map {
+            Array(items[$0..<min($0 + Self.quickColumns, items.count)])
+        }
+    }
+
     private var findTile: some View {
         Button { onAction(.find) } label: {
             VStack(spacing: ManiSpacing.xs) {
-                ManiSwiftUIComponents.IconView(.search, size: 22, color: theme.accent.on)
+                // `ManiIconName.search` maps to a non-existent SF Symbol ("search"), so use the symbol directly.
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(theme.accent.on)
                 Text("Find")
                     .font(theme.typography.secondary.weight(.semibold))
                     .foregroundStyle(theme.accent.on)
             }
-            .frame(width: 72)
+            .frame(width: 64)
             .frame(maxHeight: .infinity)
             .background(RoundedRectangle(cornerRadius: theme.radii.card).fill(theme.accent.accent))
         }
@@ -190,7 +214,7 @@ struct QuickItemTile: View {
                 .foregroundStyle(theme.base.text)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
-                .minimumScaleFactor(0.8)
+                .minimumScaleFactor(0.7)
                 .padding(ManiSpacing.xs)
                 .frame(maxWidth: .infinity, minHeight: 64)
                 .background(theme.base.surface)
