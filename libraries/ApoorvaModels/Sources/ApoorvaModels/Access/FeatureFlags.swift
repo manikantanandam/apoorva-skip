@@ -85,7 +85,7 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
 }
 
 public enum FlagSource: String, Sendable, Equatable {
-    case compiled, app, org, store, role, developer
+    case compiled, app, org, store, role
 }
 
 public struct FlagResolution: Sendable, Equatable {
@@ -93,8 +93,7 @@ public struct FlagResolution: Sendable, Equatable {
     public let source: FlagSource
 }
 
-/// Pure flag resolution. Precedence: developer override wins outright; otherwise start from
-/// the app value (or compiled default), and each lower level (org → store → role) may only
+/// Pure flag resolution. Start from the app value (or compiled default), and each lower level (org → store → role) may only
 /// turn a flag *off*, never back on — except where the app default is off, in which case the
 /// org may opt in (e.g. `billing.warranty`).
 public enum FlagResolver {
@@ -102,11 +101,7 @@ public enum FlagResolver {
                                app: [String: Bool] = [:],
                                org: [String: Bool] = [:],
                                store: [String: Bool] = [:],
-                               role: [String: Bool] = [:],
-                               developerOverride: Bool? = nil) -> FlagResolution {
-        if let developerOverride {
-            return FlagResolution(isOn: developerOverride, source: .developer)
-        }
+                               role: [String: Bool] = [:]) -> FlagResolution {
         var value = flag.defaultValue
         var source = FlagSource.compiled
         if let appValue = app[flag.rawValue] {

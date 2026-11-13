@@ -23,7 +23,7 @@ public struct RemoteConfigRowDisplay: Identifiable, Sendable {
     public var effectiveDisplayValue: String { overrideValue ?? remoteDisplayValue }
 }
 
-/// Backs `FlagOverridesView`: local feature-flag overrides and Remote Config overrides.
+/// Backs `FlagOverridesView`: local overrides of the existing Remote Config catalogue keys.
 @MainActor @Observable
 public class FlagOverridesViewModel {
     private let tools: DeveloperToolsProtocol
@@ -32,7 +32,6 @@ public class FlagOverridesViewModel {
     private let onChange: () -> Void
 
     public var errorMessage: String?
-    public var flagOverrides: [String: Bool]
     public var remoteConfigOverrides: [String: String]
 
     public init(tools: DeveloperToolsProtocol, remoteConfigService: RemoteConfigServicing,
@@ -40,26 +39,15 @@ public class FlagOverridesViewModel {
         self.tools = tools
         self.remoteConfigService = remoteConfigService
         self.onChange = onChange
-        self.flagOverrides = tools.flagOverrides
+        // Overrides may only target keys that exist; drop any invented keys persisted by older builds.
+        for key in tools.remoteConfigOverrides.keys where !Self.isKnownRemoteConfigKey(key) {
+            tools.setRemoteConfigOverride(key, value: nil)
+        }
         self.remoteConfigOverrides = tools.remoteConfigOverrides
     }
 
-    public func setFlag(_ key: String, value: Bool?) {
-        tools.setFlagOverride(key, value: value)
-        flagOverrides = tools.flagOverrides
-        onChange()
-    }
-
-    public func addFlag(_ key: String) {
-        let trimmed = key.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
-        setFlag(trimmed, value: true)
-    }
-
-    public func resetFlags() {
-        tools.clearFlagOverrides()
-        flagOverrides = [:]
-        onChange()
+    private static func isKnownRemoteConfigKey(_ key: String) -> Bool {
+        RemoteConfigCatalog.all.contains { $0.key == key }
     }
 
     /// The locally declared Remote Config keys with their live remote value and, if set, override.
@@ -105,6 +93,7 @@ public class FlagOverridesViewModel {
     }
 
     public func setRemoteConfigOverride(_ key: String, value: String?) {
+        guard Self.isKnownRemoteConfigKey(key) else { return }
         tools.setRemoteConfigOverride(key, value: value)
         remoteConfigOverrides = tools.remoteConfigOverrides
         onChange()

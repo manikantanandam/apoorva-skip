@@ -17,17 +17,22 @@ struct FlagOverridesViewModelTests {
         FlagOverridesViewModel(tools: tools, remoteConfigService: remoteConfig)
     }
 
-    @Test func addFlagTurnsItOnAndIgnoresBlankKeys() {
-        let viewModel = makeViewModel()
+    @Test func unknownKeysCannotBeOverridden() {
+        let tools = StubDeveloperTools()
+        let viewModel = makeViewModel(tools: tools)
 
-        viewModel.addFlag("  ")
-        #expect(viewModel.flagOverrides.isEmpty)
+        viewModel.setRemoteConfigOverride("made.up", value: "true")
 
-        viewModel.addFlag(" my.flag ")
-        #expect(viewModel.flagOverrides == ["my.flag": true])
+        #expect(tools.remoteConfigOverrides.isEmpty)
+    }
 
-        viewModel.resetFlags()
-        #expect(viewModel.flagOverrides.isEmpty)
+    @Test func staleInventedOverridesArePrunedOnInit() {
+        let tools = StubDeveloperTools()
+        tools.remoteConfigOverrides = ["made.up": "x", FeatureFlag.holdBills.rawValue: "false"]
+
+        let viewModel = makeViewModel(tools: tools)
+
+        #expect(viewModel.remoteConfigOverrides == [FeatureFlag.holdBills.rawValue: "false"])
     }
 
     @Test func rowShowsRemoteValueWhenNotOverridden() {
@@ -58,11 +63,9 @@ struct FlagOverridesViewModelTests {
 
         viewModel.setRemoteConfigOverride("min_app_version", value: "9.0.0")
         viewModel.resetRemoteConfigOverrides()
-        viewModel.setFlag("x", value: true)
-        viewModel.resetFlags()
         await viewModel.fetchRemoteConfigNow()
 
-        #expect(changes == 5)
+        #expect(changes == 3)
     }
 
     @Test func rowShowsOverrideAndIsMarkedOverridden() {
@@ -99,15 +102,15 @@ struct FlagOverridesViewModelTests {
         #expect(viewModel.remoteConfigRows.first { $0.id == "min_app_version" }?.overrideValue == "2.0.0")
     }
 
-    @Test func versionGateOverrideRoundTrips() {
+    @Test func versionGateOverrideForUnknownKeyIsIgnored() {
         let remoteConfig = NoOpRemoteConfigService()
         remoteConfig.setDefaults(["test.gate": .json(try! JSONEncoder().encode(VersionGateValue(enabled: false)))])
         let viewModel = makeViewModel(remoteConfig: remoteConfig)
 
         #expect(viewModel.versionGateRemoteValue(forKey: "test.gate") == VersionGateValue(enabled: false))
-        #expect(viewModel.versionGateOverrideValue(forKey: "test.gate") == nil)
 
+        // No version-gated flag exists in the catalogue yet, so an override can't be created for this key.
         viewModel.setVersionGateOverride(key: "test.gate", value: VersionGateValue(enabled: true, minVersion: "2.3.0"))
-        #expect(viewModel.versionGateOverrideValue(forKey: "test.gate") == VersionGateValue(enabled: true, minVersion: "2.3.0"))
+        #expect(viewModel.versionGateOverrideValue(forKey: "test.gate") == nil)
     }
 }

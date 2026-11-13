@@ -135,8 +135,7 @@ public final class AppSession {
                              app: appFlags,
                              org: settings.flags.org,
                              store: settings.flags.stores[currentStoreId] ?? [:],
-                             role: settings.flags.roles[role.rawValue] ?? [:],
-                             developerOverride: developerTools.flagOverrides[flag.rawValue])
+                             role: settings.flags.roles[role.rawValue] ?? [:])
     }
 
     /// Max discount % this role may give without a manager PIN.

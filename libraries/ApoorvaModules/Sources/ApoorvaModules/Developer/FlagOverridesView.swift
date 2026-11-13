@@ -9,7 +9,6 @@ import ManiSwiftUIComponents
 
 public struct FlagOverridesView: View {
     @State var viewModel: FlagOverridesViewModel
-    @State private var newFlag = ""
 
     public init(viewModel: FlagOverridesViewModel) {
         self.viewModel = viewModel
@@ -17,33 +16,7 @@ public struct FlagOverridesView: View {
 
     public var body: some View {
         List {
-            Section("Local overrides (never synced)") {
-                ForEach(viewModel.flagOverrides.keys.sorted(), id: \.self) { key in
-                    ManiToggleRow(title: key, isOn: Binding(
-                        get: { viewModel.flagOverrides[key] ?? false },
-                        set: { viewModel.setFlag(key, value: $0) }
-                    ))
-                    .swipeActions {
-                        Button("Remove", role: .destructive) {
-                            viewModel.setFlag(key, value: nil)
-                        }
-                    }
-                }
-                HStack {
-                    TextField("Flag key", text: $newFlag)
-                        .autocorrectionDisabled()
-                    Button("Add") {
-                        viewModel.addFlag(newFlag)
-                        newFlag = ""
-                    }
-                }
-            }
             Section {
-                Button("Reset all overrides", role: .destructive) {
-                    viewModel.resetFlags()
-                }
-            }
-            Section("Remote Config") {
                 ForEach(viewModel.remoteConfigRows) { row in
                     RemoteConfigKeyRow(row: row, viewModel: viewModel)
                 }
@@ -53,6 +26,10 @@ public struct FlagOverridesView: View {
                 Button("Reset Remote Config overrides", role: .destructive) {
                     viewModel.resetRemoteConfigOverrides()
                 }
+            } header: {
+                Text("Remote Config")
+            } footer: {
+                Text("Overrides existing flags only (local, never synced). Flags are added in code and the Firebase console.")
             }
         }
         .navigationTitle("Feature flags")
