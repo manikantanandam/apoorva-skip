@@ -17,6 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../ApoorvaModels"),
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.1.0"),
         .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.15.0")
     ],
     targets: [
@@ -27,6 +28,7 @@ let package = Package(
             dependencies: [
                 .product(name: "FirebaseCore", package: "firebase-ios-sdk"),
                 .product(name: "ApoorvaModels", package: "ApoorvaModels"),
+                .product(name: "ManiLogger", package: "ManiLogger"),
                 .product(name: "FirebaseFirestore", package: "firebase-ios-sdk"),
                 .product(name: "FirebaseAuth", package: "firebase-ios-sdk"),
                 .product(name: "FirebaseAnalytics", package: "firebase-ios-sdk"),

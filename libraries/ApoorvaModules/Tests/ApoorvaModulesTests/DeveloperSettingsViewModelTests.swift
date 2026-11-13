@@ -8,22 +8,33 @@ import Foundation
 import ApoorvaModels
 import ApoorvaServices
 import ApoorvaEnvironment
+import ManiLogger
 @testable import ApoorvaModules
 
 @MainActor
 struct DeveloperSettingsViewModelTests {
     private func makeViewModel(remoteConfig: RemoteConfigServicing = NoOpRemoteConfigService(),
-                                tools: StubDeveloperTools = StubDeveloperTools())
+                                tools: StubDeveloperTools = StubDeveloperTools(),
+                                logBuffer: LogBuffer = LogBuffer())
     -> DeveloperSettingsViewModel {
         DeveloperSettingsViewModel(
             authService: MockAuthService(),
             environmentStore: EnvironmentStore(defaults: UserDefaults(suiteName: "DevSettingsTests-\(UUID().uuidString)")!),
             tools: tools,
             remoteConfigService: remoteConfig,
-            logBuffer: LogBuffer(),
+            logBuffer: logBuffer,
             clearLocalDatabase: {},
             terminateApp: {}
         )
+    }
+
+    // Filtering behaviour is covered by ManiLogger's LogViewerViewModelTests; this only checks the wiring.
+    @Test func logViewerReadsInjectedBuffer() {
+        let buffer = LogBuffer()
+        buffer.write(LogEntry(level: .info, category: .app, message: "x", sessionId: "s"))
+        let viewModel = makeViewModel(logBuffer: buffer)
+
+        #expect(viewModel.logViewer.logEntries.map(\.message) == ["x"])
     }
 
     @Test func rowShowsRemoteValueWhenNotOverridden() {

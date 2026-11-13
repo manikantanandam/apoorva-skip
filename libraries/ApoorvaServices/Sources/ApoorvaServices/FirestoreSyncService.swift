@@ -1,6 +1,10 @@
 import FirebaseFirestore
 import ApoorvaModels
 import Foundation
+import ManiLogger
+
+private let logger = AppLogger(category: .network)
+
 public typealias Category = ApoorvaModels.InventoryItem
 public final class FirestoreSyncService: @unchecked Sendable {
     private let db = Firestore.firestore()
@@ -15,7 +19,7 @@ public final class FirestoreSyncService: @unchecked Sendable {
                 query = query.whereField("timestamp", isGreaterThan: Timestamp(date: lastSync))
             }
             
-            print("🌐 Sending request to Firestore for Org: \(orgId)...")
+            logger.debug("Fetching Sale deltas for Org: \(orgId)")
             let snapshot = try await query.getDocuments()
             
             var successfulSales: [Sale] = []
@@ -24,7 +28,7 @@ public final class FirestoreSyncService: @unchecked Sendable {
                     let sale = try document.data(as: Sale.self)
                     successfulSales.append(sale)
                 } catch {
-                    print("❌ Failed to decode Sale document ID: \(document.documentID)")
+                    logger.error("Failed to decode Sale: \(document.documentID) - \(error)")
                 }
             }
             return successfulSales
@@ -44,7 +48,7 @@ public final class FirestoreSyncService: @unchecked Sendable {
                 do {
                     let record = try document.data(as: Customer.self)
                     successfulRecords.append(record)
-                } catch { print("❌ Failed to decode Customer: \(document.documentID) - \(error)") }
+                } catch { logger.error("Failed to decode Customer:\(document.documentID) - \(error)") }
             }
             return successfulRecords
         }
@@ -63,7 +67,7 @@ public final class FirestoreSyncService: @unchecked Sendable {
                 do {
                     let record = try document.data(as: Category.self)
                     successfulRecords.append(record)
-                } catch { print("❌ Failed to decode Inventory: \(document.documentID) - \(error)") }
+                } catch { logger.error("Failed to decode Inventory:\(document.documentID) - \(error)") }
             }
             return successfulRecords
         }
@@ -76,7 +80,7 @@ public final class FirestoreSyncService: @unchecked Sendable {
                 query = query.whereField("updatedAt", isGreaterThan: Timestamp(date: lastSync))
             }
             
-            print("🌐 Fetching Categories for Org: \(orgId)...")
+            logger.debug("Fetching Categories for Org: \(orgId)")
             let snapshot = try await query.getDocuments()
             
             var successfulRecords: [Category] = []
@@ -85,10 +89,10 @@ public final class FirestoreSyncService: @unchecked Sendable {
                     var record = try document.data(as: Category.self)
                     if record.id.isEmpty { record.id = document.documentID } // Inject ID safely
                     successfulRecords.append(record)
-                } catch { print("❌ Failed to decode Category: \(document.documentID) - \(error)") }
+                } catch { logger.error("Failed to decode Category:\(document.documentID) - \(error)") }
             }
             
-            print("✅ Fetched \(successfulRecords.count) Categories.")
+            logger.info("Fetched \(successfulRecords.count) Categories")
             return successfulRecords
         }
     
@@ -101,7 +105,7 @@ public final class FirestoreSyncService: @unchecked Sendable {
                 query = query.whereField("updatedAt", isGreaterThan: Timestamp(date: lastSync))
             }
             
-            print("🌐 Fetching Cashflow Deltas for Org: \(orgId)...")
+            logger.debug("Fetching Cashflow deltas for Org: \(orgId)")
             let snapshot = try await query.getDocuments()
             
             var successfulRecords: [CashflowTransaction] = []
@@ -110,21 +114,21 @@ public final class FirestoreSyncService: @unchecked Sendable {
                     let record = try document.data(as: CashflowTransaction.self)
                     successfulRecords.append(record)
                 } catch {
-                    print("❌ Failed to decode Cashflow: \(document.documentID) - \(error)")
+                    logger.error("Failed to decode Cashflow:\(document.documentID) - \(error)")
                 }
             }
             
-            print("✅ Fetched \(successfulRecords.count) Cashflow records.")
+            logger.info("Fetched \(successfulRecords.count) Cashflow records")
             return successfulRecords
         }
         
         public func pushCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws {
-            print("☁️ Pushing Cashflow Transaction \(transaction.id) to Firestore...")
+            logger.debug("Pushing Cashflow Transaction \(transaction.id)")
             
             let docRef = db.collection("organizations").document(orgId).collection("cashflow").document(transaction.id)
             
             // Encodes the Swift struct into Firestore JSON and uploads it
             try docRef.setData(from: transaction)
-            print("✅ Successfully pushed Cashflow Transaction!")
+            logger.info("Pushed Cashflow Transaction \(transaction.id)")
         }
 }

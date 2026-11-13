@@ -8,6 +8,9 @@
 import Foundation
 import ApoorvaModels
 import SkipSQL
+import ManiLogger
+
+private let logger = AppLogger(category: .storage)
 
 public final actor OrganizationLocalStorage: OrganizationStorageProtocol {
 
@@ -25,7 +28,7 @@ public final actor OrganizationLocalStorage: OrganizationStorageProtocol {
             return allOrganizations.sorted { $0.name < $1.name }
         } catch let error {
             if let error = error as? SQLError {
-                print("SQL Error: \(error.localizedDescription)")
+                logger.error("SQL Error:\(error.localizedDescription)")
             }
             return []
         }
@@ -38,7 +41,7 @@ public final actor OrganizationLocalStorage: OrganizationStorageProtocol {
             }
         } catch {
             if let error = error as? SQLError {
-                print(error.msg)
+                logger.error("SQL Error: \(error.msg)")
             }
             throw error
         }

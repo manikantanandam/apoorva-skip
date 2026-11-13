@@ -5,6 +5,9 @@
 
 import Foundation
 import FirebaseFirestore
+import ManiLogger
+
+private let logger = AppLogger(category: .network)
 
 /// Raw Firestore document: its id plus the untyped field map.
 public struct StoreDocument: @unchecked Sendable {
@@ -147,7 +150,7 @@ extension FirestoreStoring {
                 }
                 records.append(try Firestore.Decoder().decode(type, from: data))
             } catch {
-                print("❌ Failed to decode \(type): \(document.id) - \(error)")
+                logger.error("Failed to decode\(type): \(document.id) - \(error)")
             }
         }
         return records

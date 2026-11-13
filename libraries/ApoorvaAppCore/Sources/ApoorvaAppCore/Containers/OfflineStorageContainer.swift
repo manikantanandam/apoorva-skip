@@ -9,6 +9,9 @@ import Foundation
 import ApoorvaOfflineStorage
 import ApoorvaUtilities
 import ApoorvaEnvironment
+import ManiLogger
+
+private let logger = AppLogger(category: .storage)
 
 // In ApoorvaAppCore
 @MainActor
@@ -31,7 +34,7 @@ public class OfflineStorageContainer {
         do {
             let dbPath = databasePath
 
-            print("DB Path: \(dbPath)")
+            logger.debug("DB Path: \(dbPath)")
 
             // Opening the database also runs any pending schema migrations.
             return try SkipSqlDatabase(filepath: dbPath)

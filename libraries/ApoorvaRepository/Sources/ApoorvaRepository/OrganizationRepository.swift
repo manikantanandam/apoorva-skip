@@ -9,6 +9,9 @@ import Foundation
 import ApoorvaOfflineStorage
 import ApoorvaModels
 import ApoorvaServices
+import ManiLogger
+
+private let logger = AppLogger(category: .sync)
 
 public protocol OrganizationRepositoryProtocol: Sendable {
     func getOrganizations() async throws -> [Organization]
@@ -58,14 +61,14 @@ public final actor OrganizationRepository: OrganizationRepositoryProtocol {
     }
     
     public func sync(force: Bool) async throws {
-        print("Started Organization sync")
+        logger.info("Started Organization sync")
         
         let user = try await userRepository.getCurrentUser()
         
         // 1. Get ONLY the organization IDs the user is authorized to access
         let assignedOrgIds = user.assignedOrgs.map { $0.orgId }
         guard !assignedOrgIds.isEmpty else {
-            print("User has no assigned organizations.")
+            logger.warning("User has no assigned organizations")
             return
         }
         
@@ -74,19 +77,19 @@ public final actor OrganizationRepository: OrganizationRepositoryProtocol {
         
         if let lastUpdatedDate = lastUpdatedDate, !force {
             // Delta Sync: Only fetch the assigned orgs if they've changed
-            print("Delta Syncing assigned Orgs since: \(Date(timeIntervalSince1970: lastUpdatedDate))")
+            logger.debug("Delta syncing assigned Orgs since:\(Date(timeIntervalSince1970: lastUpdatedDate))")
             do {
                 fetchedOrganizations = try await service.getOrganizations(
                     since: Date(timeIntervalSince1970: lastUpdatedDate),
                     assignedIds: assignedOrgIds
                 )
             } catch {
-                print("Firestore organization repository error \(error.localizedDescription)")
+                logger.error("Organization delta sync failed:\(error.localizedDescription)")
             }
             
         } else {
             // Full Sync: Fetch each assigned org explicitly and in parallel
-            print("Full Syncing assigned Orgs: \(assignedOrgIds)")
+            logger.debug("Full syncing assigned Orgs:\(assignedOrgIds)")
             
             try await withThrowingTaskGroup(of: Organization?.self) { group in
                 for orgId in assignedOrgIds {
@@ -94,7 +97,7 @@ public final actor OrganizationRepository: OrganizationRepositoryProtocol {
                         do {
                             return try await self.service.getOrganization(for: orgId)
                         } catch {
-                            print("Failed to fetch assigned org \(orgId): \(error)")
+                            logger.error("Failed to fetch assigned org\(orgId): \(error)")
                             return nil
                         }
                     }
@@ -107,12 +110,12 @@ public final actor OrganizationRepository: OrganizationRepositoryProtocol {
             }
         }
         
-        print("Saving \(fetchedOrganizations.count) assigned organizations locally")
+        logger.info("Saving \(fetchedOrganizations.count) assigned organizations locally")
         try await storage.saveOrganizations(organizations: fetchedOrganizations)
         
         // Update Sync Timestamp
         guard let orgWithMaxDate = fetchedOrganizations.max(by: { $0.updatedAt < $1.updatedAt }) else { return }
-        print("Last updated organization date = \(orgWithMaxDate)")
+        logger.debug("Last updated organization date = \(orgWithMaxDate.updatedAt) (\(orgWithMaxDate.id))")
         try await syncStorage.updateSyncTimestamp(
             for: Organization.table.name,
             timestamp: orgWithMaxDate.updatedAt.timeIntervalSince1970

@@ -5,6 +5,9 @@
 
 import Foundation
 import ApoorvaModels
+import ManiLogger
+
+private let logger = AppLogger(category: .sync)
 
 public protocol AuditLogging: Sendable {
     func log(_ category: AuditCategory, action: String, summary: String, targetId: String?) async
@@ -33,7 +36,7 @@ public struct AuditLogger: AuditLogging {
                 targetId: targetId
             ))
         } catch {
-            print("Audit log failed for \(action): \(error)")
+            logger.error("Audit log failed for\(action): \(error)")
         }
     }
 }

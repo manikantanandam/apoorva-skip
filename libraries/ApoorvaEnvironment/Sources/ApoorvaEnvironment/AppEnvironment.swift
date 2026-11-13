@@ -4,6 +4,9 @@
 //
 
 import Foundation
+import ManiLogger
+
+private let logger = AppLogger(category: .config)
 
 /// Backend environment the app talks to. Chosen at launch; each has its own Firebase project and local DB file.
 public enum AppEnvironment: String, CaseIterable, Codable, Sendable, Identifiable {
@@ -54,10 +57,10 @@ public enum AppEnvironment: String, CaseIterable, Codable, Sendable, Identifiabl
 
     public static var defaultEnvironment: AppEnvironment {
         #if DEBUG
-        print("[AppEnvironment] DEBUG flag set, defaultEnvironment = .debug")
+        logger.debug("DEBUG flag set, defaultEnvironment = .debug")
         return .debug
         #else
-        print("[AppEnvironment] DEBUG flag not set, defaultEnvironment = .production")
+        logger.debug("DEBUG flag not set, defaultEnvironment = .production")
         return .production
         #endif
     }

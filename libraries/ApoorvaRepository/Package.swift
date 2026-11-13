@@ -19,6 +19,7 @@ let package = Package(
         .package(path: "../ApoorvaOfflineStorage"),
         .package(path: "../ApoorvaServices"),
         .package(path: "../ApoorvaModels"),
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.1.0"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -27,7 +28,8 @@ let package = Package(
             name: "ApoorvaRepository",
             dependencies: [
                 .product(name: "ApoorvaOfflineStorage", package: "ApoorvaOfflineStorage"),
-                .product(name: "ApoorvaServices", package: "ApoorvaServices")
+                .product(name: "ApoorvaServices", package: "ApoorvaServices"),
+                .product(name: "ManiLogger", package: "ManiLogger")
             ]
         ),
         .testTarget(

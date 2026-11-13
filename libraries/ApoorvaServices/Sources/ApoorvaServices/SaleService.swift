@@ -7,6 +7,9 @@
 
 import Foundation
 import ApoorvaModels
+import ManiLogger
+
+private let logger = AppLogger(category: .network)
 
 public protocol SaleServiceProtocol: Sendable {
 
@@ -135,9 +138,9 @@ private extension SaleService {
                 .greaterThan(field: "serverUpdatedAt", date: lastSync)
             ], matchAny: true)
         }
-        print("🌐 Fetching Sales for Org: \(orgId)...")
+        logger.debug("Fetching Sales for Org: \(orgId)")
         let records = try await store.fetch(Sale.self, collection: .orgPath(orgId, .sales), query: query)
-        print("✅ Fetched \(records.count) Sales.")
+        logger.info("Fetched \(records.count) Sales")
         return records
     }
 }

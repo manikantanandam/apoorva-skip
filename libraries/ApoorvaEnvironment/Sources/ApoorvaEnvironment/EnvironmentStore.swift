@@ -4,6 +4,9 @@
 //
 
 import Foundation
+import ManiLogger
+
+private let logger = AppLogger(category: .config)
 
 /// Persists the selected `AppEnvironment` so it can be read at launch, before any container exists.
 /// Release builds always resolve to production.
@@ -19,21 +22,21 @@ public struct EnvironmentStore: @unchecked Sendable {
         get {
             #if DEBUG
             let raw = defaults.string(forKey: key)
-            print("[EnvironmentStore] DEBUG build. raw value in defaults for key '\(key)': \(raw ?? "nil")")
+            logger.debug("DEBUG build. raw value in defaults for key '\(key)': \(raw ?? "nil")")
             guard let raw,
                   let env = AppEnvironment(rawValue: raw) else {
-                print("[EnvironmentStore] no valid stored value, falling back to defaultEnvironment: \(AppEnvironment.defaultEnvironment)")
+                logger.debug("No valid stored value, falling back to defaultEnvironment: \(AppEnvironment.defaultEnvironment)")
                 return AppEnvironment.defaultEnvironment
             }
-            print("[EnvironmentStore] resolved stored environment: \(env)")
+            logger.debug("Resolved stored environment: \(env)")
             return env
             #else
-            print("[EnvironmentStore] non-DEBUG build, forcing .production")
+            logger.debug("Non-DEBUG build, forcing .production")
             return .production
             #endif
         }
         nonmutating set {
-            print("[EnvironmentStore] writing environment '\(newValue)' to key '\(key)'")
+            logger.info("Writing environment '\(newValue)' to key '\(key)'")
             defaults.set(newValue.rawValue, forKey: key)
         }
     }

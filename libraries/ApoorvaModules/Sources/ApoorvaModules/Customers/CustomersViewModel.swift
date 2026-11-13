@@ -8,6 +8,9 @@
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
+import ManiLogger
+
+private let logger = AppLogger(category: .ui)
 
 public enum FileFormat: String, Identifiable, CaseIterable {
     case csv = "CSV File (.csv)"
@@ -95,7 +98,7 @@ public class CustomerListViewModel {
             try await repository.sync(force: false)
             self.customers = sortedByRecent(try await repository.getCustomers())
         } catch {
-            print("Customer items failed \(error.localizedDescription)")
+            logger.error("Customers failed to load: \(error.localizedDescription)")
         }
     }
 
@@ -104,7 +107,7 @@ public class CustomerListViewModel {
             try await repository.sync(force: true)
             self.customers = sortedByRecent(try await repository.getCustomers())
         } catch {
-            print("Customer items failed \(error.localizedDescription)")
+            logger.error("Customers failed to load: \(error.localizedDescription)")
         }
     }
 

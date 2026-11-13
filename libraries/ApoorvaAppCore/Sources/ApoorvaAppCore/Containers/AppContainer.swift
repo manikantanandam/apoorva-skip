@@ -10,13 +10,17 @@ import ApoorvaModules
 import ApoorvaUtilities
 import ApoorvaEnvironment
 import ApoorvaServices
+import ManiLogger
+
+private let logger = AppLogger(category: .app)
 
 @MainActor
 public class AppContainer {
     public let environmentStore = EnvironmentStore()
     public let environment: AppEnvironment
     public let developerTools: DeveloperToolsProtocol = DeveloperTools()
-    public let logBuffer = LogBuffer()
+    public let logBuffer: LogBuffer
+    public let fileLogSink: FileLogSink
     public let servicesContainer = ServicesContainer()
     public let offlineStorageContainer: OfflineStorageContainer
     public lazy var repositoryContainer = RepositoryContainer(
@@ -67,9 +71,19 @@ public class AppContainer {
 
     public init() {
         let environment = environmentStore.current
-        print("[AppContainer] init resolved environment: \(environment)")
         self.environment = environment
+        // Sinks are registered before anything else is built so early launch logs are captured.
+        let logBuffer = LogBuffer()
+        let fileLogSink = FileLogSink(directory: FileLogSink.defaultDirectory())
+        LogSinks.shared.configure(
+            sinks: [logBuffer, fileLogSink],
+            minimumLevel: environment == .production ? .info : .debug
+        )
+        self.logBuffer = logBuffer
+        self.fileLogSink = fileLogSink
         self.offlineStorageContainer = OfflineStorageContainer(environment: environment)
+        LogSinks.shared.add(CrashReportingLogSink(crashReportingService: servicesContainer.crashReportingService))
+        logger.info("App launched: environment=\(environment) version=\(appVersion) session=\(LogSinks.shared.sessionId)")
         servicesContainer.crashReportingService.setLaunchContext(appVersion: appVersion, buildFlavor: environment.rawValue)
         servicesContainer.analyticsService.setAnalyticsCollectionEnabled(environment == .production)
     }
@@ -84,6 +98,7 @@ public class AppContainer {
             tools: developerTools,
             remoteConfigService: servicesContainer.remoteConfigService,
             logBuffer: logBuffer,
+            fileLogSink: fileLogSink,
             clearLocalDatabase: {
                 try? FileManager.default.removeItem(atPath: dbPath)
                 exit(0)

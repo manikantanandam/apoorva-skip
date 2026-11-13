@@ -5,6 +5,9 @@
 
 import Foundation
 import ApoorvaModels
+import ManiLogger
+
+private let logger = AppLogger(category: .network)
 
 public protocol CashflowTransactionServiceProtocol: Sendable {
 
@@ -36,7 +39,7 @@ public final class CashflowTransactionService: CashflowTransactionServiceProtoco
 
         // Prevent duplicates by checking if the document already exists
         guard try await store.getDocument(path: path) == nil else {
-            print("⚠️ Cashflow Transaction \(transaction.id) already exists. Skipping insertion.")
+            logger.warning("Cashflow Transaction \(transaction.id) already exists. Skipping insertion.")
             return
         }
 
@@ -71,9 +74,9 @@ private extension CashflowTransactionService {
         if let lastSync = lastSync {
             query = StoreQuery(conditions: [.greaterThan(field: "updatedAt", date: lastSync)])
         }
-        print("🌐 Fetching Cashflow Transactions for Org: \(orgId)...")
+        logger.debug("Fetching Cashflow Transactions for Org: \(orgId)")
         let records = try await store.fetch(CashflowTransaction.self, collection: .orgPath(orgId, .cashflow), query: query)
-        print("✅ Fetched \(records.count) Cashflow Transactions.")
+        logger.info("Fetched \(records.count) Cashflow Transactions")
         return records
     }
 }

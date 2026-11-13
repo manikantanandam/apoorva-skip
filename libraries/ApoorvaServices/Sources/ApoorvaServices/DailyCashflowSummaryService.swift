@@ -5,7 +5,10 @@
 
 import Foundation
 import ApoorvaModels
+import ManiLogger
 @preconcurrency import FirebaseFirestore
+
+private let logger = AppLogger(category: .network)
 
 public protocol DailyCashflowSummaryServiceProtocol: Sendable {
 
@@ -32,7 +35,7 @@ public final class DailyCashflowSummaryService: DailyCashflowSummaryServiceProto
     }
 
     public func getDailyCashflowSummary(orgId: String, date: String) async throws -> DailyCashflowSummary {
-        print("🌐 Fetching Daily Cashflow Transactions for Org: \(orgId) for date \(date) ...")
+        logger.debug("Fetching Daily Cashflow Summary for Org: \(orgId) for date \(date)")
         let path = documentPath(date, orgId: orgId)
         guard let document = try await store.getDocument(path: path) else {
             throw NSError(domain: "DailyCashflowSummaryService", code: 404,
@@ -41,7 +44,7 @@ public final class DailyCashflowSummaryService: DailyCashflowSummaryServiceProto
         do {
             return try Firestore.Decoder().decode(DailyCashflowSummary.self, from: document.data)
         } catch {
-            print("❌ Failed to decode DailyCashflowSummary: \(document.id) - \(error)")
+            logger.error("Failed to decode DailyCashflowSummary:\(document.id) - \(error)")
             throw error
         }
     }
@@ -50,7 +53,7 @@ public final class DailyCashflowSummaryService: DailyCashflowSummaryServiceProto
         do {
             return try await dailyCashflowTransactions(since: lastSync, for: orgId)
         } catch {
-            print("Eror in fething firestore \(error.localizedDescription)")
+            logger.error("Fetching Daily Cashflow Summaries failed: \(error.localizedDescription)")
             throw error
         }
     }
@@ -60,7 +63,7 @@ public final class DailyCashflowSummaryService: DailyCashflowSummaryServiceProto
 
         // Prevent duplicates by checking if the document already exists
         guard try await store.getDocument(path: path) == nil else {
-            print("⚠️ Daily Cashflow Summary \(summary.id) already exists. Skipping insertion.")
+            logger.warning("Daily Cashflow Summary \(summary.id) already exists. Skipping insertion.")
             return
         }
 
@@ -88,9 +91,9 @@ private extension DailyCashflowSummaryService {
         if let lastSync = lastSync {
             query = StoreQuery(conditions: [.greaterThan(field: "updatedAt", date: lastSync)])
         }
-        print("🌐 Fetching Daily Cashflow Transactions for Org: \(orgId)...")
+        logger.debug("Fetching Daily Cashflow Summaries for Org: \(orgId)")
         let summaries = try await store.fetch(DailyCashflowSummary.self, collection: collectionPath(orgId: orgId), query: query)
-        print("✅ Fetched \(summaries.count) Daily Cashflow Transactions.")
+        logger.info("Fetched \(summaries.count) Daily Cashflow Summaries")
         return summaries
     }
 }

@@ -9,6 +9,9 @@ import Foundation
 import ApoorvaOfflineStorage
 import ApoorvaModels
 import ApoorvaServices
+import ManiLogger
+
+private let logger = AppLogger(category: .sync)
 
 public protocol DailyCashflowSummaryRepositoryProtocol: Sendable {
     func getDailyCashflowSummaries() async throws -> [DailyCashflowSummary]
@@ -44,7 +47,7 @@ public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
     }
     
     public func getDailyCashflowSummary(id: String) async throws -> DailyCashflowSummary? {
-        print("reading daily cashflow from storage \(id)")
+        logger.debug("Reading daily cashflow summary from storage \(id)")
         return try await storage.getDailyCashflowSummary(id: id)
     }
     
@@ -67,7 +70,7 @@ public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
     }
     
     public func sync(force: Bool) async throws {
-        print("Started DailyCashflowSummary sync")
+        logger.info("Started DailyCashflowSummary sync")
         guard let orgId = try await getOrganizationId() else {
             return
         }
@@ -91,14 +94,14 @@ public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
     }
     
     public func refresh(for date: String) async throws {
-        print("Refresh DailyCashflowSummary sync")
+        logger.info("Refresh DailyCashflowSummary sync")
         guard let orgId = try await getOrganizationId() else {
             return
         }
 
         let summary = try await service.getDailyCashflowSummary(orgId: orgId, date: date)
         try await storage.saveDailyCashflowSummary(summary: summary)
-        print("Refreshed daily summary for date \(date):  \(summary)")
+        logger.info("Refreshed daily summary for date \(date)")
     }
 }
 

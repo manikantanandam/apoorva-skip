@@ -6,6 +6,9 @@
 import Foundation
 import ApoorvaModels
 import SkipSQL
+import ManiLogger
+
+private let logger = AppLogger(category: .storage)
 
 public final actor CustomerLocalStorage: CustomerStorageProtocol {
 
@@ -22,7 +25,7 @@ public final actor CustomerLocalStorage: CustomerStorageProtocol {
             }
             return allCustomers.filter { !$0.isDeleted }.sorted { $0.name < $1.name }
         } catch {
-            print("SQL Error \(error.localizedDescription)")
+            logger.error("SQL Error\(error.localizedDescription)")
             return []
         }
     }

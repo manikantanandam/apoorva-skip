@@ -9,6 +9,9 @@ import Foundation
 import ApoorvaOfflineStorage
 import ApoorvaModels
 import ApoorvaServices
+import ManiLogger
+
+private let logger = AppLogger(category: .sync)
 
 public protocol CustomerRepositoryProtocol: Sendable {
     func getCustomers() async throws -> [Customer]
@@ -76,9 +79,9 @@ public final actor CustomerRepository: CustomerRepositoryProtocol {
     }
     
     public func sync(force: Bool) async throws {
-        print("Started sync")
+        logger.info("Started Customer sync")
         let user = try await userRepository.getCurrentUser()
-        print("Received used")
+        logger.debug("Received user")
 
         guard let orgId = user.selectedOrganization?.orgId else {
             return
@@ -87,17 +90,17 @@ public final actor CustomerRepository: CustomerRepositoryProtocol {
         let customers: [Customer]
         
         let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: Customer.table.name)
-        print("Last updted date \(lastUpdatedDate)")
+        logger.debug("Last updated date \(lastUpdatedDate)")
         
         if let lastUpdatedDate, !force {
-            print("Fetching inventory customers since \(Date(timeIntervalSince1970: lastUpdatedDate)) for \(orgId)")
+            logger.debug("Fetching customers since\(Date(timeIntervalSince1970: lastUpdatedDate)) for \(orgId)")
             customers = try await service.getCustomers(since: SyncCursor.queryStart(from: lastUpdatedDate), for: orgId)
-            print("Received customers")
+            logger.debug("Received customers")
         } else {
-            print("Fetch all customers \(orgId)")
+            logger.debug("Fetching all customers for \(orgId)")
             customers = try await service.getCustomers(for: orgId)
         }
-        print("Saving inventory customers")
+        logger.debug("Saving customers")
         try await storage.saveCustomers(customers: customers)
         // The query matches on updatedAt OR lastPurchaseDate, so the cursor tracks the newest of both.
         let dates = customers.flatMap { customer in

@@ -9,6 +9,9 @@ import Foundation
 import ApoorvaOfflineStorage
 import ApoorvaModels
 import ApoorvaServices
+import ManiLogger
+
+private let logger = AppLogger(category: .sync)
 
 public protocol InventoryItemRepositoryProtocol: Sendable {
     func getInventoryItems() async throws -> [InventoryItem]
@@ -77,9 +80,9 @@ public final actor InventoryItemRepository: InventoryItemRepositoryProtocol {
     }
 
     public func sync(force: Bool) async throws {
-        print("Started sync")
+        logger.info("Started Inventory sync")
         let user = try await userRepository.getCurrentUser()
-        print("Received used")
+        logger.debug("Received user")
 
         guard let orgId = user.selectedOrganization?.orgId else {
             return
@@ -88,17 +91,17 @@ public final actor InventoryItemRepository: InventoryItemRepositoryProtocol {
         let items: [InventoryItem]
         
         let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: InventoryItem.table.name)
-        print("Last updted date \(lastUpdatedDate)")
+        logger.debug("Last updated date \(lastUpdatedDate)")
         
         if let lastUpdatedDate, !force {
-            print("Fetching inventory items since \(Date(timeIntervalSince1970: lastUpdatedDate)) for \(orgId)")
+            logger.debug("Fetching inventory items since\(Date(timeIntervalSince1970: lastUpdatedDate)) for \(orgId)")
             items = try await service.getInventoryItems(since: SyncCursor.queryStart(from: lastUpdatedDate), for: orgId)
-            print("Received items")
+            logger.debug("Received inventory items")
         } else {
-            print("Fetch all inventiry items \(orgId)")
+            logger.debug("Fetching all inventory items for \(orgId)")
             items = try await service.getInventoryItems(for: orgId)
         }
-        print("Saving inventory items")
+        logger.debug("Saving inventory items")
         try await storage.saveInventoryItems(items: items)
         // The query matches on updatedAt OR lastSoldDate, so the cursor tracks the newest of both.
         guard let latest = SyncCursor.latest(items.flatMap { [$0.updatedAt, $0.lastSoldDate] }) else { return }

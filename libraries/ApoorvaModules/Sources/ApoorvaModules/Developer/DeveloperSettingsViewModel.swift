@@ -9,6 +9,9 @@ import ApoorvaModels
 import ApoorvaServices
 import ApoorvaUtilities
 import ApoorvaEnvironment
+import ManiLogger
+
+private let logger = AppLogger(category: .app)
 
 /// One row of the catalogue-driven Remote Config list in Developer Settings: the live remote
 /// value, plus the local override if one is set.
@@ -28,9 +31,11 @@ public class DeveloperSettingsViewModel {
     private let environmentStore: EnvironmentStore
     private var tools: DeveloperToolsProtocol
     private let remoteConfigService: RemoteConfigServicing
-    private let logBuffer: LogBuffer
     private let clearLocalDatabaseAction: () -> Void
     private let terminateAppAction: () -> Void
+
+    /// Backs the Logs screen (`ManiLogger.LogViewerView`).
+    public let logViewer: LogViewerViewModel
 
     /// Environment the app was launched with; switching only takes effect after relaunch.
     public let activeEnvironment: AppEnvironment
@@ -51,13 +56,14 @@ public class DeveloperSettingsViewModel {
                 tools: DeveloperToolsProtocol,
                 remoteConfigService: RemoteConfigServicing,
                 logBuffer: LogBuffer,
+                fileLogSink: FileLogSink? = nil,
                 clearLocalDatabase: @escaping () -> Void,
                 terminateApp: @escaping () -> Void) {
         self.authService = authService
         self.environmentStore = environmentStore
         self.tools = tools
         self.remoteConfigService = remoteConfigService
-        self.logBuffer = logBuffer
+        self.logViewer = LogViewerViewModel(logBuffer: logBuffer, fileLogSink: fileLogSink)
         self.clearLocalDatabaseAction = clearLocalDatabase
         self.terminateAppAction = terminateApp
         self.activeEnvironment = environmentStore.current
@@ -66,18 +72,14 @@ public class DeveloperSettingsViewModel {
         self.remoteConfigOverrides = tools.remoteConfigOverrides
         self.isOfflineSimulated = tools.isOfflineSimulated
         self.showsScreenIdentifiers = tools.showsScreenIdentifiers
-        self.logLines = logBuffer.entries
-        self.logText = logBuffer.shareableText
     }
 
-    public private(set) var logLines: [String]
-    public private(set) var logText: String
     public var canClearDatabase: Bool { activeEnvironment.allowsDestructiveTools }
     public var canSwitchEnvironment: Bool { pendingEnvironment != activeEnvironment }
 
     /// Signs out, wipes local state for a clean switch, persists the new environment, then kills the app.
     public func confirmEnvironmentSwitch() {
-        print("[DeveloperSettingsViewModel] confirmEnvironmentSwitch: active=\(activeEnvironment) pending=\(pendingEnvironment) canSwitch=\(canSwitchEnvironment)")
+        logger.info("confirmEnvironmentSwitch: active=\(activeEnvironment) pending=\(pendingEnvironment) canSwitch=\(canSwitchEnvironment)")
         guard canSwitchEnvironment else { return }
         do {
             try authService.logout()
@@ -204,11 +206,6 @@ public class DeveloperSettingsViewModel {
         }
     }
 
-    public func clearLogs() {
-        logBuffer.clear()
-        logLines = logBuffer.entries
-        logText = logBuffer.shareableText
-    }
 
     public func clearLocalDatabase() {
         guard canClearDatabase else { return }

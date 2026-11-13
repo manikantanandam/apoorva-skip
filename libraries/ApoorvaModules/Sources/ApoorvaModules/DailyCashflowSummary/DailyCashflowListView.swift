@@ -9,6 +9,9 @@ import SwiftUI
 import ApoorvaUtilities
 import ApoorvaModels
 import ManiSwiftUIComponents
+import ManiLogger
+
+private let logger = AppLogger(category: .ui)
 
 public struct DailyCashflowListView: View {
     @Environment(\.maniTheme) private var theme
@@ -101,7 +104,7 @@ public struct DailyCashflowListView: View {
                     }
                 }
         .task {
-            print("Daily Cashflow List View task")
+            logger.debug("Daily Cashflow List View task")
             await viewModel.fetchData() // Fetch data on load
         }
     }

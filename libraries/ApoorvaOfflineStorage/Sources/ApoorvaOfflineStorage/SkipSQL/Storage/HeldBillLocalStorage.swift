@@ -9,6 +9,9 @@ import Foundation
 import ApoorvaModels
 import ApoorvaUtilities
 import SkipSQL
+import ManiLogger
+
+private let logger = AppLogger(category: .storage)
 
 public final actor HeldBillLocalStorage: HeldBillStorageProtocol {
 
@@ -26,7 +29,7 @@ public final actor HeldBillLocalStorage: HeldBillStorageProtocol {
             return allHeldBills.filter { !$0.isDeleted }.sorted()
         } catch let error {
             if let error = error as? SQLError {
-                print("SQL Error \(error.localizedDescription)")
+                logger.error("SQL Error\(error.localizedDescription)")
             }
             return []
         }
@@ -124,7 +127,7 @@ public final actor HeldBillLocalStorage: HeldBillStorageProtocol {
             }
         } catch {
             if let error = error as? SQLError {
-                print("Saving held bills failed: \(error.msg)")
+                logger.error("Saving held bills failed: \(error.msg)")
             }
             throw error
         }

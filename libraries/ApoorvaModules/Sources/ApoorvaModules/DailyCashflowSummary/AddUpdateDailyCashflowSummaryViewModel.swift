@@ -3,6 +3,9 @@ import Foundation
 import SwiftUI
 import ApoorvaModels
 import ApoorvaRepository
+import ManiLogger
+
+private let logger = AppLogger(category: .ui)
 
 enum DailyCashFlowSummaryContext {
     case add
@@ -115,20 +118,15 @@ public class AddUpdateDailyCashflowSummaryViewModel {
     
     // Centralized calculation method updates the stored property directly
     private func calculateClosingBalances() {
-        print("Calculating the closing balances")
+        logger.debug("Calculating closing balances for \(accounts.count) accounts over \(dayTransactions.count) transactions")
         for account in accounts {
-            print("Account: \(account.id) - \(account.name): \(account.currentBalance)")
             let opString = openingBalanceInputs[account.id] ?? "0"
             let opening = Double(opString) ?? 0.0
             var netChange = 0.0
             for tx in dayTransactions {
-                print(" ")
-                print("Transaction \(tx)")
-                print(" ")
                 if tx.fromAccountId == account.id { netChange -= tx.amount }
                 if tx.toAccountId == account.id { netChange += tx.amount }
             }
-            print("Opening \(opening) :Net change \(netChange)")
 
             // Format to 2 decimal places and store it
             closingBalanceInputs[account.id] = String(format: "%.2f", opening + netChange)
@@ -162,7 +160,7 @@ public class AddUpdateDailyCashflowSummaryViewModel {
                     updatedAt: Date.now.timeIntervalSince1970,
                     locked: false
                 )
-                print("Saving daily transaction summary")
+                logger.info("Saving daily cashflow summary")
                 try await repository.saveDailyCashflowSummary(summary: summary)
             case .update(let existingSummary):
                 
@@ -171,7 +169,7 @@ public class AddUpdateDailyCashflowSummaryViewModel {
                     closingBalances: finalClosingBalances,
                     updatedAt: Date.now.timeIntervalSince1970
                 )
-                print("Update daily transaction summary")
+                logger.info("Updating daily cashflow summary")
                 try await repository.updateDailyCashflowSummary(summary: summary)
             }
             return true

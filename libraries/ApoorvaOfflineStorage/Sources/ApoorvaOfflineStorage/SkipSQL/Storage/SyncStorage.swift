@@ -6,6 +6,9 @@
 import Foundation
 import ApoorvaModels
 import SkipSQL
+import ManiLogger
+
+private let logger = AppLogger(category: .storage)
 
 public final actor SyncStorage: Sendable {
     private let db: SkipSqlDatabase
@@ -17,7 +20,7 @@ public final actor SyncStorage: Sendable {
     /// Fetches the last successful sync timestamp for a given entity collection (e.g., "InventoryItem").
     /// Returns 0 if the entity has never been synced.
     public func getLastSyncTimestamp(for entityName: String) async throws -> TimeInterval? {
-        print("Getting last sync date for \(entityName)")
+        logger.debug("Getting last sync date for \(entityName)")
         let entity = try await db.withContext { context in
             try context.fetch(SyncState.self, primaryKeys: [.text(entityName)])
         }

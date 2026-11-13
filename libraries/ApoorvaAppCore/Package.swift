@@ -17,6 +17,7 @@ let package = Package(
         .package(path: "../ApoorvaModules"),
         .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
         .package(path: "../ApoorvaEnvironment"),
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.1.0"),
         .package(path: "../ApoorvaServices")
     ],
     targets: [
@@ -28,6 +29,7 @@ let package = Package(
                 .product(name: "ApoorvaModules", package: "ApoorvaModules"),
                 .product(name: "ApoorvaUtilities", package: "ManiUtilities"),
                 .product(name: "ApoorvaEnvironment", package: "ApoorvaEnvironment"),
+                .product(name: "ManiLogger", package: "ManiLogger"),
                 .product(name: "ApoorvaServices", package: "ApoorvaServices")
             ]
         ),

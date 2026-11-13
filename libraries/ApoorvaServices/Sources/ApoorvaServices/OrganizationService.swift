@@ -5,7 +5,10 @@
 
 import Foundation
 import ApoorvaModels
+import ManiLogger
 @preconcurrency import FirebaseFirestore
+
+private let logger = AppLogger(category: .network)
 
 public protocol OrganizationServiceProtocol: Sendable {
     func getOrganization(for orgId: String) async throws -> Organization
@@ -36,7 +39,7 @@ public final class OrganizationService: OrganizationServiceProtocol {
             .greaterThan(field: "updatedAt", date: lastSync)
         ])
         let records = try await store.fetch(Organization.self, collection: .organizations, query: query)
-        print("Fetched orgs from firestore \(records.count)")
+        logger.info("Fetched \(records.count) Organizations")
         return records
     }
 }

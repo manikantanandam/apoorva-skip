@@ -6,6 +6,9 @@
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
+import ManiLogger
+
+private let logger = AppLogger(category: .ui)
 
 /// What tapping an item on the POS should lead to.
 public enum POSTapResult: Equatable, Sendable {
@@ -111,7 +114,7 @@ public class POSViewModel {
             try await inventoryRepository.sync(force: false)
             apply(try await inventoryRepository.getInventoryItems())
         } catch {
-            print("POS prepareData failed \(error.localizedDescription)")
+            logger.error("POS prepareData failed\(error.localizedDescription)")
         }
     }
 
