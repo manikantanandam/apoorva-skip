@@ -8,11 +8,15 @@ import ApoorvaUtilities
 import ApoorvaEnvironment
 import ManiSwiftUIComponents
 
-struct EnvironmentSwitchView: View {
+public struct EnvironmentSwitchView: View {
     @State var viewModel: DeveloperSettingsViewModel
     @State private var showConfirm = false
 
-    var body: some View {
+    public init(viewModel: DeveloperSettingsViewModel) {
+        self.viewModel = viewModel
+    }
+
+    public var body: some View {
         List {
             Section {
                 ForEach(AppEnvironment.allCases) { environment in

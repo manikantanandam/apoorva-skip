@@ -7,39 +7,16 @@ import SwiftUI
 import ApoorvaModels
 import ManiSwiftUIComponents
 
-struct FlagOverridesView: View {
-    @State var viewModel: DeveloperSettingsViewModel
-    @State private var newFlag = ""
+public struct FlagOverridesView: View {
+    @State var viewModel: FlagOverridesViewModel
 
-    var body: some View {
+    public init(viewModel: FlagOverridesViewModel) {
+        self.viewModel = viewModel
+    }
+
+    public var body: some View {
         List {
-            Section("Local overrides (never synced)") {
-                ForEach(viewModel.flagOverrides.keys.sorted(), id: \.self) { key in
-                    ManiToggleRow(title: key, isOn: Binding(
-                        get: { viewModel.flagOverrides[key] ?? false },
-                        set: { viewModel.setFlag(key, value: $0) }
-                    ))
-                    .swipeActions {
-                        Button("Remove", role: .destructive) {
-                            viewModel.setFlag(key, value: nil)
-                        }
-                    }
-                }
-                HStack {
-                    TextField("Flag key", text: $newFlag)
-                        .autocorrectionDisabled()
-                    Button("Add") {
-                        viewModel.addFlag(newFlag)
-                        newFlag = ""
-                    }
-                }
-            }
             Section {
-                Button("Reset all overrides", role: .destructive) {
-                    viewModel.resetFlags()
-                }
-            }
-            Section("Remote Config") {
                 ForEach(viewModel.remoteConfigRows) { row in
                     RemoteConfigKeyRow(row: row, viewModel: viewModel)
                 }
@@ -49,6 +26,10 @@ struct FlagOverridesView: View {
                 Button("Reset Remote Config overrides", role: .destructive) {
                     viewModel.resetRemoteConfigOverrides()
                 }
+            } header: {
+                Text("Remote Config")
+            } footer: {
+                Text("Overrides existing flags only (local, never synced). Flags are added in code and the Firebase console.")
             }
         }
         .navigationTitle("Feature flags")
@@ -59,7 +40,7 @@ struct FlagOverridesView: View {
 /// The edit control itself varies by `row.kind` — see the per-kind subviews below.
 private struct RemoteConfigKeyRow: View {
     let row: RemoteConfigRowDisplay
-    let viewModel: DeveloperSettingsViewModel
+    let viewModel: FlagOverridesViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -75,7 +56,7 @@ private struct RemoteConfigKeyRow: View {
                         .clipShape(Capsule())
                 }
             }
-            Text("Remote: \(row.remoteDisplayValue)")
+            Text(row.isFromRemote ? "Remote: \(row.remoteDisplayValue)" : "Default: \(row.remoteDisplayValue) (not in Firebase)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -100,7 +81,7 @@ private struct RemoteConfigKeyRow: View {
 
 private struct BoolOverrideControl: View {
     let row: RemoteConfigRowDisplay
-    let viewModel: DeveloperSettingsViewModel
+    let viewModel: FlagOverridesViewModel
 
     var body: some View {
         Toggle("Override", isOn: Binding(
@@ -112,7 +93,7 @@ private struct BoolOverrideControl: View {
 
 private struct TextOverrideControl: View {
     let row: RemoteConfigRowDisplay
-    let viewModel: DeveloperSettingsViewModel
+    let viewModel: FlagOverridesViewModel
     @State private var text: String = ""
     @State private var invalidEntry = false
 
@@ -137,7 +118,7 @@ private struct TextOverrideControl: View {
 
 private struct VersionGateOverrideControl: View {
     let row: RemoteConfigRowDisplay
-    let viewModel: DeveloperSettingsViewModel
+    let viewModel: FlagOverridesViewModel
     @State private var enabled = false
     @State private var minVersion = ""
 

@@ -22,5 +22,7 @@ public protocol RemoteConfigServicing: Sendable {
     func stringValue(forKey key: String) -> String?
     func numberValue(forKey key: String) -> Double?
     func jsonValue<T: Decodable>(forKey key: String, as type: T.Type) -> T?
+    /// True only when the current value was served by the provider, not a compiled default.
+    func isRemoteValue(forKey key: String) -> Bool
     func setDefaults(_ defaults: [String: RemoteConfigDefaultValue])
 }

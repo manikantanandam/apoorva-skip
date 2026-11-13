@@ -61,7 +61,8 @@ public final class AppSession {
     private let preferences: UserDefaults
     private let analyticsService: AnalyticsServicing
     private let crashReportingService: CrashReportingServicing
-    private let remoteConfigService: RemoteConfigServicing
+    /// Typed app-level config; screens read non-bool flags through it (bool flags via `isOn`).
+    public let config: AppConfig
 
     public init(settingsRepository: any OrgCollectionRepositoryProtocol<OrgSettings>,
                 storeRepository: any OrgCollectionRepositoryProtocol<Store>,
@@ -71,7 +72,7 @@ public final class AppSession {
                 preferences: UserDefaults = .standard,
                 analyticsService: AnalyticsServicing = NoOpAnalyticsService(),
                 crashReportingService: CrashReportingServicing = NoOpCrashReportingService(),
-                remoteConfigService: RemoteConfigServicing = NoOpRemoteConfigService()) {
+                appConfig: AppConfig = AppConfig(service: NoOpRemoteConfigService())) {
         self.settingsRepository = settingsRepository
         self.storeRepository = storeRepository
         self.memberRepository = memberRepository
@@ -80,7 +81,7 @@ public final class AppSession {
         self.preferences = preferences
         self.analyticsService = analyticsService
         self.crashReportingService = crashReportingService
-        self.remoteConfigService = remoteConfigService
+        self.config = appConfig
     }
 
     // MARK: - Identity
@@ -129,13 +130,12 @@ public final class AppSession {
 
     public func resolution(of flag: FeatureFlag) -> FlagResolution {
         var appFlags = platform.flags
-        appFlags[flag.rawValue] = remoteConfigService.boolValue(forKey: flag.rawValue)
+        appFlags[flag.rawValue] = config.bool(flag)
         return FlagResolver.resolve(flag,
                              app: appFlags,
                              org: settings.flags.org,
                              store: settings.flags.stores[currentStoreId] ?? [:],
-                             role: settings.flags.roles[role.rawValue] ?? [:],
-                             developerOverride: developerTools.flagOverrides[flag.rawValue])
+                             role: settings.flags.roles[role.rawValue] ?? [:])
     }
 
     /// Max discount % this role may give without a manager PIN.

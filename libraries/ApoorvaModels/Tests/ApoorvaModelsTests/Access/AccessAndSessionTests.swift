@@ -39,12 +39,6 @@ struct FlagResolverTests {
         let result = FlagResolver.resolve(.authEmailPassword, org: ["auth.email_password": false])
         #expect(result.isOn)
     }
-
-    @Test func developerOverrideWins() {
-        let result = FlagResolver.resolve(.authGoogle, app: ["auth.google": false], developerOverride: true)
-        #expect(result.isOn)
-        #expect(result.source == .developer)
-    }
 }
 
 struct RemoteConfigCatalogTests {
@@ -186,7 +180,7 @@ struct SessionPhaseReducerTests {
                        settings: OrgSettings? = nil, minVersion: String = "0.0.0", version: String = "1.0.0",
                        requireVerification: Bool = true) -> SessionPhase {
         SessionPhaseReducer.phase(account: account, profile: profile, orgStatus: status, orgSettings: settings,
-                                  platform: PlatformConfig(minAppVersion: minVersion), appVersion: version,
+                                  minAppVersion: minVersion, appVersion: version,
                                   requireEmailVerification: requireVerification)
     }
 

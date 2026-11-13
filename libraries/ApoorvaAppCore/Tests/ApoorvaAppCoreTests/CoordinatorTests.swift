@@ -47,11 +47,30 @@ struct MoreCoordinatorTests {
         #expect(coordinator.presentedSheet == .admin(.selectOrganization))
     }
 
+    @Test func developerScreensStackOnTheHub() {
+        let coordinator = MoreCoordinator()
+        coordinator.push(.developer(.hub))
+        coordinator.push(.developer(.flags))
+        #expect(coordinator.path == [.developer(.hub), .developer(.flags)])
+    }
+
     @Test func dismissSheetClearsPresentedRoute() {
         let coordinator = MoreCoordinator()
         coordinator.present(.help)
         coordinator.dismissSheet()
         #expect(coordinator.presentedSheet == nil)
+    }
+}
+
+@MainActor
+struct DeveloperCoordinatorTests {
+    @Test func pushAndPop() {
+        let coordinator = DeveloperCoordinator()
+        coordinator.push(.flags)
+        coordinator.push(.logs)
+        #expect(coordinator.path == [.flags, .logs])
+        coordinator.pop()
+        #expect(coordinator.path == [.flags])
     }
 }
 

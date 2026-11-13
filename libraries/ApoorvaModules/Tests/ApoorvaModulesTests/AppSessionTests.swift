@@ -44,9 +44,6 @@ final class StubSaleRepository: SaleRepositoryProtocol, @unchecked Sendable {
 }
 
 final class StubDeveloperTools: DeveloperToolsProtocol, @unchecked Sendable {
-    var flagOverrides: [String: Bool] = [:]
-    func setFlagOverride(_ key: String, value: Bool?) { flagOverrides[key] = value }
-    func clearFlagOverrides() { flagOverrides = [:] }
     var remoteConfigOverrides: [String: String] = [:]
     func setRemoteConfigOverride(_ key: String, value: String?) { remoteConfigOverrides[key] = value }
     func clearRemoteConfigOverrides() { remoteConfigOverrides = [:] }
@@ -74,7 +71,7 @@ struct AppSessionTests {
             saleRepository: saleRepository,
             developerTools: tools,
             preferences: UserDefaults(suiteName: "AppSessionTests-\(UUID().uuidString)")!,
-            remoteConfigService: remoteConfig
+            appConfig: AppConfig(service: remoteConfig)
         )
     }
 
@@ -100,19 +97,16 @@ struct AppSessionTests {
         #expect(!session.can(.createBill))
     }
 
-    @Test func flagsResolveThroughOrgAndDeveloperOverride() async {
+    @Test func flagsResolveThroughOrgSettings() async {
         var settings = OrgSettings()
         settings.flags.org = [FeatureFlag.orders.rawValue: false]
         let tools = StubDeveloperTools()
         let session = makeSession(settings: settings, tools: tools)
         await session.configure(user: makeSessionUser(), platform: PlatformConfig())
         #expect(!session.isOn(.orders))
-        tools.flagOverrides[FeatureFlag.orders.rawValue] = true
-        #expect(session.isOn(.orders))
-        #expect(session.resolution(of: .orders).source == .developer)
     }
 
-    @Test func remoteConfigDrivesAppLayerAndDeveloperOverrideStillWins() async {
+    @Test func remoteConfigDrivesAppLayer() async {
         let remoteConfig = NoOpRemoteConfigService()
         remoteConfig.setDefaults([FeatureFlag.orders.rawValue: .bool(false)])
         let tools = StubDeveloperTools()
@@ -120,10 +114,6 @@ struct AppSessionTests {
         await session.configure(user: makeSessionUser(), platform: PlatformConfig())
         #expect(!session.isOn(.orders))
         #expect(session.resolution(of: .orders).source == .app)
-
-        tools.flagOverrides[FeatureFlag.orders.rawValue] = true
-        #expect(session.isOn(.orders))
-        #expect(session.resolution(of: .orders).source == .developer)
     }
 
     @Test func settingsDocDrivesShopNameAndVertical() async {

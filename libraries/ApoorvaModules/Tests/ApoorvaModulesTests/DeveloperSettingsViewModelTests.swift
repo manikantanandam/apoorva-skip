@@ -13,84 +13,21 @@ import ManiLogger
 
 @MainActor
 struct DeveloperSettingsViewModelTests {
-    private func makeViewModel(remoteConfig: RemoteConfigServicing = NoOpRemoteConfigService(),
-                                tools: StubDeveloperTools = StubDeveloperTools(),
-                                logBuffer: LogBuffer = LogBuffer())
+    private func makeViewModel(tools: StubDeveloperTools = StubDeveloperTools())
     -> DeveloperSettingsViewModel {
         DeveloperSettingsViewModel(
             authService: MockAuthService(),
             environmentStore: EnvironmentStore(defaults: UserDefaults(suiteName: "DevSettingsTests-\(UUID().uuidString)")!),
             tools: tools,
-            remoteConfigService: remoteConfig,
-            logBuffer: logBuffer,
             clearLocalDatabase: {},
             terminateApp: {}
         )
     }
 
-    // Filtering behaviour is covered by ManiLogger's LogViewerViewModelTests; this only checks the wiring.
-    @Test func logViewerReadsInjectedBuffer() {
-        let buffer = LogBuffer()
-        buffer.write(LogEntry(level: .info, category: .app, message: "x", sessionId: "s"))
-        let viewModel = makeViewModel(logBuffer: buffer)
-
-        #expect(viewModel.logViewer.logEntries.map(\.message) == ["x"])
-    }
-
-    @Test func rowShowsRemoteValueWhenNotOverridden() {
-        let remoteConfig = NoOpRemoteConfigService()
-        remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
-        let viewModel = makeViewModel(remoteConfig: remoteConfig)
-
-        let row = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }
-        #expect(row?.remoteDisplayValue == "On")
-        #expect(row?.isOverridden == false)
-        #expect(row?.effectiveDisplayValue == "On")
-    }
-
-    @Test func rowShowsOverrideAndIsMarkedOverridden() {
-        let remoteConfig = NoOpRemoteConfigService()
-        remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
-        let viewModel = makeViewModel(remoteConfig: remoteConfig)
-
-        viewModel.setRemoteConfigOverride(FeatureFlag.holdBills.rawValue, value: "false")
-        let row = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }
-        #expect(row?.remoteDisplayValue == "On")
-        #expect(row?.isOverridden == true)
-        #expect(row?.effectiveDisplayValue == "Off")
-    }
-
-    @Test func resetRevertsToRemoteValue() {
-        let remoteConfig = NoOpRemoteConfigService()
-        remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
-        let viewModel = makeViewModel(remoteConfig: remoteConfig)
-
-        viewModel.setRemoteConfigOverride(FeatureFlag.holdBills.rawValue, value: "false")
-        viewModel.resetRemoteConfigOverrides()
-        let row = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }
-        #expect(row?.isOverridden == false)
-        #expect(row?.effectiveDisplayValue == "On")
-    }
-
-    @Test func nonBoolKeyRejectsInvalidOverride() {
+    @Test func pendingEnvironmentStartsAtActive() {
         let viewModel = makeViewModel()
-        guard let row = viewModel.remoteConfigRows.first(where: { $0.id == "min_app_version" }) else {
-            Issue.record("expected min_app_version in the catalogue")
-            return
-        }
-        #expect(viewModel.setRemoteConfigOverride(for: row, rawValue: "2.0.0"))
-        #expect(viewModel.remoteConfigRows.first { $0.id == "min_app_version" }?.overrideValue == "2.0.0")
-    }
 
-    @Test func versionGateOverrideRoundTrips() {
-        let remoteConfig = NoOpRemoteConfigService()
-        remoteConfig.setDefaults(["test.gate": .json(try! JSONEncoder().encode(VersionGateValue(enabled: false)))])
-        let viewModel = makeViewModel(remoteConfig: remoteConfig)
-
-        #expect(viewModel.versionGateRemoteValue(forKey: "test.gate") == VersionGateValue(enabled: false))
-        #expect(viewModel.versionGateOverrideValue(forKey: "test.gate") == nil)
-
-        viewModel.setVersionGateOverride(key: "test.gate", value: VersionGateValue(enabled: true, minVersion: "2.3.0"))
-        #expect(viewModel.versionGateOverrideValue(forKey: "test.gate") == VersionGateValue(enabled: true, minVersion: "2.3.0"))
+        #expect(viewModel.pendingEnvironment == viewModel.activeEnvironment)
+        #expect(!viewModel.canSwitchEnvironment)
     }
 }

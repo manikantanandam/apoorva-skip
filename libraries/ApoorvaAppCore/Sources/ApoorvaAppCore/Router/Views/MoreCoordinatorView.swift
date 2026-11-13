@@ -82,12 +82,9 @@ struct MoreCoordinatorView: View {
             settingsDestination(for: settingsRoute)
         case .admin(let adminRoute):
             adminDestination(for: adminRoute)
-        case .developer(.hub):
-            if let developerViewModel = container.makeDeveloperSettingsViewModel() {
-                DeveloperSettingsView(viewModel: developerViewModel)
-            } else {
-                NotBuiltView(PlaceholderScreen("Developer"))
-            }
+        case .developer(let developerRoute):
+            DeveloperRouteView(route: developerRoute, container: container,
+                               push: { coordinator.push(.developer($0)) })
         case .sell(let sellRoute):
             sellDestination(for: sellRoute)
         case .stock(.inventory(let inventoryRoute)):

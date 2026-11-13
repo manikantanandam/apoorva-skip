@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ApoorvaModels
 import ApoorvaModules
 import ApoorvaUtilities
 import ApoorvaEnvironment
@@ -19,6 +20,8 @@ public class AppContainer {
     public let environmentStore = EnvironmentStore()
     public let environment: AppEnvironment
     public let developerTools: DeveloperToolsProtocol = DeveloperTools()
+    /// Set by `AppCoordinator`; fired when a debug override or fetch may have changed an effective config value.
+    public var onConfigChanged: (() -> Void)?
     public let logBuffer: LogBuffer
     public let fileLogSink: FileLogSink
     public let servicesContainer = ServicesContainer()
@@ -42,19 +45,24 @@ public class AppContainer {
         developerTools: developerTools,
         analyticsService: servicesContainer.analyticsService,
         crashReportingService: servicesContainer.crashReportingService,
-        remoteConfigService: resolvedRemoteConfigService
+        appConfig: appConfig
     )
 
     public let themeStore = ThemeStore()
 
-    /// The app's Remote Config, wrapped with local debug overrides in Debug builds only.
-    private var resolvedRemoteConfigService: RemoteConfigServicing {
+    /// The single typed read path for app-level config, wrapped with local debug overrides in Debug builds only.
+    public lazy var appConfig: AppConfig = {
         #if DEBUG
-        DebugRemoteConfigOverrideService(base: servicesContainer.remoteConfigService, developerTools: developerTools)
+        AppConfig(
+            service: DebugRemoteConfigOverrideService(
+                base: servicesContainer.remoteConfigService,
+                developerTools: developerTools
+            )
+        )
         #else
-        servicesContainer.remoteConfigService
+        AppConfig(service: servicesContainer.remoteConfigService)
         #endif
-    }
+    }()
 
     /// Whether developer tools are offered (debug builds only).
     public var showsDeveloperTools: Bool {
@@ -96,15 +104,30 @@ public class AppContainer {
             authService: servicesContainer.authService,
             environmentStore: environmentStore,
             tools: developerTools,
-            remoteConfigService: servicesContainer.remoteConfigService,
-            logBuffer: logBuffer,
-            fileLogSink: fileLogSink,
             clearLocalDatabase: {
                 try? FileManager.default.removeItem(atPath: dbPath)
                 exit(0)
             },
             terminateApp: { exit(0) }
         )
+        #else
+        return nil
+        #endif
+    }
+
+    public func makeFlagOverridesViewModel() -> FlagOverridesViewModel? {
+        #if DEBUG
+        // Unwrapped service: the screen shows the real remote value next to the override.
+        return FlagOverridesViewModel(tools: developerTools, remoteConfigService: servicesContainer.remoteConfigService,
+                                      onChange: { [weak self] in self?.onConfigChanged?() })
+        #else
+        return nil
+        #endif
+    }
+
+    public func makeLogViewerViewModel() -> LogViewerViewModel? {
+        #if DEBUG
+        return LogViewerViewModel(logBuffer: logBuffer, fileLogSink: fileLogSink)
         #else
         return nil
         #endif

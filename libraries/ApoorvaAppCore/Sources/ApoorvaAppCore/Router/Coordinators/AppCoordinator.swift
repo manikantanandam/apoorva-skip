@@ -29,6 +29,8 @@ public final class AppCoordinator {
         self.appContainer = appContainer
         Task { await observeSession() }
         Task { await observePlatform() }
+        appContainer.onConfigChanged = { [weak self] in Task { await self?.recompute() } }
+        Task { await fetchRemoteConfig() }
     }
 
     var session: AppSession { appContainer.appSession }
@@ -38,6 +40,16 @@ public final class AppCoordinator {
             guard snapshot != self.snapshot || phase == .loading else { continue }
             self.snapshot = snapshot
             await recompute()
+        }
+    }
+
+    /// Launch fetch; the service logs the outcome. A changed `min_app_version` only matters once it is activated.
+    private func fetchRemoteConfig() async {
+        do {
+            try await appContainer.appConfig.fetchAndActivate()
+            await recompute()
+        } catch {
+            // Already logged by the service; the compiled defaults and last activated values stay in effect.
         }
     }
 
@@ -80,17 +92,13 @@ public final class AppCoordinator {
             org = try? await appContainer.repositoryContainer.organizationRepository.getOrganization(orgId: orgId)
             guard generation == recomputeGeneration else { return }
         }
-        var effectivePlatform = platform
-        if let orgMin = org?.minVersion, AppVersion(orgMin) > AppVersion(platform.minAppVersion) {
-            effectivePlatform.minAppVersion = orgMin
-        }
 
         let newPhase = SessionPhaseReducer.phase(
             account: snapshot.account,
             profile: profile,
             orgStatus: org?.status,
             orgSettings: session.hasSettingsDoc ? session.settings : nil,
-            platform: effectivePlatform,
+            minAppVersion: appContainer.appConfig.minAppVersion,
             appVersion: appContainer.appVersion,
             requireEmailVerification: session.isOn(.authEmailVerificationRequired)
         )

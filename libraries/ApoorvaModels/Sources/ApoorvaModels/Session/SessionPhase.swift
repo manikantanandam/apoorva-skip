@@ -59,13 +59,13 @@ public enum SessionPhaseReducer {
                              profile: AppUser?,
                              orgStatus: String?,
                              orgSettings: OrgSettings?,
-                             platform: PlatformConfig,
+                             minAppVersion: String,
                              appVersion: String,
                              requireEmailVerification: Bool) -> SessionPhase {
         guard let account else { return .signedOut }
 
-        if AppVersion(appVersion) < AppVersion(platform.minAppVersion) {
-            return .forceUpdate(required: platform.minAppVersion, current: appVersion)
+        if AppVersion(appVersion) < AppVersion(minAppVersion) {
+            return .forceUpdate(required: minAppVersion, current: appVersion)
         }
 
         guard let profile else {

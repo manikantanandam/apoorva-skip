@@ -41,3 +41,23 @@
 - Added a 4th value kind, `versionGate`, for features gated by app version rather than a flat bool: `VersionGateValue { enabled: Bool, minVersion: String? }`, with `isOn(currentAppVersion:)` reusing the existing `AppVersion` comparator (`ApoorvaModels/Session/SessionPhase.swift`). Scope: app-level only, same as `min_app_version` — no org/store/role layering.
 - `RemoteConfigServicing` gained `jsonValue<T: Decodable>(forKey:as:)` and `RemoteConfigDefaultValue` gained `.json(Data)`, so any future object-shaped kind can reuse the same fetch/default/override plumbing (`FirebaseRemoteConfigService`, `NoOpRemoteConfigService`, `DebugRemoteConfigOverrideService`) just by adding a new `RemoteConfigValueKind` case and a Codable value type — not specific to version gates.
 - No concrete version-gated `FeatureFlag` case exists yet (nothing named a real feature needing it) — the mechanism is fully built and tested (`VersionGateValueTests`, `RemoteConfigJSONRoundTripTests`, `DebugRemoteConfigOverrideServiceTests.json*`, `DeveloperSettingsViewModelTests.versionGateOverrideRoundTrips`) so adding a real one is a one-line addition to `FeatureFlag`.
+
+## Update 2026-11-13: `AppConfig` is the single typed read path
+
+- `AppConfig` (`ApoorvaServices/RemoteConfig`) wraps the override-aware `RemoteConfigServicing` and is keyed by `FeatureFlag` (`bool(_:)`, `string(_:)`, `minAppVersion`), applying compiled defaults so callers never read raw keys or repeat the fallback.
+- One container-owned instance (`AppContainer.appConfig`), injected into `AppSession` (exposed as `session.config`) and `AppCoordinator`; deliberately not a static singleton (repo rule: no singletons).
+- Bool flags still go through `session.isOn(_:)`; non-bool flags through `session.config`. `FlagOverridesViewModel` keeps the undecorated service to show remote vs override.
+
+## Update 2026-11-13: fetch logging and launch fetch
+
+- `FirebaseRemoteConfigService.fetchAndActivate` logs (category `config`, info) fetch start, result status + duration, and one line with every catalogue key as `key=value(source)` (source remote/default/static); failures log an error and rethrow. Covers both the launch fetch and Developer "Fetch now". Formatting is in `RemoteConfigLogFormatter` for testability.
+- `AppCoordinator` fetches once at launch and recomputes the phase afterwards, so a changed `min_app_version` applies without waiting for another session emission.
+- Debug builds create `FirebaseRemoteConfigService(minimumFetchInterval: 0)`; release keeps Firebase's 12h default. Without this, a console change kept returning the cached template (`usingPreFetchedData`) for up to 12 hours.
+- The Feature flags screen distinguishes Firebase values from compiled defaults via `RemoteConfigServicing.isRemoteValue(forKey:)` (Firebase `configValue.source == .remote`): rows read `Remote: x` or `Default: x (not in Firebase)`.
+- The Feature flags screen only overrides existing flags: the free-text "add flag" field is gone, local rows are one per bool catalogue flag (Default/On/Off), `setFlag`/`setRemoteConfigOverride` ignore unknown keys, and stale invented overrides are pruned on init. New flags are created in `FeatureFlag` and the Firebase console only.
+
+## Update 2026-11-13: local flag override layer removed
+
+- The bool "developer override" layer (`DeveloperTools.flagOverrides`, `FlagResolver` `developerOverride`, `FlagSource.developer`) and the Feature flags screen's "Local overrides" section were removed. The screen only overrides existing catalogue keys, through the Remote Config section (app layer); `setRemoteConfigOverride` ignores unknown keys and invented keys persisted earlier are pruned on init.
+- Trade-off: an override changes only the app layer, so an org/store/role "off" can still win; forcing a flag on past those layers is no longer possible.
+- New flags are created only in `FeatureFlag` and the Firebase console against the same key.

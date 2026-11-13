@@ -11,9 +11,6 @@ import ApoorvaEnvironment
 @testable import ApoorvaAppCore
 
 final class StubDeveloperTools: DeveloperToolsProtocol, @unchecked Sendable {
-    var flagOverrides: [String: Bool] = [:]
-    func setFlagOverride(_ key: String, value: Bool?) { flagOverrides[key] = value }
-    func clearFlagOverrides() { flagOverrides = [:] }
     var remoteConfigOverrides: [String: String] = [:]
     func setRemoteConfigOverride(_ key: String, value: String?) { remoteConfigOverrides[key] = value }
     func clearRemoteConfigOverrides() { remoteConfigOverrides = [:] }
