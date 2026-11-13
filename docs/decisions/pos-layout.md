@@ -16,4 +16,5 @@
 - Tapping an item always opens the add sheet (as in production), except variant and loose items, which keep their existing variant/weight sheets.
 - In quick-grid mode, tapping a cart line opens the half-sheet editor instead of pushing `LineEditView`.
 - An empty discount field means no discount. The production app shows "NaN%" and treats an empty final price as 100% off; this version does neither.
+- Sheet state lives in `NewBillCoordinator.presentedSheet` (`present(_:)`/`dismissSheet()`), like `HomeCoordinator`/`MoreCoordinator`, instead of `@State` in `NewBillCoordinatorView`. All New Bill sheets (old and new) go through it, and `close()` clears it so a stale sheet can't reopen.
 - Quick grid has no calculator mode and no parlour "done by" picker yet. A new line still picks up `posViewModel.doneBy`.
