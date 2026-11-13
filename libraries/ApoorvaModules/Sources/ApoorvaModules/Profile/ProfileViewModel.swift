@@ -9,6 +9,9 @@ import Foundation
 import ApoorvaModels
 import ApoorvaRepository
 import ApoorvaServices
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .ui)
 
 @MainActor
 @Observable
@@ -35,7 +38,7 @@ public class ProfileViewModel {
             try authService.logout()
             await clearLocalData()
         } catch {
-            print("Error \(error)")
+            logger.error("Profile load failed: \(error)")
         }
     }
     
@@ -43,12 +46,12 @@ public class ProfileViewModel {
             do {
                 appUser = try await userRepository.getCurrentUser()
             } catch {
-                print("Unable to get the user details")
+                logger.error("Unable to get the user details")
             }
     }
     
     func updateSelectedOrganization(orgSnapshot: OrganizationSnapshot) async {
-        print("Mani - selected organization \(orgSnapshot)")
+        logger.info("Selected organization changed")
         guard let appUser else { return }
         do {
             try await userRepository.updateSelectedOrganization(
@@ -57,7 +60,7 @@ public class ProfileViewModel {
             )
             self.appUser = try await userRepository.getUser(id: appUser.id)
         } catch let error {
-            print("Error in updating user")
+            logger.error("Error in updating user")
             self.alertMessage = error.localizedDescription
             self.showAlert = true
         }

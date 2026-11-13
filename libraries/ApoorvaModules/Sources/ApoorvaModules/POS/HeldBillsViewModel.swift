@@ -8,6 +8,9 @@
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .ui)
 
 @MainActor
 @Observable
@@ -27,7 +30,7 @@ public class HeldBillsViewModel {
             try await repository.sync(force: false)
             self.heldBills = try await repository.getHeldBills().sorted(by: >)
         } catch {
-            print("Held bills failed to load \(error.localizedDescription)")
+            logger.error("Held bills failed to load\(error.localizedDescription)")
         }
     }
 
@@ -36,7 +39,7 @@ public class HeldBillsViewModel {
             try await repository.deleteHeldBill(id: bill.id)
             heldBills.removeAll { $0.id == bill.id }
         } catch {
-            print("Failed to delete held bill \(error.localizedDescription)")
+            logger.error("Failed to delete held bill\(error.localizedDescription)")
         }
     }
 }

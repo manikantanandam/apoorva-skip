@@ -8,6 +8,9 @@
 import Foundation
 import ApoorvaModels
 import SkipSQL
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .storage)
 
 public final actor CashflowTransactionLocalStorage: CashflowTransactionStorageProtocol {
 
@@ -26,7 +29,7 @@ public final actor CashflowTransactionLocalStorage: CashflowTransactionStoragePr
             return allCashflowTransactions
         } catch let error {
             if let error = error as? SQLError {
-                print("SQL Error \(error.localizedDescription)")
+                logger.error("SQL Error\(error.localizedDescription)")
             }
             return []
         }
@@ -120,7 +123,7 @@ public final actor CashflowTransactionLocalStorage: CashflowTransactionStoragePr
             try await database.withContext { context in
                 try context.transaction {
                     for transaction in transactions {
-                        print("saving transaction locally \(transaction)")
+                        logger.debug("Saving transaction locally \(transaction.id)")
                         try context.exec(sql: query, parameters: [
                             .text(transaction.id),
                             .real(transaction.timestamp.timeIntervalSince1970),
@@ -143,7 +146,7 @@ public final actor CashflowTransactionLocalStorage: CashflowTransactionStoragePr
             }
         } catch {
             if let error = error as? SQLError {
-                print("Saving cashflow data failed: \(error.msg)")
+                logger.error("Saving cashflow data failed: \(error.msg)")
             }
             throw error
         }

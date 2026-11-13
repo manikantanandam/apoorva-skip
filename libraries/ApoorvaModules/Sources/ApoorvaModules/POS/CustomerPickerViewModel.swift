@@ -8,6 +8,9 @@
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .ui)
 
 /// Attach a customer to the bill (design 40): search, recent, or quick add.
 @MainActor
@@ -50,7 +53,7 @@ public class CustomerPickerViewModel {
             try await repository.sync(force: false)
             self.customers = try await repository.getCustomers().sorted()
         } catch {
-            print("Customer picker failed to load \(error.localizedDescription)")
+            logger.error("Customer picker failed to load\(error.localizedDescription)")
         }
     }
 

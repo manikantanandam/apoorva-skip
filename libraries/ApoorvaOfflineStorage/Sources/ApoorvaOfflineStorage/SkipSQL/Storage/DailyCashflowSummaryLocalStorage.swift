@@ -8,6 +8,9 @@
 import Foundation
 import ApoorvaModels
 import SkipSQL
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .storage)
 
 public final actor DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorageProtocol {
 
@@ -18,7 +21,7 @@ public final actor DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
     }
 
     public func getDailyCashflowSummaries() async throws -> [DailyCashflowSummary] {
-        print("get all summaries")
+        logger.debug("Get all summaries")
         do {
             // Fetch all summaries using SkipSQL's native context fetchAll
             let allSummaries: [DailyCashflowSummary] = try await database.withContext { context in
@@ -27,21 +30,21 @@ public final actor DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
             return allSummaries.sorted { $0.date < $1.date }
         } catch let error {
             if let error = error as? SQLError {
-                print("SQL Error: \(error.localizedDescription)")
+                logger.error("SQL Error:\(error.localizedDescription)")
             }
             return []
         }
     }
 
     public func getDailyCashflowSummary(id: String) async throws -> DailyCashflowSummary? {
-        print("cashflow id fetch \(id)")
+        logger.debug("Fetch daily summary \(id)")
         do {
             return try await database.withContext { context in
                 try context.fetch(DailyCashflowSummary.self, primaryKeys: [.text(id)])
             }
         } catch {
             if let error = error as? SQLError {
-                print(error.msg)
+                logger.error("SQL Error: \(error.msg)")
             }
             throw error
         }
@@ -60,7 +63,7 @@ public final actor DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
         SET date = ?, openingBalances = ?, closingBalances = ?, updatedAt = ?, locked = ?
         WHERE id = ?;
         """
-        print("Updating the summary \(summary) for \(summary.id)")
+        logger.debug("Updating summary \(summary.id)")
 
         try await database.withContext { context in
             try context.exec(sql: query, parameters: [
@@ -82,7 +85,7 @@ public final actor DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
     }
 
     public func saveDailyCashflowSummaries(summaries: [DailyCashflowSummary]) async throws {
-        print("Saving daily cash flow summaries")
+        logger.debug("Saving daily cashflow summaries")
         guard !summaries.isEmpty else { return }
 
         let query = """
@@ -109,7 +112,7 @@ public final actor DailyCashflowSummaryLocalStorage: DailyCashflowSummaryStorage
             }
         } catch {
             if let error = error as? SQLError {
-                print("Saving daily cashflow summaries failed: \(error.msg)")
+                logger.error("Saving daily cashflow summaries failed: \(error.msg)")
             }
             throw error
         }

@@ -38,9 +38,18 @@ Targets from 02 (NFR-02, NFR-05).
 **Implemented**, behind `PerformanceMonitoringServicing` (`ApoorvaServices/Observability`): `save_bill` (`CheckoutViewModel.confirmSale`), `sync_push` (`SaleRepository.confirmSale`), `sync_pull` (`SyncEngine`, covers every registered repository). `dashboard_load` and `local_db_migration` are deferred follow-up.
 
 ## 4. Logging
-- Local `os.Logger` categories per module (`Storage`, `Sync`, `Auth`, `UI`).
-- Levels: debug (dev only), info, error. Release builds never log customer names, phone numbers or amounts.
-- Logs are not uploaded except error context via Crashlytics.
+**Implemented (Phase 1)** in the zero-dependency `ApoorvaLogging` package. Call sites declare a file-scope `private let logger = AppLogger(category: .sync)`; every entry goes to `os.Logger` (Xcode console, subsystem = bundle id) and to the sinks `AppContainer` registers at launch:
+- `LogBuffer` — last 500 entries, shown in Developer Settings → Logs (level filter, search, share, clear).
+- `FileLogSink` — `Application Support/Logs/current.log` + `previous.log`, rotated at 1 MB. Shared from the Logs screen; source for Phase 2 upload.
+- `CrashReportingLogSink` — warning+ entries forwarded to `CrashReportingServicing.log`, so they ride along on crash/non-fatal reports.
+- Categories: `storage`, `sync`, `auth`, `network`, `ui`, `app`, `config`. Levels: debug, info, warning, error. Minimum level is debug in non-production environments, info in production.
+- Each entry carries a per-launch `sessionId` for correlating logs with crash/analytics sessions.
+- Release builds never log customer names, phone numbers, emails or amounts — log ids and counts only.
+
+### Remote logs — planned
+- **Phase 2 — on-demand upload (bug fixing):** Remote Config key `remote_log_upload_enabled` (targeted by RC conditions on hashed shopId / app version) plus a "Send logs to support" button. Gzip the rotated files and upload to Firebase Storage at `logs/{orgId}/{installId}/{timestamp}.log.gz`; Storage rules allow write-only to the caller's own path; a 14-day lifecycle rule deletes old files. Storage is chosen over Firestore (billed per document write) and Cloud Logging (needs a backend).
+- **Phase 3a — user journey:** `screen_view` and key action events through `AnalyticsServicing` → BigQuery export for funnels. The `sessionId` in uploaded logs joins them to analytics sessions.
+- **Phase 3b — cost:** count Firestore reads/writes/listener snapshots per feature in the Firestore services; emit one aggregated daily `firestore_usage` analytics event (never per-operation events) to find read hotspots. The `Fetched N <entity>` info logs already show per-sync document counts locally.
 
 ## 5. Sync health
 - Outbox table: pending count, oldest pending age, last success timestamp.

@@ -6,6 +6,9 @@
 import Foundation
 import FirebaseFirestore
 import ApoorvaModels
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .network)
 
 /// A page of remote documents plus the newest server commit time seen, used as the next sync cursor.
 public struct OrgFetchResult<Document: OrgDocument>: Sendable {
@@ -55,7 +58,7 @@ public final class OrgCollectionService<Document: OrgDocument>: OrgCollectionSer
                 documents.append(try Firestore.Decoder().decode(Document.self, from: data))
                 if let serverDate, serverDate > (latest ?? .distantPast) { latest = serverDate }
             } catch {
-                print("❌ Failed to decode \(Document.self) \(document.id): \(error)")
+                logger.error("Failed to decode\(Document.self) \(document.id): \(error)")
             }
         }
         return OrgFetchResult(documents: documents, latestServerUpdate: latest)

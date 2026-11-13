@@ -1,6 +1,9 @@
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .ui)
 
 public enum DailyCashflowSortOption: String, CaseIterable {
     case newest = "Newest"
@@ -86,7 +89,7 @@ public class DailyCashFlowListViewModel {
             
             isLoading = false
         } catch {
-            print("Unable to fetch the daily cashflow summary \(error.localizedDescription)")
+            logger.error("Unable to fetch the daily cashflow summaries:\(error.localizedDescription)")
             isLoading = false
         }
     }
@@ -206,7 +209,7 @@ public class DailyCashFlowListViewModel {
             try await repository.sync(force: true)
             await fetchData()
         } catch {
-            print("Force sync failed \(error.localizedDescription)")
+            logger.error("Force sync failed:\(error.localizedDescription)")
         }
     }
     

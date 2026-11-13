@@ -9,6 +9,9 @@ import Foundation
 import ApoorvaOfflineStorage
 import ApoorvaModels
 import ApoorvaServices
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .sync)
 
 public protocol CashflowTransactionRepositoryProtocol: Sendable {
     func getCashflowTransactions() async throws -> [CashflowTransaction]
@@ -65,9 +68,9 @@ public final actor CashflowTransactionRepository: CashflowTransactionRepositoryP
     }
     
     public func sync(force: Bool) async throws {
-        print("Started sync")
+        logger.info("Started Cashflow sync")
         let user = try await userRepository.getCurrentUser()
-        print("Received used")
+        logger.debug("Received user")
 
         guard let orgId = user.selectedOrganization?.orgId else {
             return
@@ -76,7 +79,7 @@ public final actor CashflowTransactionRepository: CashflowTransactionRepositoryP
         let transactions: [CashflowTransaction]
         
         let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: CashflowTransaction.table.name)
-        print("Last updted date \(lastUpdatedDate)")
+        logger.debug("Last updated date \(lastUpdatedDate)")
         
         if let lastUpdatedDate, !force {
             transactions = try await service.getCashflowTransactions(since: Date(timeIntervalSince1970: lastUpdatedDate), for: orgId)
@@ -88,8 +91,7 @@ public final actor CashflowTransactionRepository: CashflowTransactionRepositoryP
             let transactionWithMinUpdatedAt = transactions.transactionWithMaxDate
         else { return }
         
-        print("transaction with min update \(transactionWithMinUpdatedAt)")
-        print("saving lastUpdatedDate \(transactionWithMinUpdatedAt.updatedAt)")
+        logger.debug("Saving lastUpdatedDate \(transactionWithMinUpdatedAt.updatedAt) from transaction \(transactionWithMinUpdatedAt.id)")
 
         try await syncStorage.updateSyncTimestamp(
             for: CashflowTransaction.table.name,

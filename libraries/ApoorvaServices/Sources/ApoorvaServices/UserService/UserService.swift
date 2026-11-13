@@ -2,6 +2,9 @@ import Foundation
 import FirebaseFirestore
 import FirebaseAuth
 import ApoorvaModels
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .auth)
 
 /// The signed-in account plus its profile doc (nil when the doc doesn't exist yet).
 public struct SessionSnapshot: Sendable, Equatable {
@@ -95,7 +98,7 @@ public class UserService: UserServiceProtocol {
         )
         self.userSessionStream = stream
         self.sessionContinuation = continuation
-        print("Started listening for auth")
+        logger.debug("Started listening for auth")
         startListeningToAuth()
     }
     
@@ -111,7 +114,7 @@ public class UserService: UserServiceProtocol {
                         self.currentUser = fullUser
                         self.sessionContinuation.yield(fullUser)
                     } catch {
-                        print("❌ Failed to fetch full user profile: \(error)")
+                        logger.error("Failed to fetch full user profile:\(error)")
                         self.currentUser = nil
                         // Route back to login if the Firestore document is missing/corrupted
                         self.sessionContinuation.yield(nil)
@@ -146,7 +149,7 @@ public class UserService: UserServiceProtocol {
         
         do {
             guard let doc = try await store.getDocument(path: "\(String.users)/\(uid)") else {
-                print("❌ User document does not exist in Firestore for UID: \(uid)")
+                logger.warning("User document does not exist in Firestore for UID:\(uid)")
                 throw AuthError.userDocumentNotFound
             }
 
@@ -154,7 +157,7 @@ public class UserService: UserServiceProtocol {
             
         } catch {
             // Keep your existing detailed catch blocks here
-            print("❌ Decode error: \(error)")
+            logger.error("User decode error:\(error)")
             throw error
         }
     }
@@ -172,7 +175,7 @@ public class UserService: UserServiceProtocol {
             ], path: "\(String.users)/\(user.id)")
             
         } catch {
-            print("❌ Update error: \(error)")
+            logger.error("User update error:\(error)")
             throw error
         }
     }
@@ -260,7 +263,7 @@ public class UserService: UserServiceProtocol {
                 "updatedTimestamp": Date().timeIntervalSince1970
             ], path: "\(String.users)/\(userId)")
         } catch {
-            print("❌ Update role error: \(error)")
+            logger.error("User role update error:\(error)")
             throw error
         }
     }

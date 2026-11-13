@@ -5,6 +5,9 @@
 
 import Foundation
 import ApoorvaModels
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .network)
 
 public protocol InventoryItemServiceProtocol: Sendable {
 
@@ -74,9 +77,9 @@ private extension InventoryItemService {
                 matchAny: true
             )
         }
-        print("🌐 Fetching Inventory for Org: \(orgId)...")
+        logger.debug("Fetching Inventory for Org: \(orgId)")
         let records = try await store.fetch(InventoryItem.self, collection: .orgPath(orgId, .inventory), query: query)
-        print("✅ Fetched \(records.count) Inventory items.")
+        logger.info("Fetched \(records.count) Inventory items")
         return records
     }
 }

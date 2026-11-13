@@ -9,6 +9,9 @@ import Foundation
 import ApoorvaModels
 import ApoorvaOfflineStorage
 import ApoorvaServices
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .sync)
 
 enum UserError: Error {
     case notAuthenticated
@@ -98,7 +101,7 @@ public final actor UserRepository: UserRepositoryProtocol {
             for: user,
             organization: organization
         )
-        print("Remote update successful")
+        logger.info("User remote update successful")
         let updatedUser = user.copyWith(selectedOrganization: organization)
         try userDefaults.set(updatedUser, forKey: key(for: user.id))
     }

@@ -2,6 +2,9 @@
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .ui)
 
 @MainActor
 @Observable
@@ -38,7 +41,7 @@ public class DailyCashFlowViewModel {
             isLoading = true
             
             self.currentSummary = try await repository.getDailyCashflowSummary(id: selectedDate.toString(format: "dd-MM-yyyy"))
-            print("Current summary in fetch data is \(self.currentSummary)")
+            logger.debug("Current summary loaded: \(self.currentSummary?.id ?? "none")")
             self.accounts = try await getAccounts()
             
             if currentSummary == nil {
@@ -47,7 +50,7 @@ public class DailyCashFlowViewModel {
             try await updateCashflowTransactions()
             isLoading = false
         } catch {
-            print("Unable to fetch the daily cashflow summary \(error.localizedDescription)")
+            logger.error("Unable to fetch the daily cashflow summary:\(error.localizedDescription)")
         }
     }
     
@@ -56,7 +59,7 @@ public class DailyCashFlowViewModel {
             try await cashflowRepository.markAsDeleted(id: id)
             await fetchData()
         } catch {
-            print("Failed to delete transaction: \(error.localizedDescription)")
+            logger.error("Failed to delete transaction:\(error.localizedDescription)")
         }
     }
     
@@ -84,7 +87,7 @@ public class DailyCashFlowViewModel {
             try await repository.updateDailyCashflowSummary(summary: updatedSummary)
             await fetchData()
         } catch {
-            print("Failed to toggle lock status: \(error.localizedDescription)")
+            logger.error("Failed to toggle lock status:\(error.localizedDescription)")
             isLoading = false
         }
     }
@@ -95,7 +98,7 @@ public class DailyCashFlowViewModel {
             await fetchData()
             
         } catch {
-            print("Force sync failed \(error.localizedDescription)")
+            logger.error("Force sync failed:\(error.localizedDescription)")
         }
         
     }

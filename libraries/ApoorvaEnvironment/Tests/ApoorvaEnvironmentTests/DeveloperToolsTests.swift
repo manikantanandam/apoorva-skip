@@ -37,14 +37,4 @@ struct DeveloperToolsTests {
         #expect(tools.isOfflineSimulated)
         #expect(tools.showsScreenIdentifiers)
     }
-
-    @Test("Log buffer keeps only the newest entries")
-    func testLogBuffer() {
-        let buffer = LogBuffer(capacity: 2)
-        buffer.append("1"); buffer.append("2"); buffer.append("3")
-        #expect(buffer.entries == ["2", "3"])
-        #expect(buffer.shareableText == "2\n3")
-        buffer.clear()
-        #expect(buffer.entries.isEmpty)
-    }
 }

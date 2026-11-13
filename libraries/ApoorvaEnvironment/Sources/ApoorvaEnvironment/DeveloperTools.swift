@@ -75,36 +75,3 @@ public final class DeveloperTools: DeveloperToolsProtocol, @unchecked Sendable {
         set { defaults.set(newValue, forKey: screenIdKey) }
     }
 }
-
-/// In-memory ring buffer of recent log lines for the in-app log viewer. Callers must not log PII.
-public final class LogBuffer: @unchecked Sendable {
-    private let capacity: Int
-    private let lock = NSLock()
-    private var lines: [String] = []
-
-    public init(capacity: Int = 500) {
-        self.capacity = max(0, capacity)
-    }
-
-    public func append(_ line: String) {
-        lock.lock(); defer { lock.unlock() }
-        lines.append(line)
-        if lines.count > capacity {
-            lines.removeFirst(lines.count - capacity)
-        }
-    }
-
-    public var entries: [String] {
-        lock.lock(); defer { lock.unlock() }
-        return lines
-    }
-
-    public var shareableText: String {
-        entries.joined(separator: "\n")
-    }
-
-    public func clear() {
-        lock.lock(); defer { lock.unlock() }
-        lines.removeAll()
-    }
-}

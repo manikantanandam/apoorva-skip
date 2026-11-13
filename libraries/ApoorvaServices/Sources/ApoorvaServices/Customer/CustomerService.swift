@@ -5,6 +5,9 @@
 
 import Foundation
 import ApoorvaModels
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .network)
 
 public protocol CustomerServiceProtocol: Sendable {
 
@@ -100,9 +103,9 @@ private extension CustomerService {
                 matchAny: true
             )
         }
-        print("🌐 Fetching Customers for Org: \(orgId)...")
+        logger.debug("Fetching Customers for Org: \(orgId)")
         let records = try await store.fetch(Customer.self, collection: .orgPath(orgId, .customers), query: query)
-        print("✅ Fetched \(records.count) Customers.")
+        logger.info("Fetched \(records.count) Customers")
         return records
     }
 }

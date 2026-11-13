@@ -3,6 +3,9 @@ import Foundation
 import SwiftUI
 import ApoorvaModels
 import ManiSwiftUIComponents
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .ui)
 
 enum TransactionSheetAction: Identifiable {
     case add
@@ -235,7 +238,7 @@ public struct DailyCashFlowView: View {
         // Summary Sheet
         .sheet(item: $activeSummarySheet, onDismiss: {
             Task {
-                print("Add Update Daily Summary view data fetched and fetch data is called")
+                logger.debug("Add/Update Daily Summary dismissed; refetching data")
                 await viewModel.refreshData()
             }
         }) { action in

@@ -7,6 +7,9 @@
 
 import Foundation
 import ApoorvaModels
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .network)
 
 public protocol HeldBillServiceProtocol: Sendable {
 
@@ -63,9 +66,9 @@ private extension HeldBillService {
         if let lastSync = lastSync {
             query = StoreQuery(conditions: [.greaterThan(field: "updatedAt", date: lastSync)])
         }
-        print("🌐 Fetching Held Bills for Org: \(orgId)...")
+        logger.debug("Fetching Held Bills for Org: \(orgId)")
         let records = try await store.fetch(HeldBill.self, collection: .orgPath(orgId, .heldBills), query: query)
-        print("✅ Fetched \(records.count) Held Bills.")
+        logger.info("Fetched \(records.count) Held Bills")
         return records
     }
 }

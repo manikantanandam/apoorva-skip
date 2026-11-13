@@ -9,6 +9,9 @@ import ApoorvaModels
 import ApoorvaServices
 import ApoorvaUtilities
 import ApoorvaEnvironment
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .app)
 
 /// One row of the catalogue-driven Remote Config list in Developer Settings: the live remote
 /// value, plus the local override if one is set.
@@ -22,6 +25,29 @@ public struct RemoteConfigRowDisplay: Identifiable, Sendable {
     public var effectiveDisplayValue: String { overrideValue ?? remoteDisplayValue }
 }
 
+/// How far back the log viewer looks.
+public enum LogTimeRange: CaseIterable, Sendable {
+    case last5m, last15m, last1h, all
+
+    public var title: String {
+        switch self {
+        case .last5m: return "5 min"
+        case .last15m: return "15 min"
+        case .last1h: return "1 hour"
+        case .all: return "All"
+        }
+    }
+
+    public var interval: TimeInterval? {
+        switch self {
+        case .last5m: return 5 * 60
+        case .last15m: return 15 * 60
+        case .last1h: return 60 * 60
+        case .all: return nil
+        }
+    }
+}
+
 @MainActor @Observable
 public class DeveloperSettingsViewModel {
     private let authService: AuthServicing
@@ -29,8 +55,10 @@ public class DeveloperSettingsViewModel {
     private var tools: DeveloperToolsProtocol
     private let remoteConfigService: RemoteConfigServicing
     private let logBuffer: LogBuffer
+    private let fileLogSink: FileLogSink?
     private let clearLocalDatabaseAction: () -> Void
     private let terminateAppAction: () -> Void
+    private let now: () -> Date
 
     /// Environment the app was launched with; switching only takes effect after relaunch.
     public let activeEnvironment: AppEnvironment
@@ -51,13 +79,17 @@ public class DeveloperSettingsViewModel {
                 tools: DeveloperToolsProtocol,
                 remoteConfigService: RemoteConfigServicing,
                 logBuffer: LogBuffer,
+                fileLogSink: FileLogSink? = nil,
                 clearLocalDatabase: @escaping () -> Void,
-                terminateApp: @escaping () -> Void) {
+                terminateApp: @escaping () -> Void,
+                now: @escaping () -> Date = Date.init) {
         self.authService = authService
+        self.now = now
         self.environmentStore = environmentStore
         self.tools = tools
         self.remoteConfigService = remoteConfigService
         self.logBuffer = logBuffer
+        self.fileLogSink = fileLogSink
         self.clearLocalDatabaseAction = clearLocalDatabase
         self.terminateAppAction = terminateApp
         self.activeEnvironment = environmentStore.current
@@ -66,18 +98,86 @@ public class DeveloperSettingsViewModel {
         self.remoteConfigOverrides = tools.remoteConfigOverrides
         self.isOfflineSimulated = tools.isOfflineSimulated
         self.showsScreenIdentifiers = tools.showsScreenIdentifiers
-        self.logLines = logBuffer.entries
-        self.logText = logBuffer.shareableText
+        self.logEntries = logBuffer.entries
     }
 
-    public private(set) var logLines: [String]
-    public private(set) var logText: String
+    /// Everything in the in-memory buffer, oldest first.
+    public private(set) var logEntries: [LogEntry]
+    /// Minimum level shown in the log viewer.
+    public var logLevelFilter: LogLevel = .debug
+    public var logSearchText = ""
+    /// Categories shown in the log viewer; empty means all.
+    public private(set) var selectedLogCategories: Set<LogCategory> = []
+    public var logTimeRange: LogTimeRange = .all
+
+    public var logSearchQuery: String { logSearchText.trimmingCharacters(in: .whitespaces) }
+
+    public var hasActiveLogFilters: Bool {
+        logLevelFilter != .debug || !selectedLogCategories.isEmpty || logTimeRange != .all || !logSearchQuery.isEmpty
+    }
+
+    /// Entries after level, category, time and search filtering, newest first.
+    public var filteredLogEntries: [LogEntry] {
+        entriesMatchingNonCategoryFilters.filter { selectedLogCategories.isEmpty || selectedLogCategories.contains($0.category) }
+    }
+
+    /// Per-category counts under the level/time/search filters (ignoring the category selection),
+    /// so each chip shows what selecting it would reveal.
+    public var logCategoryCounts: [LogCategory: Int] {
+        Dictionary(grouping: entriesMatchingNonCategoryFilters, by: \.category).mapValues(\.count)
+    }
+
+    /// "12 of 340"
+    public var logResultSummary: String {
+        "\(filteredLogEntries.count) of \(logEntries.count)"
+    }
+
+    public func toggleLogCategory(_ category: LogCategory) {
+        if selectedLogCategories.contains(category) {
+            selectedLogCategories.remove(category)
+        } else {
+            selectedLogCategories.insert(category)
+        }
+    }
+
+    public func clearLogCategories() {
+        selectedLogCategories = []
+    }
+
+    public func resetLogFilters() {
+        logLevelFilter = .debug
+        selectedLogCategories = []
+        logTimeRange = .all
+        logSearchText = ""
+    }
+
+    private var entriesMatchingNonCategoryFilters: [LogEntry] {
+        let query = logSearchQuery
+        let cutoff = logTimeRange.interval.map { now().addingTimeInterval(-$0) }
+        return logEntries.reversed().filter { entry in
+            entry.level >= logLevelFilter
+                && (cutoff.map { entry.date >= $0 } ?? true)
+                && (query.isEmpty
+                    || entry.message.localizedCaseInsensitiveContains(query)
+                    || entry.category.rawValue.localizedCaseInsensitiveContains(query))
+        }
+    }
+
+    /// Full on-disk log (both rotated files) when available, else the in-memory buffer.
+    public var logText: String {
+        let fileText = fileLogSink?.contents() ?? ""
+        return fileText.isEmpty ? logBuffer.shareableText : fileText
+    }
+
+    public func reloadLogs() {
+        logEntries = logBuffer.entries
+    }
     public var canClearDatabase: Bool { activeEnvironment.allowsDestructiveTools }
     public var canSwitchEnvironment: Bool { pendingEnvironment != activeEnvironment }
 
     /// Signs out, wipes local state for a clean switch, persists the new environment, then kills the app.
     public func confirmEnvironmentSwitch() {
-        print("[DeveloperSettingsViewModel] confirmEnvironmentSwitch: active=\(activeEnvironment) pending=\(pendingEnvironment) canSwitch=\(canSwitchEnvironment)")
+        logger.info("confirmEnvironmentSwitch: active=\(activeEnvironment) pending=\(pendingEnvironment) canSwitch=\(canSwitchEnvironment)")
         guard canSwitchEnvironment else { return }
         do {
             try authService.logout()
@@ -206,8 +306,8 @@ public class DeveloperSettingsViewModel {
 
     public func clearLogs() {
         logBuffer.clear()
-        logLines = logBuffer.entries
-        logText = logBuffer.shareableText
+        fileLogSink?.clear()
+        reloadLogs()
     }
 
     public func clearLocalDatabase() {

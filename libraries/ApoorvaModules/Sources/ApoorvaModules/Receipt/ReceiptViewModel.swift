@@ -8,6 +8,9 @@
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .ui)
 
 @MainActor
 @Observable
@@ -32,7 +35,7 @@ public class ReceiptViewModel {
         do {
             sale = try await saleRepository.getSale(id: saleId)
         } catch {
-            print("Failed to load sale \(saleId): \(error.localizedDescription)")
+            logger.error("Failed to load sale\(saleId): \(error.localizedDescription)")
         }
     }
 

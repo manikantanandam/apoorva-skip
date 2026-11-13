@@ -8,6 +8,9 @@
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .ui)
 
 public enum CashflowTransactionSortOption: String, CaseIterable {
     case oldest = "Oldest"
@@ -99,7 +102,7 @@ public class CashflowTransactionListViewModel {
             applyFilterAndSort()
             
         } catch {
-            print("CashflowTransaction items failed \(error.localizedDescription)")
+            logger.error("Cashflow transactions failed to load: \(error.localizedDescription)")
         }
     }
     
@@ -180,7 +183,7 @@ public class CashflowTransactionListViewModel {
             self.transactions = try await repository.getCashflowTransactions().sorted()
             
         } catch {
-            print("CashflowTransaction items failed \(error.localizedDescription)")
+            logger.error("Cashflow transactions failed to load: \(error.localizedDescription)")
         }
     }
     
@@ -202,7 +205,7 @@ public class CashflowTransactionListViewModel {
                 try await repository.updateCashflowTransaction(transaction)
             }
         } catch {
-            print("Cashflow Update failed")
+            logger.error("Cashflow update failed")
         }
     }
     
@@ -245,7 +248,7 @@ public class CashflowTransactionListViewModel {
                 try csvText.write(to: path, atomically: true, encoding: .utf8)
                 return path
             } catch {
-                print("Failed to generate CSV: \(error)")
+                logger.error("Failed to generate CSV: \(error)")
                 return nil
             }
         }

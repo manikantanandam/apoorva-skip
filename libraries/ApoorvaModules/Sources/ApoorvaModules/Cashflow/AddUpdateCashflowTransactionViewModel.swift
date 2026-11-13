@@ -3,6 +3,9 @@ import Foundation
 import SwiftUI
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .ui)
 
 @MainActor
 @Observable
@@ -63,7 +66,7 @@ public class AddUpdateCashflowTransactionViewModel {
     }
     
     func fetchAccounts() async {
-        print("fetching accounts")
+        logger.debug("Fetching accounts")
         do {
             let user = try await userRepository.getCurrentUser()
             
@@ -76,9 +79,8 @@ public class AddUpdateCashflowTransactionViewModel {
                 self.errorMessage = "Organization details not found."
                 return
             }
-            print("full organization \(fullOrganization)")
             self.accounts = fullOrganization.accounts
-            print("Accounts prepared \(self.accounts.count) ")
+            logger.debug("Accounts prepared: \(self.accounts.count)")
         } catch {
             self.errorMessage = "Failed to load accounts: \(error.localizedDescription)"
         }

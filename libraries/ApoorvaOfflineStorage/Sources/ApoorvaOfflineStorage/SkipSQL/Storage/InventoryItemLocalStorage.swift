@@ -6,6 +6,9 @@
 import Foundation
 import ApoorvaModels
 import SkipSQL
+import ApoorvaLogging
+
+private let logger = AppLogger(category: .storage)
 
 public final actor InventoryItemLocalStorage: InventoryItemLocalStorageProtocol {
 
@@ -22,7 +25,7 @@ public final actor InventoryItemLocalStorage: InventoryItemLocalStorageProtocol 
             }
             return items.filter { !$0.isDeleted }.sorted()
         } catch {
-            print("SQL Error \(error.localizedDescription)")
+            logger.error("SQL Error\(error.localizedDescription)")
             return []
         }
     }

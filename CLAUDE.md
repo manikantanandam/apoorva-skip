@@ -29,6 +29,7 @@ app (Apoorva) → ApoorvaAppCore → ApoorvaModules → ApoorvaRepository → Ap
                                               ↘ ApoorvaUtilities          ↘ ApoorvaServices → ApoorvaModels
 ```
 
+- **ApoorvaLogging** — zero-dependency logger used by every module (`private let logger = AppLogger(category:)`); console + Logs screen + file + Crashlytics sinks registered in `AppContainer`. Never use `print()`; see `docs/decisions/logging.md`.
 - **ApoorvaModels** — pure data models (`Codable`, `SQLCodable`).
 - **ApoorvaOfflineStorage** — local DB layer. Contains two backends: `SkipSQL/` (`SkipSqlDatabase`, currently wired into the app) and `GRDB/` (`AppDatabase`, migrations, `+GRDB` model extensions). DAOs are protocol-based (e.g. `InventoryItemLocalStorageProtocol`).
 - **ApoorvaServices** — Firebase (Auth, Firestore) via `firebase-ios-sdk` directly, e.g. `FirestoreSyncService`, `AuthService`; also `Observability/` for Analytics/Crashlytics/Performance (`AnalyticsServicing`, `CrashReportingServicing` and `PerformanceMonitoringServicing` are provider-agnostic; the `Firebase*Service` classes are the Firebase implementations).
