@@ -89,12 +89,19 @@ public class ModulesContainer {
             categoryLoader: { [categoryRepository = repositoryContainer.categoryRepository] in
                 let categories = ((try? await categoryRepository.all()) ?? []).filter { !$0.isDeleted }
                 return Dictionary(categories.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+            },
+            salesLoader: { [saleRepository = repositoryContainer.saleRepository] in
+                (try? await saleRepository.getSales()) ?? []
             }
         )
     }
 
     public func makeLineEditViewModel(line: CartItem, isNew: Bool) -> LineEditViewModel {
         LineEditViewModel(line: line, isNew: isNew)
+    }
+
+    public func makeQuickAddLineViewModel(line: CartItem, isNew: Bool) -> QuickAddLineViewModel {
+        QuickAddLineViewModel(line: line, isNew: isNew)
     }
 
     /// Bill discount capped by the member's role; managers and owners on this device can approve more.

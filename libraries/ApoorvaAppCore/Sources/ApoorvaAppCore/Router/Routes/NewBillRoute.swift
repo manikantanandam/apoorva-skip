@@ -27,6 +27,18 @@ enum NewBillSheet: Hashable, Identifiable {
     case customItem
     case variant(itemId: String)
     case discount
+    /// Quick-grid layout half sheets.
+    case find
+    case quickAdd(itemId: String)
+    case quickEdit(lineId: String)
 
     var id: Self { self }
+
+    /// Quick-grid sheets open at half height like the production app; the rest stay full height.
+    var isHalfSheet: Bool {
+        switch self {
+        case .find, .quickAdd, .quickEdit: true
+        case .weight, .customItem, .variant, .discount: false
+        }
+    }
 }
