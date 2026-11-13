@@ -8,7 +8,7 @@
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
-import ApoorvaLogging
+import ManiLogger
 
 private let logger = AppLogger(category: .ui)
 

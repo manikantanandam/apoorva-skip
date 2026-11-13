@@ -2,7 +2,7 @@ import Foundation
 import FirebaseFirestore
 import FirebaseAuth
 import ApoorvaModels
-import ApoorvaLogging
+import ManiLogger
 
 private let logger = AppLogger(category: .auth)
 

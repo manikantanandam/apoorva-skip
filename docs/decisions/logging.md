@@ -23,7 +23,19 @@
 - Category counts ignore the category selection but respect level, time and search, so each chip shows what selecting it would add.
 - The screen still reads only the in-memory buffer for the current session. Reading the log file for earlier sessions was deferred because it adds parsing and a session filter.
 - The view model takes `now: () -> Date` so time-range tests are deterministic.
+- The filter chips were replaced with a dropdown `Menu` behind a filter icon next to `ManiSearchField`, pinned with `safeAreaInset`. The chips sat together in a single `List` row, and SwiftUI `List` fires every button in a row on one tap, so tapping one chip selected all of them. Categories are `Toggle`s with `menuActionDismissBehavior(.disabled)`, so the menu stays open while you pick several.
 - List rows show at most 5 lines of the message, so long entries such as a future dump of every Remote Config flag stay short. Tapping a row opens `LogDetailView`, which shows the full message (selectable), the metadata, and Share/Copy buttons. It uses an inline `NavigationLink`, like the other developer tools, not a coordinator route.
+
+## 2026-11-13 update — extracted to the ManiLogger repo
+- `libraries/ApoorvaLogging` and the Logs/Log detail screens moved to a new public repo, `manikantanandam/ManiLogger` (`Libraries/ManiLogger`, `v1.0.0`). apoorva-skip consumes it as an exact-pinned remote dependency registered in `scripts/library-registry.json`, so `toggle-library.sh local|remote ManiLogger` works like it does for the other libraries.
+- It ships as a single product that depends on ManiSwiftUIComponents (the user's choice), so the lower modules now pull in ManiSwiftUIComponents transitively. `Core/` stays SwiftUI-free in case it is split into its own product later.
+- `LogCategory` is now an open struct with built-in statics, so apps can add their own categories. The filter state moved from `DeveloperSettingsViewModel` into `LogViewerViewModel`, which `DeveloperSettingsViewModel.logViewer` exposes.
+- After the extraction, Xcode reported `Missing package product 'apoorvalogging_ApoorvaLogging.ApoorvaLogging'` against `app/Package.swift`. No source referenced the old package; the stale reference was in the cached build graph (`DerivedData/Project-*/Build/Intermediates.noindex/XCBuildData/*/manifest.json`). Fix: quit Xcode, delete that DerivedData folder and `app/.build`, then reopen and resolve packages.
+- The UIKit Copy button was dropped to follow ManiSwiftUIComponents' Skip-portability rules; ShareLink already offers Copy.
+
+## 2026-11-13 update — ManiLogger v1.1.0
+- The level filter is back as a segmented control (DEBUG / INFO / WARN / ERROR) and the time range is a chip row (5 min / 15 min / 1 hour / All). Both sit in the pinned header under the search bar, outside the `List`, so the earlier bug where every chip fired on one tap can't happen. The filter-icon dropdown now holds only categories.
+- `scripts/library-registry.json` is bumped to `1.1.0`.
 
 ## Why
 - A bottom-of-graph package lets every module log without a release of the remote utilities library.

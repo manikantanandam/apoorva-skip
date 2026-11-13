@@ -1,7 +1,7 @@
 import FirebaseFirestore
 import ApoorvaModels
 import Foundation
-import ApoorvaLogging
+import ManiLogger
 
 private let logger = AppLogger(category: .network)
 

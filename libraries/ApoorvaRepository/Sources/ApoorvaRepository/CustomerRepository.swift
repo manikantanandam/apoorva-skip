@@ -9,7 +9,7 @@ import Foundation
 import ApoorvaOfflineStorage
 import ApoorvaModels
 import ApoorvaServices
-import ApoorvaLogging
+import ManiLogger
 
 private let logger = AppLogger(category: .sync)
 

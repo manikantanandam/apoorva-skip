@@ -3,11 +3,11 @@
 //  ApoorvaAppCore
 //
 
-import ApoorvaLogging
+import ManiLogger
 import ApoorvaServices
 
 /// Forwards warning+ log entries to the crash reporter's log, so they ride along on crash and
-/// non-fatal reports. Keeps the crash-reporting provider out of `ApoorvaLogging`.
+/// non-fatal reports. Keeps the crash-reporting provider out of `ManiLogger`.
 struct CrashReportingLogSink: LogSink {
     let crashReportingService: CrashReportingServicing
     var minimumLevel: LogLevel = .warning

@@ -9,7 +9,7 @@ import Foundation
 import ApoorvaOfflineStorage
 import ApoorvaUtilities
 import ApoorvaEnvironment
-import ApoorvaLogging
+import ManiLogger
 
 private let logger = AppLogger(category: .storage)
 

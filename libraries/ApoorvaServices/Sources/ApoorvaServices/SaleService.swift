@@ -7,7 +7,7 @@
 
 import Foundation
 import ApoorvaModels
-import ApoorvaLogging
+import ManiLogger
 
 private let logger = AppLogger(category: .network)
 

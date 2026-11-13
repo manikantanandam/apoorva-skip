@@ -16,7 +16,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../ApoorvaLogging")
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.1.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -24,7 +24,7 @@ let package = Package(
         .target(
             name: "ApoorvaEnvironment",
             dependencies: [
-                .product(name: "ApoorvaLogging", package: "ApoorvaLogging")
+                .product(name: "ManiLogger", package: "ManiLogger")
             ],
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),

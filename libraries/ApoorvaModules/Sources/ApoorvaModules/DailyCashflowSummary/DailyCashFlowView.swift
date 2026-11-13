@@ -3,7 +3,7 @@ import Foundation
 import SwiftUI
 import ApoorvaModels
 import ManiSwiftUIComponents
-import ApoorvaLogging
+import ManiLogger
 
 private let logger = AppLogger(category: .ui)
 

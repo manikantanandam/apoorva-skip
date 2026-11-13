@@ -5,7 +5,7 @@
 
 import Foundation
 import FirebaseFirestore
-import ApoorvaLogging
+import ManiLogger
 
 private let logger = AppLogger(category: .network)
 

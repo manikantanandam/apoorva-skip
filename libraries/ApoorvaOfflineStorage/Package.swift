@@ -17,7 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../ApoorvaModels"),
-        .package(path: "../ApoorvaLogging"),
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.1.0"),
         .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
         .package(url: "https://github.com/groue/GRDB.swift.git", exact: "7.11.1"),
         .package(url: "https://github.com/skiptools/skip-sql.git", exact: "0.16.1")
@@ -31,7 +31,7 @@ let package = Package(
                 .product(name: "GRDB", package: "GRDB.swift"),
                 .product(name: "ApoorvaModels", package: "ApoorvaModels"),
                 .product(name: "SkipSQL", package: "skip-sql"),
-                .product(name: "ApoorvaLogging", package: "ApoorvaLogging"),
+                .product(name: "ManiLogger", package: "ManiLogger"),
                 .product(name: "ApoorvaUtilities", package: "ManiUtilities")
             ]
         ),

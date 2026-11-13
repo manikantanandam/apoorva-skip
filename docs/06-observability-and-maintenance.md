@@ -38,7 +38,7 @@ Targets from 02 (NFR-02, NFR-05).
 **Implemented**, behind `PerformanceMonitoringServicing` (`ApoorvaServices/Observability`): `save_bill` (`CheckoutViewModel.confirmSale`), `sync_push` (`SaleRepository.confirmSale`), `sync_pull` (`SyncEngine`, covers every registered repository). `dashboard_load` and `local_db_migration` are deferred follow-up.
 
 ## 4. Logging
-**Implemented (Phase 1)** in the zero-dependency `ApoorvaLogging` package. Call sites declare a file-scope `private let logger = AppLogger(category: .sync)`; every entry goes to `os.Logger` (Xcode console, subsystem = bundle id) and to the sinks `AppContainer` registers at launch:
+**Implemented (Phase 1)** in the standalone `ManiLogger` library (github.com/manikantanandam/ManiLogger, pinned via `scripts/library-registry.json`), which also ships the Logs/Log detail screens. Call sites declare a file-scope `private let logger = AppLogger(category: .sync)`; every entry goes to `os.Logger` (Xcode console, subsystem = bundle id) and to the sinks `AppContainer` registers at launch:
 - `LogBuffer` — last 500 entries, shown in Developer Settings → Logs (level filter, search, share, clear).
 - `FileLogSink` — `Application Support/Logs/current.log` + `previous.log`, rotated at 1 MB. Shared from the Logs screen; source for Phase 2 upload.
 - `CrashReportingLogSink` — warning+ entries forwarded to `CrashReportingServicing.log`, so they ride along on crash/non-fatal reports.

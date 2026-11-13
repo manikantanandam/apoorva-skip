@@ -22,6 +22,21 @@
         "libraries/ApoorvaModules/Package.swift",
         "libraries/ApoorvaAppCore/Package.swift"
       ]
+    },
+    "ManiLogger": {
+      "folder": "ManiLogger",
+      "remoteURL": "https://github.com/manikantanandam/ManiLogger.git",
+      "remoteVersion": "1.1.0",
+      "versionConstraint": "exact",
+      "productName": "ManiLogger",
+      "consumers": [
+        "libraries/ApoorvaEnvironment/Package.swift",
+        "libraries/ApoorvaOfflineStorage/Package.swift",
+        "libraries/ApoorvaServices/Package.swift",
+        "libraries/ApoorvaRepository/Package.swift",
+        "libraries/ApoorvaModules/Package.swift",
+        "libraries/ApoorvaAppCore/Package.swift"
+      ]
     }
   }
 }

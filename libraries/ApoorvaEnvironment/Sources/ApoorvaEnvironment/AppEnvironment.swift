@@ -4,7 +4,7 @@
 //
 
 import Foundation
-import ApoorvaLogging
+import ManiLogger
 
 private let logger = AppLogger(category: .config)
 

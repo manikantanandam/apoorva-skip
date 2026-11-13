@@ -7,6 +7,7 @@ import SwiftUI
 import ApoorvaUtilities
 import ApoorvaEnvironment
 import ManiSwiftUIComponents
+import ManiLogger
 
 public struct DeveloperSettingsView: View {
     @State var viewModel: DeveloperSettingsViewModel
@@ -31,7 +32,7 @@ public struct DeveloperSettingsView: View {
                     FlagOverridesView(viewModel: viewModel)
                 }
                 NavigationLink("Logs") {
-                    LogViewerView(viewModel: viewModel)
+                    LogViewerView(viewModel: viewModel.logViewer)
                 }
                 ManiToggleRow(title: "Simulate offline", isOn: $viewModel.isOfflineSimulated)
                 ManiToggleRow(title: "Screen ID overlay", isOn: $viewModel.showsScreenIdentifiers)
