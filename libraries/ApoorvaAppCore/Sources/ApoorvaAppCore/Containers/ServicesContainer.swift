@@ -48,7 +48,12 @@ public class ServicesContainer {
     public lazy var performanceMonitoringService: PerformanceMonitoringServicing = FirebasePerformanceMonitoringService()
 
     public lazy var remoteConfigService: RemoteConfigServicing = {
+        #if DEBUG
+        // Debug builds always hit the network so console changes show up immediately.
+        let service = FirebaseRemoteConfigService(minimumFetchInterval: 0)
+        #else
         let service = FirebaseRemoteConfigService()
+        #endif
         service.setDefaults(RemoteConfigCatalogDefaults.make())
         return service
     }()

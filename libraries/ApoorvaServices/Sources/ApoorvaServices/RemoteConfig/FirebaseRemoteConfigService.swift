@@ -12,7 +12,13 @@ private let logger = AppLogger(category: .config)
 
 public final class FirebaseRemoteConfigService: RemoteConfigServicing {
 
-    public init() {}
+    /// - Parameter minimumFetchInterval: seconds a fetched template is cached before the next fetch
+    ///   hits the network. Firebase's default is 12 hours; pass 0 to always fetch (debug builds).
+    public init(minimumFetchInterval: TimeInterval = 43_200) {
+        let settings = RemoteConfigSettings()
+        settings.minimumFetchInterval = minimumFetchInterval
+        RemoteConfig.remoteConfig().configSettings = settings
+    }
 
     public func fetchAndActivate() async throws {
         logger.info("Remote Config fetch started")
