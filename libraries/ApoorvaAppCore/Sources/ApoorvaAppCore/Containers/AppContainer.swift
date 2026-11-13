@@ -9,6 +9,7 @@ import Foundation
 import ApoorvaModules
 import ApoorvaUtilities
 import ApoorvaEnvironment
+import ApoorvaServices
 
 @MainActor
 public class AppContainer {
@@ -36,10 +37,20 @@ public class AppContainer {
         saleRepository: repositoryContainer.saleRepository,
         developerTools: developerTools,
         analyticsService: servicesContainer.analyticsService,
-        crashReportingService: servicesContainer.crashReportingService
+        crashReportingService: servicesContainer.crashReportingService,
+        remoteConfigService: resolvedRemoteConfigService
     )
 
     public let themeStore = ThemeStore()
+
+    /// The app's Remote Config, wrapped with local debug overrides in Debug builds only.
+    private var resolvedRemoteConfigService: RemoteConfigServicing {
+        #if DEBUG
+        DebugRemoteConfigOverrideService(base: servicesContainer.remoteConfigService, developerTools: developerTools)
+        #else
+        servicesContainer.remoteConfigService
+        #endif
+    }
 
     /// Whether developer tools are offered (debug builds only).
     public var showsDeveloperTools: Bool {
@@ -71,6 +82,7 @@ public class AppContainer {
             authService: servicesContainer.authService,
             environmentStore: environmentStore,
             tools: developerTools,
+            remoteConfigService: servicesContainer.remoteConfigService,
             logBuffer: logBuffer,
             clearLocalDatabase: {
                 try? FileManager.default.removeItem(atPath: dbPath)

@@ -251,3 +251,37 @@ struct DailyCashflowSummaryServiceTests {
         #expect(store.writes.map(\.merge) == [false, true])
     }
 }
+
+struct RemoteConfigCatalogDefaultsTests {
+    @Test func buildsTypedDefaultsFromCatalogue() {
+        let defaults = RemoteConfigCatalogDefaults.make()
+        guard case .bool(let holdBills) = defaults[FeatureFlag.holdBills.rawValue] else {
+            Issue.record("expected a bool default for \(FeatureFlag.holdBills.rawValue)")
+            return
+        }
+        #expect(holdBills == FeatureFlag.holdBills.defaultValue)
+
+        guard case .string(let minVersion) = defaults["min_app_version"] else {
+            Issue.record("expected a string default for min_app_version")
+            return
+        }
+        #expect(minVersion == "1.0.0")
+    }
+}
+
+struct RemoteConfigJSONRoundTripTests {
+    @Test func versionGateDefaultRoundTripsThroughJSONValue() {
+        let definition = RemoteConfigKeyDefinition.versionGate("test.gate", title: "Test Gate",
+                                                                 default: VersionGateValue(enabled: true, minVersion: "2.3.0"))
+        let service = NoOpRemoteConfigService()
+        service.setDefaults([definition.key: .json(try! JSONEncoder().encode(definition.defaultVersionGate))])
+
+        let decoded = service.jsonValue(forKey: definition.key, as: VersionGateValue.self)
+        #expect(decoded == VersionGateValue(enabled: true, minVersion: "2.3.0"))
+    }
+
+    @Test func missingKeyReturnsNil() {
+        let service = NoOpRemoteConfigService()
+        #expect(service.jsonValue(forKey: "missing", as: VersionGateValue.self) == nil)
+    }
+}

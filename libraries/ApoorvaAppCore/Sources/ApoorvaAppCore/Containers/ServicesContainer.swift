@@ -47,5 +47,11 @@ public class ServicesContainer {
 
     public lazy var performanceMonitoringService: PerformanceMonitoringServicing = FirebasePerformanceMonitoringService()
 
+    public lazy var remoteConfigService: RemoteConfigServicing = {
+        let service = FirebaseRemoteConfigService()
+        service.setDefaults(RemoteConfigCatalogDefaults.make())
+        return service
+    }()
+
     public init() {}
 }

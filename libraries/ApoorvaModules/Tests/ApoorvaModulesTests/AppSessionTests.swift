@@ -7,6 +7,7 @@ import Testing
 import Foundation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaServices
 import ApoorvaEnvironment
 @testable import ApoorvaModules
 
@@ -46,6 +47,9 @@ final class StubDeveloperTools: DeveloperToolsProtocol, @unchecked Sendable {
     var flagOverrides: [String: Bool] = [:]
     func setFlagOverride(_ key: String, value: Bool?) { flagOverrides[key] = value }
     func clearFlagOverrides() { flagOverrides = [:] }
+    var remoteConfigOverrides: [String: String] = [:]
+    func setRemoteConfigOverride(_ key: String, value: String?) { remoteConfigOverrides[key] = value }
+    func clearRemoteConfigOverrides() { remoteConfigOverrides = [:] }
     var isOfflineSimulated = false
     var showsScreenIdentifiers = false
 }
@@ -58,7 +62,8 @@ func makeSessionUser(role: AppUserRole = .admin) -> AppUser {
 @MainActor
 struct AppSessionTests {
 
-    private func makeSession(settings: OrgSettings? = nil, sales: [Sale] = [], tools: StubDeveloperTools = StubDeveloperTools())
+    private func makeSession(settings: OrgSettings? = nil, sales: [Sale] = [], tools: StubDeveloperTools = StubDeveloperTools(),
+                              remoteConfig: RemoteConfigServicing = NoOpRemoteConfigService())
     -> AppSession {
         let saleRepository = StubSaleRepository()
         saleRepository.sales = sales
@@ -68,7 +73,8 @@ struct AppSessionTests {
             memberRepository: StubOrgRepository<Member>(),
             saleRepository: saleRepository,
             developerTools: tools,
-            preferences: UserDefaults(suiteName: "AppSessionTests-\(UUID().uuidString)")!
+            preferences: UserDefaults(suiteName: "AppSessionTests-\(UUID().uuidString)")!,
+            remoteConfigService: remoteConfig
         )
     }
 
@@ -101,6 +107,20 @@ struct AppSessionTests {
         let session = makeSession(settings: settings, tools: tools)
         await session.configure(user: makeSessionUser(), platform: PlatformConfig())
         #expect(!session.isOn(.orders))
+        tools.flagOverrides[FeatureFlag.orders.rawValue] = true
+        #expect(session.isOn(.orders))
+        #expect(session.resolution(of: .orders).source == .developer)
+    }
+
+    @Test func remoteConfigDrivesAppLayerAndDeveloperOverrideStillWins() async {
+        let remoteConfig = NoOpRemoteConfigService()
+        remoteConfig.setDefaults([FeatureFlag.orders.rawValue: .bool(false)])
+        let tools = StubDeveloperTools()
+        let session = makeSession(tools: tools, remoteConfig: remoteConfig)
+        await session.configure(user: makeSessionUser(), platform: PlatformConfig())
+        #expect(!session.isOn(.orders))
+        #expect(session.resolution(of: .orders).source == .app)
+
         tools.flagOverrides[FeatureFlag.orders.rawValue] = true
         #expect(session.isOn(.orders))
         #expect(session.resolution(of: .orders).source == .developer)
