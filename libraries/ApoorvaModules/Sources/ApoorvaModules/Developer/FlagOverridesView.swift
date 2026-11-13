@@ -79,7 +79,7 @@ private struct RemoteConfigKeyRow: View {
                         .clipShape(Capsule())
                 }
             }
-            Text("Remote: \(row.remoteDisplayValue)")
+            Text(row.isFromRemote ? "Remote: \(row.remoteDisplayValue)" : "Default: \(row.remoteDisplayValue) (not in Firebase)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 

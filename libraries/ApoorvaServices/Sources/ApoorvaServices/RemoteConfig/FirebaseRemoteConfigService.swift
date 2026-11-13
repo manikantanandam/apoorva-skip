@@ -93,6 +93,10 @@ public final class FirebaseRemoteConfigService: RemoteConfigServicing {
         return try? JSONDecoder().decode(T.self, from: data)
     }
 
+    public func isRemoteValue(forKey key: String) -> Bool {
+        RemoteConfig.remoteConfig().configValue(forKey: key).source == .remote
+    }
+
     public func setDefaults(_ defaults: [String: RemoteConfigDefaultValue]) {
         var bridged: [String: NSObject] = [:]
         for (key, value) in defaults {

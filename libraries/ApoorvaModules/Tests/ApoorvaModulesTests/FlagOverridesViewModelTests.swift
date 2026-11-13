@@ -41,6 +41,16 @@ struct FlagOverridesViewModelTests {
         #expect(row?.effectiveDisplayValue == "On")
     }
 
+    @Test func rowIsOnlyMarkedRemoteWhenFirebaseServesTheKey() {
+        let remoteConfig = NoOpRemoteConfigService()
+        remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
+        let viewModel = makeViewModel(remoteConfig: remoteConfig)
+        #expect(viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }?.isFromRemote == false)
+
+        remoteConfig.markRemote([FeatureFlag.holdBills.rawValue])
+        #expect(viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }?.isFromRemote == true)
+    }
+
     @Test func rowShowsOverrideAndIsMarkedOverridden() {
         let remoteConfig = NoOpRemoteConfigService()
         remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])

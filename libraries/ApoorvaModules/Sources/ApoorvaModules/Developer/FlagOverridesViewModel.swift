@@ -16,6 +16,8 @@ public struct RemoteConfigRowDisplay: Identifiable, Sendable {
     public let title: String
     public let kind: RemoteConfigValueKind
     public let remoteDisplayValue: String
+    /// False when Firebase has no value for the key and the compiled default is showing.
+    public let isFromRemote: Bool
     public let overrideValue: String?
     public var isOverridden: Bool { overrideValue != nil }
     public var effectiveDisplayValue: String { overrideValue ?? remoteDisplayValue }
@@ -62,7 +64,8 @@ public class FlagOverridesViewModel {
                 Self.displayValue(forOverrideRaw: raw, kind: definition.kind)
             }
             return RemoteConfigRowDisplay(id: definition.key, title: definition.title, kind: definition.kind,
-                                           remoteDisplayValue: remoteDisplay, overrideValue: overrideDisplay)
+                                           remoteDisplayValue: remoteDisplay, isFromRemote: remoteConfigService.isRemoteValue(forKey: definition.key),
+                                           overrideValue: overrideDisplay)
         }
     }
 

@@ -10,6 +10,7 @@ import Foundation
 public final class NoOpRemoteConfigService: RemoteConfigServicing, @unchecked Sendable {
     private let lock = NSLock()
     private var defaults: [String: RemoteConfigDefaultValue] = [:]
+    private var remoteKeys: Set<String> = []
 
     public init() {}
 
@@ -37,6 +38,17 @@ public final class NoOpRemoteConfigService: RemoteConfigServicing, @unchecked Se
         lock.lock(); defer { lock.unlock() }
         guard case .json(let data) = defaults[key] else { return nil }
         return try? JSONDecoder().decode(T.self, from: data)
+    }
+
+    /// Test hook: pretend these keys were served by the provider rather than the defaults.
+    public func markRemote(_ keys: Set<String>) {
+        lock.lock(); defer { lock.unlock() }
+        remoteKeys = keys
+    }
+
+    public func isRemoteValue(forKey key: String) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return remoteKeys.contains(key)
     }
 
     public func setDefaults(_ defaults: [String: RemoteConfigDefaultValue]) {

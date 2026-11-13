@@ -50,6 +50,10 @@ public final class DebugRemoteConfigOverrideService: RemoteConfigServicing {
         return base.jsonValue(forKey: key, as: type)
     }
 
+    public func isRemoteValue(forKey key: String) -> Bool {
+        base.isRemoteValue(forKey: key)
+    }
+
     public func setDefaults(_ defaults: [String: RemoteConfigDefaultValue]) {
         base.setDefaults(defaults)
     }
