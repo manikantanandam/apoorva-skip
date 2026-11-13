@@ -61,3 +61,4 @@
 - The bool "developer override" layer (`DeveloperTools.flagOverrides`, `FlagResolver` `developerOverride`, `FlagSource.developer`) and the Feature flags screen's "Local overrides" section were removed. The screen only overrides existing catalogue keys, through the Remote Config section (app layer); `setRemoteConfigOverride` ignores unknown keys and invented keys persisted earlier are pruned on init.
 - Trade-off: an override changes only the app layer, so an org/store/role "off" can still win; forcing a flag on past those layers is no longer possible.
 - New flags are created only in `FeatureFlag` and the Firebase console against the same key.
+- Setting an override equal to the current remote/default value clears it instead of storing it, so the "Overridden" badge disappears when a row is set back to its remote value.

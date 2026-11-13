@@ -92,11 +92,28 @@ public class FlagOverridesViewModel {
         return "On ≥ \(minVersion)"
     }
 
+    /// Setting a value equal to what Firebase (or the compiled default) already serves clears the override.
     public func setRemoteConfigOverride(_ key: String, value: String?) {
         guard Self.isKnownRemoteConfigKey(key) else { return }
-        tools.setRemoteConfigOverride(key, value: value)
+        let stored = value.flatMap { matchesRemote(key, $0) ? nil : $0 }
+        tools.setRemoteConfigOverride(key, value: stored)
         remoteConfigOverrides = tools.remoteConfigOverrides
         onChange()
+    }
+
+    private func matchesRemote(_ key: String, _ raw: String) -> Bool {
+        guard let definition = RemoteConfigCatalog.all.first(where: { $0.key == key }) else { return false }
+        switch definition.kind {
+        case .bool:
+            return Bool(raw) == remoteConfigService.boolValue(forKey: key)
+        case .string:
+            return raw == (remoteConfigService.stringValue(forKey: key) ?? definition.defaultString)
+        case .number:
+            return Double(raw) == (remoteConfigService.numberValue(forKey: key) ?? definition.defaultNumber)
+        case .versionGate:
+            guard let data = raw.data(using: .utf8), let gate = try? JSONDecoder().decode(VersionGateValue.self, from: data) else { return false }
+            return gate == (remoteConfigService.jsonValue(forKey: key, as: VersionGateValue.self) ?? definition.defaultVersionGate)
+        }
     }
 
     /// Validates `rawValue` against `row.kind` before storing it as the override.
