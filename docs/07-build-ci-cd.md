@@ -32,6 +32,7 @@ Proposed additions:
 | Workflow | Trigger | Steps |
 |----------|---------|-------|
 | `ci.yml` (existing) | PR, push to main | Library tests + coverage + SonarCloud |
+| `android-apk.yml` (existing) | push to main | `skip export --apk --release` (debug-signed) → GitHub pre-release `android-<sha7>` (last 10 kept) |
 | `build-app.yml` | PR, push to main | `xcodebuild` iOS app build (Debug), `skip android build` only when Android enabled |
 | `lint.yml` | PR | swift-format, markdown link check, secret scan (gitleaks) |
 | `release-prod.yml` | tag `v*` | Archive Release, upload TestFlight / App Store review, Play production (staged 10%) |

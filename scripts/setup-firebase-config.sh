@@ -33,7 +33,13 @@ if [ -n "${GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64:-}" ]; then
   wrote_any=1
 fi
 
+if [ -n "${GOOGLE_SERVICE_JSON_B64:-}" ]; then
+  echo "$GOOGLE_SERVICE_JSON_B64" | base64 --decode > "$ROOT_DIR/app/Android/app/google-services.json"
+  echo "Wrote $ROOT_DIR/app/Android/app/google-services.json"
+  wrote_any=1
+fi
+
 if [ "$wrote_any" -eq 0 ]; then
-  echo "ERROR: none of GOOGLE_SERVICE_INFO_PLIST_{DEBUG,PRODUCTION}_B64 is set." >&2
+  echo "ERROR: none of GOOGLE_SERVICE_INFO_PLIST_{DEBUG,PRODUCTION}_B64 or GOOGLE_SERVICE_JSON_B64 is set." >&2
   exit 1
 fi
