@@ -30,6 +30,8 @@ let logger: Logger = Logger(subsystem: "com.apoorva.app", category: "Apoorva")
 
     /* SKIP @bridge */public func onInit() {
         logger.debug("onInit")
+        UITestingConfig.resetStateIfNeeded()
+        if UITestingConfig.isEnabled { return }
         #if os(iOS) || os(macOS)
         // Each environment uses its own Firebase project; resolve the bundled plist explicitly.
         if let path = LaunchEnvironment.firebasePlistPath(),

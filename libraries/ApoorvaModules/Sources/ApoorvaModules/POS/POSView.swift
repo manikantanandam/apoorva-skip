@@ -367,6 +367,7 @@ struct POSCustomerRow: View {
                    subtitle: viewModel.customer.map { $0.dueBalance > 0 ? "\($0.phone) · dues \(Money.format($0.dueBalance))" : $0.phone }
                        ?? "Tap to attach a customer",
                    action: onPick)
+                .accessibilityIdentifier(AccessibilityID.Pos.customerRow)
         }
     }
 }

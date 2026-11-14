@@ -93,10 +93,12 @@ public struct CustomerPickerView: View {
                             }
                         }
                     }
+                    .accessibilityIdentifier(AccessibilityID.CustomerPicker.addAndAttach)
                     ManiButton("Continue as walk-in", kind: .outline) {
                         logger.info("Tapped Continue as walk-in")
                         onSelect(nil)
                     }
+                    .accessibilityIdentifier(AccessibilityID.CustomerPicker.walkIn)
                 }
             }
         }

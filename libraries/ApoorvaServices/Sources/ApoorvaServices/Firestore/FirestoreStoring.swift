@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import FirebaseCore
 import FirebaseFirestore
 import ManiLogger
 
@@ -75,12 +76,18 @@ public enum StoreSentinel {
 }
 
 public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable {
-    private let db = Firestore.firestore()
+    private struct NotConfigured: Error {}
+
+    /// Resolved on access, not at init. Throws instead of crashing when Firebase isn't configured (UI tests).
+    private func database() throws -> Firestore {
+        guard FirebaseApp.app() != nil else { throw NotConfigured() }
+        return Firestore.firestore()
+    }
 
     public init() {}
 
     public func getDocuments(collection path: String, query: StoreQuery) async throws -> [StoreDocument] {
-        let collection = db.collection(path)
+        let collection = try database().collection(path)
         var firestoreQuery: Query = collection
 
         let filters = Self.filters(for: query)
@@ -93,21 +100,26 @@ public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable
     }
 
     public func getDocument(path: String) async throws -> StoreDocument? {
-        let snapshot = try await db.document(path).getDocument()
+        let snapshot = try await database().document(path).getDocument()
         guard snapshot.exists else { return nil }
         return StoreDocument(id: snapshot.documentID, data: snapshot.data() ?? [:])
     }
 
     public func setData(_ data: [String: Any], path: String, merge: Bool) throws {
-        db.document(path).setData(Self.resolvingSentinels(data), merge: merge)
+        try database().document(path).setData(Self.resolvingSentinels(data), merge: merge)
     }
 
     public func updateData(_ fields: [String: Any], path: String) async throws {
-        try await db.document(path).updateData(Self.resolvingSentinels(fields))
+        try await database().document(path).updateData(Self.resolvingSentinels(fields))
     }
 
     public func listen(path: String) -> AsyncStream<StoreDocument?> {
         AsyncStream { continuation in
+            guard let db = try? database() else {
+                continuation.yield(nil)
+                continuation.finish()
+                return
+            }
             let registration = db.document(path).addSnapshotListener { snapshot, _ in
                 guard let snapshot else { return }
                 continuation.yield(snapshot.exists ? StoreDocument(id: snapshot.documentID, data: snapshot.data() ?? [:]) : nil)
