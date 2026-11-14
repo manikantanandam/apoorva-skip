@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       modules: ${{ steps.set-modules.outputs.modules }}
+      run_ui: ${{ steps.ui-paths.outputs.run_ui }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -33,6 +34,23 @@ jobs:
           JSON=$(scripts/changed-modules.sh "$BASE" "$HEAD")
           echo "Affected modules: $JSON"
           echo "modules=$JSON" >> $GITHUB_OUTPUT
+
+      - name: Decide Whether UI Tests Are Needed
+        id: ui-paths
+        run: |
+          # Pushes to main always run UI tests; PRs only when app code, libraries,
+          # scripts or workflows changed (not docs, designs, .claude, markdown).
+          RUN=true
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" \
+                | grep -Eq '^(app|libraries|scripts)/|^\.github/workflows/'; then
+              RUN=true
+            else
+              RUN=false
+            fi
+          fi
+          echo "Run UI tests: $RUN"
+          echo "run_ui=$RUN" >> $GITHUB_OUTPUT
 
   build-and-test:
     name: Test ${{ matrix.module }}
@@ -175,6 +193,8 @@ jobs:
 
   ui-tests:
     name: UI Tests
+    needs: detect-modules
+    if: needs.detect-modules.outputs.run_ui == 'true'
     runs-on: macos-15
     timeout-minutes: 45
     steps:

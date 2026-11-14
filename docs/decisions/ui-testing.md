@@ -8,7 +8,7 @@
 - **Runner:** `scripts/ui-test.sh [Class[/method]]` (separate from `build.sh`, which only handles `libraries/*`).
 
 ## CI
-- `ui-tests` job in `.github/workflows/ci.yml` runs `scripts/ui-test.sh` on every PR and push to main (macos-15, iPhone 17). It is independent of the Sonar flow and uploads the log and xcresult on failure.
+- `ui-tests` job in `.github/workflows/ci.yml` runs `scripts/ui-test.sh` on every push to main, and on PRs only when `app/`, `libraries/`, `scripts/` or `.github/workflows/` change (`run_ui` output of `detect-modules`; docs/designs/`.claude`/markdown-only PRs skip it). macos-15, iPhone 17. Caveat: if `UI Tests` is a required check, a skipped job may block merges. It is independent of the Sonar flow and uploads the log and xcresult on failure.
 - It runs unconditionally (not module-filtered) because the app depends on every library. Add it as a required check in branch protection if wanted.
 
 ## Feature tests (POS, customer picker)
