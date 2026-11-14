@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# A newer push to the same PR cancels the older run; main runs are never cancelled
+# so every commit keeps its coverage baseline.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   detect-modules:
     name: Detect Testable Modules
