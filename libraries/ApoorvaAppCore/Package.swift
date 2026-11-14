@@ -18,7 +18,8 @@ let package = Package(
         .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
         .package(path: "../ApoorvaEnvironment"),
         .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.1.0"),
-        .package(path: "../ApoorvaServices")
+        .package(path: "../ApoorvaServices"),
+        .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.15.0")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -38,7 +39,8 @@ let package = Package(
             dependencies: [
                 "ApoorvaAppCore",
                 .product(name: "ApoorvaEnvironment", package: "ApoorvaEnvironment"),
-                .product(name: "ApoorvaServices", package: "ApoorvaServices")
+                .product(name: "ApoorvaServices", package: "ApoorvaServices"),
+                .product(name: "FirebaseCore", package: "firebase-ios-sdk")
             ]
         ),
 
