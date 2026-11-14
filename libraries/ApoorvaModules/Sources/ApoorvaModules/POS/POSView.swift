@@ -45,11 +45,9 @@ public struct POSConfig: Sendable {
     public var tracksCommission: Bool
     public var sellsPackages: Bool
     public var allowsHold: Bool
-    public var counterName: String
 
     public init(layout: POSLayout = .standard, style: BillingStyle, allowsCalculator: Bool = false, allowsWholesale: Bool = false,
-                tracksCommission: Bool = false, sellsPackages: Bool = false, allowsHold: Bool = true,
-                counterName: String = "") {
+                tracksCommission: Bool = false, sellsPackages: Bool = false, allowsHold: Bool = true) {
         self.layout = layout
         self.style = style
         self.allowsCalculator = allowsCalculator
@@ -57,7 +55,6 @@ public struct POSConfig: Sendable {
         self.tracksCommission = tracksCommission
         self.sellsPackages = sellsPackages
         self.allowsHold = allowsHold
-        self.counterName = counterName
     }
 }
 
@@ -115,7 +112,7 @@ public struct POSView: View {
     // MARK: - Header
 
     private var customerRow: some View {
-        POSCustomerRow(viewModel: viewModel, config: config) { onAction(.pickCustomer) }
+        POSCustomerRow(viewModel: viewModel) { onAction(.pickCustomer) }
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
@@ -354,14 +351,14 @@ public struct POSView: View {
 /// Customer row at the top of the bill; tapping opens the customer picker.
 struct POSCustomerRow: View {
     let viewModel: POSViewModel
-    let config: POSConfig
+//    let config: POSConfig
     let onPick: () -> Void
 
     private var title: String {
         if let name = viewModel.cart.customerName, !name.isEmpty {
             return viewModel.isWholesale ? "\(name) · wholesale buyer" : name
         }
-        return config.counterName.isEmpty ? "Walk-in customer" : config.counterName
+        return "Walk-in customer"
     }
 
     var body: some View {

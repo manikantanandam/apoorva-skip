@@ -43,9 +43,7 @@ struct NewBillCoordinatorView: View {
                   allowsWholesale: session.isOn(.wholesalePrice),
                   tracksCommission: session.isOn(.staffCommission),
                   sellsPackages: session.isOn(.planPackages),
-                  allowsHold: session.isOn(.holdBills),
-                  counterName: [session.stores.count > 1 ? session.currentStore.name : nil, session.actorName]
-                      .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
+                  allowsHold: session.isOn(.holdBills))
     }
 
     var body: some View {

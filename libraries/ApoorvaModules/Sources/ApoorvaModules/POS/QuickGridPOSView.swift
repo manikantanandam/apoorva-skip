@@ -26,7 +26,7 @@ public struct QuickGridPOSView: View {
 
     public var body: some View {
         ScreenScroll(spacing: ManiSpacing.md) {
-            POSCustomerRow(viewModel: viewModel, config: config) { onAction(.pickCustomer) }
+            POSCustomerRow(viewModel: viewModel) { onAction(.pickCustomer) }
             if config.allowsWholesale {
                 ManiSegmentedControl(selection: Binding(get: { viewModel.cart.priceTier ?? "retail" },
                                                         set: { viewModel.setPriceTier($0) }),
