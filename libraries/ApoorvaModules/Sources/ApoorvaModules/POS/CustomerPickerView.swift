@@ -18,6 +18,7 @@ public struct CustomerPickerView: View {
     // @State, not @FocusState: no `.focused($focus)` is attached here (ManiInputField owns the real
     // FocusState and mirrors it through the Binding<Bool>), so a FocusState would never invalidate the view.
     @State private var focus: Field?
+    @FocusState private var searchFocused: Bool
 
     private func focusBinding(_ field: Field) -> Binding<Bool> {
         Binding(get: { focus == field }, set: { focus = $0 ? field : (focus == field ? nil : focus) })
@@ -39,6 +40,7 @@ public struct CustomerPickerView: View {
             // Search/list/recent are hidden while typing a new customer so the form sits at the top above the keyboard.
             if focus == nil {
                 ManiSearchField(text: $viewModel.searchText, placeholder: "Name or phone")
+                    .focused($searchFocused)
                 if !viewModel.filteredCustomers.isEmpty {
                     RowsCard {
                         ForEach(viewModel.filteredCustomers.prefix(viewModel.searchText.isEmpty ? 8 : 30)) { customer in
@@ -47,7 +49,7 @@ public struct CustomerPickerView: View {
                         }
                     }
                 }
-                if viewModel.searchText.isEmpty && !viewModel.recent.isEmpty {
+                if viewModel.searchText.isEmpty && !viewModel.recent.isEmpty && !searchFocused {
                     SectionHeader(title: "Recent")
                     FlowLayout {
                         ForEach(viewModel.recent) { customer in
@@ -56,15 +58,18 @@ public struct CustomerPickerView: View {
                     }
                 }
             }
-            SectionHeader(title: "New customer")
-            ManiInputField(label: "Phone", text: $viewModel.newPhone, placeholder: "98480 55667",
-                           focus: focusBinding(.phone), submitKind: .next) { focus = .name }
-            ManiInputField(label: "Name", text: $viewModel.newName, placeholder: "Kiran",
-                           focus: focusBinding(.name), submitKind: .done) { focus = nil }
-            if let errorMessage = viewModel.errorMessage { ManiNote(errorMessage, kind: .error) }
+            // While searching, only the search field and its results are shown.
+            if !searchFocused {
+                SectionHeader(title: "New customer")
+                ManiInputField(label: "Phone", text: $viewModel.newPhone, placeholder: "98480 55667",
+                               focus: focusBinding(.phone), submitKind: .next) { focus = .name }
+                ManiInputField(label: "Name", text: $viewModel.newName, placeholder: "Kiran",
+                               focus: focusBinding(.name), submitKind: .done) { focus = nil }
+                if let errorMessage = viewModel.errorMessage { ManiNote(errorMessage, kind: .error) }
+            }
         } bottom: {
-            // Hidden while typing: the pinned bar would otherwise ride above the keyboard and cover the Name field.
-            if focus == nil {
+            // Hidden while typing: the pinned bar would otherwise ride above the keyboard and cover the fields.
+            if focus == nil && !searchFocused {
                 VStack(spacing: ManiSpacing.sm) {
                     ManiButton("Add & attach", isEnabled: viewModel.canAdd) {
                         Task { if let customer = await viewModel.addCustomer() { onSelect(customer) } }
