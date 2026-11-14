@@ -4,7 +4,9 @@
 # - Blocks local git merge while on main/master (merge recovery flags are allowed).
 # - Asks for approval on any other local git merge, showing source and target.
 
-command=$(jq -r '.tool_input.command // ""')
+input=$(cat)
+command=$(printf '%s' "$input" | jq -r '.tool_input.command // ""')
+work_dir=$(printf '%s' "$input" | jq -r '.cwd // ""')
 # A command may start the line, follow a separator, or sit inside a group/substitution.
 start='(^|[;&|(`{]|\$\()[[:space:]]*'
 # gh global flags (e.g. -R owner/repo) may sit between `gh` and the subcommand.
@@ -55,7 +57,7 @@ if printf '%s' "$command" | grep -Eq "${start}git[[:space:]]+merge([[:space:]]|$
   done
   set +f
 
-  if ! target=$(git -C "${CLAUDE_PROJECT_DIR:-.}" rev-parse --abbrev-ref HEAD 2>/dev/null) || [ -z "$target" ]; then
+  if ! target=$(git -C "${work_dir:-${CLAUDE_PROJECT_DIR:-.}}" rev-parse --abbrev-ref HEAD 2>/dev/null) || [ -z "$target" ]; then
     echo "Blocked: cannot determine the current branch, so the merge target is unknown." >&2
     exit 2
   fi
