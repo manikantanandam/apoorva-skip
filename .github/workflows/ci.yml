@@ -167,6 +167,9 @@ jobs:
             --name coverage-baseline --dir baseline-coverage
 
       - name: Build Coverage Table
+        env:
+          # On PRs github.sha is the temporary merge commit; show the branch head instead.
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           scripts/coverage-summary.sh current-coverage baseline-coverage > coverage-comment.md
           cat coverage-comment.md >> "$GITHUB_STEP_SUMMARY"

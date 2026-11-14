@@ -38,4 +38,4 @@ done
 TOTAL_PCT=$(awk -v c="$TOTAL_COV" -v e="$TOTAL_EXE" 'BEGIN { if (e == 0) print "n/a"; else printf "%.1f%%", c * 100 / e }')
 echo "| **Overall** | **$TOTAL_PCT** | **$TOTAL_COV / $TOTAL_EXE** | |"
 echo
-echo "_Raw Xcode line coverage; Sonar's view/router exclusions are not applied. Commit: \`${GITHUB_SHA:-local}\`_"
+echo "_Raw Xcode line coverage; Sonar's view/router exclusions are not applied. Commit: \`${COMMIT_SHA:-${GITHUB_SHA:-local}}\`_"
