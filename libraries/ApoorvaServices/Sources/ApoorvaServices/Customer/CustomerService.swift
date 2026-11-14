@@ -77,6 +77,7 @@ public final class CustomerService: CustomerServiceProtocol {
             ], path: path)
         } else {
             let payload: [String: Any] = [
+                "id": phone,
                 "name": name,
                 "phone": phone,
                 "createdAt": saleDate,
