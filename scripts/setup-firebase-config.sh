@@ -33,7 +33,7 @@ if [ -n "${GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64:-}" ]; then
   wrote_any=1
 fi
 
-if [ -n "${GOOGLE_SERVICE_JSON_B64:-}" ]; then
+if [[ -n "${GOOGLE_SERVICE_JSON_B64:-}" ]]; then
   echo "$GOOGLE_SERVICE_JSON_B64" | base64 --decode > "$ROOT_DIR/app/Android/app/google-services.json"
   echo "Wrote $ROOT_DIR/app/Android/app/google-services.json"
   wrote_any=1
