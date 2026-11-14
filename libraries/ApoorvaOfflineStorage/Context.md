@@ -4,14 +4,14 @@ Local database layer. SQLite is the source of truth for the app.
 
 ## Depends on
 - `ApoorvaModels`, `ApoorvaUtilities`
-- GRDB.swift 7.11.1 (exact), skip-sql 0.16.1 (exact)
+- skip-sql 0.16.1 (exact)
 
 ## Backends
 - `SkipSQL/` — **wired into the app today.**
   - `SkipSqlDatabaseManager` opens the database.
   - `Storage/` holds one `*LocalStorage` per entity, plus `SyncStorage`.
   - `Model/` holds `+SkipSQL` mappings and `SyncState`.
-- `GRDB/` — **not wired.** Contains `AppDatabase`, `DatabaseMigratable`, `AppDatabase+Operations`, and `Model/` (`+GRDB` mappings).
+- A GRDB backend existed but was never wired in; it was removed (see git history) to keep coverage meaningful.
 
 ## Other folders
 - `protocols/` — storage protocols the repositories depend on (e.g. `InventoryItemLocalStorageProtocol`, `SaleStorageProtocol`). Add a protocol here before adding a new storage type.
