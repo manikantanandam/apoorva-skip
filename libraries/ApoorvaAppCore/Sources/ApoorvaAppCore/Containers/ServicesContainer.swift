@@ -15,7 +15,7 @@ public class ServicesContainer {
 //    public lazy var offlineStorage: OfflineStorageProtocol = ApoorvaDataStore()
 //    public lazy var apiClient: ApiClientProtocol = ApoorvaNetworkClient()
     
-    public lazy var authService: AuthServicing = AuthService()
+    public lazy var authService: AuthServicing = UITestingConfig.isEnabled ? FakeAuthService() : AuthService()
     
     public lazy var userService: UserServiceProtocol = UserService(authService: authService)
     
@@ -48,6 +48,11 @@ public class ServicesContainer {
     public lazy var performanceMonitoringService: PerformanceMonitoringServicing = FirebasePerformanceMonitoringService()
 
     public lazy var remoteConfigService: RemoteConfigServicing = {
+        if UITestingConfig.isEnabled {
+            let fake = FakeRemoteConfigService()
+            fake.setDefaults(RemoteConfigCatalogDefaults.make())
+            return fake
+        }
         #if DEBUG
         // Debug builds always hit the network so console changes show up immediately.
         let service = FirebaseRemoteConfigService(minimumFetchInterval: 0)

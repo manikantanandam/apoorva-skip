@@ -13,7 +13,21 @@
 		499CD4402AC5B799001AE8D8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 49F90C2F2A52156300F06D93 /* Assets.xcassets */; };
 		530F69213071344F009A9FFD /* GoogleService-Info-production.plist in Resources */ = {isa = PBXBuildFile; fileRef = 530F69203071344F009A9FFD /* GoogleService-Info-production.plist */; };
 		907DCF807C8268D31AB2FE2C /* GoogleService-Info-debug.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8D0F534DAEE3E81B72CA0B51 /* GoogleService-Info-debug.plist */; };
+		7A0000012F00000100A00001 /* AccessibilityID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00001 /* AccessibilityID.swift */; };
+		7A0000012F00000100A00002 /* AppLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00002 /* AppLauncher.swift */; };
+		7A0000012F00000100A00003 /* LoginScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00003 /* LoginScreen.swift */; };
+		7A0000012F00000100A00004 /* LoginUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00004 /* LoginUITests.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		7A0000032F00000100A00001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 49F90C202A52156200F06D93 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 499CD4382AC5B799001AE8D8;
+			remoteInfo = "Apoorva App";
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		499CD44A2AC5B9C6001AE8D8 /* Embed Frameworks */ = {
@@ -50,6 +64,11 @@
 		530F692D3071621A009A9FFD /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		5372E973307A844C00330358 /* ApoorvaModules */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaModules; sourceTree = "<group>"; };
 		53CC3A41307176CC00E9FCBB /* ApoorvaAppCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaAppCore; sourceTree = "<group>"; };
+		7A0000022F00000100A00001 /* AccessibilityID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityID.swift; sourceTree = "<group>"; };
+		7A0000022F00000100A00002 /* AppLauncher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLauncher.swift; sourceTree = "<group>"; };
+		7A0000022F00000100A00003 /* LoginScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginScreen.swift; sourceTree = "<group>"; };
+		7A0000022F00000100A00004 /* LoginUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginUITests.swift; sourceTree = "<group>"; };
+		7A0000022F00000100A00005 /* ApoorvaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ApoorvaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,13 +80,56 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7A0000042F00000100A00001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7A0000052F00000100A00001 /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				7A0000052F00000100A00002 /* Login */,
+				7A0000052F00000100A00003 /* Support */,
+			);
+			path = UITests;
+			sourceTree = "<group>";
+		};
+		7A0000052F00000100A00002 /* Login */ = {
+			isa = PBXGroup;
+			children = (
+				7A0000022F00000100A00004 /* LoginUITests.swift */,
+			);
+			path = Login;
+			sourceTree = "<group>";
+		};
+		7A0000052F00000100A00003 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				7A0000022F00000100A00001 /* AccessibilityID.swift */,
+				7A0000022F00000100A00002 /* AppLauncher.swift */,
+				7A0000052F00000100A00004 /* Screens */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		7A0000052F00000100A00004 /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				7A0000022F00000100A00003 /* LoginScreen.swift */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
 		496BDBEC2B89A47800C09264 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				496BDBEB2B89A47800C09264 /* Apoorva.app */,
+				7A0000022F00000100A00005 /* ApoorvaUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -90,6 +152,7 @@
 				530DFB753071638E00C3D1A7 /* libraries */,
 				493609562A6B7EAE00C401E2 /* Apoorva */,
 				49F90C2A2A52156200F06D93 /* App */,
+				7A0000052F00000100A00001 /* UITests */,
 				49AB54462B066A7E007B79B2 /* SkipStone */,
 				496BDBEC2B89A47800C09264 /* Products */,
 			);
@@ -148,6 +211,24 @@
 			productReference = 496BDBEB2B89A47800C09264 /* Apoorva.app */;
 			productType = "com.apple.product-type.application";
 		};
+		7A0000062F00000100A00001 /* ApoorvaUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7A0000092F00000100A00001 /* Build configuration list for PBXNativeTarget "ApoorvaUITests" */;
+			buildPhases = (
+				7A0000072F00000100A00001 /* Sources */,
+				7A0000042F00000100A00001 /* Frameworks */,
+				7A0000082F00000100A00001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7A00000A2F00000100A00001 /* PBXTargetDependency */,
+			);
+			name = ApoorvaUITests;
+			productName = ApoorvaUITests;
+			productReference = 7A0000022F00000100A00005 /* ApoorvaUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -157,6 +238,12 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1430;
 				LastUpgradeCheck = 1630;
+				TargetAttributes = {
+					7A0000062F00000100A00001 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = 499CD4382AC5B799001AE8D8;
+					};
+				};
 			};
 			buildConfigurationList = 49F90C232A52156200F06D93 /* Build configuration list for PBXProject "Apoorva" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -177,6 +264,7 @@
 			projectRoot = "";
 			targets = (
 				499CD4382AC5B799001AE8D8 /* Apoorva App */,
+				7A0000062F00000100A00001 /* ApoorvaUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -189,6 +277,13 @@
 				499CD4402AC5B799001AE8D8 /* Assets.xcassets in Resources */,
 				530F69213071344F009A9FFD /* GoogleService-Info-production.plist in Resources */,
 				907DCF807C8268D31AB2FE2C /* GoogleService-Info-debug.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7A0000082F00000100A00001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -225,7 +320,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7A0000072F00000100A00001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7A0000012F00000100A00001 /* AccessibilityID.swift in Sources */,
+				7A0000012F00000100A00002 /* AppLauncher.swift in Sources */,
+				7A0000012F00000100A00003 /* LoginScreen.swift in Sources */,
+				7A0000012F00000100A00004 /* LoginUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7A00000A2F00000100A00001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 499CD4382AC5B799001AE8D8 /* Apoorva App */;
+			targetProxy = 7A0000032F00000100A00001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		499CD4422AC5B799001AE8D8 /* Debug */ = {
@@ -297,6 +411,38 @@
 			};
 			name = Release;
 		};
+		7A00000B2F00000100A00001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7K6Z7HB495;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				PRODUCT_BUNDLE_IDENTIFIER = com.apoorva.app.UITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "Apoorva App";
+			};
+			name = Debug;
+		};
+		7A00000B2F00000100A00002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7K6Z7HB495;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
+				PRODUCT_BUNDLE_IDENTIFIER = com.apoorva.app.UITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "Apoorva App";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -314,6 +460,15 @@
 			buildConfigurations = (
 				49F90C4B2A52156300F06D93 /* Debug */,
 				49F90C4C2A52156300F06D93 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7A0000092F00000100A00001 /* Build configuration list for PBXNativeTarget "ApoorvaUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7A00000B2F00000100A00001 /* Debug */,
+				7A00000B2F00000100A00002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
