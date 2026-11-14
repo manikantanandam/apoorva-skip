@@ -1,0 +1,27 @@
+name: Tag must be on main
+
+# Release tags (v*) may only point at commits already merged to main.
+# If a tag is pushed from any other commit, this job deletes it and fails.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  verify-tag-on-main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reject tags not reachable from main
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Tag ${GITHUB_REF_NAME} points at ${GITHUB_SHA}, which is not on main. Merge the PR first, then tag main."
+            git push origin ":refs/tags/${GITHUB_REF_NAME}"
+            exit 1
+          fi
