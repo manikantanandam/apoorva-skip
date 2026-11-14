@@ -90,16 +90,7 @@ public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable
         let collection = try database().collection(path)
         var firestoreQuery: Query = collection
 
-        let filters = query.conditions.map { condition -> Filter in
-            switch condition {
-            case let .greaterThan(field, date):
-                return Filter.whereField(field, isGreaterThan: Timestamp(date: date))
-            case let .isIn(field, values):
-                return Filter.whereField(field, in: values)
-            case let .arrayContains(field, value):
-                return Filter.whereField(field, arrayContains: value)
-            }
-        }
+        let filters = Self.filters(for: query)
         if !filters.isEmpty {
             firestoreQuery = collection.whereFilter(query.matchAny ? Filter.orFilter(filters) : Filter.andFilter(filters))
         }
@@ -138,7 +129,20 @@ public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable
         }
     }
 
-    private static func resolvingSentinels(_ data: [String: Any]) -> [String: Any] {
+    static func filters(for query: StoreQuery) -> [Filter] {
+        query.conditions.map { condition -> Filter in
+            switch condition {
+            case let .greaterThan(field, date):
+                return Filter.whereField(field, isGreaterThan: Timestamp(date: date))
+            case let .isIn(field, values):
+                return Filter.whereField(field, in: values)
+            case let .arrayContains(field, value):
+                return Filter.whereField(field, arrayContains: value)
+            }
+        }
+    }
+
+    static func resolvingSentinels(_ data: [String: Any]) -> [String: Any] {
         data.mapValues { value in
             if let string = value as? String, string == StoreSentinel.serverTimestamp {
                 return FieldValue.serverTimestamp()

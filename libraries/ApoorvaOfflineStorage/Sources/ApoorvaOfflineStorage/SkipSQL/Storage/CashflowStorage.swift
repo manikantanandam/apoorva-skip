@@ -82,11 +82,11 @@ public final actor CashflowTransactionLocalStorage: CashflowTransactionStoragePr
                 person,
                 .long(transaction.isDeleted.int64Value),
                 .real(transaction.updatedAt.timeIntervalSince1970),
-                .text(transaction.id),
                 .text(transaction.fromAccountId),
                 .text(transaction.toAccountId),
                 .real(transaction.timestampInMs),
                 .real(transaction.updatedAtInMs),
+                .text(transaction.id)
             ])
         }
     }

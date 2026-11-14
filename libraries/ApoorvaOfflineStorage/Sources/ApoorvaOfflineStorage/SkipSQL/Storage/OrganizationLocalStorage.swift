@@ -81,8 +81,8 @@ public final actor OrganizationLocalStorage: OrganizationStorageProtocol {
                 accountsValue,
                 .real(organization.updatedAt.timeIntervalSince1970),
                 .long(organization.isDeleted.int64Value),
-                .text(organization.id),
-                .real(organization.establishedAtInMs)
+                .real(organization.establishedAtInMs),
+                .text(organization.id)
             ])
         }
     }

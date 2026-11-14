@@ -26,7 +26,10 @@ public struct SessionSnapshot: Sendable, Equatable {
 
     /// Compares every profile field, not just the timestamp: console edits can change fields without bumping it.
     private static func encodedProfile(_ profile: AppUser?) -> Data? {
-        profile.flatMap { try? JSONEncoder().encode($0) }
+        let encoder = JSONEncoder()
+        // JSONEncoder's key order isn't stable between runs; without this, equal profiles compare unequal.
+        encoder.outputFormatting = .sortedKeys
+        return profile.flatMap { try? encoder.encode($0) }
     }
 }
 

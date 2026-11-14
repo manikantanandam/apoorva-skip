@@ -7,10 +7,6 @@ import Foundation
 import ApoorvaModels
 import FirebaseAuth
 
-struct SendableAuthHandle: @unchecked Sendable {
-    let value: AuthStateDidChangeListenerHandle
-}
-
 public enum AuthServiceError: Error, LocalizedError, Equatable {
     case notSignedIn
     case unsupported
@@ -69,92 +65,119 @@ public extension AuthServicing {
     func linkedProviders() -> [String] { ["password"] }
 }
 
+/// What the service needs to know about the signed-in Firebase user.
+struct AuthUserInfo: Sendable, Equatable {
+    let uid: String
+    let email: String?
+    let displayName: String?
+    let isEmailVerified: Bool
+    let providerIDs: [String]
+}
+
+/// Thin seam over `FirebaseAuth` so `AuthService`'s logic can be tested without a Firebase backend.
+protocol AuthBackend: Sendable {
+    var currentUser: AuthUserInfo? { get }
+    func signIn(email: String, password: String) async throws
+    func signOut() throws
+    /// Creates the account, sets its display name and sends the verification email.
+    func createUser(name: String, email: String, password: String) async throws
+    func sendEmailVerification() async throws
+    func reloadUser() async throws
+    func sendPasswordReset(email: String) async throws
+    func link(email: String, password: String) async throws
+    func updatePassword(_ password: String) async throws
+    /// Calls `handler` now and on every auth change; the returned closure removes the listener.
+    func observe(_ handler: @escaping @Sendable (AuthUserInfo?) -> Void) -> @Sendable () -> Void
+}
+
 public final class AuthService: AuthServicing {
 
-    public init() {}
+    private let backend: AuthBackend
+
+    public convenience init() {
+        self.init(backend: FirebaseAuthBackend())
+    }
+
+    init(backend: AuthBackend) {
+        self.backend = backend
+    }
 
     public func login(email: String, password: String) async throws {
         do {
-            try await Auth.auth().signIn(withEmail: email, password: password)
+            try await backend.signIn(email: email, password: password)
         } catch {
             throw Self.mapped(error, email: email)
         }
     }
 
     public func logout() throws {
-        try Auth.auth().signOut()
+        try backend.signOut()
     }
 
     public func register(name: String, email: String, password: String) async throws {
         do {
-            let result = try await Auth.auth().createUser(withEmail: email, password: password)
-            let change = result.user.createProfileChangeRequest()
-            change.displayName = name
-            try await change.commitChanges()
-            try await result.user.sendEmailVerification()
+            try await backend.createUser(name: name, email: email, password: password)
         } catch {
             throw Self.mapped(error, email: email)
         }
     }
 
     public func sendEmailVerification() async throws {
-        guard let user = Auth.auth().currentUser else { throw AuthServiceError.notSignedIn }
-        try await user.sendEmailVerification()
+        guard backend.currentUser != nil else { throw AuthServiceError.notSignedIn }
+        try await backend.sendEmailVerification()
     }
 
     @discardableResult
     public func reloadAccount() async throws -> AuthAccount? {
-        guard let user = Auth.auth().currentUser else { return nil }
-        try await user.reload()
-        return Self.account(from: Auth.auth().currentUser)
+        guard backend.currentUser != nil else { return nil }
+        try await backend.reloadUser()
+        return Self.account(from: backend.currentUser)
     }
 
     public func sendPasswordReset(email: String) async throws {
         do {
-            try await Auth.auth().sendPasswordReset(withEmail: email)
+            try await backend.sendPasswordReset(email: email)
         } catch {
             throw Self.mapped(error, email: email)
         }
     }
 
     public func linkEmail(email: String, password: String) async throws {
-        guard let user = Auth.auth().currentUser else { throw AuthServiceError.notSignedIn }
-        let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+        guard backend.currentUser != nil else { throw AuthServiceError.notSignedIn }
         do {
-            try await user.link(with: credential)
+            try await backend.link(email: email, password: password)
         } catch {
             throw Self.mapped(error, email: email)
         }
     }
 
     public func updatePassword(_ password: String) async throws {
-        guard let user = Auth.auth().currentUser else { throw AuthServiceError.notSignedIn }
-        try await user.updatePassword(to: password)
+        guard backend.currentUser != nil else { throw AuthServiceError.notSignedIn }
+        try await backend.updatePassword(password)
     }
 
     public func linkedProviders() -> [String] {
-        Auth.auth().currentUser?.providerData.map(\.providerID) ?? []
+        backend.currentUser?.providerIDs ?? []
     }
 
     public var currentAccount: AuthAccount? {
-        Self.account(from: Auth.auth().currentUser)
+        Self.account(from: backend.currentUser)
     }
 
     public var accountStream: AsyncStream<AuthAccount?> {
-        AsyncStream { continuation in
-            let handle = Auth.auth().addStateDidChangeListener { _, user in
+        let backend = self.backend
+        return AsyncStream { continuation in
+            let remove = backend.observe { user in
                 continuation.yield(Self.account(from: user))
             }
-            let sendableHandle = SendableAuthHandle(value: handle)
-            continuation.onTermination = { _ in
-                Auth.auth().removeStateDidChangeListener(sendableHandle.value)
-            }
+            continuation.onTermination = { _ in remove() }
         }
     }
 
     public var currentUserStream: AsyncStream<AppUser?> {
-        AsyncStream { continuation in
-            let handle = Auth.auth().addStateDidChangeListener { _, user in
+        let backend = self.backend
+        return AsyncStream { continuation in
+            let remove = backend.observe { user in
                 guard let user else {
                     continuation.yield(nil)
                     return
@@ -162,22 +185,20 @@ public final class AuthService: AuthServicing {
                 continuation.yield(AppUser(id: user.uid, name: user.displayName ?? "", email: user.email ?? "",
                                            role: .standard, status: "", assignedOrgs: [], createdAt: Date(), updatedAt: Date()))
             }
-            let sendableHandle = SendableAuthHandle(value: handle)
-            continuation.onTermination = { _ in
-                Auth.auth().removeStateDidChangeListener(sendableHandle.value)
-            }
+            continuation.onTermination = { _ in remove() }
         }
     }
 
-    private static func account(from user: User?) -> AuthAccount? {
+    static func account(from user: AuthUserInfo?) -> AuthAccount? {
         guard let user else { return nil }
         // Accounts with no email sign-in (phone/Google) don't need email verification.
-        let hasPassword = user.providerData.contains { $0.providerID == EmailAuthProviderID }
+        let hasPassword = user.providerIDs.contains(EmailAuthProviderID)
         return AuthAccount(uid: user.uid, email: user.email, isEmailVerified: user.isEmailVerified || !hasPassword)
     }
 
-    private static func mapped(_ error: Error, email: String) -> Error {
-        let code = AuthErrorCode(_bridgedNSError: error as NSError)?.code
+    static func mapped(_ error: Error, email: String) -> Error {
+        let nsError = error as NSError
+        let code = nsError.domain == AuthErrorDomain ? AuthErrorCode(rawValue: nsError.code) : nil
         switch code {
         case .accountExistsWithDifferentCredential, .credentialAlreadyInUse:
             return AuthServiceError.accountExistsWithDifferentCredential(email: email)
@@ -197,6 +218,68 @@ public final class AuthService: AuthServicing {
             return AuthServiceError.message("Too many attempts. Wait a minute and try again.")
         default:
             return error
+        }
+    }
+}
+
+// MARK: - Firebase adapter (SDK calls only, no logic)
+
+private struct SendableAuthHandle: @unchecked Sendable {
+    let value: AuthStateDidChangeListenerHandle
+}
+
+struct FirebaseAuthBackend: AuthBackend {
+
+    var currentUser: AuthUserInfo? { Self.info(Auth.auth().currentUser) }
+
+    func signIn(email: String, password: String) async throws {
+        try await Auth.auth().signIn(withEmail: email, password: password)
+    }
+
+    func signOut() throws {
+        try Auth.auth().signOut()
+    }
+
+    func createUser(name: String, email: String, password: String) async throws {
+        let result = try await Auth.auth().createUser(withEmail: email, password: password)
+        let change = result.user.createProfileChangeRequest()
+        change.displayName = name
+        try await change.commitChanges()
+        try await result.user.sendEmailVerification()
+    }
+
+    func sendEmailVerification() async throws {
+        try await Auth.auth().currentUser?.sendEmailVerification()
+    }
+
+    func reloadUser() async throws {
+        try await Auth.auth().currentUser?.reload()
+    }
+
+    func sendPasswordReset(email: String) async throws {
+        try await Auth.auth().sendPasswordReset(withEmail: email)
+    }
+
+    func link(email: String, password: String) async throws {
+        let credential = EmailAuthProvider.credential(withEmail: email, password: password)
+        try await Auth.auth().currentUser?.link(with: credential)
+    }
+
+    func updatePassword(_ password: String) async throws {
+        try await Auth.auth().currentUser?.updatePassword(to: password)
+    }
+
+    func observe(_ handler: @escaping @Sendable (AuthUserInfo?) -> Void) -> @Sendable () -> Void {
+        let handle = SendableAuthHandle(value: Auth.auth().addStateDidChangeListener { _, user in
+            handler(Self.info(user))
+        })
+        return { Auth.auth().removeStateDidChangeListener(handle.value) }
+    }
+
+    private static func info(_ user: User?) -> AuthUserInfo? {
+        user.map {
+            AuthUserInfo(uid: $0.uid, email: $0.email, displayName: $0.displayName,
+                         isEmailVerified: $0.isEmailVerified, providerIDs: $0.providerData.map(\.providerID))
         }
     }
 }
