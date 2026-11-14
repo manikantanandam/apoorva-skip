@@ -36,20 +36,23 @@ public struct CustomerPickerView: View {
 
     public var body: some View {
         ScreenScroll {
-            ManiSearchField(text: $viewModel.searchText, placeholder: "Name or phone")
-            if !viewModel.filteredCustomers.isEmpty {
-                RowsCard {
-                    ForEach(viewModel.filteredCustomers.prefix(viewModel.searchText.isEmpty ? 8 : 30)) { customer in
-                        ManiListRow(avatar: ManiAvatar(initials: String(customer.name.prefix(1))),
-                                    title: customer.name, subtitle: subtitle(customer)) { onSelect(customer) }
+            // Search/list/recent are hidden while typing a new customer so the form sits at the top above the keyboard.
+            if focus == nil {
+                ManiSearchField(text: $viewModel.searchText, placeholder: "Name or phone")
+                if !viewModel.filteredCustomers.isEmpty {
+                    RowsCard {
+                        ForEach(viewModel.filteredCustomers.prefix(viewModel.searchText.isEmpty ? 8 : 30)) { customer in
+                            ManiListRow(avatar: ManiAvatar(initials: String(customer.name.prefix(1))),
+                                        title: customer.name, subtitle: subtitle(customer)) { onSelect(customer) }
+                        }
                     }
                 }
-            }
-            if viewModel.searchText.isEmpty && !viewModel.recent.isEmpty {
-                SectionHeader(title: "Recent")
-                FlowLayout {
-                    ForEach(viewModel.recent) { customer in
-                        ManiChip(customer.name) { onSelect(customer) }
+                if viewModel.searchText.isEmpty && !viewModel.recent.isEmpty {
+                    SectionHeader(title: "Recent")
+                    FlowLayout {
+                        ForEach(viewModel.recent) { customer in
+                            ManiChip(customer.name) { onSelect(customer) }
+                        }
                     }
                 }
             }
