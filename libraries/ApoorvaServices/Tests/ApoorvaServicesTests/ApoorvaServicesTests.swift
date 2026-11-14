@@ -16,13 +16,15 @@ final class MockFirestoreStore: FirestoreStoring, @unchecked Sendable {
     var documents: [String: [String: Any]] = [:]
     var writes: [(path: String, data: [String: Any], merge: Bool)] = []
     var updates: [(path: String, fields: [String: Any])] = []
+    var reads = 0
 
     func put<T: Encodable>(_ value: T, at path: String) throws {
         documents[path] = try Firestore.Encoder().encode(value)
     }
 
     func getDocuments(collection path: String, query: StoreQuery) async throws -> [StoreDocument] {
-        documents
+        reads += 1
+        return documents
             .filter { key, _ in
                 guard key.hasPrefix(path + "/") else { return false }
                 return !key.dropFirst(path.count + 1).contains("/")
@@ -32,7 +34,8 @@ final class MockFirestoreStore: FirestoreStoring, @unchecked Sendable {
     }
 
     func getDocument(path: String) async throws -> StoreDocument? {
-        documents[path].map { StoreDocument(id: String(path.split(separator: "/").last ?? ""), data: $0) }
+        reads += 1
+        return documents[path].map { StoreDocument(id: String(path.split(separator: "/").last ?? ""), data: $0) }
     }
 
     func setData(_ data: [String: Any], path: String, merge: Bool) throws {

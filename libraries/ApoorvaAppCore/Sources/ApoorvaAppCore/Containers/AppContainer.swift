@@ -109,9 +109,10 @@ public class AppContainer {
                 exit(0)
             },
             terminateApp: { exit(0) },
-            backfillDocumentIDs: { [appSession] in
+            backfillDocumentIDs: { [appSession, offlineStorageContainer] in
                 guard let orgId = appSession.orgId, !appSession.isDemo else { return DocumentIDBackfillResult() }
-                return try await DocumentIDBackfill().run(orgId: orgId)
+                let saleIds = try await offlineStorageContainer.salesLocalStorage.getSales().map(\.id)
+                return try await DocumentIDBackfill().run(orgId: orgId, saleIds: saleIds)
             }
         )
         #else

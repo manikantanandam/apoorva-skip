@@ -65,17 +65,14 @@ struct SaleDocumentShapeTests {
 }
 
 struct DocumentIDBackfillTests {
-    @Test func writesOnlyMissingOrWrongIds() async throws {
+    @Test func writesIdForEverySuppliedSaleIdWithoutReadingFirestore() async throws {
         let store = MockFirestoreStore()
-        store.documents["organizations/org/sales/ok"] = ["id": "ok", "netPayable": 10.0]
-        store.documents["organizations/org/sales/missing"] = ["netPayable": 20.0]
-        store.documents["organizations/org/inventory/wrong"] = ["id": "old-uuid", "name": "Pen"]
-        store.documents["organizations/other/sales/elsewhere"] = ["netPayable": 30.0]
 
-        let result = try await DocumentIDBackfill(store: store).run(orgId: "org", collections: [.sales, .inventory])
+        let result = try await DocumentIDBackfill(store: store).run(orgId: "org", saleIds: ["a", "b"])
 
-        #expect(result == DocumentIDBackfillResult(scanned: 3, updated: 2))
-        #expect(Set(store.writes.map(\.path)) == ["organizations/org/sales/missing", "organizations/org/inventory/wrong"])
+        #expect(result == DocumentIDBackfillResult(written: 2))
+        #expect(store.reads == 0)
+        #expect(Set(store.writes.map(\.path)) == ["organizations/org/sales/a", "organizations/org/sales/b"])
         for write in store.writes {
             #expect(write.merge)
             #expect(write.data.count == 1)
@@ -83,12 +80,12 @@ struct DocumentIDBackfillTests {
         }
     }
 
-    @Test func secondRunChangesNothing() async throws {
+    @Test func runningTwiceIsHarmless() async throws {
         let store = MockFirestoreStore()
-        store.documents["organizations/org/sales/missing"] = ["netPayable": 20.0]
         let backfill = DocumentIDBackfill(store: store)
-        _ = try await backfill.run(orgId: "org", collections: [.sales])
-        let again = try await backfill.run(orgId: "org", collections: [.sales])
-        #expect(again.updated == 0)
+        _ = try await backfill.run(orgId: "org", saleIds: ["a"])
+        let again = try await backfill.run(orgId: "org", saleIds: ["a"])
+        #expect(again == DocumentIDBackfillResult(written: 1))
+        #expect(store.reads == 0)
     }
 }

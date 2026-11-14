@@ -90,7 +90,7 @@ public class DeveloperSettingsViewModel {
         defer { isBackfillingDocumentIDs = false }
         do {
             let result = try await backfillDocumentIDsAction()
-            backfillMessage = "Updated \(result.updated) of \(result.scanned) documents"
+            backfillMessage = "Wrote id on \(result.written) sale documents"
         } catch {
             logger.error("Document id backfill failed: \(error.localizedDescription)")
             backfillMessage = "Backfill failed: \(error.localizedDescription)"
