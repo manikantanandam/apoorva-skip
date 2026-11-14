@@ -24,10 +24,21 @@ public enum POSAction: Equatable, Sendable {
     case weigh(itemId: String)
     case variant(itemId: String)
     case itemDetail(itemId: String)
+    /// Quick-grid layout: open the item search sheet.
+    case find
+    /// Quick-grid layout: confirm MRP, quantity and discount before adding.
+    case quickAdd(itemId: String)
+}
+
+/// Which POS screen to show. `quickGrid` mirrors the production app (quick items + half sheets).
+public enum POSLayout: String, Sendable {
+    case standard
+    case quickGrid
 }
 
 /// What this shop's POS shows; resolved from the vertical, flags and permissions.
 public struct POSConfig: Sendable {
+    public var layout: POSLayout
     public var style: BillingStyle
     public var allowsCalculator: Bool
     public var allowsWholesale: Bool
@@ -36,9 +47,10 @@ public struct POSConfig: Sendable {
     public var allowsHold: Bool
     public var counterName: String
 
-    public init(style: BillingStyle, allowsCalculator: Bool = false, allowsWholesale: Bool = false,
+    public init(layout: POSLayout = .standard, style: BillingStyle, allowsCalculator: Bool = false, allowsWholesale: Bool = false,
                 tracksCommission: Bool = false, sellsPackages: Bool = false, allowsHold: Bool = true,
                 counterName: String = "") {
+        self.layout = layout
         self.style = style
         self.allowsCalculator = allowsCalculator
         self.allowsWholesale = allowsWholesale
@@ -67,13 +79,6 @@ public struct POSView: View {
         self.onAction = onAction
     }
 
-    private var subtitle: String {
-        if let name = viewModel.cart.customerName, !name.isEmpty {
-            return viewModel.isWholesale ? "\(name) · wholesale buyer" : name
-        }
-        return config.counterName.isEmpty ? "Walk-in customer" : config.counterName
-    }
-
     public var body: some View {
         ScreenScroll(spacing: ManiSpacing.md) {
             customerRow
@@ -100,7 +105,9 @@ public struct POSView: View {
         .navigationTitle(config.style == .catalog ? "Catalog" : "New bill")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbar }
-        .sheet(isPresented: $isShowingDatePicker) { datePicker }
+        .sheet(isPresented: $isShowingDatePicker) {
+            POSBillDatePicker(date: $viewModel.cart.billDateTime) { isShowingDatePicker = false }
+        }
         .tipsOverlay(screen: "pos.\(config.style.rawValue)", tips: tips)
         .task { await viewModel.prepareData() }
     }
@@ -108,12 +115,7 @@ public struct POSView: View {
     // MARK: - Header
 
     private var customerRow: some View {
-        RowsCard {
-            NavRow(icon: .customer, title: subtitle,
-                   subtitle: viewModel.customer.map { $0.dueBalance > 0 ? "\($0.phone) · dues \(Money.format($0.dueBalance))" : $0.phone }
-                       ?? "Tap to attach a customer",
-                   action: { onAction(.pickCustomer) })
-        }
+        POSCustomerRow(viewModel: viewModel, config: config) { onAction(.pickCustomer) }
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
@@ -141,22 +143,6 @@ public struct POSView: View {
                 }
             }
         }
-    }
-
-    private var datePicker: some View {
-        NavigationStack {
-            DatePicker("Bill date & time", selection: $viewModel.cart.billDateTime)
-                .datePickerStyle(.graphical)
-                .padding(ManiSpacing.lg)
-                .navigationTitle("Bill date & time")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { isShowingDatePicker = false }
-                    }
-                }
-        }
-        .presentationDetents([.medium])
     }
 
     private var tips: [String] {
@@ -360,5 +346,52 @@ public struct POSView: View {
         if let name = line.doneByName { parts.append("Done by \(name)") }
         if let months = line.warrantyMonths, months > 0 { parts.append("\(months)m warranty") }
         return parts.joined(separator: " · ")
+    }
+}
+
+// MARK: - Shared by both POS layouts
+
+/// Customer row at the top of the bill; tapping opens the customer picker.
+struct POSCustomerRow: View {
+    let viewModel: POSViewModel
+    let config: POSConfig
+    let onPick: () -> Void
+
+    private var title: String {
+        if let name = viewModel.cart.customerName, !name.isEmpty {
+            return viewModel.isWholesale ? "\(name) · wholesale buyer" : name
+        }
+        return config.counterName.isEmpty ? "Walk-in customer" : config.counterName
+    }
+
+    var body: some View {
+        RowsCard {
+            NavRow(icon: .customer, title: title,
+                   subtitle: viewModel.customer.map { $0.dueBalance > 0 ? "\($0.phone) · dues \(Money.format($0.dueBalance))" : $0.phone }
+                       ?? "Tap to attach a customer",
+                   action: onPick)
+        }
+    }
+}
+
+/// Back-dates a bill.
+struct POSBillDatePicker: View {
+    @Binding var date: Date
+    let onDone: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            DatePicker("Bill date & time", selection: $date)
+                .datePickerStyle(.graphical)
+                .padding(ManiSpacing.lg)
+                .navigationTitle("Bill date & time")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done", action: onDone)
+                    }
+                }
+        }
+        .presentationDetents([.medium])
     }
 }

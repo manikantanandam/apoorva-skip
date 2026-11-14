@@ -13,7 +13,6 @@ struct NewBillCoordinatorView: View {
     /// Shared across checkout, split and UPI — they act on the same in-progress sale.
     @State private var checkoutViewModel: CheckoutViewModel?
     @State private var discountViewModel: BillDiscountViewModel?
-    @State private var sheet: NewBillSheet?
     @State private var isShowingPlanLimit = false
     @State private var isPlanLimitAcknowledged = false
     @State private var isConfirmingClose = false
@@ -36,7 +35,10 @@ struct NewBillCoordinatorView: View {
     private var session: AppSession { container.appSession }
 
     private var config: POSConfig {
-        POSConfig(style: session.vertical.billingStyle,
+        // Quick grid is the default (it matches the production app). Swap in the feature flag here once it's named,
+        // e.g. `layout: session.isOn(.<flag>) ? .quickGrid : .standard`.
+        POSConfig(layout: .quickGrid,
+                  style: session.vertical.billingStyle,
                   allowsCalculator: session.isOn(.calculatorMode),
                   allowsWholesale: session.isOn(.wholesalePrice),
                   tracksCommission: session.isOn(.staffCommission),
@@ -48,7 +50,7 @@ struct NewBillCoordinatorView: View {
 
     var body: some View {
         NavigationStack(path: $coordinator.path) {
-            POSView(viewModel: posViewModel, config: config, onAction: handle)
+            posScreen
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Close") {
@@ -60,9 +62,10 @@ struct NewBillCoordinatorView: View {
                     destination(for: route)
                 }
         }
-        .sheet(item: $sheet) { sheet in
+        .sheet(item: $coordinator.presentedSheet) { sheet in
             NavigationStack { sheetContent(sheet) }
-                .presentationDetents([.large])
+                .presentationDetents(sheet.isHalfSheet ? [.medium, .large] : [.large])
+                .presentationDragIndicator(sheet.isHalfSheet ? .visible : .automatic)
         }
         .sheet(isPresented: $isShowingPlanLimit) {
             NavigationStack {
@@ -103,7 +106,15 @@ struct NewBillCoordinatorView: View {
         }
     }
 
+    @ViewBuilder private var posScreen: some View {
+        switch config.layout {
+        case .quickGrid: QuickGridPOSView(viewModel: posViewModel, config: config, onAction: handle)
+        case .standard: POSView(viewModel: posViewModel, config: config, onAction: handle)
+        }
+    }
+
     private func close() {
+        coordinator.dismissSheet()
         coordinator.popToRoot()
         dismiss()
     }
@@ -122,22 +133,29 @@ struct NewBillCoordinatorView: View {
                 openCheckout()
             }
         case .scan: coordinator.push(.scan)
-        case .customItem: sheet = .customItem
+        case .customItem: coordinator.present(.customItem)
         case .discount: openDiscount()
         case .packages: coordinator.push(.parlourPackages)
         case .catalogShare: coordinator.push(.catalogShare)
-        case .editLine(let lineId): coordinator.push(.lineEdit(lineId: lineId))
+        case .editLine(let lineId):
+            if config.layout == .quickGrid {
+                coordinator.present(.quickEdit(lineId: lineId))
+            } else {
+                coordinator.push(.lineEdit(lineId: lineId))
+            }
         case .newLine(let itemId): coordinator.push(.newLine(itemId: itemId))
-        case .weigh(let itemId): sheet = .weight(itemId: itemId)
-        case .variant(let itemId): sheet = .variant(itemId: itemId)
+        case .weigh(let itemId): coordinator.present(.weight(itemId: itemId))
+        case .variant(let itemId): coordinator.present(.variant(itemId: itemId))
         case .itemDetail(let itemId): coordinator.push(.jewelItem(itemId: itemId))
+        case .find: coordinator.present(.find)
+        case .quickAdd(let itemId): coordinator.present(.quickAdd(itemId: itemId))
         }
     }
 
     private func openDiscount() {
         Task {
             discountViewModel = await container.modulesContainer.makeBillDiscountViewModel(cart: posViewModel.cart, session: session)
-            sheet = .discount
+            coordinator.present(.discount)
         }
     }
 
@@ -335,7 +353,7 @@ struct NewBillCoordinatorView: View {
             if let item = posViewModel.item(id: itemId) {
                 WeightSheet(item: item, pricePerUnit: posViewModel.price(of: item)) { weight, price in
                     posViewModel.addWeighted(item, weight: weight, pricePerUnit: price)
-                    self.sheet = nil
+                    coordinator.dismissSheet()
                 }
                 .toolbar { closeButton }
             }
@@ -343,7 +361,7 @@ struct NewBillCoordinatorView: View {
             CustomItemSheet { name, amount, category, save in
                 Task {
                     await posViewModel.addCustom(name: name, amount: amount, category: category, saveAsItem: save)
-                    self.sheet = nil
+                    coordinator.dismissSheet()
                 }
             }
             .toolbar { closeButton }
@@ -351,7 +369,7 @@ struct NewBillCoordinatorView: View {
             if let item = posViewModel.item(id: itemId), let variants = ItemVariants.from(item) {
                 VariantSheet(item: item, variants: variants, price: posViewModel.price(of: item) ?? 0) { variant, quantity in
                     posViewModel.addVariant(item, variant: variant, quantity: quantity)
-                    self.sheet = nil
+                    coordinator.dismissSheet()
                 }
                 .toolbar { closeButton }
             }
@@ -359,7 +377,49 @@ struct NewBillCoordinatorView: View {
             if let discountViewModel {
                 BillDiscountView(viewModel: discountViewModel) { amount, percent in
                     posViewModel.applyDiscount(amount: amount, percent: percent)
-                    self.sheet = nil
+                    coordinator.dismissSheet()
+                }
+                .toolbar { closeButton }
+            }
+        case .find:
+            FindItemsSheet(viewModel: posViewModel,
+                           onSelect: { item in
+                               if let next = posViewModel.quickAction(for: item).quickGridSheet {
+                                   coordinator.present(next)
+                               } else {
+                                   coordinator.dismissSheet()
+                               }
+                           },
+                           onCustomItem: { coordinator.present(.customItem) })
+                .toolbar { closeButton }
+        case .quickAdd(let itemId):
+            if let item = posViewModel.item(id: itemId) {
+                Retained(container.modulesContainer.makeQuickAddLineViewModel(
+                    line: CartItem(category: item, mrp: posViewModel.price(of: item) ?? 0, quantity: 1,
+                                   doneByStaffId: posViewModel.doneBy?.id, doneByName: posViewModel.doneBy?.name,
+                                   warrantyMonths: item.warrantyMonths, lineId: UUID().uuidString),
+                    isNew: true)) { viewModel in
+                    QuickAddLineSheet(viewModel: viewModel,
+                                      onSave: { line in
+                                          posViewModel.addOrUpdate(line)
+                                          coordinator.dismissSheet()
+                                      },
+                                      onRemove: { coordinator.dismissSheet() })
+                }
+                .toolbar { closeButton }
+            }
+        case .quickEdit(let lineId):
+            if let line = posViewModel.line(id: lineId) {
+                Retained(container.modulesContainer.makeQuickAddLineViewModel(line: line, isNew: false)) { viewModel in
+                    QuickAddLineSheet(viewModel: viewModel,
+                                      onSave: { line in
+                                          posViewModel.addOrUpdate(line)
+                                          coordinator.dismissSheet()
+                                      },
+                                      onRemove: {
+                                          posViewModel.removeLine(id: lineId)
+                                          coordinator.dismissSheet()
+                                      })
                 }
                 .toolbar { closeButton }
             }
@@ -368,7 +428,19 @@ struct NewBillCoordinatorView: View {
 
     @ToolbarContentBuilder private var closeButton: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
-            Button("Close") { sheet = nil }
+            Button("Close") { coordinator.dismissSheet() }
+        }
+    }
+}
+
+private extension POSAction {
+    /// The sheet an item picked in the Find sheet opens next.
+    var quickGridSheet: NewBillSheet? {
+        switch self {
+        case .variant(let itemId): .variant(itemId: itemId)
+        case .weigh(let itemId): .weight(itemId: itemId)
+        case .quickAdd(let itemId): .quickAdd(itemId: itemId)
+        default: nil
         }
     }
 }

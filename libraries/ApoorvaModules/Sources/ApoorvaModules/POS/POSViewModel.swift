@@ -59,6 +59,8 @@ public class POSViewModel {
     /// nil = "All", "frequent" = hotkeys, otherwise a category id.
     public var categoryFilter: String? = "frequent"
     public private(set) var categoryNames: [String: String] = [:]
+    /// Item ids ranked by units sold recently; feeds `quickItems` when there are no hotkeys.
+    public private(set) var bestSellerIds: [String] = []
     public private(set) var customer: Customer?
     public private(set) var staff: [Member] = []
     /// Parlour: the staff member new services are credited to (nil = skip).
@@ -72,17 +74,20 @@ public class POSViewModel {
     private let memberRepository: (any OrgCollectionRepositoryProtocol<Member>)?
     private let customerRepository: CustomerRepositoryProtocol?
     private let categoryLoader: (@Sendable () async -> [String: String])?
+    private let salesLoader: (@Sendable () async -> [Sale])?
 
     public init(inventoryRepository: InventoryItemRepositoryProtocol,
                 heldBillRepository: HeldBillRepositoryProtocol,
                 memberRepository: (any OrgCollectionRepositoryProtocol<Member>)? = nil,
                 customerRepository: CustomerRepositoryProtocol? = nil,
-                categoryLoader: (@Sendable () async -> [String: String])? = nil) {
+                categoryLoader: (@Sendable () async -> [String: String])? = nil,
+                salesLoader: (@Sendable () async -> [Sale])? = nil) {
         self.inventoryRepository = inventoryRepository
         self.heldBillRepository = heldBillRepository
         self.memberRepository = memberRepository
         self.customerRepository = customerRepository
         self.categoryLoader = categoryLoader
+        self.salesLoader = salesLoader
     }
 
     // MARK: - Customer fields (kept for the existing customer row)
@@ -110,6 +115,10 @@ public class POSViewModel {
                 staff = ((try? await memberRepository.all()) ?? []).filter(\.isActive).sorted { $0.name < $1.name }
             }
             if let categoryLoader { categoryNames = await categoryLoader() }
+            if let salesLoader {
+                let since = Calendar.current.date(byAdding: .day, value: -Self.bestSellerWindowDays, to: Date()) ?? Date()
+                bestSellerIds = Self.bestSellerIds(from: await salesLoader(), since: since)
+            }
             await refreshHeldBillsCount()
             try await inventoryRepository.sync(force: false)
             apply(try await inventoryRepository.getInventoryItems())
@@ -142,19 +151,59 @@ public class POSViewModel {
     }
 
     public var visibleItems: [InventoryItem] {
-        let query = searchText.trimmingCharacters(in: .whitespaces).lowercased()
-        if !query.isEmpty {
-            return items.filter {
-                $0.name.lowercased().contains(query)
-                    || ($0.barcode ?? "").contains(query)
-                    || ($0.designCode ?? "").lowercased().contains(query)
-            }
+        if !searchText.trimmingCharacters(in: .whitespaces).isEmpty {
+            return items(matching: searchText)
         }
         switch categoryFilter {
         case "frequent": return hotkeyItems
         case .some(let id): return items.filter { $0.categoryId == id }
         case nil: return items
         }
+    }
+
+    /// Items whose name, barcode or design code contains `query`; all items when it's blank.
+    public func items(matching query: String) -> [InventoryItem] {
+        let query = query.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !query.isEmpty else { return items }
+        return items.filter {
+            $0.name.lowercased().contains(query)
+                || ($0.barcode ?? "").contains(query)
+                || ($0.designCode ?? "").lowercased().contains(query)
+        }
+    }
+
+    // MARK: - Quick grid
+
+    public static let quickItemLimit = 8
+    static let bestSellerWindowDays = 30
+
+    /// Quick-grid tiles: hotkeys, else recent best sellers, else the first items.
+    public var quickItems: [InventoryItem] {
+        if !hotkeyItems.isEmpty { return Array(hotkeyItems.prefix(Self.quickItemLimit)) }
+        let byId = Dictionary(items.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let bestSellers = bestSellerIds.compactMap { byId[$0] }
+        if !bestSellers.isEmpty { return Array(bestSellers.prefix(Self.quickItemLimit)) }
+        return Array(items.prefix(Self.quickItemLimit))
+    }
+
+    /// Item ids by units sold since `since`, most first. Skips cancelled/deleted bills, returns,
+    /// one-off quick items and packages.
+    static func bestSellerIds(from sales: [Sale], since: Date) -> [String] {
+        var sold: [String: Int] = [:]
+        for sale in sales where !sale.isDeleted && !sale.isCancelled && !sale.isReturn && sale.timestamp >= since {
+            for line in sale.items where !line.categoryId.hasPrefix("custom-") && !line.categoryId.hasPrefix("package:") {
+                sold[line.categoryId, default: 0] += line.qty
+            }
+        }
+        return sold.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }.map(\.key)
+    }
+
+    /// Quick-grid layout: items needing a variant or weight keep their sheets; everything else
+    /// confirms MRP, quantity and discount in the add sheet.
+    public func quickAction(for item: InventoryItem) -> POSAction {
+        if ItemVariants.from(item) != nil { return .variant(itemId: item.id) }
+        if isLoose(item) { return .weigh(itemId: item.id) }
+        return .quickAdd(itemId: item.id)
     }
 
     public func item(id: String) -> InventoryItem? {
