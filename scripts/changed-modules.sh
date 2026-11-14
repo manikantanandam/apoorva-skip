@@ -32,7 +32,7 @@ fi
 FILES="$(git diff --name-only "$BASE" "$HEAD")"
 
 # Global triggers: anything that can affect every module.
-if echo "$FILES" | grep -qE '^(\.github/|scripts/|sonar-project\.properties)'; then
+if echo "$FILES" | grep -qE '^(\.github/workflows/ci\.yml|scripts/(changed-modules|coverage-summary)\.sh|sonar-project\.properties)$'; then
   emit "${PACKAGES[@]}"; exit 0
 fi
 
