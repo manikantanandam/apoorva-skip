@@ -20,8 +20,10 @@ jobs:
       - name: Reject tags not reachable from main
         run: |
           git fetch origin main
+          TAG_OID=$(git rev-parse "refs/tags/${GITHUB_REF_NAME}")
           if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
             echo "::error::Tag ${GITHUB_REF_NAME} points at ${GITHUB_SHA}, which is not on main. Merge the PR first, then tag main."
-            git push origin ":refs/tags/${GITHUB_REF_NAME}"
+            # Lease on the validated tag object so a tag moved to a valid commit meanwhile is not deleted.
+            git push --force-with-lease="refs/tags/${GITHUB_REF_NAME}:${TAG_OID}" origin ":refs/tags/${GITHUB_REF_NAME}"
             exit 1
           fi
