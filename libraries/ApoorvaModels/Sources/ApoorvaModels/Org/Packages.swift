@@ -19,7 +19,7 @@ public struct ServicePackage: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString, name: String, details: String = "", price: Double, sessions: Int,
+    public init(id: String = DocumentID.make(), name: String, details: String = "", price: Double, sessions: Int,
                 validityDays: Int = 90, updatedAt: Date? = nil, isDeleted: Bool = false) {
         self.id = id
         self.name = name
@@ -50,7 +50,7 @@ public struct CustomerPackage: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString, package: ServicePackage, customerPhone: String, customerName: String,
+    public init(id: String = DocumentID.make(), package: ServicePackage, customerPhone: String, customerName: String,
                 purchasedAt: Date = Date(), saleId: String? = nil, sessionsUsed: Int = 0,
                 updatedAt: Date? = nil, isDeleted: Bool = false) {
         self.id = id

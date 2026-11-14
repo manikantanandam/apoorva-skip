@@ -223,7 +223,7 @@ public class POSViewModel {
     public func addCustom(name: String, amount: Double, category: String, saveAsItem: Bool) async {
         guard amount > 0 else { return }
         let trimmed = name.trimmingCharacters(in: .whitespaces)
-        let item = InventoryItem(id: saveAsItem ? UUID().uuidString : "custom-\(UUID().uuidString)",
+        let item = InventoryItem(id: saveAsItem ? DocumentID.make() : "custom-\(UUID().uuidString)",
                                  name: trimmed.isEmpty ? category : trimmed, sellPrice: amount)
         if saveAsItem {
             try? await inventoryRepository.saveInventoryItem(item: item)
@@ -337,7 +337,7 @@ public class POSViewModel {
         defer { isHolding = false }
 
         let bill = HeldBill(
-            id: activeHeldBillId ?? UUID().uuidString,
+            id: activeHeldBillId ?? DocumentID.make(),
             customerName: cart.customerName ?? "",
             customerPhone: cart.customerPhone ?? "",
             items: cart.items,

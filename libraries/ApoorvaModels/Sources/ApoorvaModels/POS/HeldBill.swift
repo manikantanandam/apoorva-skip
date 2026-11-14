@@ -21,7 +21,7 @@ public struct HeldBill: Codable, Sendable, Identifiable {
         case id, customerName, customerPhone, items, total, createdAt, updatedAt, isDeleted
     }
 
-    public init(id: String = UUID().uuidString,
+    public init(id: String = DocumentID.make(),
                 customerName: String,
                 customerPhone: String,
                 items: [CartItem],
@@ -41,7 +41,7 @@ public struct HeldBill: Codable, Sendable, Identifiable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = (try? container.decodeIfPresent(String.self, forKey: .id)) ?? UUID().uuidString
+        self.id = (try? container.decodeIfPresent(String.self, forKey: .id)) ?? DocumentID.make()
         self.customerName = (try? container.decodeIfPresent(String.self, forKey: .customerName)) ?? ""
         self.customerPhone = (try? container.decodeIfPresent(String.self, forKey: .customerPhone)) ?? ""
         self.items = (try? container.decodeIfPresent([CartItem].self, forKey: .items)) ?? []

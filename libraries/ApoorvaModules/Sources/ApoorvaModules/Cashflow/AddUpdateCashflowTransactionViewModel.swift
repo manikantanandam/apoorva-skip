@@ -59,7 +59,7 @@ public class AddUpdateCashflowTransactionViewModel {
             self.toAccountId = tx.toAccountId
             self.isUpdating = true
         } else {
-            self.id = UUID().uuidString
+            self.id = DocumentID.make()
             self.timestamp = defaultDate
             self.isUpdating = false
         }

@@ -18,29 +18,29 @@ Baseline of the **live** Firestore structure as read by this app. Derived from c
 | `organizations/{orgId}` | org id | `OrganizationService` |
 | `organizations/{orgId}/inventory/{itemId}` | `InventoryItem.id` | `InventoryItemService` |
 | `organizations/{orgId}/customers/{phone}` | phone number (write path added by `CustomerService.upsertCustomerAfterSale`; **⚠ verify** against pre-existing legacy docs) | `CustomerService` |
-| `organizations/{orgId}/sales/{saleId}` | doc ID (not stored as a field) | `SaleService` |
-| `organizations/{orgId}/cashflow/{txId}` | UUID string | `CashflowTransactionService` |
+| `organizations/{orgId}/sales/{saleId}` | Firestore auto ID, also stored as `id` (matches production) | `SaleService` |
+| `organizations/{orgId}/cashflow/{txId}` | Firestore auto ID (`id` field = doc ID) | `CashflowTransactionService` |
 | `organizations/{orgId}/dailyCashflowSummaries/{dd-MM-yyyy}` | date string | `DailyCashflowSummaryService` |
-| `organizations/{orgId}/heldBills/{id}` | UUID string | `HeldBillService` (new, read-write) |
-| `organizations/{orgId}/customerLedger/{id}` | UUID string | `OrgCollectionService<CustomerLedgerEntry>` (new; signed dues entries: sale, payment, opening, advance, reversal) |
-| `organizations/{orgId}/stockMovements/{id}` | UUID string | `OrgCollectionService<StockMovement>` (new; signed stock deltas with a reason) |
-| `organizations/{orgId}/auditEvents/{id}` | UUID string | `OrgCollectionService<AuditEvent>` (new; append-only by convention — not enforced until rules exist) |
+| `organizations/{orgId}/heldBills/{id}` | Firestore auto ID (`id` field = doc ID) | `HeldBillService` (new, read-write) |
+| `organizations/{orgId}/customerLedger/{id}` | Firestore auto ID (`id` field = doc ID) | `OrgCollectionService<CustomerLedgerEntry>` (new; signed dues entries: sale, payment, opening, advance, reversal) |
+| `organizations/{orgId}/stockMovements/{id}` | Firestore auto ID (`id` field = doc ID) | `OrgCollectionService<StockMovement>` (new; signed stock deltas with a reason) |
+| `organizations/{orgId}/auditEvents/{id}` | Firestore auto ID (`id` field = doc ID) | `OrgCollectionService<AuditEvent>` (new; append-only by convention — not enforced until rules exist) |
 
 | `organizations/{orgId}/settings/org` | fixed id `org` | `OrgSettings`: profile (shop name, vertical, bill prefix, setup progress), tax, receipt, payments, theme (accent, Clean/Bold, font, lock), flags (org/store/role), permission matrix, plan. **Missing on legacy orgs** — the app treats that as "already set up" with defaults |
-| `organizations/{orgId}/stores/{id}` | UUID string (`default` for the implicit single store) | `Store`: name, vertical, address, prefix, accent |
+| `organizations/{orgId}/stores/{id}` | Firestore auto ID (`default` for the implicit single store) | `Store`: name, vertical, address, prefix, accent |
 | `organizations/{orgId}/members/{uid}` | Firebase uid | `Member`: org role (owner/manager/cashier/accountant), store access, active/invited. Overrides the role derived from legacy `users.role`, which is never rewritten |
-| `organizations/{orgId}/suppliers/{id}` | UUID string | `Supplier`: name, phone, opening due (written by onboarding opening balances; purchases/ledger in a later phase) |
-| `organizations/{orgId}/servicePackages/{id}` | UUID string | `ServicePackage`: name, details, price, sessions (0 = membership), validityDays |
-| `organizations/{orgId}/customerPackages/{id}` | UUID string | `CustomerPackage`: package snapshot, customer phone/name, sessions/sessionsUsed, purchasedAt, validUntil, saleId. Created after a bill with a `package:` line is saved; "Use 1 session" increments `sessionsUsed` and writes an audit event |
-| `organizations/{orgId}/orders/{id}` | UUID string | `Order`: number (`O-0001`, from the local count, so offline devices can collide like bill numbers), customer phone/name, details, total, advance + mode, readyBy, pickup/delivery, status `open`/`ready`/`delivered`/`cancelled`, readyAt/deliveredAt, saleId |
-| `organizations/{orgId}/warrantyClaims/{id}` | UUID string | `WarrantyClaim`: saleId, billNumber, item id/name, customer phone, action `replace`/`repair`/`refund`, note |
-| `organizations/{orgId}/categories/{id}` | UUID string | `ItemCategory`: name, sortOrder (billing chip order). Items point at it via `inventory.categoryId` |
-| `organizations/{orgId}/purchases/{id}` | UUID string | `Purchase`: number (`P-001`), supplier id/name, isReturn, lines (item, qty, unit cost; empty for "total only"), total, paid + mode, note |
-| `organizations/{orgId}/supplierLedger/{id}` | UUID string | `SupplierLedgerEntry`: supplierId, kind `purchase`/`payment`/`purchaseReturn`, signed amount (+ = shop owes more), mode, purchaseId. Owed = `Supplier.openingDue` + sum |
-| `organizations/{orgId}/expenses/{id}` | UUID string | `Expense`: title, category, amount, mode `cash`/`upi`/`bank`, date, repeatsMonthly |
+| `organizations/{orgId}/suppliers/{id}` | Firestore auto ID (`id` field = doc ID) | `Supplier`: name, phone, opening due (written by onboarding opening balances; purchases/ledger in a later phase) |
+| `organizations/{orgId}/servicePackages/{id}` | Firestore auto ID (`id` field = doc ID) | `ServicePackage`: name, details, price, sessions (0 = membership), validityDays |
+| `organizations/{orgId}/customerPackages/{id}` | Firestore auto ID (`id` field = doc ID) | `CustomerPackage`: package snapshot, customer phone/name, sessions/sessionsUsed, purchasedAt, validUntil, saleId. Created after a bill with a `package:` line is saved; "Use 1 session" increments `sessionsUsed` and writes an audit event |
+| `organizations/{orgId}/orders/{id}` | Firestore auto ID (`id` field = doc ID) | `Order`: number (`O-0001`, from the local count, so offline devices can collide like bill numbers), customer phone/name, details, total, advance + mode, readyBy, pickup/delivery, status `open`/`ready`/`delivered`/`cancelled`, readyAt/deliveredAt, saleId |
+| `organizations/{orgId}/warrantyClaims/{id}` | Firestore auto ID (`id` field = doc ID) | `WarrantyClaim`: saleId, billNumber, item id/name, customer phone, action `replace`/`repair`/`refund`, note |
+| `organizations/{orgId}/categories/{id}` | Firestore auto ID (`id` field = doc ID) | `ItemCategory`: name, sortOrder (billing chip order). Items point at it via `inventory.categoryId` |
+| `organizations/{orgId}/purchases/{id}` | Firestore auto ID (`id` field = doc ID) | `Purchase`: number (`P-001`), supplier id/name, isReturn, lines (item, qty, unit cost; empty for "total only"), total, paid + mode, note |
+| `organizations/{orgId}/supplierLedger/{id}` | Firestore auto ID (`id` field = doc ID) | `SupplierLedgerEntry`: supplierId, kind `purchase`/`payment`/`purchaseReturn`, signed amount (+ = shop owes more), mode, purchaseId. Owed = `Supplier.openingDue` + sum |
+| `organizations/{orgId}/expenses/{id}` | Firestore auto ID (`id` field = doc ID) | `Expense`: title, category, amount, mode `cash`/`upi`/`bank`, date, repeatsMonthly |
 | `organizations/{orgId}/dayCloses/{dd-MM-yyyy}` | day key | `DayClose`: expected and counted cash, note, carryForward, closedBy/Name/At. Reopen soft-deletes it |
 | `organizations/{orgId}/attendance/{dd-MM-yyyy_memberId}` | day + member | `AttendanceRecord`: status `present`/`half`/`absent`/`leave`, inAt, markedBy |
-| `organizations/{orgId}/salaryPayments/{id}` | UUID string | `SalaryPayment`: member, month `yyyy-MM`, kind `salary`/`advance`, amount, mode |
+| `organizations/{orgId}/salaryPayments/{id}` | Firestore auto ID (`id` field = doc ID) | `SalaryPayment`: member, month `yyyy-MM`, kind `salary`/`advance`, amount, mode |
 | `invites/{token}` | 8-char code | `Invite` (top-level: the joiner doesn't know the org yet). Org, store, role, inviter, 72 h `expiresAt` (checked on the client only), `acceptedBy`/`acceptedAt` |
 | `platform/config` | fixed | `PlatformConfig`: app-level flags (incl. `auth.*`), `minAppVersion`, default visual style, trial/free/grace limits. Written only by superAdmin from the console |
 
@@ -111,6 +111,8 @@ Optional/defaulted: `subCategory`, `fromAccountId`, `toAccountId` (`""`), `perso
 - **`*InMs` fields** (`timestampInMs`, `updatedAtInMs`, `establishedAtInMs`) are written with `timeIntervalSince1970` (seconds) at `CashflowTransactionService.swift:56`. **⚠ verify** unit in legacy data.
 - **Soft delete**: `isDeleted: Bool`. Queries do not filter it; deleted docs sync down. Remote soft delete exists only for cashflow (sets `isDeleted` + `updatedAt`, not `updatedAtInMs`).
 - **Writes**: cashflow/summary add skips if the doc exists; update uses `setData(merge: true)` and stamps `updatedAt`.
+- **Document IDs**: new docs use Firestore-style auto IDs (`DocumentID.make()`: 20 chars of `A-Za-z0-9`), never UUIDs, and every doc stores the same value in its `id` field, as production does. Exceptions: customers are keyed by phone, daily summaries by date, users by auth uid. Embedded org `accounts[]` keep their production UUIDs. Docs written by earlier builds without `id` are fixed by the debug-only Developer → "Backfill document IDs" (`DocumentIDBackfill`).
+- **Production sale shape** (reference, `Apoorva-Production`): `customerName`, `customerPhone`, `id` (= doc ID), `items[]` (`cat_id`, `categoryName`, `discountType`, `finalPrice`, `qty`, `stickerPrice`), `netPayable`, `overallDiscountAmount`, `overallDiscountPercent`, `payments` (map, e.g. `cash`), `roundOff`, `source`, `staffId`, `status`, `subtotal`, `timestamp`, `whatsappStatus`. This app writes the same fields plus additive ones (`updatedAt`, `serverUpdatedAt`, `isDeleted`, `billNumber`, `storeId`, `returnOfSaleId`) that the readers default when absent.
 
 ## 6. Delta-sync queries
 

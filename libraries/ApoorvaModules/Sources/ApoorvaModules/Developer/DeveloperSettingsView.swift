@@ -42,6 +42,19 @@ public struct DeveloperSettingsView: View {
                 ManiToggleRow(title: "Screen ID overlay", isOn: $viewModel.showsScreenIdentifiers)
             }
 
+            if viewModel.canBackfillDocumentIDs {
+                Section {
+                    Button(viewModel.isBackfillingDocumentIDs ? "Backfilling…" : "Backfill document IDs") {
+                        Task { await viewModel.backfillDocumentIDs() }
+                    }
+                    .disabled(viewModel.isBackfillingDocumentIDs)
+                } header: {
+                    Text("Firestore")
+                } footer: {
+                    Text(viewModel.backfillMessage ?? "Writes the missing `id` field (same as the doc ID) on this org's documents. Safe to run again.")
+                }
+            }
+
             if viewModel.canClearDatabase {
                 Section("Data") {
                     Button("Clear local database", role: .destructive) {

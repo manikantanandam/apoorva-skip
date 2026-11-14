@@ -25,7 +25,7 @@ public struct AuditEvent: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString,
+    public init(id: String = DocumentID.make(),
                 category: AuditCategory,
                 action: String,
                 summary: String,

@@ -37,7 +37,7 @@ public struct CustomerLedgerEntry: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString,
+    public init(id: String = DocumentID.make(),
                 customerPhone: String,
                 customerName: String,
                 kind: LedgerEntryKind,

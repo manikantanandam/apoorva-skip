@@ -44,6 +44,8 @@ public final class SaleService: SaleServiceProtocol {
     /// dictionary keyed by an enum, which the generic encoder mis-encodes as an array.
     public func addSale(_ sale: Sale, for orgId: String) async throws {
         var payload = Self.linesPayload(for: sale)
+        // Production sale docs store their own doc id as `id`; keep that shape.
+        payload["id"] = sale.id
         payload["staffId"] = sale.staffId
         payload["customerPhone"] = sale.customerPhone
         payload["customerName"] = sale.customerName
@@ -74,6 +76,7 @@ public final class SaleService: SaleServiceProtocol {
 
     public func updateSale(_ sale: Sale, for orgId: String) async throws {
         var fields = Self.linesPayload(for: sale)
+        fields["id"] = sale.id
         fields["customerPhone"] = sale.customerPhone
         fields["customerName"] = sale.customerName
         fields["editReason"] = sale.editReason ?? ""

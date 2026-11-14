@@ -20,11 +20,14 @@ public class DeveloperSettingsViewModel {
     private var tools: DeveloperToolsProtocol
     private let clearLocalDatabaseAction: () -> Void
     private let terminateAppAction: () -> Void
+    private let backfillDocumentIDsAction: (() async throws -> DocumentIDBackfillResult)?
 
     /// Environment the app was launched with; switching only takes effect after relaunch.
     public let activeEnvironment: AppEnvironment
     public var pendingEnvironment: AppEnvironment
     public var errorMessage: String?
+    public private(set) var isBackfillingDocumentIDs = false
+    public private(set) var backfillMessage: String?
 
     public var isOfflineSimulated: Bool {
         didSet { tools.isOfflineSimulated = isOfflineSimulated }
@@ -37,12 +40,14 @@ public class DeveloperSettingsViewModel {
                 environmentStore: EnvironmentStore,
                 tools: DeveloperToolsProtocol,
                 clearLocalDatabase: @escaping () -> Void,
-                terminateApp: @escaping () -> Void) {
+                terminateApp: @escaping () -> Void,
+                backfillDocumentIDs: (() async throws -> DocumentIDBackfillResult)? = nil) {
         self.authService = authService
         self.environmentStore = environmentStore
         self.tools = tools
         self.clearLocalDatabaseAction = clearLocalDatabase
         self.terminateAppAction = terminateApp
+        self.backfillDocumentIDsAction = backfillDocumentIDs
         self.activeEnvironment = environmentStore.current
         self.pendingEnvironment = environmentStore.current
         self.isOfflineSimulated = tools.isOfflineSimulated
@@ -74,5 +79,21 @@ public class DeveloperSettingsViewModel {
     public func clearLocalDatabase() {
         guard canClearDatabase else { return }
         clearLocalDatabaseAction()
+    }
+
+    public var canBackfillDocumentIDs: Bool { backfillDocumentIDsAction != nil }
+
+    /// Adds the missing `id` field (= doc id) to this org's Firestore docs. See `DocumentIDBackfill`.
+    public func backfillDocumentIDs() async {
+        guard let backfillDocumentIDsAction, !isBackfillingDocumentIDs else { return }
+        isBackfillingDocumentIDs = true
+        defer { isBackfillingDocumentIDs = false }
+        do {
+            let result = try await backfillDocumentIDsAction()
+            backfillMessage = "Updated \(result.updated) of \(result.scanned) documents"
+        } catch {
+            logger.error("Document id backfill failed: \(error.localizedDescription)")
+            backfillMessage = "Backfill failed: \(error.localizedDescription)"
+        }
     }
 }

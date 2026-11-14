@@ -81,7 +81,7 @@ public struct CashflowTransaction: Identifiable, Codable, Hashable, Sendable {
         self.updatedAtInMs = try container.decodeIfPresent(TimeInterval.self, forKey: .updatedAtInMs) ?? 0
     }
     
-    public init(id: String = UUID().uuidString,
+    public init(id: String = DocumentID.make(),
                 timestamp: Date,
                 particulars: String,
                 amount: Double,

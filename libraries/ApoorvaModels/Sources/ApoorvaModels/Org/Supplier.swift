@@ -18,7 +18,7 @@ public struct Supplier: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString, name: String, phone: String = "", openingDue: Double = 0,
+    public init(id: String = DocumentID.make(), name: String, phone: String = "", openingDue: Double = 0,
                 notes: String = "", createdAt: Date = Date(), updatedAt: Date? = nil, isDeleted: Bool = false) {
         self.id = id
         self.name = name

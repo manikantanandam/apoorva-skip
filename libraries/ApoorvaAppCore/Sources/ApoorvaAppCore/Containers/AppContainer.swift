@@ -108,7 +108,11 @@ public class AppContainer {
                 try? FileManager.default.removeItem(atPath: dbPath)
                 exit(0)
             },
-            terminateApp: { exit(0) }
+            terminateApp: { exit(0) },
+            backfillDocumentIDs: { [appSession] in
+                guard let orgId = appSession.orgId, !appSession.isDemo else { return DocumentIDBackfillResult() }
+                return try await DocumentIDBackfill().run(orgId: orgId)
+            }
         )
         #else
         return nil

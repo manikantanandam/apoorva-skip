@@ -170,7 +170,7 @@ public final class ReturnViewModel {
             SaleItem(categoryId: line.item.categoryId, categoryName: line.item.categoryName, qty: line.returnQty,
                      stickerPrice: line.item.stickerPrice, finalPrice: line.item.finalPrice, discountType: line.item.discountType)
         }
-        var returnSale = Sale(id: UUID().uuidString, staffId: actor,
+        var returnSale = Sale(id: DocumentID.make(), staffId: actor,
                               customerPhone: original.customerPhone, customerName: original.customerName,
                               items: items, subtotal: refundAmount, overallDiscountPercent: 0, overallDiscountAmount: 0,
                               roundOff: 0, netPayable: refundAmount,

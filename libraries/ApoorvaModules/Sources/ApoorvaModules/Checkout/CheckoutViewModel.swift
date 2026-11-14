@@ -180,7 +180,7 @@ public class CheckoutViewModel {
             let staffId = session?.actorId.isEmpty == false ? session!.actorId : user.id
             let billNumber = await session?.nextBillNumber()
             let sale = Sale(
-                id: UUID().uuidString,
+                id: DocumentID.make(),
                 staffId: staffId,
                 customerPhone: cart.customerPhone ?? "",
                 customerName: cart.customerName?.isEmpty == false ? cart.customerName! : "Walk-in",

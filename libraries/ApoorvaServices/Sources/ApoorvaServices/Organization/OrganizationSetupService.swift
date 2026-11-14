@@ -51,7 +51,7 @@ public final class OrganizationSetupService: OrganizationSetupServicing, @unchec
     }
 
     public func createShop(_ shop: NewShop, owner: AuthAccount) async throws -> String {
-        let orgId = UUID().uuidString
+        let orgId = DocumentID.make()
         let now = Date()
 
         // Same shape the legacy app writes (docs/12 §3): Timestamp createdAt, embedded accounts.

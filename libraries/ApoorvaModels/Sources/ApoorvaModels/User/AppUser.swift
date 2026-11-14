@@ -52,7 +52,7 @@ public struct AppUser: Codable, Sendable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         
-        self.id = (try? container.decodeIfPresent(String.self, forKey: .id)) ?? UUID().uuidString
+        self.id = (try? container.decodeIfPresent(String.self, forKey: .id)) ?? DocumentID.make()
         self.name = (try? container.decodeIfPresent(String.self, forKey: .name)) ?? "Unknown User"
         self.email = (try? container.decodeIfPresent(String.self, forKey: .email)) ?? ""
         self.role = (try? container.decodeIfPresent(AppUserRole.self, forKey: .role)) ?? .standard

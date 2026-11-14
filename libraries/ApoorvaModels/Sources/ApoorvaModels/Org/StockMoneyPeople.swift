@@ -20,7 +20,7 @@ public struct ItemCategory: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString, name: String, sortOrder: Int, updatedAt: Date? = nil, isDeleted: Bool = false) {
+    public init(id: String = DocumentID.make(), name: String, sortOrder: Int, updatedAt: Date? = nil, isDeleted: Bool = false) {
         self.id = id
         self.name = name
         self.sortOrder = sortOrder
@@ -66,7 +66,7 @@ public struct Purchase: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString, number: String, supplierId: String, supplierName: String, isReturn: Bool = false,
+    public init(id: String = DocumentID.make(), number: String, supplierId: String, supplierName: String, isReturn: Bool = false,
                 lines: [PurchaseLine], total: Double, paid: Double, paidMode: String = PaymentMode.cash.rawValue, note: String = "",
                 createdAt: Date = Date(), createdBy: String, updatedAt: Date? = nil, isDeleted: Bool = false) {
         self.id = id
@@ -108,7 +108,7 @@ public struct SupplierLedgerEntry: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString, supplierId: String, kind: SupplierLedgerKind, amount: Double, mode: String? = nil,
+    public init(id: String = DocumentID.make(), supplierId: String, kind: SupplierLedgerKind, amount: Double, mode: String? = nil,
                 purchaseId: String? = nil, note: String = "", createdAt: Date = Date(), createdBy: String,
                 updatedAt: Date? = nil, isDeleted: Bool = false) {
         self.id = id
@@ -168,7 +168,7 @@ public struct Expense: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString, title: String, category: ExpenseCategory, amount: Double, mode: String = "cash",
+    public init(id: String = DocumentID.make(), title: String, category: ExpenseCategory, amount: Double, mode: String = "cash",
                 date: Date = Date(), repeatsMonthly: Bool = false, note: String = "", createdBy: String,
                 updatedAt: Date? = nil, isDeleted: Bool = false) {
         self.id = id
@@ -294,7 +294,7 @@ public struct SalaryPayment: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString, memberId: String, memberName: String, month: String, kind: SalaryPaymentKind,
+    public init(id: String = DocumentID.make(), memberId: String, memberName: String, month: String, kind: SalaryPaymentKind,
                 amount: Double, mode: String = "cash", createdAt: Date = Date(), createdBy: String,
                 updatedAt: Date? = nil, isDeleted: Bool = false) {
         self.id = id

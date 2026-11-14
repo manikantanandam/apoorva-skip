@@ -23,7 +23,7 @@ public struct Store: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString,
+    public init(id: String = DocumentID.make(),
                 name: String,
                 vertical: Vertical,
                 address: String = "",

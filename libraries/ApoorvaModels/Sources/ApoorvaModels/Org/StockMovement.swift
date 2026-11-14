@@ -26,7 +26,7 @@ public struct StockMovement: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString,
+    public init(id: String = DocumentID.make(),
                 itemId: String,
                 itemName: String,
                 delta: Double,

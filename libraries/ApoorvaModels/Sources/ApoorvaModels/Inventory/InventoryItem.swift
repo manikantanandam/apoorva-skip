@@ -34,7 +34,7 @@ public struct InventoryItem: Codable, Sendable, Identifiable {
     }
 
     // Standard Initializer
-    public init(id: String = UUID().uuidString,
+    public init(id: String = DocumentID.make(),
                 name: String,
                 currentStock: Int = 0,
                 billMachineNumber: Int = 0,

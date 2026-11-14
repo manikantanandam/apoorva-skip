@@ -43,7 +43,7 @@ public struct Order: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString, number: String, customerPhone: String, customerName: String,
+    public init(id: String = DocumentID.make(), number: String, customerPhone: String, customerName: String,
                 details: String, total: Double, advance: Double, advanceMode: String = PaymentMode.cash.rawValue,
                 readyBy: Date, fulfilment: OrderFulfilment = .pickup, notifyWhenReady: Bool = true,
                 status: OrderStatus = .open, readyAt: Date? = nil, deliveredAt: Date? = nil, saleId: String? = nil,
@@ -98,7 +98,7 @@ public struct WarrantyClaim: OrgDocument {
     public var updatedAt: Date?
     public var isDeleted: Bool
 
-    public init(id: String = UUID().uuidString, saleId: String, billNumber: String, itemId: String, itemName: String,
+    public init(id: String = DocumentID.make(), saleId: String, billNumber: String, itemId: String, itemName: String,
                 customerPhone: String, action: WarrantyAction, note: String, createdAt: Date = Date(), createdBy: String,
                 updatedAt: Date? = nil, isDeleted: Bool = false) {
         self.id = id
