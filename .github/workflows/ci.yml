@@ -16,10 +16,27 @@ jobs:
   detect-modules:
     name: Detect Testable Modules
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # Delete stale bot comments
     outputs:
       modules: ${{ steps.set-modules.outputs.modules }}
       run_ui: ${{ steps.ui-paths.outputs.run_ui }}
     steps:
+      - name: Remove Stale Coverage and Sonar Comments
+        if: github.event_name == 'pull_request'
+        continue-on-error: true # Fork PRs get a read-only token; stale comments are harmless
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The previous run was superseded or finished; its numbers describe an older commit.
+          # Fresh comments are posted when this run's coverage and Sonar jobs complete.
+          gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" --paginate \
+            --jq '.[] | select((.user.login == "github-actions[bot]" and (.body | startswith("## 📊 Code Coverage (all modules)"))) or .user.login == "sonarqubecloud[bot]") | .id' |
+            while read -r id; do
+              gh api -X DELETE "repos/${{ github.repository }}/issues/comments/$id"
+            done
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
