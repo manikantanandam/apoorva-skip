@@ -187,6 +187,13 @@ jobs:
       - name: Install xcbeautify
         run: brew install xcbeautify
 
+      # The app target bundles both plists (gitignored), so the build fails without them.
+      - name: Write Firebase Config
+        env:
+          GOOGLE_SERVICE_INFO_PLIST_DEBUG_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_DEBUG_B64 }}
+          GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64 }}
+        run: scripts/setup-firebase-config.sh
+
       - name: Run UI Tests
         run: |
           xcrun simctl list devices available > /dev/null

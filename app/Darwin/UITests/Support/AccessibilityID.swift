@@ -8,10 +8,24 @@
 enum AccessibilityID {
     enum Splash {
         static let getStarted = "splash.getStarted"
+        static let demo = "splash.demo"
+    }
+
+    enum DemoShop {
+        static let trySample = "demoShop.trySample"
     }
 
     enum SignInHub {
         static let emailButton = "signInHub.emailButton"
+    }
+
+    enum Pos {
+        static let customerRow = "pos.customerRow"
+    }
+
+    enum CustomerPicker {
+        static let addAndAttach = "customerPicker.addAndAttach"
+        static let walkIn = "customerPicker.walkIn"
     }
 
     enum EmailSignIn {

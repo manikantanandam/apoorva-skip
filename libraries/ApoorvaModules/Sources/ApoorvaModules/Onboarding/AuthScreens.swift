@@ -44,6 +44,7 @@ public struct SplashView: View {
             ManiButton("Get started", action: onGetStarted)
                 .accessibilityIdentifier(AccessibilityID.Splash.getStarted)
             ManiButton("See a demo shop", kind: .outline, action: onDemo)
+                .accessibilityIdentifier(AccessibilityID.Splash.demo)
         }
         .padding(ManiSpacing.xl)
         .background(theme.base.background.ignoresSafeArea())
@@ -74,6 +75,7 @@ public struct DemoShopView: View {
         } bottom: {
             VStack(spacing: ManiSpacing.sm) {
                 ManiButton("Try sample shop") { onTry(selection) }
+                    .accessibilityIdentifier(AccessibilityID.DemoShop.trySample)
                 ManiButton("Start my own shop", kind: .outline, action: onStartOwn)
             }
         }

@@ -11,6 +11,13 @@
 - `ui-tests` job in `.github/workflows/ci.yml` runs `scripts/ui-test.sh` on every PR and push to main (macos-15, iPhone 17). It is independent of the Sonar flow and uploads the log and xcresult on failure.
 - It runs unconditionally (not module-filtered) because the app depends on every library. Add it as a required check in branch protection if wanted.
 
+## Feature tests (POS, customer picker)
+- Entry point is the demo shop: Splash "See a demo shop" -> "Try sample shop" (fancy vertical) -> "New bill" button. It seeds local SQLite only, so no Firestore/auth is needed. `HomeScreen` page object wraps this.
+- New files must be registered by hand in `Apoorva.xcodeproj/project.pbxproj` (explicit file refs, no synchronized folders).
+- The fancy POS is a quick-items grid (buttons labelled by item name), not a search list.
+- Not covered yet: tapping an item to fill the cart (cart stayed empty after the tap; needs a look at the tile's tap target) and typing into the picker search (the list did not filter under `typeText`). Dump `app.debugDescription` to a file to inspect before retrying.
+- CI: the app target bundles both gitignored Firebase plists, so the `ui-tests` job runs `scripts/setup-firebase-config.sh` from repo secrets first. Without it the build fails ("Build input file cannot be found: GoogleService-Info-production.plist", PR #80).
+
 ## Known risks
 - Fixed: `FirebaseApp.configure()` never runs in `-UITesting` mode, so Firebase handles crashed (`FIRIllegalStateException`). Two fixes:
   - `FirebaseFirestoreStore` resolves Firestore lazily via `database()`, which throws when `FirebaseApp.app() == nil`; `listen` then emits one `nil` (missing doc) so the session still resolves (-> onboarding). Never capture an SDK handle at init.
