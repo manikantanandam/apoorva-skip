@@ -15,7 +15,9 @@ public struct CustomerPickerView: View {
     private let onSelect: (Customer?) -> Void
 
     private enum Field { case phone, name }
-    @FocusState private var focus: Field?
+    // @State, not @FocusState: no `.focused($focus)` is attached here (ManiInputField owns the real
+    // FocusState and mirrors it through the Binding<Bool>), so a FocusState would never invalidate the view.
+    @State private var focus: Field?
 
     private func focusBinding(_ field: Field) -> Binding<Bool> {
         Binding(get: { focus == field }, set: { focus = $0 ? field : (focus == field ? nil : focus) })
@@ -52,17 +54,20 @@ public struct CustomerPickerView: View {
                 }
             }
             SectionHeader(title: "New customer")
-            ManiInputField(label: "Phone", text: $viewModel.newPhone, placeholder: "98480 55667", keyboard: .phone,
+            ManiInputField(label: "Phone", text: $viewModel.newPhone, placeholder: "98480 55667",
                            focus: focusBinding(.phone), submitKind: .next) { focus = .name }
             ManiInputField(label: "Name", text: $viewModel.newName, placeholder: "Kiran",
                            focus: focusBinding(.name), submitKind: .done) { focus = nil }
             if let errorMessage = viewModel.errorMessage { ManiNote(errorMessage, kind: .error) }
         } bottom: {
-            VStack(spacing: ManiSpacing.sm) {
-                ManiButton("Add & attach", isEnabled: viewModel.canAdd) {
-                    Task { if let customer = await viewModel.addCustomer() { onSelect(customer) } }
+            // Hidden while typing: the pinned bar would otherwise ride above the keyboard and cover the Name field.
+            if focus == nil {
+                VStack(spacing: ManiSpacing.sm) {
+                    ManiButton("Add & attach", isEnabled: viewModel.canAdd) {
+                        Task { if let customer = await viewModel.addCustomer() { onSelect(customer) } }
+                    }
+                    ManiButton("Continue as walk-in", kind: .outline) { onSelect(nil) }
                 }
-                ManiButton("Continue as walk-in", kind: .outline) { onSelect(nil) }
             }
         }
         .scrollDismissesKeyboard(.interactively)
