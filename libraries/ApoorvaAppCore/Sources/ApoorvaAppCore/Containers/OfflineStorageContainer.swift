@@ -36,6 +36,12 @@ public class OfflineStorageContainer {
 
             logger.debug("DB Path: \(dbPath)")
 
+            // The Documents directory may not exist yet (e.g. headless CI), which makes SQLite fail with CANTOPEN.
+            try FileManager.default.createDirectory(
+                atPath: (dbPath as NSString).deletingLastPathComponent,
+                withIntermediateDirectories: true
+            )
+
             // Opening the database also runs any pending schema migrations.
             return try SkipSqlDatabase(filepath: dbPath)
         } catch {

@@ -87,11 +87,91 @@ jobs:
             # Strip absolute macOS paths so Ubuntu SonarScanner can read them
           sed -i '' "s|$(pwd)/||g" "coverage-reports/${{ matrix.module }}-coverage.xml"
 
+      - name: Extract Module Coverage Summary
+        run: |
+          mkdir -p coverage-summary
+          # Sum line coverage over the module's own targets (skip test bundles)
+          xcrun xccov view --report --json "libraries/${{ matrix.module }}/TestResults.xcresult" \
+            | jq --arg m "${{ matrix.module }}" '
+                [.targets[] | select((.name | startswith($m)) and (.name | test("Tests") | not))] as $t
+                | {module: $m,
+                   covered: ([$t[].coveredLines] | add // 0),
+                   executable: ([$t[].executableLines] | add // 0)}' \
+            > "coverage-summary/${{ matrix.module }}.json"
+
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.module }}
           path: coverage-reports/*.xml
+
+      - name: Upload Coverage Summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: summary-${{ matrix.module }}
+          path: coverage-summary/*.json
+
+  coverage-report:
+    name: Post Coverage Summary
+    needs: build-and-test
+    if: needs.build-and-test.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # Comment on the PR
+      contents: write      # Comment on a commit (pushes to main)
+      actions: read        # Download the baseline artifact from the last main run
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download This Run's Summaries
+        uses: actions/download-artifact@v4
+        with:
+          path: current-coverage
+          pattern: summary-*
+          merge-multiple: true
+
+      - name: Download Baseline From Last Main Run
+        if: github.event_name == 'pull_request'
+        continue-on-error: true # No baseline yet is fine; the table just lists tested modules
+        run: |
+          RUN_ID=$(gh run list --repo "${{ github.repository }}" --workflow ci.yml --branch main \
+            --status success --limit 1 --json databaseId --jq '.[0].databaseId')
+          [ -n "$RUN_ID" ] && gh run download "$RUN_ID" --repo "${{ github.repository }}" \
+            --name coverage-baseline --dir baseline-coverage
+
+      - name: Build Coverage Table
+        run: |
+          scripts/coverage-summary.sh current-coverage baseline-coverage > coverage-comment.md
+          cat coverage-comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Save Baseline (main only)
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-baseline
+          path: merged-coverage/*.json
+
+      - name: Post Pull Request Comment
+        if: github.event_name == 'pull_request'
+        run: |
+          # Update the previous bot comment if present so the PR keeps a single, current table
+          MARKER='## 📊 Code Coverage (all modules)'
+          PR=${{ github.event.pull_request.number }}
+          ID=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
+            --jq "[.[] | select(.user.login == \"github-actions[bot]\" and (.body | startswith(\"$MARKER\")))] | last | .id // empty")
+          if [ -n "$ID" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$ID" -F body=@coverage-comment.md
+          else
+            gh pr comment "$PR" --repo "${{ github.repository }}" --body-file coverage-comment.md
+          fi
+
+      - name: Post Commit Comment (main)
+        if: github.event_name == 'push'
+        run: |
+          gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -F body=@coverage-comment.md
 
   sonarcloud-analysis:
     name: SonarCloud Scan
@@ -137,6 +217,6 @@ jobs:
             -Dsonar.tests=.
             -Dsonar.test.inclusions=**/*Tests.swift,**/*Test.swift
             -Dsonar.exclusions=**/.skip/**,**/Skip/**,**/*.kt,**/build/**
-            -Dsonar.coverage.exclusions=**/*View.swift,**/Containers/**,**/Router/**,app/**
+            -Dsonar.coverage.exclusions=**/*View.swift,**/*Screens.swift,**/*Sheets.swift,**/Containers/**,**/Router/**,app/**
             -Dsonar.coverageReportPaths=${{ steps.coverage.outputs.paths }}
             -Dsonar.c.compiler=/usr/bin/clang

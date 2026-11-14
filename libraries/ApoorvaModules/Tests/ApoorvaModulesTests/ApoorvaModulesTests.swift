@@ -57,7 +57,7 @@ struct LoginViewModelTests {
         vm.username = "a@b.com"
         vm.password = "pw"
         vm.loginPressed()
-        try await Task.sleep(nanoseconds: 100_000_000)
+        for _ in 0..<50 where auth.loginCalls.isEmpty { try await Task.sleep(nanoseconds: 100_000_000) }
         #expect(auth.loginCalls.count == 1)
         #expect(auth.loginCalls.first?.0 == "a@b.com")
     }

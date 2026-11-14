@@ -16,7 +16,9 @@ public enum RemoteConfigCatalogDefaults {
             case .bool: value = .bool(definition.defaultBool)
             case .string: value = .string(definition.defaultString)
             case .number: value = .number(definition.defaultNumber)
-            case .versionGate: value = .json((try? JSONEncoder().encode(definition.defaultVersionGate)) ?? Data())
+            case .versionGate:
+                // Encoding a Bool + String struct cannot fail.
+                value = .json(try! JSONEncoder().encode(definition.defaultVersionGate))
             }
             return (definition.key, value)
         })

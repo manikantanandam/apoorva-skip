@@ -7,7 +7,7 @@ Remote access: Firebase Auth and Firestore, called directly through `firebase-io
 - Firebase: `FirebaseCore`, `FirebaseAuth`, `FirebaseFirestore`
 
 ## Layout
-- `FirestoreSyncService.swift` — background sync from local storage to Firestore.
+- Firebase-facing services (`AuthService`, `Firebase*Service`) delegate to small internal backend protocols (`AuthBackend`, `RemoteConfigBackend`, `AnalyticsBackend`, `CrashlyticsBackend`, `PerformanceTraceBackend`); only the `Firebase*Backend` adapters at the bottom of each file touch the SDK, so tests mock the backend.
 - `FirebaseCollectionName.swift` — Firestore collection names. Use these constants, not string literals.
 - Per-entity services: `SaleService`, `CashflowTransactionService`, `DailyCashflowSummaryService`, `OrganizationService`, `InventoryItem/InventoryItemService`, `Customer/CustomerService`, `UserService/UserService`.
 - `AuthService/AuthService.swift` — sign-in and sign-out.
