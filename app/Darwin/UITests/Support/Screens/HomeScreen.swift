@@ -23,6 +23,9 @@ struct HomeScreen {
         XCTAssertTrue(trySampleButton.waitForExistence(timeout: timeout), "Demo shop did not appear")
         trySampleButton.tap()
         XCTAssertTrue(newBillButton.waitForExistence(timeout: timeout * 2), "Home did not appear")
+        // Seeding saves customers first and bills last, so a listed bill means the sample data is complete.
+        let seededBill = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Ravi Kumar, #D-'")).firstMatch
+        XCTAssertTrue(seededBill.waitForExistence(timeout: 30), "Sample data was not seeded")
     }
 
     func openNewBill() {

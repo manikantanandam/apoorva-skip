@@ -15,7 +15,11 @@
 - Entry point is the demo shop: Splash "See a demo shop" -> "Try sample shop" (fancy vertical) -> "New bill" button. It seeds local SQLite only, so no Firestore/auth is needed. `HomeScreen` page object wraps this.
 - New files must be registered by hand in `Apoorva.xcodeproj/project.pbxproj` (explicit file refs, no synchronized folders).
 - The fancy POS is a quick-items grid (buttons labelled by item name), not a search list.
-- Not covered yet: tapping an item to fill the cart (cart stayed empty after the tap; needs a look at the tile's tap target) and typing into the picker search (the list did not filter under `typeText`). Dump `app.debugDescription` to a file to inspect before retrying.
+- Screens under a full-screen cover (New bill) leave Home in the accessibility tree, so static-text lookups like "Ravi Kumar" also match Home's recent bills. Use the picker's row button label (`", Name, "`) instead.
+- Demo seeding is async and the local DB persists between launches, so the picker can open before customers exist. `CustomerPickerUITests.setUp` reopens the picker until the seeded customers show.
+- Picker tests cover the focus rules: search focus hides the new-customer form and Recent; phone/name focus hides search, list, Recent and the bottom bar; submitting Name restores everything.
+- Not covered yet: tapping an item to fill the cart (cart stayed empty after the tap; needs a look at the tile's tap target).
+- Debugging: run one test (`scripts/ui-test.sh Class/method`), not the whole bundle.
 - CI: the app target bundles both gitignored Firebase plists, so the `ui-tests` job runs `scripts/setup-firebase-config.sh` from repo secrets first. Without it the build fails ("Build input file cannot be found: GoogleService-Info-production.plist", PR #80).
 
 ## Known risks
