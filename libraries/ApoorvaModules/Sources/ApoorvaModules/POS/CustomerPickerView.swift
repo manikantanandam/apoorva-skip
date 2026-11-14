@@ -14,6 +14,13 @@ public struct CustomerPickerView: View {
     @Bindable private var viewModel: CustomerPickerViewModel
     private let onSelect: (Customer?) -> Void
 
+    private enum Field { case phone, name }
+    @FocusState private var focus: Field?
+
+    private func focusBinding(_ field: Field) -> Binding<Bool> {
+        Binding(get: { focus == field }, set: { focus = $0 ? field : (focus == field ? nil : focus) })
+    }
+
     public init(viewModel: CustomerPickerViewModel, onSelect: @escaping (Customer?) -> Void) {
         self.viewModel = viewModel
         self.onSelect = onSelect
@@ -45,8 +52,10 @@ public struct CustomerPickerView: View {
                 }
             }
             SectionHeader(title: "New customer")
-            ManiInputField(label: "Phone", text: $viewModel.newPhone, placeholder: "98480 55667", keyboard: .phone)
-            ManiInputField(label: "Name", text: $viewModel.newName, placeholder: "Kiran")
+            ManiInputField(label: "Phone", text: $viewModel.newPhone, placeholder: "98480 55667", keyboard: .phone,
+                           focus: focusBinding(.phone), submitKind: .next) { focus = .name }
+            ManiInputField(label: "Name", text: $viewModel.newName, placeholder: "Kiran",
+                           focus: focusBinding(.name), submitKind: .done) { focus = nil }
             if let errorMessage = viewModel.errorMessage { ManiNote(errorMessage, kind: .error) }
         } bottom: {
             VStack(spacing: ManiSpacing.sm) {
@@ -56,6 +65,7 @@ public struct CustomerPickerView: View {
                 ManiButton("Continue as walk-in", kind: .outline) { onSelect(nil) }
             }
         }
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Customer for this bill")
         .navigationBarTitleDisplayMode(.inline)
         .task { await viewModel.prepareData() }
