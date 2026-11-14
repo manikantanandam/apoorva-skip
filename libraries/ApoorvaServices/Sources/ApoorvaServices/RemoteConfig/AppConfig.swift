@@ -16,12 +16,12 @@ public final class AppConfig: Sendable {
     }
 
     public func bool(_ flag: FeatureFlag) -> Bool {
-        assert(flag.kind == .bool, "\(flag.rawValue) is not a bool flag")
+        assert(flag.kind == .bool)
         return service.boolValue(forKey: flag.rawValue)
     }
 
     public func string(_ flag: FeatureFlag) -> String {
-        assert(flag.kind == .string, "\(flag.rawValue) is not a string flag")
+        assert(flag.kind == .string)
         return service.stringValue(forKey: flag.rawValue) ?? flag.defaultStringValue
     }
 
