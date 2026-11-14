@@ -15,24 +15,29 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Needed to diff against the base commit
 
-      - name: Find Modules with Tests
+      - name: Find Affected Modules with Tests
         id: set-modules
         run: |
-          MODULES=()
-          for dir in libraries/*; do
-            # Check if it is a directory, contains a Package.swift, AND has a Tests folder[cite: 33]
-            if [ -d "$dir" ] && [ -f "$dir/Package.swift" ] && [ -d "$dir/Tests" ]; then
-              MODULES+=("\"$(basename "$dir")\"")
-            fi
-          done
-          # Format as a JSON array for the matrix
-          JSON="[$(IFS=,; echo "${MODULES[*]}")]"
+          # Pushes to main test everything (keeps the Sonar baseline complete);
+          # PRs test only changed modules plus their dependents.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE=""
+            HEAD="${{ github.sha }}"
+          fi
+          JSON=$(scripts/changed-modules.sh "$BASE" "$HEAD")
+          echo "Affected modules: $JSON"
           echo "modules=$JSON" >> $GITHUB_OUTPUT
 
   build-and-test:
     name: Test ${{ matrix.module }}
     needs: detect-modules
+    if: needs.detect-modules.outputs.modules != '[]'
     runs-on: macos-15 # Uses Apple Silicon M1/M2 runners with latest Xcode pre-installed
     strategy:
           fail-fast: false # Prevents one module's failure from cancelling the others
@@ -91,6 +96,7 @@ jobs:
   sonarcloud-analysis:
     name: SonarCloud Scan
     needs: build-and-test # Wait for build to finish
+    if: needs.build-and-test.result == 'success' # Skipped when no module was affected
     runs-on: ubuntu-latest # Linux runner supports the container action
 
     # Add the permissions block here at the job level
