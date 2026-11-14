@@ -42,6 +42,7 @@ public struct SplashView: View {
                 .foregroundStyle(theme.base.textSecondary)
             Spacer()
             ManiButton("Get started", action: onGetStarted)
+                .accessibilityIdentifier(AccessibilityID.Splash.getStarted)
             ManiButton("See a demo shop", kind: .outline, action: onDemo)
         }
         .padding(ManiSpacing.xl)
@@ -129,6 +130,7 @@ public struct SignInHubView: View {
             }
             if session.isOn(.authEmailPassword) {
                 ManiButton("Sign in with email", icon: .mail, kind: session.isOn(.authPhoneOTP) ? .outline : .primary, action: onEmail)
+                    .accessibilityIdentifier(AccessibilityID.SignInHub.emailButton)
                 if session.isOn(.authRegistrationsOpen) {
                     Button("New here? Create an account with email", action: onRegister)
                         .font(.subheadline.weight(.semibold))
@@ -205,16 +207,20 @@ public struct EmailSignInView: View {
     public var body: some View {
         ScreenScroll {
             ManiInputField(label: "Email", text: $viewModel.username, placeholder: "you@shop.in", keyboard: .email)
+                .accessibilityIdentifier(AccessibilityID.EmailSignIn.email)
             ManiInputField(label: "Password", text: $viewModel.password, isSecure: true)
+                .accessibilityIdentifier(AccessibilityID.EmailSignIn.password)
             Button("Forgot password?", action: onForgot)
                 .font(.subheadline.weight(.semibold))
                 .frame(maxWidth: .infinity, alignment: .trailing)
             if let error = viewModel.errorMessage {
                 ManiNote(error, kind: .error)
+                    .accessibilityIdentifier(AccessibilityID.EmailSignIn.error)
             }
             ManiButton("Sign in", isLoading: viewModel.isLoggingIn, isEnabled: viewModel.isLoginEnabled) {
                 viewModel.loginPressed()
             }
+            .accessibilityIdentifier(AccessibilityID.EmailSignIn.signInButton)
             if session.isOn(.authGoogle) {
                 ManiProviderButton(provider: .google, title: "Continue with Google", action: onGoogle)
             }

@@ -93,6 +93,32 @@ jobs:
           name: coverage-${{ matrix.module }}
           path: coverage-reports/*.xml
 
+  ui-tests:
+    name: UI Tests
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+
+      - name: Install xcbeautify
+        run: brew install xcbeautify
+
+      - name: Run UI Tests
+        run: |
+          xcrun simctl list devices available > /dev/null
+          scripts/ui-test.sh
+
+      - name: Upload UI Test Results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          path: ${{ runner.temp }}/apoorva-xc/ApoorvaUITests.*
+
   sonarcloud-analysis:
     name: SonarCloud Scan
     needs: build-and-test # Wait for build to finish

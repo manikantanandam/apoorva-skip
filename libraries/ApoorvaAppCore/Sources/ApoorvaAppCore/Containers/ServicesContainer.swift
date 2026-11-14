@@ -15,7 +15,7 @@ public class ServicesContainer {
 //    public lazy var offlineStorage: OfflineStorageProtocol = ApoorvaDataStore()
 //    public lazy var apiClient: ApiClientProtocol = ApoorvaNetworkClient()
     
-    public lazy var authService: AuthServicing = AuthService()
+    public lazy var authService: AuthServicing = UITestingConfig.isEnabled ? FakeAuthService() : AuthService()
     
     public lazy var userService: UserServiceProtocol = UserService(authService: authService)
     
