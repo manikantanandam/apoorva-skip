@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Low-noise runner for the app's XCUITest target (ApoorvaUITests).
-# Prints one SUCCESS or FAILED line plus root-cause lines; full output goes to a log file.
+# Prints one SUCCESS or FAILED line plus root-cause lines; full output goes to a log file
+# (and also streams to the console when CI=true).
 #
 # Usage: scripts/ui-test.sh [TestClass[/testMethod]]
 #   TestClass   optional filter, e.g. LoginUITests or LoginUITests/testLoginWithWrongPasswordShowsError
@@ -33,7 +34,12 @@ mkdir -p "$LOG_DIR"
 rm -rf "$xcresult"
 status=0
 # SKIP_ACTION=none stops the Skip gradle phase from launching an Android build.
-(set -o pipefail && SKIP_ACTION=none xcodebuild test "${args[@]}" 2>&1 | tee "$raw" | xcbeautify --quiet > "$log") || status=$?
+# On CI (GitHub sets CI=true) the beautified output also streams to the console so a long run shows progress.
+if [ "${CI:-}" = "true" ]; then
+  (set -o pipefail && SKIP_ACTION=none xcodebuild test "${args[@]}" 2>&1 | tee "$raw" | xcbeautify | tee "$log") || status=$?
+else
+  (set -o pipefail && SKIP_ACTION=none xcodebuild test "${args[@]}" 2>&1 | tee "$raw" | xcbeautify --quiet > "$log") || status=$?
+fi
 
 if [ "$status" -eq 0 ]; then
   echo "SUCCESS: ApoorvaUITests test"
