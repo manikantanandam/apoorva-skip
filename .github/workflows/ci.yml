@@ -6,13 +6,37 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# A newer push to the same PR cancels the older run; main runs are never cancelled
+# so every commit keeps its coverage baseline.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   detect-modules:
     name: Detect Testable Modules
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # Delete stale bot comments
     outputs:
       modules: ${{ steps.set-modules.outputs.modules }}
+      run_ui: ${{ steps.ui-paths.outputs.run_ui }}
     steps:
+      - name: Remove Stale Coverage and Sonar Comments
+        if: github.event_name == 'pull_request'
+        continue-on-error: true # Fork PRs get a read-only token; stale comments are harmless
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The previous run was superseded or finished; its numbers describe an older commit.
+          # Fresh comments are posted when this run's coverage and Sonar jobs complete.
+          gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" --paginate \
+            --jq '.[] | select((.user.login == "github-actions[bot]" and (.body | startswith("## 📊 Code Coverage (all modules)"))) or .user.login == "sonarqubecloud[bot]") | .id' |
+            while read -r id; do
+              gh api -X DELETE "repos/${{ github.repository }}/issues/comments/$id"
+            done
+
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
@@ -33,6 +57,23 @@ jobs:
           JSON=$(scripts/changed-modules.sh "$BASE" "$HEAD")
           echo "Affected modules: $JSON"
           echo "modules=$JSON" >> $GITHUB_OUTPUT
+
+      - name: Decide Whether UI Tests Are Needed
+        id: ui-paths
+        run: |
+          # Pushes to main always run UI tests; PRs only when app code, libraries,
+          # scripts or workflows changed (not docs, designs, .claude, markdown).
+          RUN=true
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            if git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" \
+                | grep -Eq '^(app|libraries|scripts)/|^\.github/workflows/'; then
+              RUN=true
+            else
+              RUN=false
+            fi
+          fi
+          echo "Run UI tests: $RUN"
+          echo "run_ui=$RUN" >> $GITHUB_OUTPUT
 
   build-and-test:
     name: Test ${{ matrix.module }}
@@ -143,6 +184,9 @@ jobs:
             --name coverage-baseline --dir baseline-coverage
 
       - name: Build Coverage Table
+        env:
+          # On PRs github.sha is the temporary merge commit; show the branch head instead.
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           scripts/coverage-summary.sh current-coverage baseline-coverage > coverage-comment.md
           cat coverage-comment.md >> "$GITHUB_STEP_SUMMARY"
@@ -175,6 +219,8 @@ jobs:
 
   ui-tests:
     name: UI Tests
+    needs: detect-modules
+    if: needs.detect-modules.outputs.run_ui == 'true'
     runs-on: macos-15
     timeout-minutes: 45
     steps:
