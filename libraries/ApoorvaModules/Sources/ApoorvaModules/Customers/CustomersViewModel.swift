@@ -116,20 +116,17 @@ public class CustomerListViewModel {
         list.filter { !$0.isDeleted }.sorted { ($0.lastPurchaseDate ?? $0.createdAt) > ($1.lastPurchaseDate ?? $1.createdAt) }
     }
 
+    /// The export file's text, name and MIME type, for sharers that write the file themselves.
+    public func exportContent(format: FileFormat) -> (content: String, fileName: String, mimeType: String) {
+        switch format {
+        case .csv: return (customers.csvString, "customers.csv", "text/csv")
+        case .vcf: return (customers.vcfString, "customers.vcf", "text/x-vcard")
+        }
+    }
+
     /// Generates a file containing the customer data and returns its temporary URL.
     public func export(format: FileFormat) throws -> URL {
-        let fileString: String
-        let fileName: String
-
-        switch format {
-        case .csv:
-            fileString = customers.csvString
-            fileName = "customers.csv"
-        case .vcf:
-            fileString = customers.vcfString
-            fileName = "customers.vcf"
-        }
-
+        let (fileString, fileName, _) = exportContent(format: format)
         let tempDirectory = FileManager.default.temporaryDirectory
         let fileURL = tempDirectory.appendingPathComponent(fileName)
 

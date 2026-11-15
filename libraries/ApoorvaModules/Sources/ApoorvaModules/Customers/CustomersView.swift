@@ -13,6 +13,7 @@ import ManiSwiftUIComponents
 public struct CustomerListView: View {
     @Environment(\.maniTheme) private var theme
     @Environment(\.openURL) private var openURL
+    @Environment(\.textFileSharer) private var fileSharer
 
     @Bindable var viewModel: CustomerListViewModel
 
@@ -81,9 +82,7 @@ public struct CustomerListView: View {
                 Menu {
                     if let onImport { Button("Import from contacts", action: onImport) }
                     if let onOffers { Button("Wishes & offers", action: onOffers) }
-                    #if !os(Android)  // File sharing needs a native share sheet, which SkipSwiftUI lacks.
                     Button("Export") { isShowingFormatSheet = true }
-                    #endif
                     Button("Sync now") { Task { await viewModel.forceSync() } }
                 } label: {
                     ManiSwiftUIComponents.IconView(.more, size: 18, color: theme.base.text)
@@ -98,6 +97,10 @@ public struct CustomerListView: View {
             FormatSelectionSheet { format in
                 selectedFormat = format
                 isShowingFormatSheet = false
+                #if os(Android)  // SkipSwiftUI has no file share sheet, so the injected sharer writes the file and opens Android's.
+                let file = viewModel.exportContent(format: format)
+                _ = fileSharer?.share(file.content, file.fileName, file.mimeType)
+                #else
                 if let url = try? viewModel.export(format: format) {
                     // Small delay ensures the current sheet dismisses cleanly
                     // before iOS triggers the native system share sheet
@@ -105,6 +108,7 @@ public struct CustomerListView: View {
                         self.exportURL = url
                     }
                 }
+                #endif
             }
             // Sets the sheet to take up roughly half the screen on iOS 16+
             .presentationDetents([.medium])

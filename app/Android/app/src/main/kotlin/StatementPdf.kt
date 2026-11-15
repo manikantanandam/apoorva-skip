@@ -26,19 +26,27 @@ class StatementPdf {
         private const val BOTTOM = PAGE_HEIGHT - 50f
 
         @JvmStatic
-        fun share(payload: String, fileName: String): Boolean {
+        fun share(payload: String, fileName: String): Boolean =
+            present(fileName, "application/pdf", "Share statement") { write(payload, it) }
+
+        /// Shares a plain-text file (customer CSV/vCard export) through the same provider.
+        @JvmStatic
+        fun shareText(content: String, fileName: String, mimeType: String): Boolean =
+            present(fileName, mimeType, "Share file") { it.writeText(content, Charsets.UTF_8) }
+
+        private fun present(fileName: String, mimeType: String, chooserTitle: String, fill: (File) -> Unit): Boolean {
             val host = activity ?: return false
             return try {
                 val folder = File(host.cacheDir, "statements").apply { mkdirs() }
                 val file = File(folder, fileName.replace(Regex("[^A-Za-z0-9._-]"), "_"))
-                write(payload, file)
+                fill(file)
                 val uri = FileProvider.getUriForFile(host, host.packageName + ".statements", file)
                 val send = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/pdf"
+                    type = mimeType
                     putExtra(Intent.EXTRA_STREAM, uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                host.runOnUiThread { host.startActivity(Intent.createChooser(send, "Share statement")) }
+                host.runOnUiThread { host.startActivity(Intent.createChooser(send, chooserTitle)) }
                 true
             } catch (e: Exception) {
                 false

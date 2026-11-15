@@ -20,6 +20,7 @@ let logger: Logger = Logger(subsystem: "com.apoorva.app", category: "Apoorva")
             #if os(Android)
             .environment(\.textFilePicker, AndroidTextFilePicker.make())
             .environment(\.statementPDFSharer, AndroidStatementPDF.make())
+            .environment(\.textFileSharer, AndroidTextFileSharer.make())
             #endif
     }
 }
