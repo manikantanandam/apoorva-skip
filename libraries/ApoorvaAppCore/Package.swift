@@ -19,7 +19,7 @@ let package = Package(
         .package(path: "../ApoorvaEnvironment"),
         .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.1.0"),
         .package(path: "../ApoorvaServices"),
-        .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.15.0")
+        .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.19.2")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
