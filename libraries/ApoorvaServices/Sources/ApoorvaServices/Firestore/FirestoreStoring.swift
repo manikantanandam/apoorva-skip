@@ -65,6 +65,12 @@ public extension FirestoreStoring {
     }
 }
 
+#if os(Android)
+private struct UncheckedSendable<T>: @unchecked Sendable {
+    let value: T
+}
+#endif
+
 private struct SendableListener: @unchecked Sendable {
     let value: ListenerRegistration
 }
@@ -106,7 +112,15 @@ public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable
     }
 
     public func setData(_ data: [String: Any], path: String, merge: Bool) throws {
+        #if os(Android)
+        // skip-firebase's setData is async; fire it from a task to keep the protocol's offline-queued contract.
+        let write = UncheckedSendable(value: (try database().document(path), Self.resolvingSentinels(data)))
+        Task {
+            do { try await write.value.0.setData(write.value.1, merge: merge) } catch { logger.error("setData failed: \(error)") }
+        }
+        #else
         try database().document(path).setData(Self.resolvingSentinels(data), merge: merge)
+        #endif
     }
 
     public func updateData(_ fields: [String: Any], path: String) async throws {

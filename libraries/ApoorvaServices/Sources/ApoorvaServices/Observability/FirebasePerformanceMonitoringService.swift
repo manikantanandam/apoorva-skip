@@ -38,7 +38,12 @@ private struct SendableTrace: @unchecked Sendable {
 
 struct FirebasePerformanceBackend: PerformanceTraceBackend {
     func startTrace(_ name: String) -> (@Sendable () -> Void)? {
+        #if os(Android)
+        guard let trace = Performance.sharedInstance().trace(name: name) else { return nil }
+        trace.start()
+        #else
         guard let trace = Performance.startTrace(name: name) else { return nil }
+        #endif
         let sendable = SendableTrace(value: trace)
         return { sendable.value.stop() }
     }

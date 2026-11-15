@@ -21,6 +21,10 @@ Each `#if os(Android)` gate is a deliberate gap. Goal first is a building APK; r
 | `ManiSwiftUIComponents` `Theme/AndroidCompat.swift` | `maniBorder` | Border stroked centred, not inset (about half a line-width) | Inset the shape by `lineWidth / 2` once SkipSwiftUI supports it |
 | `ManiSwiftUIComponents` `Theme/AndroidCompat.swift` | `monospacedDigit` (Font, Text) | No-op; digits may not align in columns | Fixed-width font or SkipSwiftUI support |
 | `ManiSwiftUIComponents` `Gallery/ManiComponentGallery.swift` | whole file excluded | Dev gallery absent | None needed (dev-only) |
-| `ApoorvaServices` `Firestore/FirestoreCoding.swift` | `Firestore.Encoder/Decoder` alias | Same API, backed by `FirestoreEncoder/Decoder` | None (parity) |
+| `ApoorvaServices` `Firestore/FirestoreCoding.swift` | `Firestore.Encoder/Decoder` alias + own `decode(_:from:)` | Same API; decode goes through JSON (Timestamp/Date as seconds) because native Swift can't see skip-firebase's reified `decode` | Revisit if skip-firebase exposes a bridged decode |
+| `ApoorvaServices` `Firestore/FirestoreStoring.swift` | `setData` | skip-firebase's `setData` is async, so it runs in a `Task`; errors are logged, not thrown | Expose an async `setData` in `FirestoreStoring` |
+| `ApoorvaServices` `Observability/FirebasePerformanceMonitoringService.swift` | `startTrace` | Uses `sharedInstance().trace(name:)` + `start()` | None (parity) |
+| `ApoorvaServices` `AuthService/AuthService.swift` | `EmailAuthProviderID`, `AuthStateDidChangeListenerHandle` | Local constant `"password"` and typealias to `AuthStateListener` | None (parity) |
+| `ApoorvaServices` `RemoteConfig/FirebaseRemoteConfigService.swift` | `setDefaults` | No-op: Android has no in-app Remote Config defaults, so values fall back to type defaults until fetched | Convert `[String: NSObject]` to `AnyDynamicObject` |
 
 Planned (phase 3, not yet gated): `UIKit`/`CoreImage` (`ApoorvaColor`, `UPIQRView`), `VisionKit` scanner (`POSExtraScreens`), `Combine` (`ReceiptView`, `AuthScreens`), `Security` Keychain (`PinStore`).

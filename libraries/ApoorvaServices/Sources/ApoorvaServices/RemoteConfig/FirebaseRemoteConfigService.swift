@@ -166,6 +166,11 @@ struct FirebaseRemoteConfigBackend: RemoteConfigBackend {
     }
 
     func setDefaults(_ defaults: [String: NSObject]) {
+        #if os(Android)
+        // skip-firebase takes `[String: AnyDynamicObject]`, which can't be built from NSObject here yet.
+        // Android runs without in-app defaults until that conversion exists (see docs/decisions/android-readiness.md).
+        #else
         RemoteConfig.remoteConfig().setDefaults(defaults)
+        #endif
     }
 }
