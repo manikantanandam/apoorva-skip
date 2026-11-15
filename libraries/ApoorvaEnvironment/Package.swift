@@ -16,7 +16,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.1.0")
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", branch: "feature/android-support")  // TEMPORARY: restore exact pin after release
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
