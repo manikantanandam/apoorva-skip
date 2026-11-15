@@ -327,12 +327,12 @@ public struct CategoriesView: View {
                             Image(systemName: "chevron.up").foregroundStyle(theme.base.textSecondary)
                         }
                         .buttonStyle(.plain)
-                        .disabled(index == 0)
+                        .disabled(index == 0 || viewModel.isMoving)
                         Button { Task { await viewModel.move(from: IndexSet(integer: index), to: index + 2) } } label: {
                             Image(systemName: "chevron.down").foregroundStyle(theme.base.textSecondary)
                         }
                         .buttonStyle(.plain)
-                        .disabled(index >= viewModel.categories.count - 1)
+                        .disabled(index >= viewModel.categories.count - 1 || viewModel.isMoving)
                         #else
                         ManiSwiftUIComponents.IconView(.drag, size: 14, color: theme.base.textSecondary)
                         #endif

@@ -18,50 +18,82 @@ struct QRMatrix {
     func isDark(_ x: Int, _ y: Int) -> Bool { modules[y * size + x] }
 }
 
-/// Pure-Swift QR encoder (byte mode, error correction M, versions 1–10, up to 213 bytes), used where CoreImage
-/// isn't available (Android). Follows ISO/IEC 18004; enough for `upi://pay` links.
+/// Pure-Swift QR encoder (byte mode, error correction M, versions 1–40, up to 2,331 bytes), used where CoreImage
+/// isn't available (Android). Follows ISO/IEC 18004; block layout is derived from the per-version tables below.
 enum QREncoder {
+    /// Block layout for one version at level M: `shortBlocks` blocks of `shortData` data codewords, the rest one longer.
     private struct Spec {
         let ecPerBlock: Int
-        let group1Blocks: Int
-        let group1Data: Int
-        let group2Blocks: Int
-        let group2Data: Int
+        let blockCount: Int
+        let shortBlocks: Int
+        let shortData: Int
+        let dataCodewords: Int
 
-        var blockCount: Int { group1Blocks + group2Blocks }
-        var dataCodewords: Int { group1Blocks * group1Data + group2Blocks * group2Data }
+        var longestBlock: Int { shortBlocks < blockCount ? shortData + 1 : shortData }
     }
 
-    /// Indexed by version − 1, error correction level M.
-    private static let specs: [Spec] = [
-        Spec(ecPerBlock: 10, group1Blocks: 1, group1Data: 16, group2Blocks: 0, group2Data: 0),
-        Spec(ecPerBlock: 16, group1Blocks: 1, group1Data: 28, group2Blocks: 0, group2Data: 0),
-        Spec(ecPerBlock: 26, group1Blocks: 1, group1Data: 44, group2Blocks: 0, group2Data: 0),
-        Spec(ecPerBlock: 18, group1Blocks: 2, group1Data: 32, group2Blocks: 0, group2Data: 0),
-        Spec(ecPerBlock: 24, group1Blocks: 2, group1Data: 43, group2Blocks: 0, group2Data: 0),
-        Spec(ecPerBlock: 16, group1Blocks: 4, group1Data: 27, group2Blocks: 0, group2Data: 0),
-        Spec(ecPerBlock: 18, group1Blocks: 4, group1Data: 31, group2Blocks: 0, group2Data: 0),
-        Spec(ecPerBlock: 22, group1Blocks: 2, group1Data: 38, group2Blocks: 2, group2Data: 39),
-        Spec(ecPerBlock: 22, group1Blocks: 3, group1Data: 36, group2Blocks: 2, group2Data: 37),
-        Spec(ecPerBlock: 26, group1Blocks: 4, group1Data: 43, group2Blocks: 1, group2Data: 44)
+    /// Error correction codewords per block, indexed by version − 1 (level M).
+    private static let ecCodewordsPerBlock: [Int] = [
+        10, 16, 26, 18, 24, 16, 18, 22, 22, 26, 30, 22, 22, 24, 24, 28, 28, 26, 26, 26,
+        26, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28
     ]
 
-    private static let alignmentPositions: [[Int]] = [
-        [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34], [6, 22, 38], [6, 24, 42], [6, 26, 46], [6, 28, 50]
+    /// Number of error correction blocks, indexed by version − 1 (level M).
+    private static let blockCounts: [Int] = [
+        1, 1, 1, 2, 2, 4, 4, 4, 5, 5, 5, 8, 9, 9, 10, 10, 11, 13, 14, 16,
+        17, 17, 18, 20, 21, 23, 25, 26, 28, 29, 31, 33, 35, 37, 38, 40, 43, 45, 47, 49
     ]
+
+    /// Data modules available for codewords once finder, timing, alignment, format and version patterns are removed.
+    private static func rawDataModules(_ version: Int) -> Int {
+        let size = version * 4 + 17
+        var result = size * size
+        result -= 8 * 8 * 3          // three finder patterns with separators
+        result -= 15 * 2 + 1         // format bits and the dark module
+        result -= (size - 16) * 2    // timing patterns
+        if version >= 2 {
+            let aligns = version / 7 + 2
+            result -= (aligns - 1) * (aligns - 1) * 25
+            result -= (aligns - 2) * 2 * 20
+            if version >= 7 { result -= 6 * 3 * 2 }
+        }
+        return result
+    }
+
+    private static func layout(for version: Int) -> Spec {
+        let raw = rawDataModules(version) / 8
+        let ec = ecCodewordsPerBlock[version - 1]
+        let blocks = blockCounts[version - 1]
+        return Spec(ecPerBlock: ec, blockCount: blocks, shortBlocks: blocks - raw % blocks,
+                    shortData: raw / blocks - ec, dataCodewords: raw - ec * blocks)
+    }
+
+    private static func alignmentPositions(_ version: Int) -> [Int] {
+        guard version > 1 else { return [] }
+        let size = version * 4 + 17
+        let aligns = version / 7 + 2
+        let step = version == 32 ? 26 : (version * 4 + aligns * 2 + 1) / (aligns * 2 - 2) * 2
+        var result = [6]
+        var position = size - 7
+        while result.count < aligns {
+            result.insert(position, at: 1)
+            position -= step
+        }
+        return result
+    }
 
     static func encode(_ text: String) -> QRMatrix? {
         let bytes = Array(text.utf8)
         var versionFound: Int?
-        for candidate in 1...10 {
+        for candidate in 1...40 {
             let countBits = candidate < 10 ? 8 : 16
-            if (specs[candidate - 1].dataCodewords * 8 - 4 - countBits) / 8 >= bytes.count {
+            if (layout(for: candidate).dataCodewords * 8 - 4 - countBits) / 8 >= bytes.count {
                 versionFound = candidate
                 break
             }
         }
         guard let version = versionFound else { return nil }
-        let spec = specs[version - 1]
+        let spec = layout(for: version)
 
         let codewords = interleave(dataCodewords(bytes, version: version, spec: spec), spec: spec)
         var builder = Builder(version: version)
@@ -118,14 +150,14 @@ enum QREncoder {
         var ecBlocks: [[UInt8]] = []
         var offset = 0
         for index in 0..<spec.blockCount {
-            let length = index < spec.group1Blocks ? spec.group1Data : spec.group2Data
+            let length = index < spec.shortBlocks ? spec.shortData : spec.shortData + 1
             let block = Array(data[offset..<(offset + length)])
             offset += length
             dataBlocks.append(block)
             ecBlocks.append(reedSolomonRemainder(block, divisor))
         }
         var result: [UInt8] = []
-        for i in 0..<max(spec.group1Data, spec.group2Data) {
+        for i in 0..<spec.longestBlock {
             for block in dataBlocks where i < block.count { result.append(block[i]) }
         }
         for i in 0..<spec.ecPerBlock {
@@ -197,7 +229,7 @@ enum QREncoder {
             drawFinder(3, 3)
             drawFinder(size - 4, 3)
             drawFinder(3, size - 4)
-            let positions = QREncoder.alignmentPositions[version - 1]
+            let positions = QREncoder.alignmentPositions(version)
             for i in 0..<positions.count {
                 for j in 0..<positions.count {
                     let corner = (i == 0 && j == 0) || (i == 0 && j == positions.count - 1) || (i == positions.count - 1 && j == 0)

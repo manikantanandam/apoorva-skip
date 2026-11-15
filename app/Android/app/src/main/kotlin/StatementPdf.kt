@@ -8,6 +8,7 @@ import android.graphics.pdf.PdfDocument
 import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
+import java.util.UUID
 
 /// Own subclass so this provider's manifest entry can't clash with one merged in from a library.
 class StatementFileProvider : FileProvider()
@@ -37,7 +38,8 @@ class StatementPdf {
         private fun present(fileName: String, mimeType: String, chooserTitle: String, fill: (File) -> Unit): Boolean {
             val host = activity ?: return false
             return try {
-                val folder = File(host.cacheDir, "statements").apply { mkdirs() }
+                // A fresh folder per share, so a later export with the same name can't overwrite one still being read.
+                val folder = File(host.cacheDir, "statements/" + UUID.randomUUID()).apply { mkdirs() }
                 val file = File(folder, fileName.replace(Regex("[^A-Za-z0-9._-]"), "_"))
                 fill(file)
                 val uri = FileProvider.getUriForFile(host, host.packageName + ".statements", file)

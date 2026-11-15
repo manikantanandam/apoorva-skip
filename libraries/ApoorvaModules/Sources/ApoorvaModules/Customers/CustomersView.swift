@@ -20,6 +20,7 @@ public struct CustomerListView: View {
     @State private var isShowingFormatSheet = false
     @State private var selectedFormat: FileFormat?
     @State private var exportURL: URL?
+    @State private var exportError: String?
 
     private let onSelectCustomer: (Customer) -> Void
     private let onAddCustomer: () -> Void
@@ -41,6 +42,7 @@ public struct CustomerListView: View {
     public var body: some View {
         ScreenScroll(spacing: ManiSpacing.md) {
             ScreenSubtitle(text: viewModel.subtitle)
+            if let exportError { ManiNote(exportError, kind: .error) }
             ManiSearchField(text: $viewModel.searchText, placeholder: "Name or phone")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ManiSpacing.sm) {
@@ -99,7 +101,9 @@ public struct CustomerListView: View {
                 isShowingFormatSheet = false
                 #if os(Android)  // SkipSwiftUI has no file share sheet, so the injected sharer writes the file and opens Android's.
                 let file = viewModel.exportContent(format: format)
-                _ = fileSharer?.share(file.content, file.fileName, file.mimeType)
+                if fileSharer?.share(file.content, file.fileName, file.mimeType) != true {
+                    exportError = "Couldn't share the export."
+                }
                 #else
                 if let url = try? viewModel.export(format: format) {
                     // Small delay ensures the current sheet dismisses cleanly
@@ -107,6 +111,8 @@ public struct CustomerListView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         self.exportURL = url
                     }
+                } else {
+                    exportError = "Couldn't create the export file."
                 }
                 #endif
             }
