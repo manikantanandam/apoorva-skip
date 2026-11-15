@@ -28,14 +28,14 @@ Each `#if os(Android)` gate is a deliberate gap. Goal first is a building APK; r
 | `ApoorvaServices` `RemoteConfig/FirebaseRemoteConfigService.swift` | `setDefaults` | No-op: Android has no in-app Remote Config defaults, so values fall back to type defaults until fetched | Convert `[String: NSObject]` to `AnyDynamicObject` |
 
 | `ApoorvaModules` `Inventory/InventoryView.swift`, `Onboarding/OpeningBalances.swift` | `fileImporter`, `UniformTypeIdentifiers` | CSV import can't pick a file | Android document picker |
-| `ApoorvaModules` `Inventory/InventoryView.swift` | `ShareLink` + `SharePreview`, `editMode` | No template download; categories can't be drag-reordered | Android share intent; move up/down buttons |
+| `ApoorvaModules` `Inventory/InventoryView.swift` | `ShareLink` + `SharePreview`, `editMode` | No template download; categories reorder with up/down buttons instead of drag | Android share intent |
 | `ApoorvaModules` `Components/EverySecond.swift` | `.task` loop replaces `Timer.publish`/Combine | Same countdowns on both platforms | None (parity) |
 | `ApoorvaModules` `Resources/ApoorvaColor.swift` | `canImport(UIKit)` | System background is plain white on Android (no dark mode) | Theme-based background |
 | `ApoorvaModules` `Checkout/UPIQRView.swift` | `canImport(CoreImage)` | QR icon instead of a real UPI QR | Pure-Swift QR generator |
-| `ApoorvaModules` `Components/ScreenKit.swift` | `safeAreaInset`, `FlowLayout` | Bottom bar stacked under scroll view; chips scroll sideways instead of wrapping | Custom wrapping layout |
-| `ApoorvaModules` `Components/AndroidCompat.swift` | `Grid`/`GridRow`, `contentShape`, `monospacedDigit`, `appBorder` | Attendance grid columns don't align; empty areas of tappable rows aren't hit-testable; borders centred | Real grid via `LazyVGrid`; wait for SkipSwiftUI support |
+| `ApoorvaModules` `Components/ScreenKit.swift` | `safeAreaInset`, `FlowLayout` | Bottom bar stacked under scroll view; chips wrap in an adaptive grid (equal-width cells, min 96pt) | Custom wrapping layout |
+| `ApoorvaModules` `Components/AndroidCompat.swift` | `Grid`/`GridRow`, `contentShape`, `monospacedDigit`, `appBorder` | Attendance columns aligned via fixed widths; `contentShape` approximated with a 0.001-opacity background; borders inset via half-line padding | Real grid; native `contentShape`/`strokeBorder` once supported |
 | `ApoorvaModules` `Customers/CustomerScreens.swift`, `CustomersView.swift` | `ImageRenderer`, `ShareSheet`, `UIApplication.open` | Statement PDF/PNG export returns nothing; share sheets are empty; call button runs in a `Task` | Android share intents and PDF rendering |
-| `ApoorvaModules` `POS/POSView.swift`, `Money/MoneyScreens.swift`, `Sell/SellScreens.swift` | `.graphical` date picker, `DatePicker(in:)` | Plain date picker; no min/max date | Enforce limits in view models |
+| `ApoorvaModules` `POS/POSView.swift`, `Money/MoneyScreens.swift`, `Sell/SellScreens.swift` | `.graphical` date picker, `DatePicker(in:)` | Plain date picker; min/max enforced by clamping in `onChange` (Sell, Money) so the value snaps back like iOS | Android graphical picker once supported |
 | `ApoorvaModules` `Components/IconView.swift`, `ApoorvaAppCore` `MainView.swift` | `#Preview` | None (dev only) | None |
 
 Planned, not yet gated: `VisionKit` scanner (`POSExtraScreens`) and `Security` Keychain (`PinStore`). The local build succeeded without touching them, so they may already be guarded; check before shipping.

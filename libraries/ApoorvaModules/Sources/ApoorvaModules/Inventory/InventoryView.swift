@@ -321,7 +321,21 @@ public struct CategoriesView: View {
                                 .foregroundStyle(theme.base.textSecondary)
                         }
                         Spacer()
+                        #if os(Android)  // No drag-to-reorder in SkipSwiftUI, so offer move up/down buttons instead.
+                        let index = viewModel.categories.firstIndex(where: { $0.id == category.id }) ?? 0
+                        Button { Task { await viewModel.move(from: IndexSet(integer: index), to: index - 1) } } label: {
+                            Image(systemName: "chevron.up").foregroundStyle(theme.base.textSecondary)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(index == 0)
+                        Button { Task { await viewModel.move(from: IndexSet(integer: index), to: index + 2) } } label: {
+                            Image(systemName: "chevron.down").foregroundStyle(theme.base.textSecondary)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(index >= viewModel.categories.count - 1)
+                        #else
                         ManiSwiftUIComponents.IconView(.drag, size: 14, color: theme.base.textSecondary)
+                        #endif
                     }
                     .contentShape(Rectangle())
                     .onTapGesture {

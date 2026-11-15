@@ -12,7 +12,7 @@ extension InsettableShape {
     /// `strokeBorder` on Apple platforms; a centred `stroke` on Android.
     func appBorder<S: ShapeStyle>(_ content: S, lineWidth: CGFloat = 1) -> some View {
         #if os(Android)
-        stroke(content, lineWidth: lineWidth)
+        stroke(content, lineWidth: lineWidth).padding(lineWidth / 2)  // Shrinks the shape by half a line so the stroke sits inside, like strokeBorder.
         #else
         strokeBorder(content, lineWidth: lineWidth)
         #endif
@@ -25,8 +25,8 @@ extension Font {
 }
 
 extension View {
-    /// No-op: taps only hit drawn content on Android until SkipSwiftUI supports `contentShape`.
-    func contentShape<S: Shape>(_ shape: S) -> some View { self }
+    /// Near-transparent fill so empty areas of a row are tappable, as `contentShape` does on iOS (the shape itself is ignored).
+    func contentShape<S: Shape>(_ shape: S) -> some View { background(Color.white.opacity(0.001)) }
 
     /// No-op: see `Grid` below.
     func gridColumnAlignment(_ guide: HorizontalAlignment) -> some View { self }
@@ -56,7 +56,7 @@ struct GridRow<Content: View>: View {
     }
 
     var body: some View {
-        HStack { content }
+        HStack(spacing: 6) { content }
     }
 }
 #endif

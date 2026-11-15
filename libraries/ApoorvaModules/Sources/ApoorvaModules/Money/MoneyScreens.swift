@@ -281,8 +281,11 @@ public struct ExpenseFormView: View {
             }
             ManiInputField(label: "Name (optional)", text: $viewModel.title, placeholder: "\(viewModel.category.title) bill")
             ManiSegmentedControl(selection: $viewModel.mode, options: [("cash", "Cash"), ("upi", "UPI"), ("bank", "Bank")])
-            #if os(Android)  // SkipSwiftUI's DatePicker has no date range, so future dates aren't blocked here.
+            #if os(Android)  // SkipSwiftUI's DatePicker has no date range, so clamp future dates back to now.
             DatePicker("Date", selection: $viewModel.date, displayedComponents: .date)
+                .onChange(of: viewModel.date) { _, newValue in
+                    if newValue > Date() { viewModel.date = Date() }
+                }
             #else
             DatePicker("Date", selection: $viewModel.date, in: ...Date(), displayedComponents: .date)
             #endif
