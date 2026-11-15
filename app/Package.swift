@@ -20,6 +20,7 @@ let package = Package(
             name: "Apoorva",
             dependencies: [
                 .product(name: "SkipFuseUI", package: "skip-fuse-ui"),
+                .product(name: "SkipFirebaseCore", package: "skip-firebase"),
                 .product(name: "SkipFirebaseFirestore", package: "skip-firebase"),
                 .product(name: "SkipFirebaseAuth", package: "skip-firebase"),
                 .product(name: "SkipFirebaseAnalytics", package: "skip-firebase"),
