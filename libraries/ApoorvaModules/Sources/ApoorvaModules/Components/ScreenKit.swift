@@ -23,7 +23,7 @@ struct ScreenScroll<Content: View, Bottom: View>: View {
         self.bottom = bottom()
     }
 
-    var body: some View {
+    private var scroll: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: spacing) {
                 content
@@ -31,12 +31,27 @@ struct ScreenScroll<Content: View, Bottom: View>: View {
             .padding(ManiSpacing.lg)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(theme.base.background.ignoresSafeArea())
-        .safeAreaInset(edge: .bottom) {
+    }
+
+    var body: some View {
+        #if os(Android)
+        // SkipSwiftUI has no safeAreaInset; stack the bottom bar under the scroll view instead.
+        VStack(spacing: 0) {
+            scroll
             bottom
                 .padding(.horizontal, ManiSpacing.lg)
                 .padding(.bottom, ManiSpacing.sm)
         }
+        .background(theme.base.background.ignoresSafeArea())
+        #else
+        scroll
+            .background(theme.base.background.ignoresSafeArea())
+            .safeAreaInset(edge: .bottom) {
+                bottom
+                    .padding(.horizontal, ManiSpacing.lg)
+                    .padding(.bottom, ManiSpacing.sm)
+            }
+        #endif
     }
 }
 
@@ -140,6 +155,19 @@ struct RowsCard<Content: View>: View {
     }
 }
 
+#if os(Android)
+/// SkipSwiftUI has no `Layout` protocol, so Android scrolls the chips sideways instead of wrapping them.
+struct FlowLayout<Content: View>: View {
+    var spacing: CGFloat = ManiSpacing.sm
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: spacing) { content }
+        }
+    }
+}
+#else
 /// Chips that wrap onto new lines (quick actions, More menu groups).
 struct FlowLayout: Layout {
     var spacing: CGFloat = ManiSpacing.sm
@@ -181,6 +209,7 @@ struct FlowLayout: Layout {
         }
     }
 }
+#endif
 
 /// Formats rupee amounts with en-IN grouping: ₹1,23,450.
 public enum Money {

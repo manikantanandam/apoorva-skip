@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Observation
 import ManiSwiftUIComponents
 import ApoorvaModels
 import ApoorvaRepository
@@ -191,6 +192,7 @@ public struct OpeningBalancesView: View {
             }
             .presentationDetents([.medium])
         }
+        #if !os(Android)  // CSV file picking needs UTType/fileImporter, unavailable in SkipSwiftUI.
         .fileImporter(isPresented: $isImporting, allowedContentTypes: [.commaSeparatedText, .plainText]) { result in
             if case .success(let url) = result, url.startAccessingSecurityScopedResource() {
                 defer { url.stopAccessingSecurityScopedResource() }
@@ -199,5 +201,6 @@ public struct OpeningBalancesView: View {
                 }
             }
         }
+        #endif
     }
 }

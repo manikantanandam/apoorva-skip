@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Combine
 import ApoorvaModels
 import ManiSwiftUIComponents
 
@@ -25,7 +24,6 @@ public struct ReceiptView: View {
     private let onNewBill: (() -> Void)?
     private let onPreview: ((Sale) -> Void)?
     @State private var now = Date()
-    private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     public init(
         viewModel: ReceiptViewModel,
@@ -59,7 +57,7 @@ public struct ReceiptView: View {
                     .background(theme.base.background.ignoresSafeArea())
             }
         }
-        .onReceive(ticker) { now = $0 }
+        .everySecond { now = $0 }
         .navigationTitle(cameFromCheckout ? "" : "Receipt")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(cameFromCheckout)

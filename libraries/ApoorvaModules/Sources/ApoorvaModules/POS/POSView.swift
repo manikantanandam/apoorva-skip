@@ -380,7 +380,9 @@ struct POSBillDatePicker: View {
     var body: some View {
         NavigationStack {
             DatePicker("Bill date & time", selection: $date)
+                #if !os(Android)  // The calendar-style picker isn't available in SkipSwiftUI.
                 .datePickerStyle(.graphical)
+                #endif
                 .padding(ManiSpacing.lg)
                 .navigationTitle("Bill date & time")
                 .navigationBarTitleDisplayMode(.inline)
