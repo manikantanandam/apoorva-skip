@@ -39,7 +39,6 @@ jobs:
         run: |
           brew install skiptools/skip/skip
           skip android sdk install
-          skip checkup
 
       - name: Write Android Firebase config
         env:
