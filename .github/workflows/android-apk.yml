@@ -58,7 +58,7 @@ jobs:
 
       - name: Build release APK
         working-directory: app
-        run: skip export --apk --release -d "$RUNNER_TEMP/export"
+        run: skip export --android --no-ios --release -d "$RUNNER_TEMP/export"
 
       - name: Rename APK
         id: apk
