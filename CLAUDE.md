@@ -63,6 +63,8 @@ swift test --filter BoolExtensionTests                 # one suite (type name)
 swift test --filter "BoolExtensionTests/<testName>"   # one test
 ```
 
+CD: `.github/workflows/android-apk.yml` builds a debug-signed release APK on every push to `main` and publishes it as a GitHub pre-release (needs secret `GOOGLE_SERVICE_JSON_B64`); iOS is not deployed. See `docs/decisions/android-cd.md`.
+
 CI (`.github/workflows/ci.yml`) runs every `libraries/*` package that has a `Tests/` folder on an iOS simulator, then uploads coverage to SonarCloud:
 
 ```bash

@@ -1,0 +1,99 @@
+name: Android APK
+
+# Every push to main builds a release APK (debug-signed) with Skip and
+# publishes it as a rolling GitHub pre-release tagged android-<sha7>.
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - "docs/**"
+      - "designs/**"
+      - "**/*.md"
+  workflow_dispatch:
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Build APK
+    runs-on: macos-15
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Skip and Android SDK
+        run: |
+          brew install skiptools/skip/skip
+          skip android sdk install
+          skip checkup
+
+      - name: Write Android Firebase config
+        env:
+          GOOGLE_SERVICE_JSON_B64: ${{ secrets.GOOGLE_SERVICE_JSON_B64 }}
+        run: |
+          if [ -n "$GOOGLE_SERVICE_JSON_B64" ]; then
+            scripts/setup-firebase-config.sh
+          else
+            echo "::warning::GOOGLE_SERVICE_JSON_B64 not set; building without google-services.json (Firebase will not work in this APK)"
+          fi
+
+      - name: Enable Android and set build number
+        run: |
+          # CI-only edit of the runner copy; the committed Skip.env keeps SKIP_NO_ANDROID=1.
+          sed -i '' '/^SKIP_NO_ANDROID/d' app/Skip.env
+          sed -i '' "s/^CURRENT_PROJECT_VERSION = .*/CURRENT_PROJECT_VERSION = ${GITHUB_RUN_NUMBER}/" app/Skip.env
+
+      - name: Build release APK
+        working-directory: app
+        run: skip export --apk --release -d "$RUNNER_TEMP/export"
+
+      - name: Rename APK
+        id: apk
+        run: |
+          VERSION=$(sed -n 's/^MARKETING_VERSION = //p' app/Skip.env)
+          SHA7=${GITHUB_SHA::7}
+          SRC=$(find "$RUNNER_TEMP/export" -name '*.apk' | head -1)
+          [ -n "$SRC" ] || { echo "::error::No APK produced"; exit 1; }
+          OUT="apoorva-${VERSION}-${GITHUB_RUN_NUMBER}-${SHA7}.apk"
+          cp "$SRC" "$OUT"
+          echo "file=$OUT" >> "$GITHUB_OUTPUT"
+          echo "tag=android-$SHA7" >> "$GITHUB_OUTPUT"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.file }}
+          path: ${{ steps.apk.outputs.file }}
+
+      - name: Publish GitHub pre-release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.apk.outputs.tag }}" "${{ steps.apk.outputs.file }}" \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "Android ${{ steps.apk.outputs.tag }}" \
+            --notes "Debug-signed release APK for commit $GITHUB_SHA"
+
+      - name: Prune old Android pre-releases (keep 10)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --limit 100 --json tagName,createdAt \
+            --jq '[.[] | select(.tagName | startswith("android-"))] | sort_by(.createdAt) | reverse | .[10:] | .[].tagName' |
+            while read -r tag; do gh release delete "$tag" --cleanup-tag --yes; done
