@@ -3,7 +3,7 @@
 //  ApoorvaServices
 //
 
-import FirebasePerformance
+import SkipFirebasePerformance
 
 /// Thin seam over `Performance` so the trace lifecycle can be tested without Firebase.
 protocol PerformanceTraceBackend: Sendable {

@@ -5,7 +5,7 @@
 
 import Foundation
 import ApoorvaModels
-import FirebaseAuth
+import SkipFirebaseAuth
 
 public enum AuthServiceError: Error, LocalizedError, Equatable {
     case notSignedIn

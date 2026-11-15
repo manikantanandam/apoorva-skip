@@ -3,7 +3,7 @@
 //  ApoorvaServices
 //
 
-import FirebaseAnalytics
+import SkipFirebaseAnalytics
 
 /// Thin seam over `FirebaseAnalytics` so the parameter mapping can be tested without Firebase.
 protocol AnalyticsBackend: Sendable {

@@ -4,8 +4,8 @@
 //
 
 import Foundation
-import FirebaseCore
-import FirebaseFirestore
+import SkipFirebaseCore
+import SkipFirebaseFirestore
 import ManiLogger
 
 private let logger = AppLogger(category: .network)

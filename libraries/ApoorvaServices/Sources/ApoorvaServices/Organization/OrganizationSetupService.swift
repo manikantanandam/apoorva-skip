@@ -4,7 +4,7 @@
 //
 
 import Foundation
-import FirebaseFirestore
+import SkipFirebaseFirestore
 import ApoorvaModels
 
 /// What onboarding collected for a new shop.

@@ -1,6 +1,6 @@
 import Foundation
-import FirebaseFirestore
-import FirebaseAuth
+import SkipFirebaseFirestore
+import SkipFirebaseAuth
 import ApoorvaModels
 import ManiLogger
 
