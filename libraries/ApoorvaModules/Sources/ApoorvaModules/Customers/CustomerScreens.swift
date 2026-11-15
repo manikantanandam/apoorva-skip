@@ -224,9 +224,11 @@ public struct DueReminderView: View {
 
 public struct StatementView: View {
     @Environment(\.maniTheme) private var theme
+    @Environment(\.statementPDFSharer) private var pdfSharer
     @Bindable private var viewModel: StatementViewModel
     @State private var format = Format.pdf
     @State private var exportURL: URL?
+    @State private var shareError: String?
 
     enum Format: String, CaseIterable { case pdf = "PDF", image = "Image" }
 
@@ -255,9 +257,10 @@ public struct StatementView: View {
                 DatePicker("To", selection: $viewModel.customEnd, displayedComponents: .date)
             }
             ManiKeyValueSummary(rows: rows)
-            #if !os(Android)  // PDF/PNG rendering isn't available in SkipSwiftUI, so Android shares text only.
+            #if !os(Android)  // Android always shares a PDF; image rendering isn't available in SkipSwiftUI.
             ManiSegmentedControl(selection: $format, options: Format.allCases.map { ($0, $0.rawValue) })
             #endif
+            if let shareError { ManiNote(shareError, kind: .error) }
             if !viewModel.statement.entries.isEmpty {
                 RowsCard {
                     ForEach(viewModel.statement.entries) { entry in
@@ -268,24 +271,13 @@ public struct StatementView: View {
             }
         } bottom: {
             VStack(spacing: ManiSpacing.sm) {
-                #if os(Android)
-                ShareLink(item: viewModel.shareText) {
-                    Text("Share statement")
-                        .font(theme.typography.body.weight(.semibold))
-                        .foregroundStyle(theme.accent.on)
-                        .frame(maxWidth: .infinity, minHeight: ManiTouchTarget.minimum)
-                        .background(theme.accent.accent)
-                        .clipShape(RoundedRectangle(cornerRadius: theme.radii.card))
-                }
-                #else
-                ManiButton("Share on WhatsApp", icon: .share) { exportURL = render() }
+                ManiButton("Share on WhatsApp", icon: .share) { shareFile() }
                 ShareLink(item: viewModel.shareText) {
                     Text("Share as text")
                         .font(theme.typography.body.weight(.semibold))
                         .foregroundStyle(theme.accent.accent)
                         .frame(maxWidth: .infinity, minHeight: ManiTouchTarget.minimum)
                 }
-                #endif
             }
         }
         .sheet(item: $exportURL) { url in
@@ -297,11 +289,22 @@ public struct StatementView: View {
         .task { await viewModel.load() }
     }
 
+    /// iOS renders the card and shows the share sheet; Android has the injected sharer draw a PDF and open its own sheet.
+    @MainActor private func shareFile() {
+        #if os(Android)
+        let payload = StatementPDFPayload.make(shopName: viewModel.shopName, customerName: viewModel.customer?.name ?? viewModel.phone,
+                                               range: viewModel.range, statement: viewModel.statement)
+        if pdfSharer?.share(payload, "Statement-\(viewModel.phone).pdf") != true {
+            shareError = "Couldn't share the statement."
+        }
+        #else
+        exportURL = render()
+        #endif
+    }
+
+    #if !os(Android)
     /// Renders the statement card to a PDF or PNG in the temp folder.
     @MainActor private func render() -> URL? {
-        #if os(Android)
-        return nil  // ImageRenderer/CGContext PDF export isn't available in SkipSwiftUI yet.
-        #else
         let card = StatementCard(shopName: viewModel.shopName, customerName: viewModel.customer?.name ?? viewModel.phone,
                                  range: viewModel.range, statement: viewModel.statement)
             .frame(width: 360)
@@ -324,8 +327,8 @@ public struct StatementView: View {
             context.closePDF()
         }
         return url
-        #endif
     }
+    #endif
 }
 
 /// The printable statement (white paper, fixed colours so it reads the same in dark mode).

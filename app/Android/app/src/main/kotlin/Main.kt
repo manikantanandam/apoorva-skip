@@ -64,6 +64,7 @@ open class MainActivity: AppCompatActivity {
         logger.info("starting activity")
         UIApplication.launch(this)
         FilePicker.launcher = { openDocument.launch(arrayOf("*/*")) }
+        StatementPdf.activity = this
         enableEdgeToEdge()
 
         setContent {
@@ -110,6 +111,7 @@ open class MainActivity: AppCompatActivity {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (StatementPdf.activity === this) StatementPdf.activity = null
         AppDelegate.shared.onDestroy()
     }
 
