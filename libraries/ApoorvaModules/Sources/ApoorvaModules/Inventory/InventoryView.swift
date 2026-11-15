@@ -422,18 +422,9 @@ public struct ItemImportView: View {
                 #endif
             }
         }
-        #if !os(Android)  // CSV file picking needs UTType/fileImporter, unavailable in SkipSwiftUI.
-        .fileImporter(isPresented: $isPicking, allowedContentTypes: [.commaSeparatedText, .plainText]) { result in
-            guard case .success(let url) = result else { return }
-            let scoped = url.startAccessingSecurityScopedResource()
-            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            if let text = try? String(contentsOf: url, encoding: .utf8) {
-                viewModel.read(text: text, fileName: url.lastPathComponent)
-            } else {
-                viewModel.errorMessage = "Couldn't read that file."
-            }
+        .textFileImporter(isPresented: $isPicking, onFailure: { viewModel.errorMessage = "Couldn't read that file." }) { file in
+            viewModel.read(text: file.text, fileName: file.name)
         }
-        #endif
         .navigationTitle("Import items")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

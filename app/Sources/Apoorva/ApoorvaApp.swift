@@ -3,6 +3,7 @@ import SkipFuse
 import SwiftUI
 import SkipFirebaseCore
 import ApoorvaAppCore
+import ApoorvaModules
 
 /// A logger for the Apoorva module.
 let logger: Logger = Logger(subsystem: "com.apoorva.app", category: "Apoorva")
@@ -16,6 +17,9 @@ let logger: Logger = Logger(subsystem: "com.apoorva.app", category: "Apoorva")
 
     public var body: some View {
         MainView()
+            #if os(Android)
+            .environment(\.textFilePicker, AndroidTextFilePicker.make())
+            #endif
     }
 }
 
