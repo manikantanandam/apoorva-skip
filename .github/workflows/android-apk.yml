@@ -9,6 +9,14 @@ on:
       - "docs/**"
       - "designs/**"
       - "**/*.md"
+  # TEMPORARY: build on PRs to validate APK changes without merging to main.
+  # Release publishing stays gated to main; PR runs only upload a workflow artifact.
+  pull_request:
+    branches: [ "main" ]
+    paths-ignore:
+      - "docs/**"
+      - "designs/**"
+      - "**/*.md"
   workflow_dispatch:
 
 concurrency:
@@ -56,9 +64,29 @@ jobs:
           sed -i '' '/^SKIP_NO_ANDROID/d' app/Skip.env
           sed -i '' "s/^CURRENT_PROJECT_VERSION = .*/CURRENT_PROJECT_VERSION = ${GITHUB_RUN_NUMBER}/" app/Skip.env
 
+      # The release build falls back to the debug signing config, which expects this keystore;
+      # a fresh runner doesn't have one (Android Studio normally creates it).
+      - name: Create debug keystore
+        run: |
+          mkdir -p ~/.android
+          [ -f ~/.android/debug.keystore ] || keytool -genkeypair -v -keystore ~/.android/debug.keystore \
+            -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
       - name: Build release APK
         working-directory: app
-        run: skip export --android --no-ios --release -d "$RUNNER_TEMP/export"
+        run: skip export -v --android --no-ios --release -d "$RUNNER_TEMP/export"
+
+      # TEMPORARY: diagnose the SkipFirebaseCore static/dynamic linking error.
+      - name: Dump export diagnostics
+        if: failure()
+        run: |
+          echo "::group::Generated Android Package.swift"
+          cat app/.build/plugins/outputs/app/Apoorva/destination/skipstone/Apoorva/src/main/swift/Package.swift || true
+          echo "::endgroup::"
+          echo "::group::skip export log"
+          tail -n 300 /tmp/skip-export-*.txt || true
+          echo "::endgroup::"
 
       - name: Rename APK
         id: apk

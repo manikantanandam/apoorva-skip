@@ -1,5 +1,6 @@
 import ManiSwiftUIComponents
 import SwiftUI
+import Observation
 import ApoorvaModels
 
 /// Owns the app's resolved theme (accent + Clean/Bold + light/dark) and the signed-in member's

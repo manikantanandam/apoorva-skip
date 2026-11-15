@@ -231,6 +231,6 @@ struct FilterChip: View {
         .frame(minHeight: 32)
         .background(theme.base.surface)
         .clipShape(Capsule())
-        .overlay(Capsule().strokeBorder(theme.base.border, lineWidth: 1))
+        .overlay(Capsule().appBorder(theme.base.border, lineWidth: 1))
     }
 }

@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import Observation
 import ApoorvaModels
 
 /// How the quick-add sheet reads its discount field.

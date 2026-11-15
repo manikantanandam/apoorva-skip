@@ -4,7 +4,7 @@
 //
 
 import Foundation
-import FirebaseFirestore
+import SkipFirebaseFirestore
 import ApoorvaModels
 import ManiLogger
 

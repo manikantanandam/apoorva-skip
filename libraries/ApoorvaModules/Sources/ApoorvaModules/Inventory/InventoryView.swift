@@ -6,7 +6,9 @@
 //
 
 import SwiftUI
+#if !os(Android)
 import UniformTypeIdentifiers
+#endif
 import ApoorvaModels
 import ManiSwiftUIComponents
 
@@ -335,7 +337,9 @@ public struct CategoriesView: View {
         }
         .scrollContentBackground(.hidden)
         .background(theme.base.background.ignoresSafeArea())
+        #if !os(Android)  // Drag-to-reorder edit mode isn't available in SkipSwiftUI.
         .environment(\.editMode, .constant(.active))
+        #endif
         .navigationTitle("Categories")
         .alert("Rename category", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
             TextField("Name", text: $renameText)
@@ -393,11 +397,14 @@ public struct ItemImportView: View {
                         Task { onDone(await viewModel.importReady()) }
                     }
                 }
+                #if !os(Android)  // ShareLink with SharePreview isn't available in SkipSwiftUI.
                 ShareLink(item: ItemCSV.template, preview: SharePreview("items-template.csv")) {
                     Text("Download template").frame(maxWidth: .infinity, minHeight: ManiTouchTarget.minimum)
                 }
+                #endif
             }
         }
+        #if !os(Android)  // CSV file picking needs UTType/fileImporter, unavailable in SkipSwiftUI.
         .fileImporter(isPresented: $isPicking, allowedContentTypes: [.commaSeparatedText, .plainText]) { result in
             guard case .success(let url) = result else { return }
             let scoped = url.startAccessingSecurityScopedResource()
@@ -408,6 +415,7 @@ public struct ItemImportView: View {
                 viewModel.errorMessage = "Couldn't read that file."
             }
         }
+        #endif
         .navigationTitle("Import items")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

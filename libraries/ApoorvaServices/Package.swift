@@ -17,8 +17,10 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../ApoorvaModels"),
-        .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.1.0"),
-        .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.15.0")
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", branch: "feature/android-support"),  // TEMPORARY: restore exact pin after release
+        .package(url: "https://source.skip.tools/skip-firebase.git", "0.21.0"..<"2.0.0"),
+        // Tests only: the app target reaches Firebase through skip-firebase (which re-exports it on Apple platforms).
+        .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.19.2")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -26,15 +28,15 @@ let package = Package(
         .target(
             name: "ApoorvaServices",
             dependencies: [
-                .product(name: "FirebaseCore", package: "firebase-ios-sdk"),
+                .product(name: "SkipFirebaseCore", package: "skip-firebase"),
                 .product(name: "ApoorvaModels", package: "ApoorvaModels"),
                 .product(name: "ManiLogger", package: "ManiLogger"),
-                .product(name: "FirebaseFirestore", package: "firebase-ios-sdk"),
-                .product(name: "FirebaseAuth", package: "firebase-ios-sdk"),
-                .product(name: "FirebaseAnalytics", package: "firebase-ios-sdk"),
-                .product(name: "FirebaseCrashlytics", package: "firebase-ios-sdk"),
-                .product(name: "FirebasePerformance", package: "firebase-ios-sdk"),
-                .product(name: "FirebaseRemoteConfig", package: "firebase-ios-sdk")
+                .product(name: "SkipFirebaseFirestore", package: "skip-firebase"),
+                .product(name: "SkipFirebaseAuth", package: "skip-firebase"),
+                .product(name: "SkipFirebaseAnalytics", package: "skip-firebase"),
+                .product(name: "SkipFirebaseCrashlytics", package: "skip-firebase"),
+                .product(name: "SkipFirebasePerformance", package: "skip-firebase"),
+                .product(name: "SkipFirebaseRemoteConfig", package: "skip-firebase")
             ]
         ),
         .testTarget(

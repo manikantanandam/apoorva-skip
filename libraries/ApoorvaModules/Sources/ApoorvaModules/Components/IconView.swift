@@ -20,6 +20,8 @@ struct IconView: View {
     }
 }
 
+#if !os(Android)
 #Preview {
     IconView(icon: .person, iconSize: 24, color: .red)
 }
+#endif

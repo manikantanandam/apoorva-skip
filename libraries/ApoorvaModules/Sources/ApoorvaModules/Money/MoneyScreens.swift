@@ -281,7 +281,11 @@ public struct ExpenseFormView: View {
             }
             ManiInputField(label: "Name (optional)", text: $viewModel.title, placeholder: "\(viewModel.category.title) bill")
             ManiSegmentedControl(selection: $viewModel.mode, options: [("cash", "Cash"), ("upi", "UPI"), ("bank", "Bank")])
+            #if os(Android)  // SkipSwiftUI's DatePicker has no date range, so future dates aren't blocked here.
+            DatePicker("Date", selection: $viewModel.date, displayedComponents: .date)
+            #else
             DatePicker("Date", selection: $viewModel.date, in: ...Date(), displayedComponents: .date)
+            #endif
             ManiToggleRow(title: "Repeats every month", subtitle: "Shown as monthly in the list", isOn: $viewModel.repeatsMonthly)
             ManiKeypad { key in viewModel.amountText = key.apply(to: viewModel.amountText) }
             if let error = viewModel.errorMessage { ManiNote(error, kind: .error) }

@@ -1,6 +1,6 @@
 # ApoorvaServices
 
-Remote access: Firebase Auth and Firestore, called directly through `firebase-ios-sdk` (12.15.0, exact).
+Remote access: Firebase Auth and Firestore, called directly through `firebase-ios-sdk` (12.19.2, exact; required by skip-firebase 0.21.0+).
 
 ## Depends on
 - `ApoorvaModels`

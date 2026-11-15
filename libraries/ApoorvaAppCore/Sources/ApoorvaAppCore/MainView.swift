@@ -68,6 +68,8 @@ private struct LaunchView: View {
     }
 }
 
+#if !os(Android)
 #Preview {
     MainView()
 }
+#endif

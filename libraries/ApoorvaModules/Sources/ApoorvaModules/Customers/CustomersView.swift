@@ -121,10 +121,22 @@ public struct CustomerListView: View {
 
     private func call(_ customer: Customer) {
         guard !customer.phone.isEmpty, let url = URL(string: "tel://\(customer.phone)") else { return }
+        #if os(Android)
+        Task { @MainActor in _ = await UIApplication.shared.open(url) }
+        #else
         UIApplication.shared.open(url)
+        #endif
     }
 }
 
+#if os(Android)
+/// Placeholder: there's no native share sheet in SkipSwiftUI yet, so Android shows nothing.
+struct ShareSheet: View {
+    var activityItems: [Any]
+
+    var body: some View { EmptyView() }
+}
+#else
 // 5. Lightweight UIViewControllerRepresentable helper to bring up the iOS Native Share UI
 struct ShareSheet: UIViewControllerRepresentable {
     var activityItems: [Any]
@@ -137,6 +149,7 @@ struct ShareSheet: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
+#endif
 
 // Extension to allow URL to safely bind to .sheet(item:)
 extension URL: Identifiable {

@@ -5,7 +5,7 @@
 
 import Foundation
 import ApoorvaModels
-import FirebaseAuth
+import SkipFirebaseAuth
 
 public enum AuthServiceError: Error, LocalizedError, Equatable {
     case notSignedIn
@@ -223,6 +223,12 @@ public final class AuthService: AuthServicing {
 }
 
 // MARK: - Firebase adapter (SDK calls only, no logic)
+
+#if os(Android)
+// skip-firebase names the listener handle `AuthStateListener` and doesn't define the provider-id constant.
+private typealias AuthStateDidChangeListenerHandle = AuthStateListener
+private let EmailAuthProviderID = "password"
+#endif
 
 private struct SendableAuthHandle: @unchecked Sendable {
     let value: AuthStateDidChangeListenerHandle

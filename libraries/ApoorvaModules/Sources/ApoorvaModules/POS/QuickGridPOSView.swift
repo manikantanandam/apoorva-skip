@@ -227,7 +227,7 @@ struct QuickItemTile: View {
                 }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(quantity > 0 ? "\(title), \(quantity) on bill" : title)
+        .accessibilityLabel(Text(quantity > 0 ? "\(title), \(quantity) on bill" : title))
     }
 }
 
@@ -339,6 +339,6 @@ public struct QuickAddLineSheet: View {
                 .overlay(RoundedRectangle(cornerRadius: theme.radii.chip).stroke(theme.base.border))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(label)
+        .accessibilityLabel(Text(label))
     }
 }

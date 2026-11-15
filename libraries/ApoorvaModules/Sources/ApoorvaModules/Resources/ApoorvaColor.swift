@@ -7,7 +7,9 @@
 
 import Foundation
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 
 public enum ApoorvaColor {
     case systemBackGround
@@ -21,17 +23,21 @@ public enum ApoorvaColor {
     public var color: Color {
         switch self {
         case .systemBackGround:
+            #if canImport(UIKit)
             return Color(uiColor: UIColor.systemBackground)
+            #else
+            return Color.white  // No UIColor on Android; no dark-mode adaptation yet.
+            #endif
         case .orange:
             return Color.orange
         case .textFieldBackground:
-            return Color(uiColor: UIColor(red: 241/255, green: 243/255, blue: 246/255, alpha: 1))
+            return Color(red: 241/255, green: 243/255, blue: 246/255)
         case .buttonTextColor:
             return Color.white
         case .textColor:
             return Color.black
         case .iconColor:
-            return Color(uiColor: UIColor(red: 125/255, green: 143/255, blue: 155/255, alpha: 1))
+            return Color(red: 125/255, green: 143/255, blue: 155/255)
         case .buttonBackground:
             return .orange
         }

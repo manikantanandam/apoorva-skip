@@ -17,7 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../ApoorvaModels"),
-        .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.1.0"),
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", branch: "feature/android-support"),  // TEMPORARY: restore exact pin after release
         .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
         .package(url: "https://github.com/skiptools/skip-sql.git", exact: "0.16.1")
     ],

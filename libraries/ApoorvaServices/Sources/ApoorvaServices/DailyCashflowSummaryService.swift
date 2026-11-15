@@ -6,7 +6,7 @@
 import Foundation
 import ApoorvaModels
 import ManiLogger
-@preconcurrency import FirebaseFirestore
+@preconcurrency import SkipFirebaseFirestore
 
 private let logger = AppLogger(category: .network)
 

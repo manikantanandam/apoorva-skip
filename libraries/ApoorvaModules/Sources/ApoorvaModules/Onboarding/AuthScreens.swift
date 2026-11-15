@@ -7,7 +7,6 @@
 //
 
 import SwiftUI
-import Combine
 import ManiSwiftUIComponents
 import ApoorvaModels
 
@@ -156,7 +155,6 @@ public struct SignInHubView: View {
 public struct PhoneOTPView: View {
     @Bindable private var viewModel: AuthFlowViewModel
     @State private var now = Date()
-    private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     public init(viewModel: AuthFlowViewModel) {
         self.viewModel = viewModel
@@ -184,7 +182,7 @@ public struct PhoneOTPView: View {
             }
         }
         .navigationTitle("Verify phone")
-        .onReceive(ticker) { now = $0 }
+        .everySecond { now = $0 }
     }
 }
 
@@ -282,7 +280,6 @@ public struct VerifyEmailView: View {
     @Environment(\.openURL) private var openURL
     @Bindable private var viewModel: AuthFlowViewModel
     @State private var tick = Date()
-    private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let email: String
     private let onSetUpShop: () -> Void
     private let onChangeEmail: () -> Void
@@ -324,7 +321,7 @@ public struct VerifyEmailView: View {
         }
         .navigationTitle("Verify email")
         .navigationBarBackButtonHidden()
-        .onReceive(ticker) { tick = $0 }
+        .everySecond { tick = $0 }
     }
 }
 

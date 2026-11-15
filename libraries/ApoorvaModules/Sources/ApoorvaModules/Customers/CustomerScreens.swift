@@ -286,6 +286,9 @@ public struct StatementView: View {
 
     /// Renders the statement card to a PDF or PNG in the temp folder.
     @MainActor private func render() -> URL? {
+        #if os(Android)
+        return nil  // ImageRenderer/CGContext PDF export isn't available in SkipSwiftUI yet.
+        #else
         let card = StatementCard(shopName: viewModel.shopName, customerName: viewModel.customer?.name ?? viewModel.phone,
                                  range: viewModel.range, statement: viewModel.statement)
             .frame(width: 360)
@@ -308,6 +311,7 @@ public struct StatementView: View {
             context.closePDF()
         }
         return url
+        #endif
     }
 }
 

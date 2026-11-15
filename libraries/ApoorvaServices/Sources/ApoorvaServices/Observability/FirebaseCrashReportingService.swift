@@ -3,7 +3,7 @@
 //  ApoorvaServices
 //
 
-import FirebaseCrashlytics
+import SkipFirebaseCrashlytics
 
 /// Thin seam over `Crashlytics` so the key/user mapping can be tested without Firebase.
 protocol CrashlyticsBackend: Sendable {

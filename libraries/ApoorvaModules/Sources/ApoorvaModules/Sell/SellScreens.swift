@@ -109,7 +109,11 @@ public struct OrderFormView: View {
                 }
             }
             if viewModel.readyByChoice == .pick {
+                #if os(Android)  // SkipSwiftUI's DatePicker has no date range, so past dates aren't blocked here.
+                DatePicker("Ready by", selection: $viewModel.pickedDate, displayedComponents: .date)
+                #else
                 DatePicker("Ready by", selection: $viewModel.pickedDate, in: Date()..., displayedComponents: .date)
+                #endif
             }
             ManiSegmentedControl(selection: $viewModel.fulfilment, options: OrderFulfilment.allCases.map { ($0, $0.title) })
             ManiToggleRow(title: "WhatsApp when ready", subtitle: "Customer gets a message", isOn: $viewModel.notifyWhenReady)
