@@ -164,7 +164,7 @@ public struct PhoneOTPView: View {
         ScreenScroll {
             ScreenSubtitle(text: "Enter the 6-digit code sent to \(viewModel.phone)")
             ManiCodeField(length: 6, code: viewModel.otp)
-            let seconds = viewModel.secondsUntilResend
+            let seconds = viewModel.secondsUntilResend(at: now)
             Button(seconds > 0 ? "Resend code in 0:\(String(format: "%02d", seconds))" : "Resend code") {
                 Task { _ = await viewModel.sendOTP() }
             }
@@ -298,7 +298,7 @@ public struct VerifyEmailView: View {
             ManiButton("Open mail app", icon: .mail) {
                 if let url = URL(string: "message://") { openURL(url) }
             }
-            let seconds = viewModel.secondsUntilResend
+            let seconds = viewModel.secondsUntilResend(at: tick)
             ManiButton(seconds > 0 ? "Resend link in 0:\(String(format: "%02d", seconds))" : "Resend link",
                        kind: .outline, isEnabled: seconds == 0) {
                 Task { await viewModel.resendVerification() }

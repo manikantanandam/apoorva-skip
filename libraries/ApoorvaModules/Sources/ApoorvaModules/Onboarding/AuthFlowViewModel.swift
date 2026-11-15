@@ -56,9 +56,12 @@ public final class AuthFlowViewModel {
         phone.filter(\.isNumber).count >= 10
     }
 
-    public var secondsUntilResend: Int {
+    public var secondsUntilResend: Int { secondsUntilResend(at: Date()) }
+
+    /// Seconds left at `now`. Views pass their per-second timer state so the countdown redraws as it changes.
+    public func secondsUntilResend(at now: Date) -> Int {
         guard let resendAvailableAt else { return 0 }
-        return max(0, Int(resendAvailableAt.timeIntervalSinceNow.rounded(.up)))
+        return max(0, Int(resendAvailableAt.timeIntervalSince(now).rounded(.up)))
     }
 
     // MARK: Actions

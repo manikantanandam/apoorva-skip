@@ -69,6 +69,24 @@ public extension FirestoreStoring {
 private struct UncheckedSendable<T>: @unchecked Sendable {
     let value: T
 }
+
+/// Runs queued writes one at a time in the order they were enqueued, so an upsert followed by a soft delete
+/// can't reach Firestore the other way round (independent `Task`s give no ordering guarantee).
+private final class SerialWriteQueue: @unchecked Sendable {
+    private let continuation: AsyncStream<@Sendable () async -> Void>.Continuation
+
+    init() {
+        let (stream, continuation) = AsyncStream.makeStream(of: (@Sendable () async -> Void).self)
+        self.continuation = continuation
+        Task {
+            for await job in stream { await job() }
+        }
+    }
+
+    func enqueue(_ job: @escaping @Sendable () async -> Void) {
+        continuation.yield(job)
+    }
+}
 #endif
 
 private struct SendableListener: @unchecked Sendable {
@@ -89,6 +107,10 @@ public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable
         guard FirebaseApp.app() != nil else { throw NotConfigured() }
         return Firestore.firestore()
     }
+
+    #if os(Android)
+    private let writeQueue = SerialWriteQueue()
+    #endif
 
     public init() {}
 
@@ -113,9 +135,10 @@ public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable
 
     public func setData(_ data: [String: Any], path: String, merge: Bool) throws {
         #if os(Android)
-        // skip-firebase's setData is async; fire it from a task to keep the protocol's offline-queued contract.
+        // skip-firebase's setData is async; hand it to the serial queue so calls return at once (the protocol's
+        // offline-queued contract) while the writes still reach Firestore in call order.
         let write = UncheckedSendable(value: (try database().document(path), Self.resolvingSentinels(data)))
-        Task {
+        writeQueue.enqueue {
             do { try await write.value.0.setData(write.value.1, merge: merge) } catch { logger.error("setData failed: \(error)") }
         }
         #else
