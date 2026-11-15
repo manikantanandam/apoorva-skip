@@ -255,7 +255,9 @@ public struct StatementView: View {
                 DatePicker("To", selection: $viewModel.customEnd, displayedComponents: .date)
             }
             ManiKeyValueSummary(rows: rows)
+            #if !os(Android)  // PDF/PNG rendering isn't available in SkipSwiftUI, so Android shares text only.
             ManiSegmentedControl(selection: $format, options: Format.allCases.map { ($0, $0.rawValue) })
+            #endif
             if !viewModel.statement.entries.isEmpty {
                 RowsCard {
                     ForEach(viewModel.statement.entries) { entry in
@@ -266,6 +268,16 @@ public struct StatementView: View {
             }
         } bottom: {
             VStack(spacing: ManiSpacing.sm) {
+                #if os(Android)
+                ShareLink(item: viewModel.shareText) {
+                    Text("Share statement")
+                        .font(theme.typography.body.weight(.semibold))
+                        .foregroundStyle(theme.accent.on)
+                        .frame(maxWidth: .infinity, minHeight: ManiTouchTarget.minimum)
+                        .background(theme.accent.accent)
+                        .clipShape(RoundedRectangle(cornerRadius: theme.radii.card))
+                }
+                #else
                 ManiButton("Share on WhatsApp", icon: .share) { exportURL = render() }
                 ShareLink(item: viewModel.shareText) {
                     Text("Share as text")
@@ -273,6 +285,7 @@ public struct StatementView: View {
                         .foregroundStyle(theme.accent.accent)
                         .frame(maxWidth: .infinity, minHeight: ManiTouchTarget.minimum)
                 }
+                #endif
             }
         }
         .sheet(item: $exportURL) { url in

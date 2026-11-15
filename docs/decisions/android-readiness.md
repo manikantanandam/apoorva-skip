@@ -34,9 +34,16 @@ Each `#if os(Android)` gate is a deliberate gap. Goal first is a building APK; r
 | `ApoorvaModules` `Checkout/UPIQRView.swift` | `canImport(CoreImage)` | Android draws the QR with the pure-Swift `QREncoder` (`QRCodeEncoder.swift`, byte mode, level M, v1–10); iOS keeps CoreImage. Unscanned so far: verify with a phone camera on the first APK | Use `QREncoder` on iOS too if the Android QR scans fine |
 | `ApoorvaModules` `Components/ScreenKit.swift` | `safeAreaInset`, `FlowLayout` | Bottom bar stacked under scroll view; chips wrap in an adaptive grid (equal-width cells, min 96pt) | Custom wrapping layout |
 | `ApoorvaModules` `Components/AndroidCompat.swift` | `Grid`/`GridRow`, `contentShape`, `monospacedDigit`, `appBorder` | Attendance columns aligned via fixed widths; `contentShape` approximated with a 0.001-opacity background; borders inset via half-line padding | Real grid; native `contentShape`/`strokeBorder` once supported |
-| `ApoorvaModules` `Customers/CustomerScreens.swift`, `CustomersView.swift` | `ImageRenderer`, `ShareSheet`, `UIApplication.open` | Statement PDF/PNG export returns nothing; share sheets are empty; call button runs in a `Task` | Android share intents and PDF rendering |
+| `ApoorvaModules` `Customers/CustomerScreens.swift`, `CustomersView.swift` | `ImageRenderer`, `ShareSheet`, `UIApplication.open` | Statement shows a text-only "Share statement" (`ShareLink`) and no PDF/PNG picker; customer list hides Export (no file share sheet); call uses `@Environment(\.openURL)` on both platforms; items template shares as text via `ShareLink` without a preview | PDF via a Kotlin bridge; file sharing/export via skip-kit `withDocumentExporter` (untested with Fuse) |
 | `ApoorvaModules` `POS/POSView.swift`, `Money/MoneyScreens.swift`, `Sell/SellScreens.swift` | `.graphical` date picker, `DatePicker(in:)` | Plain date picker; min/max enforced by clamping in `onChange` (Sell, Money) so the value snaps back like iOS | Android graphical picker once supported |
 | `ApoorvaModules` `Components/IconView.swift`, `ApoorvaAppCore` `MainView.swift` | `#Preview` | None (dev only) | None |
+
+## Research: remaining Android features (skip-kit, SkipSwiftUI)
+
+- SkipSwiftUI (`skip-fuse-ui`) `ShareLink(item: URL | String, subject:, message:) { label }` works on Android; only the `SharePreview` and `items:` variants are unavailable. The template download and text shares can use the no-preview form on both platforms.
+- SkipSwiftUI has no `fileImporter`/`fileExporter` and no `ImageRenderer`.
+- `skip-kit` (`https://source.skip.dev/skip-kit.git`, from 1.0.0) is a Skip Lite module: `withDocumentPicker`, `withDocumentExporter`, `withDocumentPreview`, `withMailComposer`, `openWebBrowser`. It has no share-sheet or PDF API, and its docs don't say whether it works from a Fuse (native) app; this is untested. Using it would also need a FileProvider and `file_paths.xml` in the Android project.
+- PDF/PNG statement rendering has no Skip-provided route; it needs Android `PdfDocument`/`Canvas` through a Kotlin bridge, or drawing the statement in pure Swift.
 
 Planned, not yet gated: `VisionKit` scanner (`POSExtraScreens`) and `Security` Keychain (`PinStore`). The local build succeeded without touching them, so they may already be guarded; check before shipping.
 

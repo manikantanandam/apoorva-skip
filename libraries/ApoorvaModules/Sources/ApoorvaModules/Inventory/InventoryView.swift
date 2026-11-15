@@ -411,7 +411,11 @@ public struct ItemImportView: View {
                         Task { onDone(await viewModel.importReady()) }
                     }
                 }
-                #if !os(Android)  // ShareLink with SharePreview isn't available in SkipSwiftUI.
+                #if os(Android)  // SharePreview isn't available in SkipSwiftUI, so share the template text without a preview.
+                ShareLink(item: ItemCSV.template) {
+                    Text("Download template").frame(maxWidth: .infinity, minHeight: ManiTouchTarget.minimum)
+                }
+                #else
                 ShareLink(item: ItemCSV.template, preview: SharePreview("items-template.csv")) {
                     Text("Download template").frame(maxWidth: .infinity, minHeight: ManiTouchTarget.minimum)
                 }

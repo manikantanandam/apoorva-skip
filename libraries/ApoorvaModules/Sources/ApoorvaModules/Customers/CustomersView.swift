@@ -12,6 +12,7 @@ import ManiSwiftUIComponents
 /// Customers with dues filter (design 61).
 public struct CustomerListView: View {
     @Environment(\.maniTheme) private var theme
+    @Environment(\.openURL) private var openURL
 
     @Bindable var viewModel: CustomerListViewModel
 
@@ -80,7 +81,9 @@ public struct CustomerListView: View {
                 Menu {
                     if let onImport { Button("Import from contacts", action: onImport) }
                     if let onOffers { Button("Wishes & offers", action: onOffers) }
+                    #if !os(Android)  // File sharing needs a native share sheet, which SkipSwiftUI lacks.
                     Button("Export") { isShowingFormatSheet = true }
+                    #endif
                     Button("Sync now") { Task { await viewModel.forceSync() } }
                 } label: {
                     ManiSwiftUIComponents.IconView(.more, size: 18, color: theme.base.text)
@@ -121,11 +124,7 @@ public struct CustomerListView: View {
 
     private func call(_ customer: Customer) {
         guard !customer.phone.isEmpty, let url = URL(string: "tel://\(customer.phone)") else { return }
-        #if os(Android)
-        Task { @MainActor in _ = await UIApplication.shared.open(url) }
-        #else
-        UIApplication.shared.open(url)
-        #endif
+        openURL(url)
     }
 }
 
