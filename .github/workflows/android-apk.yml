@@ -75,7 +75,7 @@ jobs:
 
       - name: Build release APK
         working-directory: app
-        run: skip export -v --android --no-ios --release -d "$RUNNER_TEMP/export"
+        run: skip export -v --android --no-ios --release --arch aarch64 -d "$RUNNER_TEMP/export"
 
       # TEMPORARY: diagnose the SkipFirebaseCore static/dynamic linking error.
       - name: Dump export diagnostics
