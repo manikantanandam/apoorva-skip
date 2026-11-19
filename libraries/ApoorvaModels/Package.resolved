@@ -1,0 +1,15 @@
+{
+  "originHash" : "40300cbf8a9816f5f0a6d73972e2db5e59c5930ab8b04d483dc539b0a4b020d0",
+  "pins" : [
+    {
+      "identity" : "maniutilities",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/manikantanandam/ManiUtilities.git",
+      "state" : {
+        "revision" : "bf688c6c3d45bc00193c09e2d979bcb295863148",
+        "version" : "1.0.0"
+      }
+    }
+  ],
+  "version" : 3
+}

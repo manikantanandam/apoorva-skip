@@ -1,0 +1,24 @@
+{
+  "originHash" : "6b89930ae05816953a89b22e56ad34a1b8fd755e7bafdfefa1480408f9820ff5",
+  "pins" : [
+    {
+      "identity" : "manilogger",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/manikantanandam/ManiLogger.git",
+      "state" : {
+        "revision" : "c5521887e912ce0dfbdae18c5a6a15defe3324fc",
+        "version" : "1.1.0"
+      }
+    },
+    {
+      "identity" : "maniswiftuicomponents",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/manikantanandam/ManiSwiftUIComponents.git",
+      "state" : {
+        "revision" : "505596b64ab99f805ff619f436296679175b7ede",
+        "version" : "1.2.0"
+      }
+    }
+  ],
+  "version" : 3
+}

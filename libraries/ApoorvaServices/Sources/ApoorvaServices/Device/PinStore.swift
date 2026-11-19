@@ -66,10 +66,14 @@ public final class KeychainPinStore: PinStoring, @unchecked Sendable {
     private func save(_ value: String, account: String) throws {
         #if canImport(Security)
         try removePin(for: account)
+        // Explicit access control (no extra auth flags) keeps the item device-bound without prompting.
+        guard let access = SecAccessControlCreateWithFlags(nil, kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly, [], nil) else {
+            throw NSError(domain: NSOSStatusErrorDomain, code: Int(errSecParam))
+        }
         let attributes: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
                                          kSecAttrService as String: service,
                                          kSecAttrAccount as String: account,
-                                         kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+                                         kSecAttrAccessControl as String: access,
                                          kSecValueData as String: Data(value.utf8)]
         let status = SecItemAdd(attributes as CFDictionary, nil)
         guard status == errSecSuccess else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(status)) }
