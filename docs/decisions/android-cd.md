@@ -6,4 +6,7 @@
 - `SKIP_NO_ANDROID=1` stays in committed `app/Skip.env`; CI strips it on the runner only. `CURRENT_PROJECT_VERSION` = run number.
 - Secret required: `GOOGLE_SERVICE_JSON_B64` (base64 of Android `google-services.json`), written by `scripts/setup-firebase-config.sh`.
 - No `skip checkup` in CI (removed 2026-11-15): it builds/tests Skip's own hello-skip sample and failed on its Kotlin test (`HelloSkipTests.classMethod`, ~7.5 min), unrelated to this app. Only `skip android sdk install` runs.
+- APK size (2026-11-16): the first APK was ~500 MB (arm64-v8a + armeabi-v7a + x86_64 native libs, ~150 MB each, `lib_FoundationICU.so` ~45 MB per ABI). CI now passes `--arch aarch64` to `skip export` (arm64 only, expect ~160 MB). Emulators (x86_64) and 32-bit devices are not supported by the CI APK.
+- minSdk is 28 (Android 9+); a Lenovo TB-X304L on Android 8.1 cannot install it.
+- Further size lever if needed: `keepDebugSymbols` in `app/Android/app/build.gradle.kts` keeps unstripped `.so` files.
 - Untested locally (no-build rule): first CI run may need tuning of Skip/SDK install steps or `skip export` flags.
