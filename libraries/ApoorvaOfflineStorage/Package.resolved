@@ -1,0 +1,87 @@
+{
+  "originHash" : "6f9ac11616259215e7ef34e06d625fc90c185a8352ec8b522539263b4a28bd52",
+  "pins" : [
+    {
+      "identity" : "manilogger",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/manikantanandam/ManiLogger.git",
+      "state" : {
+        "revision" : "c5521887e912ce0dfbdae18c5a6a15defe3324fc",
+        "version" : "1.1.0"
+      }
+    },
+    {
+      "identity" : "maniswiftuicomponents",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/manikantanandam/ManiSwiftUIComponents.git",
+      "state" : {
+        "revision" : "505596b64ab99f805ff619f436296679175b7ede",
+        "version" : "1.2.0"
+      }
+    },
+    {
+      "identity" : "maniutilities",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/manikantanandam/ManiUtilities.git",
+      "state" : {
+        "revision" : "bf688c6c3d45bc00193c09e2d979bcb295863148",
+        "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "skip",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/skiptools/skip.git",
+      "state" : {
+        "revision" : "9a24b76b0681d8175d86911307494599e2ec47df",
+        "version" : "1.9.20"
+      }
+    },
+    {
+      "identity" : "skip-ffi",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/skiptools/skip-ffi.git",
+      "state" : {
+        "revision" : "ee87d50e787ea132735ecd3314c7f8198d7a999b",
+        "version" : "1.2.3"
+      }
+    },
+    {
+      "identity" : "skip-foundation",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/skiptools/skip-foundation.git",
+      "state" : {
+        "revision" : "ba10460923b9e495bbd54ad494b8b0cb3dd7ba26",
+        "version" : "1.4.9"
+      }
+    },
+    {
+      "identity" : "skip-lib",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/skiptools/skip-lib.git",
+      "state" : {
+        "revision" : "f85cb3896c84410fb20f9f921a5ccf3254c21843",
+        "version" : "1.4.4"
+      }
+    },
+    {
+      "identity" : "skip-sql",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/skiptools/skip-sql.git",
+      "state" : {
+        "revision" : "7c4aaf4ca035ea0cf8e5395c0ce8dae7158abe5c",
+        "version" : "0.16.1"
+      }
+    },
+    {
+      "identity" : "skip-unit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/skiptools/skip-unit.git",
+      "state" : {
+        "revision" : "fc58e058f3d25675e047a758281c39dba5d52570",
+        "version" : "1.7.2"
+      }
+    }
+  ],
+  "version" : 3
+}

@@ -13,7 +13,8 @@
         android:label="${PRODUCT_NAME}"
         android:name=".AndroidAppMain"
         android:supportsRtl="true"
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false"
         >
         <activity
             android:name=".MainActivity"
