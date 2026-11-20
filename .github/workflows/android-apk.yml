@@ -52,11 +52,11 @@ jobs:
         env:
           GOOGLE_SERVICE_JSON_B64: ${{ secrets.GOOGLE_SERVICE_JSON_B64 }}
         run: |
-          if [ -n "$GOOGLE_SERVICE_JSON_B64" ]; then
-            scripts/setup-firebase-config.sh
-          else
-            echo "::warning::GOOGLE_SERVICE_JSON_B64 not set; building without google-services.json (Firebase will not work in this APK)"
+          if [ -z "$GOOGLE_SERVICE_JSON_B64" ]; then
+            echo "::error::GOOGLE_SERVICE_JSON_B64 not set; an APK without google-services.json crashes at launch"
+            exit 1
           fi
+          scripts/setup-firebase-config.sh
 
       - name: Enable Android and set build number
         run: |
