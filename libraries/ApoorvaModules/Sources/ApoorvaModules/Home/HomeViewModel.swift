@@ -7,6 +7,11 @@ import Foundation
 import Observation
 import ApoorvaModels
 import ApoorvaRepository
+import ManiLogger
+
+extension LogCategory { static let home: LogCategory = "home" }
+
+private let logger = AppLogger(category: .home)
 
 public struct HomeKPI: Identifiable, Equatable, Sendable {
     public var id: String { title }
@@ -60,6 +65,14 @@ public final class HomeViewModel {
         let lastWeek = sales.filter { calendar.isDate($0.timestamp, inSameDayAs: sameDayLastWeek) && !$0.isReturn }
         let todayTotal = today.reduce(0) { $0 + $1.netPayable } - sales.filter { $0.isReturn && calendar.isDate($0.timestamp, inSameDayAs: now) }.reduce(0) { $0 + abs($1.netPayable) }
         let lastWeekTotal = lastWeek.reduce(0) { $0 + $1.netPayable }
+
+        logger.info("load: now=\(now) tz=\(calendar.timeZone.identifier) sales=\(sales.count) today=\(today.count) todayTotal=\(todayTotal)")
+        for sale in today {
+            logger.info("load: today sale id=\(sale.id) bill=\(sale.billNumber ?? "-") ts=\(sale.timestamp) net=\(sale.netPayable) status=\(sale.status)")
+        }
+        if let newest = sales.max(by: { $0.timestamp < $1.timestamp }) {
+            logger.info("load: newest sale id=\(newest.id) ts=\(newest.timestamp) net=\(newest.netPayable)")
+        }
 
         recentBills = Array(sales.sorted { $0.timestamp > $1.timestamp }.prefix(3))
         lowStock = items.filter(\.isLowStock).sorted { $0.currentStock < $1.currentStock }
@@ -127,7 +140,7 @@ public final class HomeViewModel {
         ]
     }
 
-    public var showsFirstRunGuide: Bool { !hasAnySales && !session.isDemo }
+    public var showsFirstRunGuide: Bool { !hasAnySales }
 
     public var showsUsageBanner: Bool {
         guard session.planStatus.isNearLimit else { return false }

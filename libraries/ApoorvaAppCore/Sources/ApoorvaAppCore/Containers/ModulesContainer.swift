@@ -74,12 +74,6 @@ public class ModulesContainer {
                            pinStore: servicesContainer.pinStore, biometrics: servicesContainer.biometrics)
     }
 
-    public func makeDemoSeeder() -> DemoSeeder {
-        DemoSeeder(inventoryRepository: repositoryContainer.inventoryRepository,
-                   customerRepository: repositoryContainer.customerRepository,
-                   saleRepository: repositoryContainer.saleRepository)
-    }
-
     public func makePOSViewModel() -> POSViewModel {
         return POSViewModel(
             inventoryRepository: repositoryContainer.inventoryRepository,

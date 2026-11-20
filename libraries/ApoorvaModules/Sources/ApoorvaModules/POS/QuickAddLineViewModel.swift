@@ -16,7 +16,7 @@ public enum QuickDiscountMode: String, CaseIterable, Sendable {
     public var fieldLabel: String {
         switch self {
         case .finalPrice: "Final price per unit"
-        case .percent: "Discount %"
+        case .percent: "Discount % per unit"
         case .amount: "Discount per unit"
         }
     }

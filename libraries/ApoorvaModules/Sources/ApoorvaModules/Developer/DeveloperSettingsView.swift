@@ -54,7 +54,7 @@ public struct DeveloperSettingsView: View {
         .confirmationDialog("Clear local database?",
                             isPresented: $showClearConfirm,
                             titleVisibility: .visible) {
-            Button("Clear", role: .destructive) { viewModel.clearLocalDatabase() }
+            Button("Clear", role: .destructive) { Task { await viewModel.clearLocalDatabase() } }
         }
     }
 }

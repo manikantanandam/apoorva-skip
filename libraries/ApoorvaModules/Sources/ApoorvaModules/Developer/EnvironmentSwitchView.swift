@@ -41,7 +41,7 @@ public struct EnvironmentSwitchView: View {
                             isPresented: $showConfirm,
                             titleVisibility: .visible) {
             Button("Switch and sign out", role: .destructive) {
-                viewModel.confirmEnvironmentSwitch()
+                Task { await viewModel.confirmEnvironmentSwitch() }
             }
         }
         .alert("Error", isPresented: Binding(

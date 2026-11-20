@@ -14,7 +14,7 @@ public enum MoreMenuItem: Hashable, Sendable {
     case cashflow, expenses, summary, insights
     case staff, attendance, salary
     case settings, admin, console, help, developer
-    case switchStaff, exitDemo
+    case switchStaff
 }
 
 /// Counts shown next to menu chips ("Orders · 4"). Nil hides the count.
@@ -61,11 +61,6 @@ public struct MoreMenuView: View {
                 }
             }
             ScreenSubtitle(text: "\(session.displayShopName) · \(session.role.title)")
-
-            if session.isDemo {
-                ManiNote("You're in a sample shop. Nothing here is saved.", kind: .info)
-                ManiButton("Exit demo & create my shop") { onSelect(.exitDemo) }
-            }
 
             group("Sell", items: sellItems)
             group("Stock", items: stockItems)

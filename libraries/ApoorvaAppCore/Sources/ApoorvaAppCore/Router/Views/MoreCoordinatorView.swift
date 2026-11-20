@@ -62,7 +62,6 @@ struct MoreCoordinatorView: View {
         case .help: tabs.present(.help)
         case .developer: coordinator.push(.developer(.hub))
         case .switchStaff: isSwitchingStaff = true
-        case .exitDemo: Task { await tabs.appCoordinator?.exitDemo() }
         }
     }
 

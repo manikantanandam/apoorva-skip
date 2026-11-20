@@ -99,14 +99,18 @@ public class AppContainer {
     /// Developer settings are only offered in debug builds.
     public func makeDeveloperSettingsViewModel() -> DeveloperSettingsViewModel? {
         #if DEBUG
-        let dbPath = offlineStorageContainer.databasePath
+        let database = offlineStorageContainer.skipSqlDatabase
         return DeveloperSettingsViewModel(
             authService: servicesContainer.authService,
             environmentStore: environmentStore,
             tools: developerTools,
+            // Delete rows in place: removing the file leaves the open connection and any -wal/-shm files behind.
             clearLocalDatabase: {
-                try? FileManager.default.removeItem(atPath: dbPath)
-                exit(0)
+                do {
+                    try await database.clearAllLocalData()
+                } catch {
+                    logger.error("clearLocalDatabase failed: \(error.localizedDescription)")
+                }
             },
             terminateApp: { exit(0) }
         )

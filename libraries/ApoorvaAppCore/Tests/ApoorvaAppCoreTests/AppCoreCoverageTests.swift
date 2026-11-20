@@ -342,7 +342,6 @@ struct ModulesContainerTests {
         _ = modules.makeOpeningBalancesViewModel(session: session)
         _ = modules.makeStaffJoinViewModel(code: "ABC", currentOrgs: { [] })
         _ = modules.makePinSwitchViewModel(session: session)
-        _ = modules.makeDemoSeeder()
 
         _ = modules.makePOSViewModel()
         _ = modules.makeLineEditViewModel(line: line, isNew: true)

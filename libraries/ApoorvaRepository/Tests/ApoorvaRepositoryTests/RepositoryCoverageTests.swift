@@ -355,28 +355,6 @@ struct RepositoryEdgeCaseTests {
         #expect(service.calls.isEmpty)
     }
 
-    @Test func demoUserOverridesTheServiceUser() async throws {
-        // Through the protocol, as the app calls it, so the actor's own implementation is the one dispatched to.
-        let sut: any UserRepositoryProtocol = makeUserRepository(user: try makeUser(id: "real"))
-        await sut.setDemoUser(try makeUser(id: "demo"))
-        #expect(try await sut.getCurrentUser().id == "demo")
-        await sut.setDemoUser(nil)
-        #expect(try await sut.getCurrentUser().id == "real")
-    }
-
-    @Test func protocolDefaultDemoUserIsNoOp() async throws {
-        struct Bare: UserRepositoryProtocol {
-            func getCurrentUser() async throws -> AppUser { throw TestError.failed }
-            func getUser(id: String) async throws -> AppUser? { nil }
-            func setUser(user: AppUser) async throws {}
-            func updateUser(user: AppUser) async throws {}
-            func deleteUser(id: String) async {}
-            func updateSelectedOrganization(for user: AppUser, organization: OrganizationSnapshot) async throws {}
-            func listUsers(orgId: String) async throws -> [AppUser] { [] }
-            func updateUserRole(id: String, role: AppUserRole) async throws {}
-        }
-        await Bare().setDemoUser(nil)
-    }
 }
 
 // MARK: - SaleLifecycleRepository

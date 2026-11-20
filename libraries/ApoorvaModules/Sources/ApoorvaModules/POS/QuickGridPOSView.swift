@@ -54,12 +54,14 @@ public struct QuickGridPOSView: View {
                 ManiSwiftUIComponents.IconView(.calendar, size: 18, color: theme.base.text)
             }
             .accessibilityLabel("Bill date & time")
+            .accessibilityIdentifier(AccessibilityID.Pos.billDate)
             if config.allowsHold {
                 Button { Task { await viewModel.holdCurrentBill() } } label: {
                     ManiSwiftUIComponents.IconView(.pause, size: 18, color: theme.base.text)
                 }
                 .disabled(viewModel.cart.items.isEmpty || viewModel.isHolding)
                 .accessibilityLabel("Hold bill")
+                .accessibilityIdentifier(AccessibilityID.Pos.holdBill)
                 Button { onAction(.openHeld) } label: {
                     ZStack(alignment: .topTrailing) {
                         ManiSwiftUIComponents.IconView(.tray, size: 18, color: theme.base.text)
@@ -69,6 +71,7 @@ public struct QuickGridPOSView: View {
                     }
                 }
                 .accessibilityLabel("Held bills (\(viewModel.heldBillsCount))")
+                .accessibilityIdentifier(AccessibilityID.Pos.heldBills)
             }
             Menu {
                 Button("Scan barcode") { onAction(.scan) }
@@ -77,6 +80,8 @@ public struct QuickGridPOSView: View {
                 if !viewModel.cart.items.isEmpty { Button("Clear bill", role: .destructive) { viewModel.clearCart() } }
             } label: {
                 ManiSwiftUIComponents.IconView(.more, size: 18, color: theme.base.text)
+                    .accessibilityLabel("More")
+                    .accessibilityIdentifier(AccessibilityID.Pos.moreMenu)
             }
         }
     }
@@ -142,6 +147,7 @@ public struct QuickGridPOSView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Find item")
+        .accessibilityIdentifier(AccessibilityID.Pos.find)
     }
 
     // MARK: - Cart
@@ -169,6 +175,7 @@ public struct QuickGridPOSView: View {
                                         quantityUnitText: line.weight == nil ? "\(line.quantity) × \(Money.format(line.finalPrice))/unit" : "",
                                         onTap: { onAction(.editLine(lineId: line.lineId)) },
                                         onRemove: { viewModel.removeLine(id: line.lineId) })
+                            .accessibilityIdentifier(AccessibilityID.Pos.cartLine(line.lineId))
                     }
                 }
             }
@@ -192,6 +199,7 @@ public struct QuickGridPOSView: View {
                     .foregroundStyle(theme.base.text)
             }
             ManiButton("Proceed to checkout", isEnabled: !viewModel.cart.items.isEmpty) { onAction(.checkout) }
+                .accessibilityIdentifier(AccessibilityID.Pos.checkout)
         }
         .padding(.top, ManiSpacing.sm)
         .background(theme.base.background)
@@ -228,6 +236,7 @@ struct QuickItemTile: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(quantity > 0 ? "\(title), \(quantity) on bill" : title))
+        .accessibilityIdentifier(AccessibilityID.Pos.tile(title))
     }
 }
 
@@ -290,24 +299,39 @@ public struct QuickAddLineSheet: View {
             HStack(alignment: .bottom, spacing: ManiSpacing.md) {
                 ManiInputField(label: viewModel.original.weight == nil ? "MRP" : "MRP per \(viewModel.original.unit ?? "kg")",
                                text: $viewModel.mrpText, placeholder: "₹", keyboard: .decimal)
+                    .accessibilityIdentifier(AccessibilityID.QuickAddLine.mrp)
                 if viewModel.original.weight == nil { quantityStepper }
             }
             ManiSegmentedControl(selection: Binding(get: { viewModel.mode }, set: { viewModel.setMode($0) }),
                                  options: QuickDiscountMode.allCases.map { ($0, $0.rawValue) })
             ManiInputField(label: viewModel.mode.fieldLabel, text: $viewModel.valueText,
                            placeholder: viewModel.mode == .percent ? "%" : "₹", keyboard: .decimal)
-            ManiKeyValueSummary(rows: [
-                ManiKeyValue("Gross total", Money.format(viewModel.gross)),
-                ManiKeyValue("Discount (\(percentText))", "−\(Money.format(viewModel.discount))"),
-                ManiKeyValue("Net payable", Money.format(viewModel.net))
-            ])
+                .accessibilityIdentifier(AccessibilityID.QuickAddLine.discount)
+            let isCounted = viewModel.original.weight == nil && viewModel.quantity > 0
+            let qty = Double(max(viewModel.quantity, 1))
+            ManiCard {
+                VStack(spacing: ManiSpacing.sm) {
+                    QuickSummaryRow(label: "Gross total",
+                                    perUnit: isCounted ? "\(viewModel.quantity) × \(Money.format(viewModel.mrp))" : nil,
+                                    amount: Money.format(viewModel.gross))
+                    QuickSummaryRow(label: "Discount (\(percentText))",
+                                    perUnit: isCounted ? "\(viewModel.quantity) × \(Money.format(viewModel.discount / qty))" : nil,
+                                    amount: "−\(Money.format(viewModel.discount))")
+                    Divider()
+                    QuickSummaryRow(label: "Net payable",
+                                    perUnit: isCounted ? "\(viewModel.quantity) × \(Money.format(viewModel.net / qty))" : nil,
+                                    amount: Money.format(viewModel.net), isTotal: true)
+                }
+            }
         } bottom: {
             VStack(spacing: ManiSpacing.sm) {
                 ManiButton(viewModel.isNew ? "Add to bill" : "Update line", isEnabled: viewModel.isValid) {
                     onSave(viewModel.build())
                 }
+                .accessibilityIdentifier(AccessibilityID.QuickAddLine.save)
                 if !viewModel.isNew {
                     ManiButton("Remove from bill", icon: .trash, kind: .outline, action: onRemove)
+                        .accessibilityIdentifier(AccessibilityID.QuickAddLine.remove)
                 }
             }
         }
@@ -322,11 +346,13 @@ public struct QuickAddLineSheet: View {
                 .foregroundStyle(theme.base.textSecondary)
             HStack(spacing: ManiSpacing.sm) {
                 stepButton(.minus, label: "Decrease quantity") { viewModel.decrement() }
+                    .accessibilityIdentifier(AccessibilityID.QuickAddLine.decrease)
                 Text("\(viewModel.quantity)")
                     .font(theme.typography.body.weight(.semibold))
                     .foregroundStyle(theme.base.text)
                     .frame(minWidth: 28)
                 stepButton(.plus, label: "Increase quantity") { viewModel.increment() }
+                    .accessibilityIdentifier(AccessibilityID.QuickAddLine.increase)
             }
         }
     }
@@ -340,5 +366,44 @@ public struct QuickAddLineSheet: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(label))
+    }
+}
+
+/// One line of the add-item summary: label, then "qty × price" (left) "=" (centre) amount (right).
+/// The three columns have fixed widths so the "=" lines up across rows; the total keeps the large font.
+private struct QuickSummaryRow: View {
+    @Environment(\.maniTheme) private var theme
+    let label: String
+    let perUnit: String?
+    let amount: String
+    var isTotal = false
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Text(label)
+                .font(isTotal ? theme.typography.body.weight(.semibold) : theme.typography.body)
+                .foregroundStyle(isTotal ? theme.base.text : theme.base.textSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Spacer(minLength: ManiSpacing.sm)
+            if let perUnit {
+                Text(perUnit)
+                    .font(theme.typography.body.monospacedDigit())
+                    .foregroundStyle(theme.base.text.opacity(0.6))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(width: 84, alignment: .leading)
+                Text("=")
+                    .font(theme.typography.body)
+                    .foregroundStyle(theme.base.text.opacity(0.6))
+                    .padding(.horizontal, ManiSpacing.sm)
+            }
+            Text(amount)
+                .font((isTotal ? theme.typography.kpiValue : theme.typography.body.weight(.semibold)).monospacedDigit())
+                .foregroundStyle(theme.base.text)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .frame(width: perUnit == nil ? nil : 100, alignment: .trailing)
+        }
     }
 }

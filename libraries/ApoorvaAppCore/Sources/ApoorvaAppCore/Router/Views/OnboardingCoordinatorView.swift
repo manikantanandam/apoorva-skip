@@ -41,11 +41,7 @@ struct OnboardingCoordinatorView: View {
     private func destination(for route: OnboardingRoute) -> some View {
         switch route {
         case .splash:
-            SplashView(onGetStarted: { coordinator.push(.signInHub) },
-                       onDemo: { coordinator.push(.demoShop) })
-        case .demoShop:
-            DemoShopView(onTry: { vertical in Task { await coordinator.appCoordinator?.enterDemo(vertical) } },
-                         onStartOwn: { coordinator.push(.signInHub) })
+            SplashView(onGetStarted: { coordinator.push(.signInHub) })
         case .signInHub:
             SignInHubView(session: session, viewModel: authFlow,
                           onGoogle: { coordinator.push(.googleChooser) },

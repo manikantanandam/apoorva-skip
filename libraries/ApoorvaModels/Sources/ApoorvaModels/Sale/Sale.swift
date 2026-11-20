@@ -80,7 +80,7 @@ public struct Sale: Codable, Sendable, Identifiable {
             self.netPayable = (try? container.decodeIfPresent(Double.self, forKey: .netPayable)) ?? 0.0
             
             // Safe Dates & Enums
-            self.timestamp = (try? container.decodeIfPresent(Date.self, forKey: .timestamp)) ?? Date()
+            self.timestamp = (try? container.decodeIfPresent(Date.self, forKey: .timestamp)) ?? Date(timeIntervalSince1970: 0)
             self.source = (try? container.decodeIfPresent(String.self, forKey: .source)) ?? "Unknown"
             self.status = (try? container.decodeIfPresent(String.self, forKey: .status)) ?? "Completed"
             self.whatsappStatus = (try? container.decodeIfPresent(String.self, forKey: .whatsappStatus)) ?? "unsent"

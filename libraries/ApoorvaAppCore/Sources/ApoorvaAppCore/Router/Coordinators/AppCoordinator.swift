@@ -65,7 +65,6 @@ public final class AppCoordinator {
     /// Re-derives the phase. Coordinators are only rebuilt when the phase key changes, so a
     /// profile update or a platform config change doesn't reset the user's navigation.
     func recompute() async {
-        guard !session.isDemo else { return }
         // Each await below can let a newer recompute start. Only the latest one may touch the session or the phase.
         recomputeGeneration += 1
         let generation = recomputeGeneration
@@ -170,35 +169,6 @@ public final class AppCoordinator {
         if let dismissed = session.settings.plan.trialEndingDismissedAt,
            Date().timeIntervalSince(dismissed) < 86_400 { return }
         present(.trialEnding)
-    }
-
-    // MARK: - Demo shop
-
-    /// Opens a local-only sample shop (design 02). Only offered while signed out.
-    func enterDemo(_ vertical: Vertical) async {
-        let repositories = appContainer.repositoryContainer
-        try? await repositories.clearLocalData()
-        // Repositories see a user with no org, so nothing is ever written to Firestore.
-        let localUser = AppUser(id: "demo", name: "Demo owner", email: "", role: .admin, status: "active",
-                                assignedOrgs: [], createdAt: Date())
-        await repositories.userRepository.setDemoUser(localUser)
-        try? await appContainer.modulesContainer.makeDemoSeeder().seed(vertical)
-
-        let sessionUser = AppUser(id: "demo", name: "Demo owner", email: "", role: .admin, status: "active",
-                                  assignedOrgs: [], createdAt: Date(),
-                                  selectedOrganization: OrganizationSnapshot(orgId: "demo", name: DemoSeeder.shopName(for: vertical)))
-        await session.startDemo(user: sessionUser, settings: DemoSeeder.settings(for: vertical))
-        appContainer.themeStore.apply(session: session)
-        phase = .ready(userId: "demo", orgId: "demo")
-        sessionState = .home(HomeTabsCoordinator(container: appContainer, appCoordinator: self))
-    }
-
-    func exitDemo() async {
-        try? await appContainer.repositoryContainer.clearLocalData()
-        await appContainer.repositoryContainer.userRepository.setDemoUser(nil)
-        session.endDemo()
-        phase = .loading
-        await recompute()
     }
 
     // MARK: - Deep links
