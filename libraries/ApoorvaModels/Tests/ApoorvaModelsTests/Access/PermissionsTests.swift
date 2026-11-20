@@ -29,7 +29,6 @@ struct PermissionsTests {
             #expect(!permission.title.isEmpty)
         }
         #expect(Permission.createBill.title == "Create bill")
-        #expect(Permission.undoOwnBill.title == "Undo own bill (5 min)")
         #expect(Permission.purchases.title == "Purchases & supplier payments")
         #expect(Permission.admin.title == "Admin section")
     }

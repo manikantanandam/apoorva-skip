@@ -28,7 +28,7 @@
 | FR-22 | Sign in with Google, phone OTP or email/password; register with email; verify email; reset password; link methods. Each method on/off at app level | Firebase Auth providers; sign-in hub reads `auth.*` flags; see 05 and 08 |
 | FR-23 | Easy mode: calculator billing with optional category per amount | `BillingStrategy` "calculator"; per-store setting |
 | FR-24 | Quick staff switch with PIN / biometrics; app lock | Local PIN hash per member; LocalAuthentication / BiometricPrompt |
-| FR-25 | Undo bill within 5 min; edit saved bill with reason | Undo = cancel with reason "undo"; edit = new version, old kept for audit |
+| FR-25 | Edit saved bill with reason | Edit = new version, old kept for audit (the 5-minute undo was removed) |
 | FR-26 | Retail/wholesale price tiers; units & packs | Item `prices[tier]`, `unit`, `packSize`; customer `defaultTier` |
 | FR-27 | Optional warranty per item (value + days/months/years), shown on bill and receipt; lookup and claims | Item `warrantyValue`, `warrantyUnit`; line `warrantyUntil` stored at sale; `WarrantyClaim` |
 | FR-28 | Orders with advance, due date, pickup/delivery; deliver → bill balance | `Order` entity linked to bill and payments |

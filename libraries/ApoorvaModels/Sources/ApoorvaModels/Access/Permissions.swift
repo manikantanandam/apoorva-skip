@@ -39,7 +39,6 @@ public enum Permission: String, Codable, Sendable, CaseIterable, Hashable {
     case dayReopen
     case editInventory
     case viewInsights
-    case undoOwnBill
     case editSavedBill
     case purchases
     case expenses
@@ -61,7 +60,6 @@ public enum Permission: String, Codable, Sendable, CaseIterable, Hashable {
         case .dayReopen: "Reopen day"
         case .editInventory: "Edit inventory"
         case .viewInsights: "View insights"
-        case .undoOwnBill: "Undo own bill (5 min)"
         case .editSavedBill: "Edit saved bill"
         case .purchases: "Purchases & supplier payments"
         case .expenses: "Expenses"
@@ -110,11 +108,11 @@ public struct PermissionMatrix: Codable, Sendable, Hashable {
     public static let standard = PermissionMatrix(grants: [
         OrgRole.manager.rawValue: [
             Permission.createBill, .discountAboveLimit, .cancelBill, .returns, .creditSales, .cashOut,
-            .dayClose, .editInventory, .viewInsights, .undoOwnBill, .editSavedBill, .purchases,
+            .dayClose, .editInventory, .viewInsights, .editSavedBill, .purchases,
             .expenses, .warrantyClaim, .markAttendance, .exportReports
         ].map(\.rawValue),
         OrgRole.cashier.rawValue: [
-            Permission.createBill, .returns, .cashOut, .undoOwnBill, .warrantyClaim, .markAttendance
+            Permission.createBill, .returns, .cashOut, .warrantyClaim, .markAttendance
         ].map(\.rawValue),
         OrgRole.accountant.rawValue: [
             Permission.viewInsights, .exportReports

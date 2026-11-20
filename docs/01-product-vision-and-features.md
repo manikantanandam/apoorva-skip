@@ -81,7 +81,7 @@ The audit walked a shop's whole day (open → sell → customers → stock → m
 | Ease | **Quick staff switch** | Shared counter phone: tap your name, enter a 4-digit PIN or use fingerprint |
 | Ease | **Demo shop + one-time tips** | Try before signing up. A short tip on first use of each screen |
 | Ease | **Home-screen widget & shortcuts** | New bill and today's sales without opening the app |
-| Selling | **Undo bill (5 min) + edit bill** | Mistakes are fixed in one tap. Edits need a reason and are audited |
+| Selling | **Edit bill** | Edits need a reason and are audited |
 | Selling | **Retail / wholesale price** | Many kirana and fancy shops also sell to small retailers. The price tier is remembered per customer |
 | Selling | **Units & packs** | Buy a box of 12, sell by piece. Kg and metre for loose goods and cloth |
 | Selling | **Warranty (opt-in per item)** | Item has a warranty toggle with a period in days, months or years. The bill and receipt show "warranty till" a date. Warranty lookup by phone or bill. Claim as replace, repair or refund |

@@ -107,7 +107,7 @@ The full numbered list with captions is in [`designs/README.md`](../designs/READ
 | More & Settings | 12 | more menu, appearance, tax, receipts, payments, printer, language, backup & export, account, devices, sign-in methods, plan |
 | Org admin | 12 (incl. font) | home, stores, store detail, members, add member, member detail, permissions, theme, features, audit, invite |
 | Platform console | 9 | console home, orgs, org detail, support session, suspend/block, blocked-org view, platform analytics, app flags, sign-in config |
-| Small-shop essentials | 25 | demo shop, staff PIN switch, calculator billing, tips, widget, undo, edit bill, wholesale price, warranty lookup, contacts import, offers, orders ×3, catalog share, reorder, suppliers ×2, purchase, expenses ×2, daily summary, profit, attendance, salary |
+| Small-shop essentials | 25 | demo shop, staff PIN switch, calculator billing, tips, widget, edit bill, wholesale price, warranty lookup, contacts import, offers, orders ×3, catalog share, reorder, suppliers ×2, purchase, expenses ×2, daily summary, profit, attendance, salary |
 | Visual style | 1 | Clean vs Bold comparison |
 | Developer | 4 | developer hub, environment switch, flag overrides, logs |
 | Global | 7 | search, sync, conflict, notifications, locked feature, force update, help |

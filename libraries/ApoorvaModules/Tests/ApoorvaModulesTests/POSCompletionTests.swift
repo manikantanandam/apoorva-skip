@@ -25,7 +25,6 @@ final class RecordingLifecycle: SaleLifecycleRepositoryProtocol, @unchecked Send
     var recorded: [Sale] = []
     func recordEffects(of sale: Sale, by actorId: String) async throws { recorded.append(sale) }
     func cancel(saleId: String, reason: String, by actorId: String) async throws -> Sale { throw SaleLifecycleError.notFound }
-    func undo(saleId: String, by actorId: String, now: Date) async throws -> Sale { throw SaleLifecycleError.notFound }
     func edit(_ edited: Sale, reason: String, by actorId: String) async throws {}
 }
 

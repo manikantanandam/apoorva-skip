@@ -25,6 +25,12 @@ public enum AccessibilityID {
         public static let customerRow = "pos.customerRow"
     }
 
+    public enum Receipt {
+        public static let newBill = "receipt.newBill"
+        public static let home = "receipt.home"
+        public static let editBill = "receipt.editBill"
+    }
+
     public enum CustomerPicker {
         public static let addAndAttach = "customerPicker.addAndAttach"
         public static let walkIn = "customerPicker.walkIn"
