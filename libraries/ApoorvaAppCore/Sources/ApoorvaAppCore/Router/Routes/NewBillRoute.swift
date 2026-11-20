@@ -7,7 +7,6 @@ enum NewBillRoute: Hashable, Identifiable {
     /// Add an item that has no price on file yet (design 33, new line).
     case newLine(itemId: String)
     case checkout
-    case split
     case upiQR
     case receipt(saleId: String)
     case receiptPreview(saleId: String)
