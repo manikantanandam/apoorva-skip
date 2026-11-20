@@ -50,10 +50,13 @@ jobs:
 
       - name: Write Android Firebase config
         env:
-          GOOGLE_SERVICE_JSON_B64: ${{ secrets.GOOGLE_SERVICE_JSON_B64 }}
+          # The debug-signed CI APK uses the debug Firebase project; set to production for a prod build.
+          GOOGLE_SERVICE_JSON_ENV: debug
+          GOOGLE_SERVICE_JSON_DEBUG_B64: ${{ secrets.GOOGLE_SERVICE_JSON_DEBUG_B64 }}
+          GOOGLE_SERVICE_JSON_PRODUCTION_B64: ${{ secrets.GOOGLE_SERVICE_JSON_PRODUCTION_B64 }}
         run: |
-          if [ -z "$GOOGLE_SERVICE_JSON_B64" ]; then
-            echo "::error::GOOGLE_SERVICE_JSON_B64 not set; an APK without google-services.json crashes at launch"
+          if [ -z "$GOOGLE_SERVICE_JSON_DEBUG_B64" ]; then
+            echo "::error::GOOGLE_SERVICE_JSON_DEBUG_B64 not set; an APK without google-services.json crashes at launch"
             exit 1
           fi
           scripts/setup-firebase-config.sh
