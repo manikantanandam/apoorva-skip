@@ -426,31 +426,6 @@ struct OrgCollectionCoverageTests {
 struct OrganizationSetupCoverageTests {
     private let account = AuthAccount(uid: "u1", email: nil, isEmailVerified: true)
 
-    private func invite(role: OrgRole) -> Invite {
-        Invite(token: "ABCD2345", orgId: "org1", orgName: "Glitz", storeIds: [], storeName: "", role: role,
-               name: "A", phone: "9", invitedBy: "u0", invitedByName: "K")
-    }
-
-    @Test func createInviteAndFetchInviteRoundTrip() async throws {
-        let store = MockFirestoreStore()
-        let service = OrganizationSetupService(store: store)
-        try service.createInvite(invite(role: .cashier))
-        #expect(store.writes.first?.path == "invites/ABCD2345")
-        #expect(try await service.fetchInvite(token: "abcd2345")?.orgId == "org1")
-        #expect(try await service.fetchInvite(token: "missing") == nil)
-    }
-
-    @Test func acceptInviteMapsEveryRole() async throws {
-        let expected: [(OrgRole, AppUserRole)] = [(.owner, .admin), (.manager, .manager), (.cashier, .standard), (.accountant, .standard)]
-        for (role, legacy) in expected {
-            let store = MockFirestoreStore()
-            try await OrganizationSetupService(store: store)
-                .acceptInvite(invite(role: role), account: account, name: "A", existingOrgs: [try makeOrgSnapshot("org1"), try makeOrgSnapshot("other")])
-            #expect(store.documents["users/u1"]?["role"] as? String == legacy.rawValue)
-            #expect((store.documents["users/u1"]?["assignedOrgIds"] as? [String])?.count == 2)
-        }
-    }
-
     @Test func updateOrganizationStatusWritesReason() async throws {
         let store = MockFirestoreStore()
         try await OrganizationSetupService(store: store).updateOrganizationStatus(orgId: "o", status: "Suspended", reason: "dues")

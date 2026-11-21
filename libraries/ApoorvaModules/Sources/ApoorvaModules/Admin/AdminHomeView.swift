@@ -8,7 +8,7 @@ import ManiSwiftUIComponents
 import ApoorvaModels
 
 public enum AdminItem: Hashable, Sendable {
-    case stores, members, permissions, theme, features, audit, invite
+    case stores, members, permissions, theme, features, audit
 }
 
 /// Design 109: org overview KPIs and the admin sections. Owner only.
@@ -41,7 +41,7 @@ public struct AdminHomeView: View {
             RowsCard {
                 NavRow(icon: .store, title: "Stores", subtitle: "Shop details, type, printer") { onSelect(.stores) }
                 Divider()
-                NavRow(icon: .people, title: "Staff & roles", subtitle: "Invite, roles, store access") { onSelect(.members) }
+                NavRow(icon: .people, title: "Staff & roles", subtitle: "Roles, store access") { onSelect(.members) }
                 Divider()
                 NavRow(icon: .shield, title: "Permissions", subtitle: "What each role can do") { onSelect(.permissions) }
                 Divider()

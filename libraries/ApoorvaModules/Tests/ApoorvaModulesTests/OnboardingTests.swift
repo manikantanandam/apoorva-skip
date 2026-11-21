@@ -28,14 +28,7 @@ final class RecordingAuthService: AuthServicing, @unchecked Sendable {
 
 final class RecordingSetupService: OrganizationSetupServicing, @unchecked Sendable {
     var createdShop: NewShop?
-    var invite: Invite?
-    var accepted: Invite?
     func createShop(_ shop: NewShop, owner: AuthAccount) async throws -> String { createdShop = shop; return "org-new" }
-    func fetchInvite(token: String) async throws -> Invite? { invite }
-    func createInvite(_ invite: Invite) throws { self.invite = invite }
-    func acceptInvite(_ invite: Invite, account: AuthAccount, name: String, existingOrgs: [OrganizationSnapshot]) async throws {
-        accepted = invite
-    }
     func updateOrganizationStatus(orgId: String, status: String, reason: String) async throws {}
     func fetchAllOrganizations() async throws -> [Organization] { [] }
 }
@@ -123,47 +116,6 @@ struct ShopSetupViewModelTests {
         auth.account = nil
         let vm = ShopSetupViewModel(authService: auth, setupService: RecordingSetupService())
         #expect(!(await vm.finish()))
-        #expect(vm.errorMessage != nil)
-    }
-}
-
-@MainActor
-struct StaffJoinViewModelTests {
-    private func invite(expiresIn: TimeInterval = 3600, accepted: Bool = false) -> Invite {
-        Invite(token: "ABCD2345", orgId: "org1", orgName: "Glitz", storeIds: ["default"], storeName: "Glitz Ameerpet",
-               role: .cashier, name: "Anu", phone: "9000000000", invitedBy: "u0", invitedByName: "Kiran",
-               createdAt: Date(), expiresAt: Date().addingTimeInterval(expiresIn),
-               acceptedBy: accepted ? "other" : nil)
-    }
-
-    @Test func validInviteCanBeJoinedWhenSignedIn() async {
-        let setup = RecordingSetupService()
-        setup.invite = invite()
-        let vm = StaffJoinViewModel(code: "abcd2345", setupService: setup, authService: RecordingAuthService())
-        await vm.load()
-        #expect(vm.name == "Anu")
-        #expect(vm.canJoin)
-        #expect(await vm.join())
-        #expect(setup.accepted?.token == "ABCD2345")
-    }
-
-    @Test func expiredOrUsedInvitesCannotBeJoined() async {
-        let setup = RecordingSetupService()
-        setup.invite = invite(expiresIn: -10)
-        let vm = StaffJoinViewModel(code: "ABCD2345", setupService: setup, authService: RecordingAuthService())
-        await vm.load()
-        #expect(!vm.canJoin)
-        #expect(vm.errorMessage?.contains("expired") == true)
-
-        setup.invite = invite(accepted: true)
-        await vm.load()
-        #expect(vm.errorMessage?.contains("already been used") == true)
-    }
-
-    @Test func missingInviteShowsAnError() async {
-        let vm = StaffJoinViewModel(code: "ZZZZ9999", setupService: RecordingSetupService(), authService: RecordingAuthService())
-        await vm.load()
-        #expect(vm.invite == nil)
         #expect(vm.errorMessage != nil)
     }
 }

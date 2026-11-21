@@ -44,24 +44,4 @@ struct OrganizationSetupServiceTests {
         #expect(settings.theme.style == .bold)
         #expect(settings.plan.tier == .trial)
     }
-
-    @Test func acceptInviteAddsMembershipAndMarksInviteUsed() async throws {
-        let store = MockFirestoreStore()
-        let invite = Invite(token: "ABCD2345", orgId: "org1", orgName: "Glitz", storeIds: ["default"], storeName: "Glitz",
-                            role: .manager, name: "Anu", phone: "9000000000", invitedBy: "u0", invitedByName: "Kiran")
-        try await OrganizationSetupService(store: store).acceptInvite(invite, account: owner, name: "Anu", existingOrgs: [])
-
-        #expect(store.documents["organizations/org1/members/u1"] != nil)
-        #expect(store.documents["users/u1"]?["role"] as? String == AppUserRole.manager.rawValue)
-        #expect(store.updates.first?.path == "invites/ABCD2345")
-        #expect(store.updates.first?.fields["acceptedBy"] as? String == "u1")
-    }
-
-    @Test func invitesAreValidFor72Hours() {
-        let invite = Invite(orgId: "o", orgName: "O", storeIds: [], storeName: "", role: .cashier, name: "", phone: "",
-                            invitedBy: "", invitedByName: "", createdAt: Date().addingTimeInterval(-73 * 3600))
-        #expect(invite.isExpired)
-        #expect(invite.token.count == 8)
-        #expect(invite.link.hasPrefix("apoorva://join/"))
-    }
 }

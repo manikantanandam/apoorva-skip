@@ -99,7 +99,6 @@ enum AdminRoute: Hashable {
     case font
     case features
     case audit
-    case invite
     case selectOrganization
 }
 

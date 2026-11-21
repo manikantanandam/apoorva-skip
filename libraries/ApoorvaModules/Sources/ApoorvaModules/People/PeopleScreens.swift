@@ -45,7 +45,7 @@ public struct AttendanceView: View {
             ScreenSubtitle(text: "\(viewModel.presentToday) of \(viewModel.staff.count) present today")
             ManiSegmentedControl(selection: $viewModel.range, options: AttendanceViewModel.Range.allCases.map { ($0, $0.rawValue) })
             if viewModel.staff.isEmpty {
-                ManiEmptyState(icon: .people, title: "No staff yet", message: "Invite staff from Admin → Members.")
+                ManiEmptyState(icon: .people, title: "No staff yet", message: "Add staff from Admin → Members.")
             } else if viewModel.range == .today {
                 RowsCard {
                     ForEach(viewModel.staff) { member in

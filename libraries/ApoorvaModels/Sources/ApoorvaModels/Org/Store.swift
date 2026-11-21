@@ -63,7 +63,7 @@ public struct Member: OrgDocument {
     public var role: OrgRole
     public var storeIds: [String]
     public var isActive: Bool
-    /// "invited" until the person joins with the invite link.
+    /// "invited" is reserved for members added but not yet active.
     public var status: String
     public var commissionPercent: Double?
     public var baseSalary: Double?

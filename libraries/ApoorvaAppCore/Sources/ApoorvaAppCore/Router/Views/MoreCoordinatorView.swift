@@ -19,6 +19,7 @@ struct MoreCoordinatorView: View {
                 session: session,
                 counts: counts,
                 showsDeveloper: container.showsDeveloperTools,
+                invitations: container.modulesContainer.invitationsViewModel,
                 onSelect: select,
                 onSearch: { tabs.present(.search) }
             )
@@ -186,16 +187,20 @@ struct MoreCoordinatorView: View {
                 case .theme: coordinator.push(.admin(.theme))
                 case .features: coordinator.push(.admin(.features))
                 case .audit: coordinator.push(.admin(.audit))
-                case .invite: coordinator.push(.admin(.invite))
                 }
             }
         case .selectOrganization:
-            OrganizationListView(viewModel: container.modulesContainer.makeOrganizationListViewModel())
+            OrganizationListView(viewModel: container.modulesContainer.makeOrganizationListViewModel(),
+                                 invitations: container.modulesContainer.invitationsViewModel)
         case .stores:
             // Store management isn't built yet. Keep it separate from organization selection.
             NotBuiltView(PlaceholderScreen(title(for: .admin(route))))
         case .members:
-            UserListView(viewModel: container.modulesContainer.makeUserListViewModel())
+            UserListView(viewModel: container.modulesContainer.makeUserListViewModel(),
+                         onAddMember: session.can(.admin) ? { coordinator.push(.admin(.memberAdd)) } : nil)
+        case .memberAdd:
+            AddMemberView(viewModel: container.modulesContainer.makeAddMemberViewModel(stores: session.stores),
+                          onDone: { coordinator.pop() })
         default:
             NotBuiltView(PlaceholderScreen(title(for: .admin(route))))
         }

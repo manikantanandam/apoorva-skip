@@ -2,7 +2,7 @@
 //  StaffScreens.swift
 //  ApoorvaModules
 //
-//  Design 05 (join a shop from an invite) and 06 (PIN switch on shared phones).
+//  Design 06 (PIN switch on shared phones).
 //
 
 import SwiftUI
@@ -11,127 +11,6 @@ import ManiSwiftUIComponents
 import ApoorvaModels
 import ApoorvaServices
 import ApoorvaRepository
-
-// MARK: - 05 Staff join
-
-@MainActor
-@Observable
-public final class StaffJoinViewModel {
-    public var code: String
-    public var name = ""
-    public private(set) var invite: Invite?
-    public var isWorking = false
-    public var errorMessage: String?
-
-    private let setupService: OrganizationSetupServicing
-    private let authService: AuthServicing
-    private let currentOrgs: () -> [OrganizationSnapshot]
-
-    public init(code: String, setupService: OrganizationSetupServicing, authService: AuthServicing,
-                currentOrgs: @escaping () -> [OrganizationSnapshot] = { [] }) {
-        self.code = code
-        self.setupService = setupService
-        self.authService = authService
-        self.currentOrgs = currentOrgs
-    }
-
-    public var isSignedIn: Bool { authService.currentAccount != nil }
-
-    public func load() async {
-        let token = code.trimmingCharacters(in: .whitespaces).uppercased()
-        guard token.count >= 6 else { return }
-        isWorking = true
-        errorMessage = nil
-        defer { isWorking = false }
-        do {
-            guard let found = try await setupService.fetchInvite(token: token) else {
-                errorMessage = "We couldn't find that invite. Check the code with your shop owner."
-                invite = nil
-                return
-            }
-            if found.isAccepted {
-                errorMessage = "This invite has already been used."
-            } else if found.isExpired {
-                errorMessage = "This invite has expired. Ask your owner to send a new one."
-            }
-            invite = found
-            if name.isEmpty { name = found.name }
-        } catch {
-            errorMessage = "Couldn't check the invite. Check your connection."
-        }
-    }
-
-    public var canJoin: Bool {
-        guard let invite else { return false }
-        return !invite.isExpired && !invite.isAccepted && isSignedIn && !name.trimmingCharacters(in: .whitespaces).isEmpty
-    }
-
-    public func join() async -> Bool {
-        guard let invite, let account = authService.currentAccount, canJoin else { return false }
-        isWorking = true
-        defer { isWorking = false }
-        do {
-            try await setupService.acceptInvite(invite, account: account, name: name.trimmingCharacters(in: .whitespaces),
-                                                existingOrgs: currentOrgs())
-            return true
-        } catch {
-            errorMessage = "Couldn't join the shop. Try again."
-            return false
-        }
-    }
-}
-
-public struct StaffJoinView: View {
-    @Bindable private var viewModel: StaffJoinViewModel
-    private let onSignIn: () -> Void
-    private let onUseAnother: () -> Void
-
-    public init(viewModel: StaffJoinViewModel, onSignIn: @escaping () -> Void, onUseAnother: @escaping () -> Void) {
-        self.viewModel = viewModel
-        self.onSignIn = onSignIn
-        self.onUseAnother = onUseAnother
-    }
-
-    public var body: some View {
-        ScreenScroll {
-            if let invite = viewModel.invite {
-                ManiHeroAmount(invite.role.title, caption: "at \(invite.storeName.isEmpty ? invite.orgName : invite.storeName) · invited by \(invite.invitedByName)", icon: .store)
-                ManiKeyValueSummary(rows: [
-                    ManiKeyValue("Name", invite.name),
-                    ManiKeyValue("Phone", invite.phone),
-                    ManiKeyValue("Access", invite.role == .cashier ? "Billing, returns, cash entries" : invite.role.title)
-                ], emphasizeLast: false)
-                ManiInputField(label: "Your name", text: $viewModel.name)
-                if !viewModel.isSignedIn {
-                    ManiNote("Sign in or create an account first, then come back to this invite.", kind: .info)
-                }
-            } else {
-                ManiEmptyState(icon: .people, title: "Join your shop",
-                               message: "Enter the invite code your owner sent you by SMS or WhatsApp.")
-                ManiInputField(label: "Invite code", text: $viewModel.code, placeholder: "ABCD2345")
-                ManiButton("Find invite", isLoading: viewModel.isWorking, isEnabled: viewModel.code.count >= 6) {
-                    Task { await viewModel.load() }
-                }
-            }
-            if let error = viewModel.errorMessage { ManiNote(error, kind: .error) }
-        } bottom: {
-            if viewModel.invite != nil {
-                VStack(spacing: ManiSpacing.sm) {
-                    if viewModel.isSignedIn {
-                        ManiButton("Join shop", isLoading: viewModel.isWorking, isEnabled: viewModel.canJoin) {
-                            Task { _ = await viewModel.join() }
-                        }
-                    } else {
-                        ManiButton("Sign in to join", action: onSignIn)
-                    }
-                    ManiButton("Not you? Use another account", kind: .outline, action: onUseAnother)
-                }
-            }
-        }
-        .navigationTitle("You're invited")
-        .task { await viewModel.load() }
-    }
-}
 
 // MARK: - 06 PIN switch
 

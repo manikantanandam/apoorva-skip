@@ -57,12 +57,10 @@ public struct SignInHubView: View {
     private let onPhoneOTP: (String) -> Void
     private let onForgot: () -> Void
     private let onRegister: () -> Void
-    private let onJoinWithCode: () -> Void
 
     public init(session: AppSession, viewModel: AuthFlowViewModel, login: LoginViewModel,
                 onGoogle: @escaping () -> Void, onPhoneOTP: @escaping (String) -> Void,
-                onForgot: @escaping () -> Void, onRegister: @escaping () -> Void,
-                onJoinWithCode: @escaping () -> Void) {
+                onForgot: @escaping () -> Void, onRegister: @escaping () -> Void) {
         self.session = session
         self.viewModel = viewModel
         self.login = login
@@ -70,7 +68,6 @@ public struct SignInHubView: View {
         self.onPhoneOTP = onPhoneOTP
         self.onForgot = onForgot
         self.onRegister = onRegister
-        self.onJoinWithCode = onJoinWithCode
     }
 
     public var body: some View {
@@ -118,9 +115,6 @@ public struct SignInHubView: View {
             if session.isOn(.authGoogle) {
                 ManiProviderButton(provider: .google, title: "Continue with Google", action: onGoogle)
             }
-            Button("Have an invite code from your shop?", action: onJoinWithCode)
-                .font(.subheadline)
-                .frame(maxWidth: .infinity)
             if let error = viewModel.errorMessage {
                 ManiNote(error, kind: .error)
             }

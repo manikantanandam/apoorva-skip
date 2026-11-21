@@ -35,10 +35,6 @@ public protocol OrganizationSetupServicing: Sendable {
     /// Creates the org (legacy-compatible shape), its settings, default store, owner membership and
     /// the owner's `users/{uid}` profile. Returns the new org id.
     func createShop(_ shop: NewShop, owner: AuthAccount) async throws -> String
-    func fetchInvite(token: String) async throws -> Invite?
-    func createInvite(_ invite: Invite) throws
-    /// Joins the invite's org: membership doc, profile assigned to the org, invite marked accepted.
-    func acceptInvite(_ invite: Invite, account: AuthAccount, name: String, existingOrgs: [OrganizationSnapshot]) async throws
     func updateOrganizationStatus(orgId: String, status: String, reason: String) async throws
     func fetchAllOrganizations() async throws -> [Organization]
 }
@@ -101,44 +97,6 @@ public final class OrganizationSetupService: OrganizationSetupServicing, @unchec
             "isDeleted": false
         ], path: "\(String.users)/\(owner.uid)", merge: true)
         return orgId
-    }
-
-    public func fetchInvite(token: String) async throws -> Invite? {
-        guard let document = try await store.getDocument(path: "invites/\(token.uppercased())") else { return nil }
-        return try Firestore.Decoder().decode(Invite.self, from: document.data)
-    }
-
-    public func createInvite(_ invite: Invite) throws {
-        try store.setData(try Firestore.Encoder().encode(invite), path: "invites/\(invite.token)", merge: false)
-    }
-
-    public func acceptInvite(_ invite: Invite, account: AuthAccount, name: String, existingOrgs: [OrganizationSnapshot]) async throws {
-        let now = Date()
-        try upsert(Member(id: account.uid, name: name, phone: invite.phone, email: account.email ?? "",
-                          role: invite.role, storeIds: invite.storeIds, joinedAt: now), orgId: invite.orgId)
-
-        let snapshot = OrganizationSnapshot(orgId: invite.orgId, name: invite.orgName)
-        let orgs = existingOrgs.filter { $0.orgId != invite.orgId } + [snapshot]
-        let legacyRole: AppUserRole = switch invite.role {
-        case .owner: .admin
-        case .manager: .manager
-        case .cashier, .accountant: .standard
-        }
-        try store.setData([
-            "id": account.uid,
-            "name": name,
-            "email": account.email ?? "",
-            "role": legacyRole.rawValue,
-            "status": "active",
-            "assignedOrgs": try orgs.map { try Firestore.Encoder().encode($0) },
-            "assignedOrgIds": orgs.map(\.orgId),
-            "selectedOrganization": try Firestore.Encoder().encode(snapshot),
-            "updatedAt": now,
-            "updatedTimestamp": now.timeIntervalSince1970,
-            "isDeleted": false
-        ], path: "\(String.users)/\(account.uid)", merge: true)
-
-        try await store.updateData(["acceptedBy": account.uid, "acceptedAt": now], path: "invites/\(invite.token)")
     }
 
     public func updateOrganizationStatus(orgId: String, status: String, reason: String) async throws {

@@ -26,8 +26,6 @@ public final class AppCoordinator {
     private var platform = PlatformConfig()
     private var lastOrgId: String?
     private var recomputeGeneration = 0
-    /// Invite code from an `apoorva://join/<code>` link, consumed by onboarding.
-    var pendingInviteCode: String?
 
     public init(appContainer: AppContainer = AppContainer()) {
         self.appContainer = appContainer
@@ -142,15 +140,11 @@ public final class AppCoordinator {
         case .loading:
             sessionState = .loading
         case .signedOut:
-            let onboarding = OnboardingCoordinator(container: appContainer, root: .splash, appCoordinator: self)
-            if let code = pendingInviteCode { onboarding.push(.staffJoin(inviteToken: code)) }
-            sessionState = .onboarding(onboarding)
+            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .splash, appCoordinator: self))
         case .needsEmailVerification:
             sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .verifyEmail, appCoordinator: self))
         case .needsProfile, .needsOrgSetup(.chooseVertical):
-            // Arrived from an invite link: join that shop instead of creating one.
-            let root: OnboardingRoute = pendingInviteCode.map { .staffJoin(inviteToken: $0) } ?? .chooseVertical
-            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: root, appCoordinator: self))
+            sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .chooseVertical, appCoordinator: self))
         case .needsOrgSetup(.shopSetup):
             sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .shopSetup, appCoordinator: self))
         case .needsOrgSetup(.pickLook):
@@ -158,7 +152,6 @@ public final class AppCoordinator {
         case .needsOrgSetup(.openingBalances):
             sessionState = .onboarding(OnboardingCoordinator(container: appContainer, root: .openingBalances, appCoordinator: self))
         case .ready:
-            pendingInviteCode = nil
             sessionState = .home(HomeTabsCoordinator(container: appContainer, appCoordinator: self))
             Task { await syncAll() }
         case .forceUpdate, .blocked:
@@ -172,6 +165,7 @@ public final class AppCoordinator {
         try? await appContainer.repositoryContainer.organizationRepository.sync(force: force)
         await recompute()
         await session.reload()
+        await appContainer.modulesContainer.invitationsViewModel.refresh()
         appContainer.themeStore.apply(session: session)
         presentTrialEndingIfNeeded()
     }
@@ -182,18 +176,6 @@ public final class AppCoordinator {
         if let dismissed = session.settings.plan.trialEndingDismissedAt,
            Date().timeIntervalSince(dismissed) < 86_400 { return }
         present(.trialEnding)
-    }
-
-    // MARK: - Deep links
-
-    func handle(url: URL) {
-        // apoorva://join/<code>
-        guard url.scheme == "apoorva", url.host == "join", let code = url.pathComponents.last, code != "/" else { return }
-        pendingInviteCode = code
-        // Signed in already: the code is picked up when the account next needs an org.
-        if case .onboarding(let onboarding) = sessionState {
-            onboarding.push(.staffJoin(inviteToken: code))
-        }
     }
 
     func present(_ route: GlobalRoute) { presentedGlobalRoute = route }

@@ -15,7 +15,6 @@ enum OnboardingRoute: Hashable, Identifiable {
     case pickLook
     case firstRunGuide
     case openingBalances
-    case staffJoin(inviteToken: String)
     case pinSwitch
 
     var id: Self { self }

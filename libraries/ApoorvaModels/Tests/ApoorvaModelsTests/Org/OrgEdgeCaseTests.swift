@@ -129,19 +129,6 @@ struct OrgEdgeCaseTests {
         #expect(bought.isActive)
     }
 
-    // MARK: - Invite
-
-    @Test("Explicit expiry overrides the 72 hour default and tokens differ between calls")
-    func inviteExplicitExpiry() {
-        let created = Date(timeIntervalSince1970: 0)
-        let expires = Date(timeIntervalSince1970: 60)
-        let invite = Invite(orgId: "o", orgName: "O", storeIds: [], storeName: "", role: .manager, name: "N", phone: "9",
-                            invitedBy: "u", invitedByName: "U", createdAt: created, expiresAt: expires)
-        #expect(invite.expiresAt == expires)
-        #expect(invite.isExpired)
-        #expect(Set((0..<20).map { _ in Invite.makeToken() }).count > 1)
-    }
-
     // MARK: - Dates & people
 
     @Test("Day key zero-pads single digit day and month")

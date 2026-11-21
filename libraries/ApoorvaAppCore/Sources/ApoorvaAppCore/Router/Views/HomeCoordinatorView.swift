@@ -24,7 +24,8 @@ struct HomeCoordinatorView: View {
 
     var body: some View {
         NavigationStack(path: $coordinator.path) {
-            HomeView(session: session, viewModel: viewModel, syncText: syncText, onAction: handle)
+            HomeView(session: session, viewModel: viewModel, syncText: syncText,
+                     invitations: container.modulesContainer.invitationsViewModel, onAction: handle)
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(for: HomeRoute.self) { route in
                     destination(for: route)

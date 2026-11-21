@@ -42,6 +42,8 @@ public class ServicesContainer {
 
     public lazy var organizationSetupService: OrganizationSetupServicing = OrganizationSetupService()
 
+    public lazy var memberInviteService: MemberInviteServicing = MemberInviteService()
+
     public lazy var pinStore: PinStoring = KeychainPinStore()
 
     public lazy var biometrics: BiometricAuthenticating = DeviceBiometrics()

@@ -21,9 +21,12 @@ public struct UserListView: View {
     @Environment(\.maniTheme) private var theme
     @Bindable var viewModel: UserListViewModel
     @State private var activeRoute: UserListRoute?
+    @State private var inviteToRevoke: MemberInvite?
+    private let onAddMember: (() -> Void)?
 
-    public init(viewModel: UserListViewModel) {
+    public init(viewModel: UserListViewModel, onAddMember: (() -> Void)? = nil) {
         self.viewModel = viewModel
+        self.onAddMember = onAddMember
     }
 
     public var body: some View {
@@ -33,6 +36,12 @@ public struct UserListView: View {
             ManiSearchField(text: $viewModel.searchText, placeholder: "Search by name or email")
                 .padding(.horizontal, ManiSpacing.lg)
                 .padding(.top, ManiSpacing.sm)
+
+            if let onAddMember {
+                ManiButton("Add member", icon: .plus, kind: .outline, action: onAddMember)
+                    .padding(.horizontal, ManiSpacing.lg)
+                    .padding(.top, ManiSpacing.sm)
+            }
 
             if let errorMessage = viewModel.errorMessage {
                 ManiNote(errorMessage, kind: .error)
@@ -44,29 +53,55 @@ public struct UserListView: View {
                 Spacer()
                 ProgressView()
                 Spacer()
-            } else if viewModel.filteredUsers.isEmpty {
+            } else if viewModel.filteredUsers.isEmpty && viewModel.pendingInvites.isEmpty {
                 Spacer()
                 ManiNote("No team members found. If this organization has existing members, their accounts may need to be re-synced before they appear here.", kind: .warning)
                     .padding(.horizontal, ManiSpacing.lg)
                 Spacer()
             } else {
-                List(viewModel.filteredUsers, id: \.id) { user in
-                    ManiListRow(
-                        avatar: ManiAvatar(initials: initials(for: user.name)),
-                        title: user.name,
-                        subtitle: user.email,
-                        status: (user.role.displayName, statusKind(for: user.role)),
-                        action: user.id == viewModel.currentUserId ? nil : {
-                            activeRoute = .editRole(user)
+                List {
+                    ForEach(viewModel.filteredUsers, id: \.id) { user in
+                        ManiListRow(
+                            avatar: ManiAvatar(initials: initials(for: user.name)),
+                            title: user.name,
+                            subtitle: user.email,
+                            status: (user.role.displayName, statusKind(for: user.role)),
+                            action: user.id == viewModel.currentUserId ? nil : {
+                                activeRoute = .editRole(user)
+                            }
+                        )
+                        .listRowSeparator(.hidden)
+                    }
+                    if !viewModel.pendingInvites.isEmpty {
+                        Section("Pending invites") {
+                            ForEach(viewModel.pendingInvites) { invite in
+                                ManiListRow(
+                                    avatar: ManiAvatar(initials: initials(for: invite.name)),
+                                    title: invite.name,
+                                    subtitle: invite.email,
+                                    status: ("\(invite.role.title) · Pending", .warning),
+                                    action: { inviteToRevoke = invite }
+                                )
+                                .listRowSeparator(.hidden)
+                            }
                         }
-                    )
-                    .listRowSeparator(.hidden)
+                    }
                 }
                 .listStyle(.plain)
             }
         }
         .background(theme.base.background.ignoresSafeArea())
         .task { await viewModel.load() }
+        .alert("Revoke invite?", isPresented: Binding(get: { inviteToRevoke != nil },
+                                                      set: { if !$0 { inviteToRevoke = nil } })) {
+            Button("Revoke", role: .destructive) {
+                if let invite = inviteToRevoke { Task { await viewModel.revoke(invite) } }
+                inviteToRevoke = nil
+            }
+            Button("Cancel", role: .cancel) { inviteToRevoke = nil }
+        } message: {
+            Text("\(inviteToRevoke?.email ?? "") won't be able to join this shop with this invite.")
+        }
         .sheet(item: $activeRoute) { route in
             switch route {
             case .editRole(let user):

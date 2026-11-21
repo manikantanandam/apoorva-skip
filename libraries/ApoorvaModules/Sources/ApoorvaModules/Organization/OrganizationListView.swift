@@ -10,9 +10,11 @@ import ManiSwiftUIComponents
 public struct OrganizationListView: View {
     @Environment(\.maniTheme) private var theme
     @Bindable var viewModel: OrganizationListViewModel
+    private let invitations: InvitationsViewModel?
 
-    public init(viewModel: OrganizationListViewModel) {
+    public init(viewModel: OrganizationListViewModel, invitations: InvitationsViewModel? = nil) {
         self.viewModel = viewModel
+        self.invitations = invitations
     }
 
     public var body: some View {
@@ -23,6 +25,17 @@ public struct OrganizationListView: View {
                 ManiNote(errorMessage, kind: .error)
                     .padding(.horizontal, ManiSpacing.lg)
                     .padding(.top, ManiSpacing.sm)
+            }
+
+            if let invitations, invitations.count > 0 {
+                VStack(alignment: .leading, spacing: ManiSpacing.sm) {
+                    SectionHeader(title: "Invitations")
+                    ForEach(invitations.invites) { invite in
+                        InvitationCard(invite: invite, viewModel: invitations)
+                    }
+                }
+                .padding(.horizontal, ManiSpacing.lg)
+                .padding(.top, ManiSpacing.sm)
             }
 
             if viewModel.isLoading {
@@ -50,7 +63,11 @@ public struct OrganizationListView: View {
             }
         }
         .background(theme.base.background.ignoresSafeArea())
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            await invitations?.refresh()
+        }
+        .modifier(InvitationSwitchPromptModifier(invitations: invitations))
     }
 
     private func initials(for name: String) -> String {

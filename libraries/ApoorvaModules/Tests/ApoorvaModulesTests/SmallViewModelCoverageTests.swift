@@ -47,9 +47,6 @@ private final class ScriptedAuth: AuthServicing, @unchecked Sendable {
 
 private final class FailingSetupService: OrganizationSetupServicing, @unchecked Sendable {
     func createShop(_ shop: NewShop, owner: AuthAccount) async throws -> String { throw Failure() }
-    func fetchInvite(token: String) async throws -> Invite? { nil }
-    func createInvite(_ invite: Invite) throws {}
-    func acceptInvite(_ invite: Invite, account: AuthAccount, name: String, existingOrgs: [OrganizationSnapshot]) async throws {}
     func updateOrganizationStatus(orgId: String, status: String, reason: String) async throws {}
     func fetchAllOrganizations() async throws -> [Organization] { [] }
 }
