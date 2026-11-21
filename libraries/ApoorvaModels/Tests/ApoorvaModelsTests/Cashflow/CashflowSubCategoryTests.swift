@@ -29,7 +29,7 @@ struct CashflowSubCategoryTests {
         let allCases = CashflowSubCategory.allCases
         
         // Verifies the exact count of all cases defined in the enum
-        #expect(allCases.count == 24)
+        #expect(allCases.count == 35)
         
         #expect(allCases.contains(.painting))
         #expect(allCases.contains(.ceiling))

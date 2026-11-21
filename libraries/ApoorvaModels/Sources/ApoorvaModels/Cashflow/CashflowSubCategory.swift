@@ -31,5 +31,17 @@ public enum CashflowSubCategory: String, Codable, Sendable, CaseIterable {
     case mobile = "Mobile"
     case internet = "Internet"
     case ceiling = "Ceiling"
+    // Added to match the Apoorva Admin app; without them these decode as `.unknown`.
+    case rawMaterials = "Raw Materials"
+    case water = "Water"
+    case repairs = "Repairs"
+    case pestControl = "Pest Control"
+    case wages = "Wages"
+    case advances = "Advances"
+    case bonuses = "Bonuses"
+    case walkIn = "Walk-in"
+    case wholesale = "Wholesale"
+    case customOrders = "Custom Orders"
+    case petrol = "Petrol"
     case unknown = "Unknown"
 }

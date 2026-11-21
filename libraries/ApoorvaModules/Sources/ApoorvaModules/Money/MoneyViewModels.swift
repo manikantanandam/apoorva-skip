@@ -122,51 +122,73 @@ public final class CashDayViewModel {
 @MainActor
 @Observable
 public final class CashEntryViewModel {
-    public enum Purpose: String, CaseIterable, Sendable {
-        case supplier = "Supplier", rent = "Rent", salary = "Salary", tea = "Tea & snacks", other = "Other"
-
-        var category: ExpenseCategory {
-            switch self {
-            case .supplier: .supplier
-            case .rent: .rent
-            case .salary: .salary
-            case .tea: .tea
-            case .other: .other
-            }
-        }
-
-        var title: String {
-            switch self {
-            case .supplier: "Supplier payment"
-            default: rawValue
-            }
-        }
-    }
-
-    public var isIn = false
+    public private(set) var isIn = false
     public var amountText = ""
-    public var purpose: Purpose = .supplier
+    public private(set) var category: CashflowCategory = .miscellaneous
+    public private(set) var subCategory: CashflowSubCategory = .general
     public var note = ""
     public var errorMessage: String?
+    /// The organization's accounts. Empty until loaded, or if they can't be read (the cash account is used then).
+    public private(set) var accounts: [Account] = []
+    public private(set) var selectedAccountId: String?
 
     private let money: MoneyRepositoryProtocol
     private let actorId: String
+    private let loadAccounts: @Sendable () async -> [Account]
 
-    public init(money: MoneyRepositoryProtocol, actorId: String) {
+    public init(money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async -> [Account] = { [] }) {
         self.money = money
         self.actorId = actorId
+        self.loadAccounts = loadAccounts
+    }
+
+    /// Cash in goes to an account, cash out comes from one.
+    public var accountTitle: String { isIn ? "To account" : "From account" }
+    public var selectedAccount: Account? { accounts.first { $0.id == selectedAccountId } }
+
+    public func load() async {
+        accounts = await loadAccounts().filter { !$0.isDeleted }
+        if selectedAccount == nil {
+            selectedAccountId = (accounts.first { $0.type == .cash } ?? accounts.first)?.id
+        }
+    }
+
+    public func selectAccount(_ id: String) {
+        guard accounts.contains(where: { $0.id == id }) else { return }
+        selectedAccountId = id
+    }
+
+    public var categories: [CashflowCategory] { CashflowCategory.selectable }
+    public var subCategories: [CashflowSubCategory] { category.subCategories }
+
+    /// Cash in defaults to Sales Revenue and cash out to Miscellaneous; the person can change either.
+    public func setDirection(_ isIn: Bool) {
+        self.isIn = isIn
+        selectCategory(isIn ? .salesRevenue : .miscellaneous)
+    }
+
+    /// Picking a category selects its first sub-category, so the pair is always valid.
+    public func selectCategory(_ category: CashflowCategory) {
+        self.category = category
+        subCategory = category.subCategories.first ?? .unknown
+    }
+
+    public func selectSubCategory(_ subCategory: CashflowSubCategory) {
+        guard category.subCategories.contains(subCategory) else { return }
+        self.subCategory = subCategory
     }
 
     public var amount: Double { Double(amountText) ?? 0 }
     public var particulars: String {
-        let base = isIn ? "Cash in" : purpose.title
+        let base = isIn ? "Cash in" : (subCategory == .general ? category.rawValue : subCategory.rawValue)
         return note.isEmpty ? base : "\(base) · \(note)"
     }
 
     public func save() async -> Bool {
         guard amount > 0 else { return false }
         do {
-            try await money.addCashEntry(isIn: isIn, amount: amount, category: isIn ? nil : purpose.category, particulars: particulars, by: actorId)
+            try await money.addCashEntry(isIn: isIn, amount: amount, category: category, subCategory: subCategory,
+                                         account: selectedAccount, particulars: particulars, by: actorId)
             return true
         } catch {
             errorMessage = "Couldn't save the entry."
@@ -185,7 +207,9 @@ public final class CashEntryEditViewModel {
     public var isIn = false
     public var amountText = ""
     public var particulars = ""
-    public var isCash = true
+    public private(set) var category: CashflowCategory = .unknown
+    public private(set) var subCategory: CashflowSubCategory = .unknown
+    public private(set) var selectedAccountId: String?
     public var isSaving = false
     public var errorMessage: String?
     public private(set) var isLoaded = false
@@ -194,14 +218,35 @@ public final class CashEntryEditViewModel {
     private let cashflowRepository: CashflowTransactionRepositoryProtocol
     private let money: MoneyRepositoryProtocol
     private let actorId: String
+    private let loadAccounts: @Sendable () async -> [Account]
     private var original: CashflowTransaction?
+    private var orgAccounts: [Account] = []
+    /// The account the entry had when opened, so an untouched account is never rewritten.
+    private var originalAccountId: String?
 
     public init(entryId: String, cashflowRepository: CashflowTransactionRepositoryProtocol,
-                money: MoneyRepositoryProtocol, actorId: String) {
+                money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async -> [Account] = { [] }) {
         self.entryId = entryId
         self.cashflowRepository = cashflowRepository
         self.money = money
         self.actorId = actorId
+        self.loadAccounts = loadAccounts
+    }
+
+    /// Cash in goes to an account, cash out comes from one.
+    public var accountTitle: String { isIn ? "To account" : "From account" }
+
+    /// The organization's accounts, plus the entry's own account when it isn't one of them (an old or legacy id),
+    /// so the current choice stays visible and keepable.
+    public var accounts: [Account] {
+        guard let originalAccountId, !orgAccounts.contains(where: { $0.id == originalAccountId }) else { return orgAccounts }
+        let type: AccountType = original?.paymentMode == .cash ? .cash : .bank
+        return orgAccounts + [Account(id: originalAccountId, name: "Original account", type: type, currentBalance: 0)]
+    }
+
+    public func selectAccount(_ id: String) {
+        guard accounts.contains(where: { $0.id == id }) else { return }
+        selectedAccountId = id
     }
 
     public var amount: Double { Double(amountText) ?? 0 }
@@ -219,23 +264,58 @@ public final class CashEntryEditViewModel {
         isIn = found.transactionType == .credit
         amountText = found.amount.rounded() == found.amount ? String(Int(found.amount)) : String(found.amount)
         particulars = found.particulars
-        isCash = found.paymentMode == .cash
+        category = found.category
+        subCategory = found.subCategory ?? .unknown
+        orgAccounts = await loadAccounts().filter { !$0.isDeleted }
+        // Entries made without an account id (older ones) fall back to the account matching their mode.
+        let recorded = found.transactionType == .credit ? found.toAccountId : found.fromAccountId
+        let derived = orgAccounts.first { $0.type == (found.paymentMode == .cash ? .cash : .bank) }?.id
+            ?? orgAccounts.first { $0.type == .upi }?.id
+        originalAccountId = recorded.isEmpty ? derived : recorded
+        selectedAccountId = originalAccountId
         isLoaded = true
     }
 
-    /// The entry with the user's changes applied. Account ids are rebuilt only when the direction or mode changed.
+    /// The categories to offer, plus the entry's own when it isn't normally selectable (an unknown or
+    /// internal-transfer entry), so what it has now stays visible and keepable.
+    public var categories: [CashflowCategory] {
+        let selectable = CashflowCategory.selectable
+        return selectable.contains(category) ? selectable : selectable + [category]
+    }
+
+    public var subCategories: [CashflowSubCategory] {
+        let options = category.subCategories
+        // The entry's current sub-category stays listed even if this category doesn't normally offer it.
+        return options.contains(subCategory) ? options : options + [subCategory]
+    }
+
+    public func selectCategory(_ category: CashflowCategory) {
+        guard category != self.category else { return }
+        self.category = category
+        subCategory = category.subCategories.first ?? .unknown
+    }
+
+    public func selectSubCategory(_ subCategory: CashflowSubCategory) {
+        self.subCategory = subCategory
+    }
+
+    /// The entry with the user's changes applied. Account ids are rebuilt only when the direction or account changed.
     func editedEntry() -> CashflowTransaction? {
         guard var edited = original else { return nil }
         edited.amount = amount
         edited.particulars = particulars.trimmingCharacters(in: .whitespacesAndNewlines)
         let wasIn = edited.transactionType == .credit
-        let wasCash = edited.paymentMode == .cash
+        // Untouched categories keep exactly what the entry had, including values this app doesn't recognise.
+        if category != original?.category { edited.category = category }
+        if subCategory != (original?.subCategory ?? .unknown) { edited.subCategory = subCategory }
         if isIn != wasIn { edited.transactionType = isIn ? .credit : .debit }
-        if isIn != wasIn || isCash != wasCash {
-            let mode: CashflowTransaction.PaymentMode = isCash ? .cash : .upi
-            edited.paymentMode = mode
-            edited.fromAccountId = isIn ? "" : mode.accountId
-            edited.toAccountId = isIn ? mode.accountId : ""
+        if isIn != wasIn || selectedAccountId != originalAccountId {
+            // Cash in goes TO the account, cash out comes FROM it; the other side stays empty.
+            let chosen = accounts.first { $0.id == selectedAccountId }
+            if let chosen { edited.paymentMode = chosen.type == .cash ? .cash : .upi }
+            let accountId = selectedAccountId ?? edited.paymentMode.accountId
+            edited.fromAccountId = isIn ? "" : accountId
+            edited.toAccountId = isIn ? accountId : ""
         }
         return edited
     }

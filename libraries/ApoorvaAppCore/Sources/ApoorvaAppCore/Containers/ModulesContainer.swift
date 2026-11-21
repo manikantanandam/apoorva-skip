@@ -263,12 +263,25 @@ public class ModulesContainer {
     }
 
     public func makeCashEntryViewModel(actorId: String) -> CashEntryViewModel {
-        CashEntryViewModel(money: repositoryContainer.moneyRepository, actorId: actorId)
+        CashEntryViewModel(money: repositoryContainer.moneyRepository, actorId: actorId,
+                           loadAccounts: organizationAccountsLoader())
     }
 
     public func makeCashEntryEditViewModel(entryId: String, actorId: String) -> CashEntryEditViewModel {
         CashEntryEditViewModel(entryId: entryId, cashflowRepository: repositoryContainer.cashflowRepository,
-                               money: repositoryContainer.moneyRepository, actorId: actorId)
+                               money: repositoryContainer.moneyRepository, actorId: actorId,
+                               loadAccounts: organizationAccountsLoader())
+    }
+
+    /// Reads the selected organization's embedded accounts; empty if there is no organization or it can't be read.
+    private func organizationAccountsLoader() -> @Sendable () async -> [Account] {
+        let users = repositoryContainer.userRepository
+        let organizations = repositoryContainer.organizationRepository
+        return {
+            guard let orgId = try? await users.getCurrentUser().selectedOrganization?.orgId,
+                  let organization = try? await organizations.getOrganization(orgId: orgId) else { return [] }
+            return organization.accounts
+        }
     }
 
     public func makeDayCloseViewModel(date: Date, session: AppSession) -> DayCloseViewModel {

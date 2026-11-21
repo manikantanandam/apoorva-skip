@@ -79,7 +79,7 @@ public struct CashDayView: View {
                     }
                     ForEach(day.entries, id: \.id) { entry in
                         ManiListRow(title: entry.particulars,
-                                    subtitle: "\(entry.transactionType == .credit ? "In" : "Out") · \(entry.timestamp.timeOnly) · \(entry.paymentMode == .cash ? "Cash" : "Bank")",
+                                    subtitle: entry.rowSubtitle,
                                     value: (entry.transactionType == .credit ? "+" : "−") + Money.format(entry.amount),
                                     action: viewModel.isClosed ? nil : onEdit.map { edit in { edit(entry) } })
                     }
@@ -117,6 +117,75 @@ public struct CashDayView: View {
     }
 }
 
+/// Category and sub-category choices for a cash entry, shared by the add and edit screens.
+struct CashCategoryPicker: View {
+    let categories: [CashflowCategory]
+    let category: CashflowCategory
+    let subCategories: [CashflowSubCategory]
+    let subCategory: CashflowSubCategory
+    let onCategory: (CashflowCategory) -> Void
+    let onSubCategory: (CashflowSubCategory) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: ManiSpacing.sm) {
+            SectionHeader(title: "Category")
+            FlowLayout {
+                ForEach(categories, id: \.self) { option in
+                    ManiChip(option.rawValue, isSelected: option == category) { onCategory(option) }
+                }
+            }
+            if !subCategories.isEmpty {
+                SectionHeader(title: "Sub-category")
+                FlowLayout {
+                    ForEach(subCategories, id: \.self) { option in
+                        ManiChip(option.rawValue, isSelected: option == subCategory) { onSubCategory(option) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Which account a cash entry touches: "To account" for cash in, "From account" for cash out.
+struct CashAccountPicker: View {
+    let title: String
+    let accounts: [Account]
+    let selectedId: String?
+    let onSelect: (String) -> Void
+
+    var body: some View {
+        if !accounts.isEmpty {
+            VStack(alignment: .leading, spacing: ManiSpacing.sm) {
+                SectionHeader(title: title)
+                FlowLayout {
+                    ForEach(accounts, id: \.id) { account in
+                        ManiChip(account.name, isSelected: account.id == selectedId) { onSelect(account.id) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+extension CashflowTransaction {
+    /// "Utilities › Rent", skipping parts the app doesn't recognise; nil when neither is known.
+    var categoryPath: String? {
+        var parts: [String] = []
+        if category != .unknown { parts.append(category.rawValue) }
+        if let sub = subCategory, sub != .unknown, sub.rawValue != category.rawValue { parts.append(sub.rawValue) }
+        return parts.isEmpty ? nil : parts.joined(separator: " › ")
+    }
+
+    /// Second line of an entry row: category path, then direction, time and mode.
+    var rowSubtitle: String {
+        let direction = transactionType == .credit ? "In" : "Out"
+        let mode = paymentMode == .cash ? "Cash" : "Bank"
+        let detail = "\(direction) · \(timestamp.timeOnly) · \(mode)"
+        guard let categoryPath else { return detail }
+        return "\(categoryPath) · \(detail)"
+    }
+}
+
 // MARK: - Cash entry (84)
 
 public struct CashEntryView: View {
@@ -130,15 +199,14 @@ public struct CashEntryView: View {
 
     public var body: some View {
         ScreenScroll {
-            ManiSegmentedControl(selection: $viewModel.isIn, options: [(true, "Cash in"), (false, "Cash out")])
+            ManiSegmentedControl(selection: Binding(get: { viewModel.isIn }, set: { viewModel.setDirection($0) }),
+                                 options: [(true, "Cash in"), (false, "Cash out")])
             ManiHeroAmount("₹" + (viewModel.amountText.isEmpty ? "0" : viewModel.amountText), caption: viewModel.particulars)
-            if !viewModel.isIn {
-                FlowLayout {
-                    ForEach(CashEntryViewModel.Purpose.allCases, id: \.self) { purpose in
-                        ManiChip(purpose.rawValue, isSelected: viewModel.purpose == purpose) { viewModel.purpose = purpose }
-                    }
-                }
-            }
+            CashCategoryPicker(categories: viewModel.categories, category: viewModel.category,
+                               subCategories: viewModel.subCategories, subCategory: viewModel.subCategory,
+                               onCategory: { viewModel.selectCategory($0) }, onSubCategory: { viewModel.selectSubCategory($0) })
+            CashAccountPicker(title: viewModel.accountTitle, accounts: viewModel.accounts,
+                              selectedId: viewModel.selectedAccountId, onSelect: { viewModel.selectAccount($0) })
             ManiInputField(label: "Note (optional)", text: $viewModel.note, placeholder: viewModel.isIn ? "Owner added float" : "Ramesh Traders")
             ManiKeypad { key in viewModel.amountText = key.apply(to: viewModel.amountText) }
             if let error = viewModel.errorMessage { ManiNote(error, kind: .error) }
@@ -149,6 +217,7 @@ public struct CashEntryView: View {
         }
         .navigationTitle("Cash entry")
         .navigationBarTitleDisplayMode(.inline)
+        .task { await viewModel.load() }
     }
 }
 
@@ -174,7 +243,11 @@ public struct CashEntryEditView: View {
                 ManiHeroAmount("₹" + (viewModel.amountText.isEmpty ? "0" : viewModel.amountText),
                                caption: viewModel.particulars.isEmpty ? "No particulars" : viewModel.particulars)
                 ManiInputField(label: "Particulars", text: $viewModel.particulars, placeholder: "What was this for?")
-                ManiSegmentedControl(selection: $viewModel.isCash, options: [(true, "Cash"), (false, "Bank")])
+                CashCategoryPicker(categories: viewModel.categories, category: viewModel.category,
+                                   subCategories: viewModel.subCategories, subCategory: viewModel.subCategory,
+                                   onCategory: { viewModel.selectCategory($0) }, onSubCategory: { viewModel.selectSubCategory($0) })
+                CashAccountPicker(title: viewModel.accountTitle, accounts: viewModel.accounts,
+                                  selectedId: viewModel.selectedAccountId, onSelect: { viewModel.selectAccount($0) })
                 ManiKeypad { key in viewModel.amountText = key.apply(to: viewModel.amountText) }
             }
             if let error = viewModel.errorMessage { ManiNote(error, kind: .error) }

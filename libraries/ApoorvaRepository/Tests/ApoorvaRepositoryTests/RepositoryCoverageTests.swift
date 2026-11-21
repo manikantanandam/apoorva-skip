@@ -626,10 +626,19 @@ struct StockMoneyPeopleCoverageTests {
         let audit = RecordingAudit()
         let money = MoneyRepository(expenses: docs(Expense.self), dayCloses: docs(DayClose.self), summaries: nil,
                                     cashBook: CashBook(repository: cashflow), audit: audit)
-        try await money.addCashEntry(isIn: true, amount: 10, category: nil, particulars: "in", by: "u")
-        try await money.addCashEntry(isIn: false, amount: 10, category: nil, particulars: "out", by: "u")
-        try await money.addCashEntry(isIn: false, amount: 10, category: .rent, particulars: "rent", by: "u")
+        let bank = Account(id: "bank-1", name: "HDFC", type: .bank, currentBalance: 0)
+        try await money.addCashEntry(isIn: true, amount: 10, category: .salesRevenue, subCategory: .salesRevenue, account: nil, particulars: "in", by: "u")
+        try await money.addCashEntry(isIn: false, amount: 10, category: .miscellaneous, subCategory: .general, account: nil, particulars: "out", by: "u")
+        try await money.addCashEntry(isIn: false, amount: 10, category: .salary, subCategory: .wages, account: bank, particulars: "wages", by: "u")
         #expect(cashflow.saved.map(\.transactionType) == [.credit, .debit, .debit])
+        // A chosen account decides the mode and the side it is recorded on; none falls back to the cash account.
+        #expect(cashflow.saved.map(\.paymentMode) == [.cash, .cash, .upi])
+        #expect(cashflow.saved[0].toAccountId == CashflowTransaction.PaymentMode.cash.accountId)
+        #expect(cashflow.saved[0].fromAccountId == "")
+        #expect(cashflow.saved[2].fromAccountId == "bank-1")
+        #expect(cashflow.saved[2].toAccountId == "")
+        #expect(cashflow.saved.map(\.category) == [.salesRevenue, .miscellaneous, .salary])
+        #expect(cashflow.saved.map(\.subCategory) == [.salesRevenue, .general, .wages])
         #expect(audit.box.actions == ["cash.in", "cash.out", "cash.out"])
     }
 

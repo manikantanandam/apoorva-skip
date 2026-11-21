@@ -11,14 +11,19 @@ import ApoorvaRepository
 
 private final class RecordingMoney: MoneyRepositoryProtocol, @unchecked Sendable {
     var cashEntries: [(isIn: Bool, amount: Double, particulars: String)] = []
+    var cashEntryCategories: [(CashflowCategory, CashflowSubCategory?)] = []
+    var cashEntryAccounts: [Account?] = []
     var expenses: [Expense] = []
     var closes: [DayClose] = []
     var reopened: [Date] = []
     var fail = false
 
-    func addCashEntry(isIn: Bool, amount: Double, category: ExpenseCategory?, particulars: String, by actorId: String) async throws {
+    func addCashEntry(isIn: Bool, amount: Double, category: CashflowCategory, subCategory: CashflowSubCategory?,
+                      account: Account?, particulars: String, by actorId: String) async throws {
         if fail { throw NSError(domain: "test", code: 1) }
         cashEntries.append((isIn, amount, particulars))
+        cashEntryCategories.append((category, subCategory))
+        cashEntryAccounts.append(account)
     }
     func saveExpense(_ expense: Expense) async throws {
         if fail { throw NSError(domain: "test", code: 1) }
@@ -155,14 +160,70 @@ struct CashEntryAndCloseTests {
         #expect(await model.save() == false)
         model.amountText = "250"
         model.note = "morning"
-        #expect(model.particulars == "Supplier payment · morning")
+        model.selectCategory(.inventory)
+        model.selectSubCategory(.readyStock)
+        #expect(model.particulars == "Ready Stock · morning")
         #expect(await model.save())
-        model.isIn = true
+        model.setDirection(true)
         model.note = ""
         #expect(model.particulars == "Cash in")
         #expect(await model.save())
         #expect(money.cashEntries.count == 2)
-        for purpose in CashEntryViewModel.Purpose.allCases { _ = purpose.category; _ = purpose.title }
+        #expect(money.cashEntryCategories.map(\.0) == [.inventory, .salesRevenue])
+        #expect(money.cashEntryCategories.map(\.1) == [.readyStock, .salesRevenue])
+    }
+
+    @Test func choosingACategoryOffersItsSubCategoriesOnly() {
+        let model = CashEntryViewModel(money: RecordingMoney(), actorId: "u1")
+        #expect(model.category == .miscellaneous)
+        #expect(model.subCategory == .general)
+        model.selectCategory(.salary)
+        #expect(model.subCategories == [.wages, .advances, .bonuses])
+        #expect(model.subCategory == .wages)
+        model.selectSubCategory(.petrol)   // not a salary sub-category: ignored
+        #expect(model.subCategory == .wages)
+        model.selectSubCategory(.advances)
+        #expect(model.subCategory == .advances)
+        #expect(model.categories.contains(.salary))
+        #expect(!model.categories.contains(.unknown))
+    }
+
+    @Test func cashEntryUsesTheChosenAccount() async {
+        let cash = Account(id: "acc-cash", name: "Cash", type: .cash, currentBalance: 0)
+        let bank = Account(id: "acc-bank", name: "HDFC", type: .bank, currentBalance: 0)
+        let money = RecordingMoney()
+        let model = CashEntryViewModel(money: money, actorId: "u1", loadAccounts: { [bank, cash] })
+        await model.load()
+        #expect(model.selectedAccountId == "acc-cash")   // defaults to the cash account
+        #expect(model.accountTitle == "From account")
+        model.setDirection(true)
+        #expect(model.accountTitle == "To account")
+        model.selectAccount("acc-bank")
+        model.selectAccount("missing")                   // ignored
+        model.amountText = "100"
+        #expect(await model.save())
+        #expect(money.cashEntryAccounts.first.flatMap { $0 }?.id == "acc-bank")
+    }
+
+    @Test func cashEntryWithoutAnyAccountsFallsBackToTheCashAccount() async {
+        let money = RecordingMoney()
+        let model = CashEntryViewModel(money: money, actorId: "u1")
+        await model.load()
+        #expect(model.accounts.isEmpty)
+        model.amountText = "50"
+        #expect(await model.save())
+        #expect(money.cashEntryAccounts.count == 1)
+        #expect(money.cashEntryAccounts.first.flatMap { $0 } == nil)
+    }
+
+    @Test func directionResetsTheDefaultCategory() {
+        let model = CashEntryViewModel(money: RecordingMoney(), actorId: "u1")
+        model.setDirection(true)
+        #expect(model.category == .salesRevenue)
+        model.setDirection(false)
+        #expect(model.category == .miscellaneous)
+        #expect(model.subCategory == .general)
+        #expect(model.particulars == "Miscellaneous")
     }
 
     @Test func cashEntryFailureSetsError() async {
@@ -300,19 +361,23 @@ struct CashEntryEditTests {
                             isDeleted: deleted, timestampInMs: 1_000, updatedAtInMs: 1_000)
     }
 
-    private func makeSUT(_ items: [CashflowTransaction]) -> (CashEntryEditViewModel, RecordingMoney) {
+    private func makeSUT(_ items: [CashflowTransaction], accounts: [Account] = []) -> (CashEntryEditViewModel, RecordingMoney) {
         let cashflow = FixedCashflowRepository()
         cashflow.items = items
         let money = RecordingMoney()
-        return (CashEntryEditViewModel(entryId: "e1", cashflowRepository: cashflow, money: money, actorId: "u1"), money)
+        return (CashEntryEditViewModel(entryId: "e1", cashflowRepository: cashflow, money: money, actorId: "u1",
+                                       loadAccounts: { accounts }), money)
     }
+
+    private let cashAccount = Account(id: "acc-cash", name: "Cash", type: .cash, currentBalance: 0)
+    private let bankAccount = Account(id: "acc-bank", name: "HDFC", type: .bank, currentBalance: 0)
 
     @Test func loadFillsTheFormFromTheEntry() async {
         let (model, _) = makeSUT([entry()])
         await model.load()
         #expect(model.isLoaded)
         #expect(model.isIn)
-        #expect(model.isCash)
+        #expect(model.selectedAccountId == CashflowTransaction.PaymentMode.cash.accountId)
         #expect(model.amountText == "600")
         #expect(model.particulars == "No particulars")
     }
@@ -342,17 +407,59 @@ struct CashEntryEditTests {
         #expect(saved?.fromAccountId == "")
     }
 
-    @Test func changingDirectionOrModeRebuildsTheAccounts() async {
-        let (model, money) = makeSUT([entry()])
+    @Test func cashOutComesFromTheChosenAccountAndCashInGoesToIt() async {
+        var recorded = entry()
+        recorded.toAccountId = "acc-cash"
+        let (model, money) = makeSUT([recorded], accounts: [cashAccount, bankAccount])
         await model.load()
+        #expect(model.accountTitle == "To account")
+        #expect(model.selectedAccountId == "acc-cash")
         model.isIn = false
-        model.isCash = false
+        #expect(model.accountTitle == "From account")
+        model.selectAccount("acc-bank")
         #expect(await model.save())
         let saved = money.updatedEntries.first
         #expect(saved?.transactionType == .debit)
         #expect(saved?.paymentMode == .upi)
-        #expect(saved?.fromAccountId == CashflowTransaction.PaymentMode.upi.accountId)
+        #expect(saved?.fromAccountId == "acc-bank")
         #expect(saved?.toAccountId == "")
+    }
+
+    @Test func flippingDirectionKeepsTheSameAccountOnTheOtherSide() async {
+        var recorded = entry()
+        recorded.toAccountId = "acc-cash"
+        let (model, money) = makeSUT([recorded], accounts: [cashAccount, bankAccount])
+        await model.load()
+        model.isIn = false
+        #expect(await model.save())
+        #expect(money.updatedEntries.first?.fromAccountId == "acc-cash")
+        #expect(money.updatedEntries.first?.toAccountId == "")
+        #expect(money.updatedEntries.first?.paymentMode == .cash)
+    }
+
+    @Test func anEntryWithoutAnAccountIdPicksTheAccountMatchingItsMode() async {
+        var legacy = entry()
+        legacy.toAccountId = ""
+        legacy.fromAccountId = ""
+        let (model, money) = makeSUT([legacy], accounts: [bankAccount, cashAccount])
+        await model.load()
+        #expect(model.selectedAccountId == "acc-cash")
+        model.particulars = "Tea"
+        #expect(await model.save())
+        // Nothing about the account changed, so the blank ids are left as they were.
+        #expect(money.updatedEntries.first?.toAccountId == "")
+        #expect(money.updatedEntries.first?.fromAccountId == "")
+    }
+
+    @Test func anAccountNotInTheOrganizationStaysSelectable() async {
+        var recorded = entry()
+        recorded.toAccountId = "old-account"
+        let (model, _) = makeSUT([recorded], accounts: [cashAccount])
+        await model.load()
+        #expect(model.selectedAccountId == "old-account")
+        #expect(model.accounts.map(\.id) == ["acc-cash", "old-account"])
+        model.selectAccount("nope")
+        #expect(model.selectedAccountId == "old-account")
     }
 
     @Test func aLegacyEntryWithAnUnknownTypeIsNotRewrittenUnlessChanged() async {
@@ -374,6 +481,47 @@ struct CashEntryEditTests {
         money.fail = true
         #expect(await model.save() == false)
         #expect(model.errorMessage != nil)
+    }
+
+    @Test func categoryAndSubCategoryLoadAndStayUntouchedUnlessChanged() async {
+        var legacy = entry()
+        legacy.category = .unknown          // a category string this app didn't recognise when it decoded
+        legacy.subCategory = .unknown
+        let (model, money) = makeSUT([legacy])
+        await model.load()
+        #expect(model.category == .unknown)
+        #expect(model.categories.contains(.unknown))
+        model.particulars = "Float"
+        #expect(await model.save())
+        #expect(money.updatedEntries.first?.category == .unknown)
+        #expect(money.updatedEntries.first?.subCategory == .unknown)
+    }
+
+    @Test func changingTheCategoryPicksItsFirstSubCategoryAndIsSaved() async {
+        let (model, money) = makeSUT([entry()])
+        await model.load()
+        model.selectCategory(.utilities)
+        #expect(model.subCategory == .electricity)
+        model.selectSubCategory(.water)
+        #expect(await model.save())
+        #expect(money.updatedEntries.first?.category == .utilities)
+        #expect(money.updatedEntries.first?.subCategory == .water)
+    }
+
+    @Test func rowSubtitleShowsTheCategoryPath() {
+        var utility = entry(type: .debit)
+        utility.category = .utilities
+        utility.subCategory = .rent
+        #expect(utility.rowSubtitle.hasPrefix("Utilities › Rent · Out · "))
+        var sameName = entry()
+        sameName.category = .salesRevenue
+        sameName.subCategory = .salesRevenue
+        #expect(sameName.categoryPath == "Sales Revenue")
+        var unknown = entry()
+        unknown.category = .unknown
+        unknown.subCategory = .unknown
+        #expect(unknown.categoryPath == nil)
+        #expect(unknown.rowSubtitle.hasPrefix("In · "))
     }
 
     @Test func deleteSoftDeletesTheOriginalEntry() async {

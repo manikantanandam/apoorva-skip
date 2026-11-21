@@ -21,15 +21,18 @@ public struct CashBook: Sendable {
     }
 
     /// `mode` is "cash", or anything else (upi, card, bank), which lands in the bank account.
+    /// `account`, when given, is the org account the money goes to (cash in) or comes from (cash out); its type
+    /// decides the payment mode and its id is used instead of the fixed legacy account ids.
     public func record(_ type: CashflowTransaction.TransactionType, amount: Double, mode: String, category: CashflowCategory,
                        subCategory: CashflowSubCategory? = nil, particulars: String, person: String? = nil,
-                       at date: Date = Date()) async throws {
+                       at date: Date = Date(), account chosen: Account? = nil) async throws {
         guard let repository, amount > 0, mode != PaymentMode.credit.rawValue else { return }
-        let account: CashflowTransaction.PaymentMode = mode == "cash" ? .cash : .upi
+        let account: CashflowTransaction.PaymentMode = chosen.map { $0.type == .cash ? .cash : .upi } ?? (mode == "cash" ? .cash : .upi)
+        let accountId = chosen?.id ?? account.accountId
         try await repository.saveCashflowTransaction(transaction: CashflowTransaction(
             timestamp: date, particulars: particulars, amount: amount, transactionType: type, paymentMode: account,
             category: category, subCategory: subCategory,
-            fromAccountId: type == .debit ? account.accountId : "", toAccountId: type == .credit ? account.accountId : "",
+            fromAccountId: type == .debit ? accountId : "", toAccountId: type == .credit ? accountId : "",
             person: person, timestampInMs: date.timeIntervalSince1970, updatedAtInMs: Date().timeIntervalSince1970))
     }
 
@@ -177,7 +180,9 @@ public final actor StockRepository: StockRepositoryProtocol {
 // MARK: - Money
 
 public protocol MoneyRepositoryProtocol: Sendable {
-    func addCashEntry(isIn: Bool, amount: Double, category: ExpenseCategory?, particulars: String, by actorId: String) async throws
+    /// `account` is the account the money goes to (cash in) or comes from (cash out); nil uses the cash account.
+    func addCashEntry(isIn: Bool, amount: Double, category: CashflowCategory, subCategory: CashflowSubCategory?,
+                      account: Account?, particulars: String, by actorId: String) async throws
     func saveExpense(_ expense: Expense) async throws
     func closeDay(_ close: DayClose) async throws
     func reopenDay(_ day: Date, by actorId: String) async throws
@@ -203,10 +208,10 @@ public final actor MoneyRepository: MoneyRepositoryProtocol {
         self.audit = audit
     }
 
-    public func addCashEntry(isIn: Bool, amount: Double, category: ExpenseCategory?, particulars: String, by actorId: String) async throws {
-        let mapped = category?.cashflow ?? (isIn ? (.salesRevenue, nil) : (.miscellaneous, .general))
-        try await cashBook.record(isIn ? .credit : .debit, amount: amount, mode: "cash", category: mapped.0, subCategory: mapped.1,
-                                  particulars: particulars)
+    public func addCashEntry(isIn: Bool, amount: Double, category: CashflowCategory, subCategory: CashflowSubCategory?,
+                             account: Account?, particulars: String, by actorId: String) async throws {
+        try await cashBook.record(isIn ? .credit : .debit, amount: amount, mode: "cash", category: category,
+                                  subCategory: subCategory, particulars: particulars, account: account)
         await audit?.log(.money, action: isIn ? "cash.in" : "cash.out", summary: "\(particulars) · ₹\(Int(amount))", targetId: nil)
     }
 
