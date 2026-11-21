@@ -14,7 +14,7 @@ public protocol MemberInviteServicing: Sendable {
     func revoke(_ invite: MemberInvite) async throws
     /// Invites addressed to this email (the invitee's side). Callers pass a verified email only.
     func pendingInvites(forEmail email: String) async throws -> [MemberInvite]
-    /// Joins the invite's org: membership doc, profile assigned to the org, invite marked accepted.
+    /// Joins the invite's org: the user's profile gets the org and its `orgMembership` entry, invite marked accepted.
     /// `makeCurrent` also selects the org (the invitee had none); `createProfile` writes a full `users/{uid}`
     /// doc, only for accounts that have no profile yet.
     func accept(_ invite: MemberInvite, account: AuthAccount, name: String,
@@ -45,17 +45,15 @@ public final class MemberInviteService: MemberInviteServicing, @unchecked Sendab
     public func accept(_ invite: MemberInvite, account: AuthAccount, name: String,
                        existingOrgs: [OrganizationSnapshot], makeCurrent: Bool, createProfile: Bool) async throws {
         let now = Date()
-        try OrgCollectionService<Member>(store: store).upsert(
-            Member(id: account.uid, name: name, email: account.email ?? invite.email, role: invite.role,
-                   storeIds: invite.storeIds, joinedAt: now), orgId: invite.orgId)
-
         let snapshot = OrganizationSnapshot(orgId: invite.orgId, name: invite.orgName)
         let orgs = existingOrgs.filter { $0.orgId != invite.orgId } + [snapshot]
         // An existing (possibly legacy) profile only gets the additive org fields; its name, role, createdAt
-        // and the rest are never rewritten (docs/12 §9).
+        // and the rest are never rewritten (docs/12 §9). The role for this org lives in `orgMembership`.
+        let membership = OrgMembership(role: invite.role, storeIds: invite.storeIds, isActive: true, joinedAt: now)
         var profile: [String: Any] = [
             "assignedOrgs": try orgs.map { try Firestore.Encoder().encode($0) },
             "assignedOrgIds": orgs.map(\.orgId),
+            "orgMembership": [invite.orgId: try Firestore.Encoder().encode(membership)],
             "updatedAt": now,
             "updatedTimestamp": now.timeIntervalSince1970
         ]

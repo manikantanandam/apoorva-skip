@@ -17,7 +17,7 @@ struct OrganizationSetupServiceTests {
                 billPrefix: "GG-", vertical: .fancy, theme: OrgSettings.Theme(accent: .plum, style: .bold))
     }
 
-    @Test func createShopWritesOrgSettingsStoreMemberAndProfile() async throws {
+    @Test func createShopWritesOrgSettingsStoreAndOwnerProfile() async throws {
         let store = MockFirestoreStore()
         let orgId = try await OrganizationSetupService(store: store).createShop(shop(), owner: owner)
         let paths = Set(store.writes.map(\.path))
@@ -25,7 +25,7 @@ struct OrganizationSetupServiceTests {
         #expect(paths.contains("organizations/\(orgId)"))
         #expect(paths.contains("organizations/\(orgId)/settings/org"))
         #expect(paths.contains("organizations/\(orgId)/stores/default"))
-        #expect(paths.contains("organizations/\(orgId)/members/u1"))
+        #expect(!paths.contains("organizations/\(orgId)/members/u1"))
         #expect(paths.contains("users/u1"))
 
         let org = try #require(store.documents["organizations/\(orgId)"])

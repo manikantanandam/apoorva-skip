@@ -77,7 +77,6 @@ public final class OrganizationSetupService: OrganizationSetupServicing, @unchec
         try upsert(settings, orgId: orgId)
 
         try upsert(Store.defaultStore(name: shop.shopName, vertical: shop.vertical, billPrefix: shop.billPrefix), orgId: orgId)
-        try upsert(Member(id: owner.uid, name: shop.ownerName, phone: shop.phone, email: owner.email ?? "", role: .owner), orgId: orgId)
 
         let snapshot = OrganizationSnapshot(orgId: orgId, name: shop.shopName)
         let encodedSnapshot = try Firestore.Encoder().encode(snapshot)

@@ -52,7 +52,8 @@ public struct Store: OrgDocument {
     }
 }
 
-/// Per-org membership: role and store access. Keyed by the member's uid.
+/// Per-org membership: role and store access. Keyed by the member's uid. Built from the `users` collection
+/// (`AppUser.member(in:)`); there is no Firestore `members` collection.
 public struct Member: OrgDocument {
     public static let collection = "members"
 

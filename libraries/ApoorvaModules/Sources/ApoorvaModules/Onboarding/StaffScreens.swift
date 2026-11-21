@@ -39,7 +39,7 @@ public final class PinSwitchViewModel {
 
     public func load() async {
         members = ((try? await memberRepository.all()) ?? [])
-            .filter { $0.isActive && $0.storeIds.contains(session.currentStoreId) || $0.role == .owner }
+            .filter { $0.isActive && ($0.storeIds.isEmpty || $0.storeIds.contains(session.currentStoreId)) || $0.role == .owner }
             .sorted { $0.name < $1.name }
         if members.isEmpty, let user = session.user {
             members = [Member(id: user.id, name: user.name, email: user.email, role: session.role)]
