@@ -21,6 +21,7 @@ public struct CashDayView: View {
     private let onHistory: () -> Void
     /// Opens an entry for editing. Entries of a closed day are read-only, so reopen the day first.
     private let onEdit: ((CashflowTransaction) -> Void)?
+    @State private var showsCalendar = false
 
     public init(viewModel: CashDayViewModel, canClose: Bool, onAdd: @escaping () -> Void, onClose: @escaping () -> Void,
                 onHistory: @escaping () -> Void, onEdit: ((CashflowTransaction) -> Void)? = nil) {
@@ -42,7 +43,16 @@ public struct CashDayView: View {
         ScreenScroll {
             HStack {
                 Button { Task { await viewModel.step(-1) } } label: { ManiSwiftUIComponents.IconView(.chevronRight, size: 14).rotationEffect(.degrees(180)) }
-                ScreenSubtitle(text: subtitle).frame(maxWidth: .infinity)
+                Button { showsCalendar = true } label: {
+                    HStack(spacing: ManiSpacing.xs) {
+                        ScreenSubtitle(text: subtitle)
+                        Image(systemName: "calendar")
+                            .font(.footnote)
+                            .foregroundStyle(theme.base.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .accessibilityLabel("Pick a date")
                 Button { Task { await viewModel.step(1) } } label: { ManiSwiftUIComponents.IconView(.chevronRight, size: 14) }
                     .disabled(viewModel.isToday)
             }
@@ -95,6 +105,15 @@ public struct CashDayView: View {
             }
         }
         .task { await viewModel.load() }
+        .sheet(isPresented: $showsCalendar) {
+            ScreenScroll {
+                ManiAppBar(title: "Pick a date")
+                CashCalendarView(selected: viewModel.date, closedDayKeys: viewModel.closedDayKeys) { picked in
+                    showsCalendar = false
+                    Task { await viewModel.go(to: picked) }
+                }
+            }
+        }
     }
 }
 

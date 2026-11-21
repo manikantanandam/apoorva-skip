@@ -95,6 +95,42 @@ struct CashDayViewModelTests {
         #expect(model.isClosed)
     }
 
+    @Test func closedDayKeysCombineDayClosesAndSavedClosingBalances() async {
+        let summaries = StubDailyCashflowRepository()
+        let calendar = Calendar.current
+        let twoDaysAgo = calendar.date(byAdding: .day, value: -2, to: Date())!
+        let threeDaysAgo = calendar.date(byAdding: .day, value: -3, to: Date())!
+        let cash = CashflowTransaction.PaymentMode.cash.accountId
+        summaries.saved = [
+            // Legacy day with a saved closing balance.
+            DailyCashflowSummary(date: twoDaysAgo, openingBalances: [], closingBalances: [AccountBalance(id: cash, name: "Cash", balance: 900)],
+                                 updatedAt: 0, locked: true),
+            // Open day: no closing balance saved yet.
+            DailyCashflowSummary(date: threeDaysAgo, openingBalances: [AccountBalance(id: cash, name: "Cash", balance: 100)],
+                                 closingBalances: [], updatedAt: 0, locked: false)
+        ]
+        let closes = StubOrgRepository<DayClose>()
+        try? await closes.save(DayClose(date: Date(), expectedCash: 500, countedCash: 500, note: "", carryForward: true, closedBy: "u", closedByName: "U"))
+        var reopened = DayClose(date: calendar.date(byAdding: .day, value: -5, to: Date())!, expectedCash: 1, countedCash: 1, note: "",
+                                carryForward: true, closedBy: "u", closedByName: "U")
+        reopened.isDeleted = true
+        try? await closes.save(reopened)
+        let model = CashDayViewModel(summaries: summaries, saleRepository: StubSaleRepository(),
+                                     cashflowRepository: FixedCashflowRepository(), dayCloses: closes)
+        await model.load()
+        #expect(model.closedDayKeys == [Date().dayKey, twoDaysAgo.dayKey])
+    }
+
+    @Test func goToJumpsToAPastDayAndIgnoresTheFuture() async {
+        let (model, _, _) = makeDay()
+        let lastWeek = Calendar.current.date(byAdding: .day, value: -7, to: Date())!
+        await model.go(to: lastWeek)
+        #expect(Calendar.current.isDate(model.date, inSameDayAs: lastWeek))
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date())!
+        await model.go(to: tomorrow)
+        #expect(Calendar.current.isDate(model.date, inSameDayAs: lastWeek))
+    }
+
     @Test func stepMovesBackButNotIntoFuture() async {
         let (model, _, _) = makeDay()
         await model.step(1)

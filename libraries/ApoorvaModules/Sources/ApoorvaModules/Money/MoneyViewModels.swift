@@ -70,6 +70,9 @@ public final class CashDayViewModel {
     public var date: Date
     public private(set) var day: CashDay?
     public private(set) var close: DayClose?
+    /// `dayKey`s of days whose closing balance is saved: a day close from this app, or a legacy daily summary that
+    /// has closing balances. The calendar marks these green.
+    public private(set) var closedDayKeys: Set<String> = []
 
     private let summaries: DailyCashflowSummaryRepositoryProtocol
     private let saleRepository: SaleRepositoryProtocol
@@ -86,14 +89,26 @@ public final class CashDayViewModel {
     }
 
     public func load() async {
-        day = CashDay(date: date, summaries: (try? await summaries.getDailyCashflowSummaries()) ?? [],
+        let allSummaries = (try? await summaries.getDailyCashflowSummaries()) ?? []
+        day = CashDay(date: date, summaries: allSummaries,
                       sales: (try? await saleRepository.getSales()) ?? [],
                       transactions: (try? await cashflowRepository.getCashflowTransactions()) ?? [])
-        close = (try? await dayCloses.get(id: date.dayKey)).flatMap { $0?.isDeleted == false ? $0 : nil }
+        let closes = ((try? await dayCloses.all()) ?? []).filter { !$0.isDeleted }
+        close = closes.first { $0.id == date.dayKey }
+        closedDayKeys = Set(closes.map(\.id))
+            .union(allSummaries.filter { !$0.closingBalances.isEmpty }.map(\.id))
     }
 
     public var isClosed: Bool { close != nil }
     public var isToday: Bool { Calendar.current.isDateInToday(date) }
+
+    /// Jumps to a day picked in the calendar. Future days are ignored.
+    public func go(to target: Date) async {
+        let calendar = Calendar.current
+        guard calendar.startOfDay(for: target) <= calendar.startOfDay(for: Date()) else { return }
+        date = target
+        await load()
+    }
 
     public func step(_ days: Int) async {
         guard let next = Calendar.current.date(byAdding: .day, value: days, to: date), next <= Date() else { return }
