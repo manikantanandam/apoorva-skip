@@ -235,7 +235,6 @@ struct NewBillCoordinatorView: View {
                     viewModel: checkoutViewModel,
                     customerSubtitle: customerSubtitle,
                     onChangeCustomer: { coordinator.push(.customerPicker) },
-                    onSplit: { coordinator.push(.split) },
                     onRequireUPIConfirmation: { coordinator.push(.upiQR) },
                     onHold: config.allowsHold ? {
                         Task {
@@ -246,12 +245,6 @@ struct NewBillCoordinatorView: View {
                     } : nil,
                     onConfirmed: handleSaleConfirmed
                 )
-            } else {
-                ManiMissingView(title: "Checkout closed")
-            }
-        case .split:
-            if let checkoutViewModel {
-                SplitPaymentView(viewModel: checkoutViewModel, onConfirmed: handleSaleConfirmed)
             } else {
                 ManiMissingView(title: "Checkout closed")
             }

@@ -33,8 +33,18 @@ if [ -n "${GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64:-}" ]; then
   wrote_any=1
 fi
 
-if [[ -n "${GOOGLE_SERVICE_JSON_B64:-}" ]]; then
-  echo "$GOOGLE_SERVICE_JSON_B64" | base64 --decode > "$ROOT_DIR/app/Android/app/google-services.json"
+# Android: the google-services Gradle plugin reads a single google-services.json,
+# so pick one environment. GOOGLE_SERVICE_JSON_ENV (debug|production, default debug)
+# selects it; GOOGLE_SERVICE_JSON_B64 is the legacy single-file fallback.
+ANDROID_JSON_B64=""
+case "${GOOGLE_SERVICE_JSON_ENV:-debug}" in
+  production) ANDROID_JSON_B64="${GOOGLE_SERVICE_JSON_PRODUCTION_B64:-}" ;;
+  *) ANDROID_JSON_B64="${GOOGLE_SERVICE_JSON_DEBUG_B64:-}" ;;
+esac
+ANDROID_JSON_B64="${ANDROID_JSON_B64:-${GOOGLE_SERVICE_JSON_B64:-}}"
+
+if [[ -n "$ANDROID_JSON_B64" ]]; then
+  echo "$ANDROID_JSON_B64" | base64 --decode > "$ROOT_DIR/app/Android/app/google-services.json"
   echo "Wrote $ROOT_DIR/app/Android/app/google-services.json"
   wrote_any=1
 fi

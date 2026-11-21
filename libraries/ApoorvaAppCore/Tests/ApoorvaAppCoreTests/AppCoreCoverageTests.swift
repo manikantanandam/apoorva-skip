@@ -55,7 +55,7 @@ struct CoordinatorNavigationTests {
     @Test func newBillCoordinatorStacksSheetsAndHandsOverTheCartOnce() {
         let coordinator = NewBillCoordinator()
         coordinator.push(.checkout)
-        coordinator.push(.split)
+        coordinator.push(.upiQR)
         coordinator.pop()
         #expect(coordinator.path == [.checkout])
         coordinator.popToRoot()

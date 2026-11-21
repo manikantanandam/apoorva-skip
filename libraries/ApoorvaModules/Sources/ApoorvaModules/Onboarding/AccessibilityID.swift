@@ -25,10 +25,43 @@ public enum AccessibilityID {
         public static let customerRow = "pos.customerRow"
     }
 
+    public enum Checkout {
+        public static let customerRow = "checkout.customerRow"
+        public static let collect = "checkout.collect"
+        public static let hold = "checkout.hold"
+        public static let cashReceived = "checkout.cashReceived"
+        public static let changeDue = "checkout.changeDue"
+        public static let creditNote = "checkout.creditNote"
+        public static let error = "checkout.error"
+        public static func mode(_ name: String) -> String { "checkout.mode.\(name)" }
+    }
+
+    public enum WeightSheet {
+        public static let price = "weightSheet.price"
+        public static let add = "weightSheet.add"
+    }
+
+    public enum VariantSheet {
+        public static let quantity = "variantSheet.quantity"
+        public static let add = "variantSheet.add"
+    }
+
+    public enum BillDiscount {
+        public static let apply = "billDiscount.apply"
+        public static let remove = "billDiscount.remove"
+        public static let managerPin = "billDiscount.managerPin"
+        public static func preset(_ percent: Int) -> String { "billDiscount.preset.\(percent)" }
+    }
+
     public enum Receipt {
         public static let newBill = "receipt.newBill"
         public static let home = "receipt.home"
         public static let editBill = "receipt.editBill"
+    }
+
+    public enum UPI {
+        public static let markReceived = "upi.markReceived"
+        public static let changeMode = "upi.changeMode"
     }
 
     public enum CustomerPicker {
