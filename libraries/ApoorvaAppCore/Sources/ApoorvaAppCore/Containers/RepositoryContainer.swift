@@ -101,7 +101,8 @@ public class RepositoryContainer {
     public lazy var auditLogger: AuditLogging = AuditLogger(repository: auditRepository, context: orgContext)
     public lazy var settingsRepository = makeOrgCollectionRepository(OrgSettings.self)
     public lazy var storeRepository = makeOrgCollectionRepository(Store.self)
-    public lazy var memberRepository = makeOrgCollectionRepository(Member.self)
+    /// Members come from the legacy `users` collection; there is no `members` collection.
+    public lazy var memberRepository = UsersMemberRepository(userRepository: userRepository, context: orgContext)
     public lazy var supplierRepository = makeOrgCollectionRepository(Supplier.self)
     public lazy var servicePackageRepository = makeOrgCollectionRepository(ServicePackage.self)
     public lazy var customerPackageRepository = makeOrgCollectionRepository(CustomerPackage.self)
@@ -164,7 +165,6 @@ public class RepositoryContainer {
             SyncAdapter("dailyCashflowSummaries") { try await dailyCashflow.sync(force: $0) },
             settingsRepository,
             storeRepository,
-            memberRepository,
             supplierRepository,
             servicePackageRepository,
             customerPackageRepository,

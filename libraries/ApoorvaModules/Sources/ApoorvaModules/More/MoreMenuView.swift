@@ -41,12 +41,15 @@ public struct MoreMenuView: View {
     private let showsDeveloper: Bool
     private let onSelect: (MoreMenuItem) -> Void
     private let onSearch: () -> Void
+    private let invitations: InvitationsViewModel?
+    @State private var showsInvitations = false
 
-    public init(session: AppSession, counts: MoreMenuCounts, showsDeveloper: Bool,
+    public init(session: AppSession, counts: MoreMenuCounts, showsDeveloper: Bool, invitations: InvitationsViewModel? = nil,
                 onSelect: @escaping (MoreMenuItem) -> Void, onSearch: @escaping () -> Void) {
         self.session = session
         self.counts = counts
         self.showsDeveloper = showsDeveloper
+        self.invitations = invitations
         self.onSelect = onSelect
         self.onSearch = onSearch
     }
@@ -68,6 +71,14 @@ public struct MoreMenuView: View {
             group("People", items: peopleItems)
 
             RowsCard {
+                if let invitations {
+                    NavRow(icon: .people,
+                           title: invitations.count > 0 ? "Invitations (\(invitations.count))" : "Invitations",
+                           subtitle: invitations.count > 0 ? "Shops that invited you to join" : "No pending invitations") {
+                        showsInvitations = true
+                    }
+                    Divider()
+                }
                 NavRow(icon: .settings, title: "Settings", subtitle: "Billing style, printer, tax, language") { onSelect(.settings) }
                 Divider()
                 NavRow(icon: .people, title: "Switch staff", subtitle: session.actingMember.map { "Billing as \($0.name)" } ?? "Shared phone? Switch with a PIN") {
@@ -88,6 +99,10 @@ public struct MoreMenuView: View {
                     NavRow(icon: .key, title: "Developer", subtitle: "Environment, flags, logs") { onSelect(.developer) }
                 }
             }
+        }
+        .task { await invitations?.refresh() }
+        .sheet(isPresented: $showsInvitations) {
+            if let invitations { InvitationsView(viewModel: invitations) }
         }
     }
 

@@ -50,8 +50,7 @@ struct OnboardingCoordinatorView: View {
                               authFlow.email = login.username
                               coordinator.push(.forgotPassword)
                           },
-                          onRegister: { coordinator.push(.register) },
-                          onJoinWithCode: { coordinator.push(.staffJoin(inviteToken: "")) })
+                          onRegister: { coordinator.push(.register) })
         case .otp:
             PhoneOTPView(viewModel: authFlow)
         case .register:
@@ -72,7 +71,8 @@ struct OnboardingCoordinatorView: View {
         case .linkAccounts:
             LinkAccountsView(viewModel: authFlow, onUseDifferentAccount: { coordinator.popToRoot() })
         case .chooseVertical:
-            ChooseVerticalView(viewModel: shopSetup, onContinue: { coordinator.push(.shopSetup) })
+            ChooseVerticalView(viewModel: shopSetup, invitations: container.modulesContainer.invitationsViewModel,
+                               onContinue: { coordinator.push(.shopSetup) })
         case .shopSetup:
             ShopSetupView(viewModel: shopSetup, onContinue: { coordinator.push(.pickLook) })
         case .pickLook:
@@ -82,19 +82,6 @@ struct OnboardingCoordinatorView: View {
         case .firstRunGuide, .openingBalances:
             OpeningBalancesView(viewModel: container.modulesContainer.makeOpeningBalancesViewModel(session: session),
                                 onDone: { coordinator.popToRoot() })
-        case .staffJoin(let code):
-            StaffJoinView(
-                viewModel: container.modulesContainer.makeStaffJoinViewModel(
-                    code: code.isEmpty ? (coordinator.appCoordinator?.pendingInviteCode ?? "") : code,
-                    currentOrgs: { container.servicesContainer.userService.currentUser?.assignedOrgs ?? [] }),
-                onSignIn: {
-                    if !code.isEmpty { coordinator.appCoordinator?.pendingInviteCode = code }
-                    coordinator.push(.signInHub)
-                },
-                onUseAnother: {
-                    try? container.servicesContainer.authService.logout()
-                    coordinator.popToRoot()
-                })
         case .pinSwitch:
             PinSwitchView(viewModel: container.modulesContainer.makePinSwitchViewModel(session: session),
                           onSwitched: { coordinator.pop() })

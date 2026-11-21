@@ -14,14 +14,26 @@ import ApoorvaModels
 public struct ChooseVerticalView: View {
     @Bindable private var viewModel: ShopSetupViewModel
     private let onContinue: () -> Void
+    private let invitations: InvitationsViewModel?
+    @State private var showsInvitations = false
 
-    public init(viewModel: ShopSetupViewModel, onContinue: @escaping () -> Void) {
+    public init(viewModel: ShopSetupViewModel, invitations: InvitationsViewModel? = nil, onContinue: @escaping () -> Void) {
         self.viewModel = viewModel
+        self.invitations = invitations
         self.onContinue = onContinue
     }
 
     public var body: some View {
         ScreenScroll {
+            if let invitations {
+                if invitations.count > 0 {
+                    InvitationBanner(count: invitations.count) { showsInvitations = true }
+                } else {
+                    Button("Joining a shop? Check invitations") { showsInvitations = true }
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity)
+                }
+            }
             ManiAppBar(title: "What do you sell?")
             ScreenSubtitle(text: "We tailor billing and theme to your shop")
             ManiStepIndicator(current: 1, total: 4)
@@ -37,6 +49,10 @@ public struct ChooseVerticalView: View {
             ManiButton("Continue", action: onContinue)
         }
         .navigationBarBackButtonHidden()
+        .task { await invitations?.refresh() }
+        .sheet(isPresented: $showsInvitations) {
+            if let invitations { InvitationsView(viewModel: invitations) }
+        }
     }
 }
 

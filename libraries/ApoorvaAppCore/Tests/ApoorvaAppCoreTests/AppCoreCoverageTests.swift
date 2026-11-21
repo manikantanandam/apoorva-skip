@@ -340,7 +340,6 @@ struct ModulesContainerTests {
         _ = modules.makeAuthFlowViewModel()
         _ = modules.makeShopSetupViewModel(trialDays: { 30 })
         _ = modules.makeOpeningBalancesViewModel(session: session)
-        _ = modules.makeStaffJoinViewModel(code: "ABC", currentOrgs: { [] })
         _ = modules.makePinSwitchViewModel(session: session)
 
         _ = modules.makePOSViewModel()

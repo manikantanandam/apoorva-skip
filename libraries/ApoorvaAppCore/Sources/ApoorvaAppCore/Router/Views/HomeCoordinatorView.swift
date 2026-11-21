@@ -17,14 +17,17 @@ struct HomeCoordinatorView: View {
         self.tabs = tabs
         self.coordinator = coordinator
         self.container = container
-        _viewModel = State(initialValue: container.modulesContainer.makeHomeViewModel(session: container.appSession))
+        let viewModel = container.modulesContainer.makeHomeViewModel(session: container.appSession)
+        if !(tabs.appCoordinator?.isInitialSyncDone ?? false) { viewModel.beginAwaitingInitialSync() }
+        _viewModel = State(initialValue: viewModel)
     }
 
     private var session: AppSession { container.appSession }
 
     var body: some View {
         NavigationStack(path: $coordinator.path) {
-            HomeView(session: session, viewModel: viewModel, syncText: syncText, onAction: handle)
+            HomeView(session: session, viewModel: viewModel, syncText: syncText,
+                     invitations: container.modulesContainer.invitationsViewModel, onAction: handle)
                 .toolbar(.hidden, for: .navigationBar)
                 .navigationDestination(for: HomeRoute.self) { route in
                     destination(for: route)
@@ -33,6 +36,15 @@ struct HomeCoordinatorView: View {
         }
         .sheet(item: $coordinator.presentedSheet) { route in
             NavigationStack { destination(for: route) }
+        }
+        .onChange(of: tabs.appCoordinator?.syncGeneration) { _, _ in
+            // The cache just got server data: show it instead of the pre-sync empty state.
+            if tabs.appCoordinator?.isInitialSyncDone == true { viewModel.markSyncSettled() }
+            Task { await viewModel.load() }
+        }
+        .onChange(of: tabs.appCoordinator?.isInitialSyncDone) { _, done in
+            // An org switch clears the cache and syncs again: wait for it rather than flashing the guide.
+            if done == false { viewModel.beginAwaitingInitialSync() }
         }
         .onChange(of: tabs.isPresentingNewBill) { _, isPresenting in
             if !isPresenting { Task { await viewModel.load() } }

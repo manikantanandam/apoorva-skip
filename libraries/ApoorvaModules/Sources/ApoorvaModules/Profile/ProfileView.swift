@@ -17,6 +17,7 @@ public struct ProfileView: View {
     private let onSelectOrganization: () -> Void
     private let onShowOrganizations: () -> Void
     private let onShowTeamMembers: () -> Void
+    private let onShowOrganizationDetails: (() -> Void)?
     /// Team management is gated on the org's admin permission, not the legacy user role.
     private let canManageTeam: Bool
     /// Provided only when developer settings are available (debug builds).
@@ -27,12 +28,14 @@ public struct ProfileView: View {
                 onSelectOrganization: @escaping () -> Void,
                 onShowOrganizations: @escaping () -> Void,
                 onShowTeamMembers: @escaping () -> Void,
+                onShowOrganizationDetails: (() -> Void)? = nil,
                 onShowDeveloperSettings: (() -> Void)?) {
         self.viewModel = viewModel
         self.canManageTeam = canManageTeam
         self.onSelectOrganization = onSelectOrganization
         self.onShowOrganizations = onShowOrganizations
         self.onShowTeamMembers = onShowTeamMembers
+        self.onShowOrganizationDetails = onShowOrganizationDetails
         self.onShowDeveloperSettings = onShowDeveloperSettings
     }
 
@@ -68,6 +71,12 @@ public struct ProfileView: View {
 
                     Button(action: onShowOrganizations) {
                         ManiListRow(title: "Organizations")
+                    }
+
+                    if let onShowOrganizationDetails {
+                        Button(action: onShowOrganizationDetails) {
+                            ManiListRow(title: "Organization details")
+                        }
                     }
 
                     if canManageTeam {

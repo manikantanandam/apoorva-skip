@@ -24,11 +24,15 @@ public struct HomeView: View {
     @Bindable private var viewModel: HomeViewModel
     private let syncText: String
     private let onAction: (HomeAction) -> Void
+    private let invitations: InvitationsViewModel?
+    @State private var showsInvitations = false
 
-    public init(session: AppSession, viewModel: HomeViewModel, syncText: String, onAction: @escaping (HomeAction) -> Void) {
+    public init(session: AppSession, viewModel: HomeViewModel, syncText: String, invitations: InvitationsViewModel? = nil,
+                onAction: @escaping (HomeAction) -> Void) {
         self.session = session
         self.viewModel = viewModel
         self.syncText = syncText
+        self.invitations = invitations
         self.onAction = onAction
     }
 
@@ -36,7 +40,14 @@ public struct HomeView: View {
         ScreenScroll {
             header
 
-            if viewModel.showsFirstRunGuide {
+            if let invitations, invitations.count > 0 {
+                InvitationBanner(count: invitations.count) { showsInvitations = true }
+            }
+
+            if viewModel.isWaitingForFirstData {
+                ManiEmptyState(icon: .store, title: "Syncing your shop", message: "Bringing in your sales and items…")
+                ProgressView().frame(maxWidth: .infinity)
+            } else if viewModel.showsFirstRunGuide {
                 FirstRunGuideView(shopName: session.displayShopName, steps: viewModel.firstRunSteps,
                                   onStep: { onAction(.firstRunStep($0.id)) },
                                   onCreateBill: { onAction(.createFirstBill) },
@@ -70,8 +81,14 @@ public struct HomeView: View {
                 }
             }
         }
-        .refreshable { await viewModel.load() }
+        .refreshable {
+            await viewModel.load()
+            await invitations?.refresh()
+        }
         .task { await viewModel.load() }
+        .sheet(isPresented: $showsInvitations) {
+            if let invitations { InvitationsView(viewModel: invitations) }
+        }
     }
 
     private var header: some View {

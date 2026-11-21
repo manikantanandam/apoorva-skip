@@ -64,11 +64,6 @@ public class ModulesContainer {
                                  organizationRepository: repositoryContainer.organizationRepository)
     }
 
-    public func makeStaffJoinViewModel(code: String, currentOrgs: @escaping () -> [OrganizationSnapshot]) -> StaffJoinViewModel {
-        StaffJoinViewModel(code: code, setupService: servicesContainer.organizationSetupService,
-                           authService: servicesContainer.authService, currentOrgs: currentOrgs)
-    }
-
     public func makePinSwitchViewModel(session: AppSession) -> PinSwitchViewModel {
         PinSwitchViewModel(session: session, memberRepository: repositoryContainer.memberRepository,
                            pinStore: servicesContainer.pinStore, biometrics: servicesContainer.biometrics)
@@ -171,8 +166,28 @@ public class ModulesContainer {
 
     public func makeUserListViewModel() -> UserListViewModel {
         return UserListViewModel(
-            userRepository: repositoryContainer.userRepository
+            userRepository: repositoryContainer.userRepository,
+            inviteService: servicesContainer.memberInviteService
         )
+    }
+
+    /// Shared so the Home banner, More row, organization switcher and onboarding show the same invites.
+    public lazy var invitationsViewModel = InvitationsViewModel(
+        inviteService: servicesContainer.memberInviteService,
+        authService: servicesContainer.authService,
+        userRepository: repositoryContainer.userRepository)
+
+    public func makeOrganizationDetailsViewModel(session: AppSession) -> OrganizationDetailsViewModel {
+        OrganizationDetailsViewModel(session: session,
+                                     organizationRepository: repositoryContainer.organizationRepository,
+                                     memberRepository: repositoryContainer.memberRepository,
+                                     inviteService: servicesContainer.memberInviteService)
+    }
+
+    public func makeAddMemberViewModel(stores: [Store]) -> AddMemberViewModel {
+        AddMemberViewModel(inviteService: servicesContainer.memberInviteService,
+                           userRepository: repositoryContainer.userRepository,
+                           memberRepository: repositoryContainer.memberRepository, stores: stores)
     }
 
     public func makeOrganizationListViewModel() -> OrganizationListViewModel {

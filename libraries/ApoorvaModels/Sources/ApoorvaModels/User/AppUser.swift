@@ -30,10 +30,12 @@ public struct AppUser: Codable, Sendable {
     public let selectedOrganization: OrganizationSnapshot?
     public let url: String
     public let updatedTimestamp: TimeInterval
-    
+    /// Additive, optional per-org role/store access/salary, keyed by org id. Missing on legacy docs.
+    public let orgMembership: [String: OrgMembership]
+
     public var updatedAt: Date
     public var isDeleted: Bool
-    
+
     public enum CodingKeys: String, CodingKey {
         case id,
              name,
@@ -46,7 +48,8 @@ public struct AppUser: Codable, Sendable {
              isDeleted,
              selectedOrganization,
              url,
-             updatedTimestamp
+             updatedTimestamp,
+             orgMembership
     }
     
     public init(from decoder: Decoder) throws {
@@ -85,6 +88,7 @@ public struct AppUser: Codable, Sendable {
         self.selectedOrganization = try? container.decodeIfPresent(OrganizationSnapshot.self, forKey: .selectedOrganization)
         self.url = (try? container.decodeIfPresent(String.self, forKey: .url)) ?? ""
         self.updatedTimestamp = (try? container.decodeIfPresent(TimeInterval.self, forKey: .updatedTimestamp)) ?? 0
+        self.orgMembership = (try? container.decodeIfPresent([String: OrgMembership].self, forKey: .orgMembership)) ?? [:]
     }
     
     public init(id: String,
@@ -98,7 +102,9 @@ public struct AppUser: Codable, Sendable {
                 isDeleted: Bool = false,
                 selectedOrganization: OrganizationSnapshot? = nil,
                 url: String = "",
-                updatedTimestamp: TimeInterval = 0) {
+                updatedTimestamp: TimeInterval = 0,
+                orgMembership: [String: OrgMembership] = [:]) {
+        self.orgMembership = orgMembership
         self.id = id
         self.name = name
         self.email = email
@@ -132,7 +138,8 @@ public extension AppUser {
         isDeleted: Bool? = nil,
         selectedOrganization: OrganizationSnapshot? = nil,
         url: String? = nil,
-        updatedTimestamp: TimeInterval? = nil) -> AppUser {
+        updatedTimestamp: TimeInterval? = nil,
+        orgMembership: [String: OrgMembership]? = nil) -> AppUser {
             return AppUser(
                 id: id ?? self.id,
                 name: name ?? self.name,
@@ -145,7 +152,8 @@ public extension AppUser {
                 isDeleted: isDeleted ?? self.isDeleted,
                 selectedOrganization: selectedOrganization ?? self.selectedOrganization,
                 url: url ?? self.url,
-                updatedTimestamp: updatedTimestamp ?? self.updatedTimestamp
+                updatedTimestamp: updatedTimestamp ?? self.updatedTimestamp,
+                orgMembership: orgMembership ?? self.orgMembership
             )
         }
 }

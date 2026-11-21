@@ -19,6 +19,7 @@ struct MoreCoordinatorView: View {
                 session: session,
                 counts: counts,
                 showsDeveloper: container.showsDeveloperTools,
+                invitations: container.modulesContainer.invitationsViewModel,
                 onSelect: select,
                 onSearch: { tabs.present(.search) }
             )
@@ -151,6 +152,7 @@ struct MoreCoordinatorView: View {
                 onSelectOrganization: { coordinator.present(.admin(.selectOrganization)) },
                 onShowOrganizations: { coordinator.push(.admin(.stores)) },
                 onShowTeamMembers: { coordinator.push(.admin(.members)) },
+                onShowOrganizationDetails: { coordinator.push(.admin(.organizationDetails)) },
                 onShowDeveloperSettings: container.showsDeveloperTools ? { coordinator.push(.developer(.hub)) } : nil
             )
         default:
@@ -181,21 +183,30 @@ struct MoreCoordinatorView: View {
             AdminHomeView(session: session, memberCount: memberCount, lastSync: lastSync) { item in
                 switch item {
                 case .stores: coordinator.push(.admin(.stores))
+                case .organization: coordinator.push(.admin(.organizationDetails))
                 case .members: coordinator.push(.admin(.members))
                 case .permissions: coordinator.push(.admin(.permissions))
                 case .theme: coordinator.push(.admin(.theme))
                 case .features: coordinator.push(.admin(.features))
                 case .audit: coordinator.push(.admin(.audit))
-                case .invite: coordinator.push(.admin(.invite))
                 }
             }
         case .selectOrganization:
-            OrganizationListView(viewModel: container.modulesContainer.makeOrganizationListViewModel())
+            OrganizationListView(viewModel: container.modulesContainer.makeOrganizationListViewModel(),
+                                 invitations: container.modulesContainer.invitationsViewModel)
         case .stores:
             // Store management isn't built yet. Keep it separate from organization selection.
             NotBuiltView(PlaceholderScreen(title(for: .admin(route))))
         case .members:
-            UserListView(viewModel: container.modulesContainer.makeUserListViewModel())
+            UserListView(viewModel: container.modulesContainer.makeUserListViewModel(),
+                         onAddMember: session.can(.admin) ? { coordinator.push(.admin(.memberAdd)) } : nil)
+        case .organizationDetails:
+            OrganizationDetailsView(viewModel: container.modulesContainer.makeOrganizationDetailsViewModel(session: session))
+        case .memberAdd:
+            // Retained: the form's state lives in the view model, which must survive this view being rebuilt.
+            Retained(container.modulesContainer.makeAddMemberViewModel(stores: session.stores)) { viewModel in
+                AddMemberView(viewModel: viewModel, onDone: { coordinator.pop() })
+            }
         default:
             NotBuiltView(PlaceholderScreen(title(for: .admin(route))))
         }

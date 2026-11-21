@@ -17,7 +17,7 @@ struct OrganizationSetupServiceTests {
                 billPrefix: "GG-", vertical: .fancy, theme: OrgSettings.Theme(accent: .plum, style: .bold))
     }
 
-    @Test func createShopWritesOrgSettingsStoreMemberAndProfile() async throws {
+    @Test func createShopWritesOrgSettingsStoreAndOwnerProfile() async throws {
         let store = MockFirestoreStore()
         let orgId = try await OrganizationSetupService(store: store).createShop(shop(), owner: owner)
         let paths = Set(store.writes.map(\.path))
@@ -25,7 +25,7 @@ struct OrganizationSetupServiceTests {
         #expect(paths.contains("organizations/\(orgId)"))
         #expect(paths.contains("organizations/\(orgId)/settings/org"))
         #expect(paths.contains("organizations/\(orgId)/stores/default"))
-        #expect(paths.contains("organizations/\(orgId)/members/u1"))
+        #expect(!paths.contains("organizations/\(orgId)/members/u1"))
         #expect(paths.contains("users/u1"))
 
         let org = try #require(store.documents["organizations/\(orgId)"])
@@ -43,25 +43,5 @@ struct OrganizationSetupServiceTests {
         #expect(settings.profile.setupCompletedAt != nil)
         #expect(settings.theme.style == .bold)
         #expect(settings.plan.tier == .trial)
-    }
-
-    @Test func acceptInviteAddsMembershipAndMarksInviteUsed() async throws {
-        let store = MockFirestoreStore()
-        let invite = Invite(token: "ABCD2345", orgId: "org1", orgName: "Glitz", storeIds: ["default"], storeName: "Glitz",
-                            role: .manager, name: "Anu", phone: "9000000000", invitedBy: "u0", invitedByName: "Kiran")
-        try await OrganizationSetupService(store: store).acceptInvite(invite, account: owner, name: "Anu", existingOrgs: [])
-
-        #expect(store.documents["organizations/org1/members/u1"] != nil)
-        #expect(store.documents["users/u1"]?["role"] as? String == AppUserRole.manager.rawValue)
-        #expect(store.updates.first?.path == "invites/ABCD2345")
-        #expect(store.updates.first?.fields["acceptedBy"] as? String == "u1")
-    }
-
-    @Test func invitesAreValidFor72Hours() {
-        let invite = Invite(orgId: "o", orgName: "O", storeIds: [], storeName: "", role: .cashier, name: "", phone: "",
-                            invitedBy: "", invitedByName: "", createdAt: Date().addingTimeInterval(-73 * 3600))
-        #expect(invite.isExpired)
-        #expect(invite.token.count == 8)
-        #expect(invite.link.hasPrefix("apoorva://join/"))
     }
 }

@@ -18,6 +18,7 @@ enum DebugTestUsers {
     static let all: [DebugTestUser] = [
         DebugTestUser(name: "Lavanya", email: "lavanya@gmail.com", password: "Apoorva@125"),
         DebugTestUser(name: "Manikanta", email: "nanirocks125@gmail.com", password: "Nandam@125"),
+        DebugTestUser(name: "Manikanta 1996", email: "manikantanandam1996@gmail.com", password: "Apoorva@123"),
     ]
 }
 #endif

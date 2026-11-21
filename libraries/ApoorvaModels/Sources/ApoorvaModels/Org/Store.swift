@@ -52,7 +52,8 @@ public struct Store: OrgDocument {
     }
 }
 
-/// Per-org membership: role and store access. Keyed by the member's uid.
+/// Per-org membership: role and store access. Keyed by the member's uid. Built from the `users` collection
+/// (`AppUser.member(in:)`); there is no Firestore `members` collection.
 public struct Member: OrgDocument {
     public static let collection = "members"
 
@@ -63,7 +64,7 @@ public struct Member: OrgDocument {
     public var role: OrgRole
     public var storeIds: [String]
     public var isActive: Bool
-    /// "invited" until the person joins with the invite link.
+    /// "invited" is reserved for members added but not yet active.
     public var status: String
     public var commissionPercent: Double?
     public var baseSalary: Double?
