@@ -53,9 +53,14 @@ public final class HomeViewModel {
 
     public func load(now: Date = Date()) async {
         let calendar = Calendar.current
-        let sales = ((try? await saleRepository.getSales()) ?? []).filter { !$0.isCancelled }
+        var rawSales: [Sale] = []
+        do { rawSales = try await saleRepository.getSales() } catch { logger.error("load: getSales failed: \(error)") }
+        let sales = rawSales.filter { !$0.isCancelled }
         let customers = (try? await customerRepository.getCustomers()) ?? []
-        let items = (try? await inventoryRepository.getInventoryItems()) ?? []
+        var rawItems: [InventoryItem] = []
+        do { rawItems = try await inventoryRepository.getInventoryItems() } catch { logger.error("load: getInventoryItems failed: \(error)") }
+        let items = rawItems
+        logger.info("load: firstRun check rawSales=\(rawSales.count) cancelled=\(rawSales.count - sales.count) items=\(items.count) customers=\(customers.count) openingBalancesSavedAt=\(String(describing: session.settings.profile.openingBalancesSavedAt))")
         let todaySummary = try? await dailyCashflowRepository.getDailyCashflowSummary(id: now.toDayId)
 
         hasAnySales = !sales.isEmpty

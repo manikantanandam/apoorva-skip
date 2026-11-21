@@ -39,6 +39,14 @@ public class LoginViewModel {
         #endif
     }
 
+    #if DEBUG
+    func selectDebugUser(_ user: DebugTestUser) {
+        username = user.email
+        password = user.password
+        errorMessage = nil
+    }
+    #endif
+
     var isLoginEnabled: Bool {
         !username.trimmingCharacters(in: .whitespaces).isEmpty && !password.isEmpty
     }

@@ -5,6 +5,9 @@
 
 import Foundation
 import ApoorvaServices
+import ManiLogger
+
+private let logger = AppLogger(category: .sync)
 
 public struct SyncStatus: Sendable, Equatable {
     public let key: String
@@ -81,6 +84,7 @@ public actor SyncEngine {
             statuses[key]?.lastError = nil
         } catch {
             statuses[key]?.lastError = error.localizedDescription
+            logger.error("sync failed key=\(key): \(error)")
             crashReportingService.recordNonFatal(error, context: "sync.\(key)")
         }
         statuses[key]?.isSyncing = false
