@@ -145,7 +145,15 @@ public final class HomeViewModel {
         ]
     }
 
-    public var showsFirstRunGuide: Bool { !hasAnySales }
+    /// True from the first sign-in until the first sync finishes: the local cache is empty then, but the shop may
+    /// have sales on the server, so Home must not show the "Welcome" guide or empty numbers yet.
+    public private(set) var isAwaitingInitialSync = false
+
+    public func beginAwaitingInitialSync() { isAwaitingInitialSync = true }
+    public func markSyncSettled() { isAwaitingInitialSync = false }
+
+    public var isWaitingForFirstData: Bool { isAwaitingInitialSync && !hasAnySales }
+    public var showsFirstRunGuide: Bool { !hasAnySales && !isAwaitingInitialSync }
 
     public var showsUsageBanner: Bool {
         guard session.planStatus.isNearLimit else { return false }

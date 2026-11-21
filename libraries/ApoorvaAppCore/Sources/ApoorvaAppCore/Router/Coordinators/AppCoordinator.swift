@@ -26,6 +26,7 @@ public final class AppCoordinator {
     private var platform = PlatformConfig()
     private var lastOrgId: String?
     private var recomputeGeneration = 0
+    private(set) var syncGeneration = 0
 
     public init(appContainer: AppContainer = AppContainer()) {
         self.appContainer = appContainer
@@ -162,6 +163,8 @@ public final class AppCoordinator {
     /// Pulls every collection, then re-derives the phase so org status and min version changes take effect.
     func syncAll(force: Bool = false) async {
         await appContainer.repositoryContainer.syncEngine.syncAll(force: force)
+        // Screens that read the local cache (Home) reload when this changes; 0 means no sync has finished yet.
+        syncGeneration += 1
         try? await appContainer.repositoryContainer.organizationRepository.sync(force: force)
         await recompute()
         await session.reload()

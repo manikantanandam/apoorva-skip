@@ -44,7 +44,10 @@ public struct HomeView: View {
                 InvitationBanner(count: invitations.count) { showsInvitations = true }
             }
 
-            if viewModel.showsFirstRunGuide {
+            if viewModel.isWaitingForFirstData {
+                ManiEmptyState(icon: .store, title: "Syncing your shop", message: "Bringing in your sales and items…")
+                ProgressView().frame(maxWidth: .infinity)
+            } else if viewModel.showsFirstRunGuide {
                 FirstRunGuideView(shopName: session.displayShopName, steps: viewModel.firstRunSteps,
                                   onStep: { onAction(.firstRunStep($0.id)) },
                                   onCreateBill: { onAction(.createFirstBill) },

@@ -156,6 +156,23 @@ struct HomeViewModelTests {
         #expect(!busy.showsFirstRunGuide)
     }
 
+    @Test func firstRunGuideWaitsForTheInitialSync() async {
+        let vm = await makeSUT(vertical: .kirana, sales: [])
+        vm.beginAwaitingInitialSync()
+        #expect(vm.isWaitingForFirstData)
+        #expect(!vm.showsFirstRunGuide)
+        vm.markSyncSettled()
+        #expect(!vm.isWaitingForFirstData)
+        #expect(vm.showsFirstRunGuide)
+    }
+
+    @Test func existingLocalSalesAreShownWhileSyncing() async {
+        let vm = await makeSUT(vertical: .kirana, sales: [bill("1")])
+        vm.beginAwaitingInitialSync()
+        #expect(!vm.isWaitingForFirstData)
+        #expect(!vm.showsFirstRunGuide)
+    }
+
     @Test func trendComparesWithSameDayLastWeek() {
         #expect(HomeViewModel.trendCaption(108, 100) == "+8% vs last week")
         #expect(HomeViewModel.trendCaption(50, 0) == nil)
