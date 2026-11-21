@@ -23,6 +23,10 @@ public final class InvitationsViewModel {
     private let inviteService: MemberInviteServicing
     private let authService: AuthServicing
     private let userRepository: UserRepositoryProtocol
+    /// Account the current `invites` belong to, so a different account never sees them.
+    private var invitesOwnerUid: String?
+    /// Bumped by every refresh and every decision; a lookup that finds it changed discards its result.
+    private var refreshToken = 0
 
     public init(inviteService: MemberInviteServicing, authService: AuthServicing, userRepository: UserRepositoryProtocol) {
         self.inviteService = inviteService
@@ -32,15 +36,28 @@ public final class InvitationsViewModel {
 
     public var count: Int { invites.count }
 
-    /// Only a verified email is matched, so nobody can see invites addressed to an address they don't own.
+    /// Looks up invites for the signed-in account's verified email. This is a client-side filter only: it limits what
+    /// the app asks for, it doesn't stop someone else reading `invites`. Real protection needs Firestore rules.
     public func refresh() async {
         guard let account = authService.currentAccount, account.isEmailVerified,
               let email = account.email, !email.isEmpty else {
             invites = []
+            invitesOwnerUid = nil
             return
         }
-        // A failed lookup keeps the last known list instead of flashing it empty.
-        if let found = try? await inviteService.pendingInvites(forEmail: email) { invites = found }
+        let uid = account.uid
+        refreshToken += 1
+        let token = refreshToken
+        let found = try? await inviteService.pendingInvites(forEmail: email)
+        // The account changed or a decision landed while the lookup was running: its result is stale.
+        guard token == refreshToken, authService.currentAccount?.uid == uid else { return }
+        if let found {
+            invites = found
+            invitesOwnerUid = uid
+        } else if invitesOwnerUid != uid {
+            // A failed lookup keeps the last list, but never one that belongs to another account.
+            invites = []
+        }
     }
 
     func accept(_ invite: MemberInvite) async {
@@ -53,10 +70,12 @@ public final class InvitationsViewModel {
         let name = (user?.name.isEmpty == false ? user?.name : nil) ?? invite.name
         do {
             try await inviteService.accept(invite, account: account, name: name,
-                                           existingOrgs: user?.assignedOrgs ?? [], makeCurrent: !hasCurrentOrg,
-                                           createProfile: user == nil)
-            invites.removeAll { $0.id == invite.id }
+                                           existingOrgs: user?.assignedOrgs ?? [], makeCurrent: !hasCurrentOrg)
+            remove(invite)
             if hasCurrentOrg { acceptedOrganization = OrganizationSnapshot(orgId: invite.orgId, name: invite.orgName) }
+        } catch MemberInviteError.notPending {
+            remove(invite)
+            errorMessage = "This invitation is no longer available."
         } catch {
             errorMessage = "Couldn't join the shop. Check your connection and try again."
         }
@@ -68,14 +87,15 @@ public final class InvitationsViewModel {
         defer { isWorking = false }
         do {
             try await inviteService.decline(invite)
-            invites.removeAll { $0.id == invite.id }
+            remove(invite)
         } catch {
             errorMessage = "Couldn't decline the invite. Try again."
         }
     }
 
-    func switchToAcceptedOrganization() async {
-        guard let organization = acceptedOrganization else { return }
+    /// Switches to a shop the user just joined. The caller passes the organization it read before the alert
+    /// dismissed, because dismissing clears `acceptedOrganization`.
+    func switchTo(_ organization: OrganizationSnapshot) async {
         acceptedOrganization = nil
         do {
             let user = try await userRepository.getCurrentUser()
@@ -83,5 +103,11 @@ public final class InvitationsViewModel {
         } catch {
             errorMessage = "Unable to switch organization."
         }
+    }
+
+    /// Drops a decided invite and invalidates in-flight refreshes that may still contain it.
+    private func remove(_ invite: MemberInvite) {
+        refreshToken += 1
+        invites.removeAll { $0.id == invite.id }
     }
 }

@@ -203,8 +203,10 @@ struct MoreCoordinatorView: View {
         case .organizationDetails:
             OrganizationDetailsView(viewModel: container.modulesContainer.makeOrganizationDetailsViewModel(session: session))
         case .memberAdd:
-            AddMemberView(viewModel: container.modulesContainer.makeAddMemberViewModel(stores: session.stores),
-                          onDone: { coordinator.pop() })
+            // Retained: the form's state lives in the view model, which must survive this view being rebuilt.
+            Retained(container.modulesContainer.makeAddMemberViewModel(stores: session.stores)) { viewModel in
+                AddMemberView(viewModel: viewModel, onDone: { coordinator.pop() })
+            }
         default:
             NotBuiltView(PlaceholderScreen(title(for: .admin(route))))
         }

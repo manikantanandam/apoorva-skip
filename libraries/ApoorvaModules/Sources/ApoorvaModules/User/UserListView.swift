@@ -49,11 +49,21 @@ public struct UserListView: View {
                     .padding(.top, ManiSpacing.sm)
             }
 
+            if viewModel.invitesLoadFailed {
+                HStack {
+                    ManiNote("Couldn't load pending invitations.", kind: .warning)
+                    Button("Retry") { Task { await viewModel.loadInvites() } }
+                        .font(.subheadline.weight(.semibold))
+                }
+                .padding(.horizontal, ManiSpacing.lg)
+                .padding(.top, ManiSpacing.sm)
+            }
+
             if viewModel.isLoading {
                 Spacer()
                 ProgressView()
                 Spacer()
-            } else if viewModel.filteredUsers.isEmpty && viewModel.pendingInvites.isEmpty {
+            } else if viewModel.filteredUsers.isEmpty && viewModel.filteredInvites.isEmpty {
                 Spacer()
                 ManiNote("No team members found. If this organization has existing members, their accounts may need to be re-synced before they appear here.", kind: .warning)
                     .padding(.horizontal, ManiSpacing.lg)
@@ -65,16 +75,16 @@ public struct UserListView: View {
                             avatar: ManiAvatar(initials: initials(for: user.name)),
                             title: user.name,
                             subtitle: user.email,
-                            status: (user.role.displayName, statusKind(for: user.role)),
+                            status: (viewModel.role(of: user).title, statusKind(for: viewModel.role(of: user))),
                             action: user.id == viewModel.currentUserId ? nil : {
                                 activeRoute = .editRole(user)
                             }
                         )
                         .listRowSeparator(.hidden)
                     }
-                    if !viewModel.pendingInvites.isEmpty {
+                    if !viewModel.filteredInvites.isEmpty {
                         Section("Pending invites") {
-                            ForEach(viewModel.pendingInvites) { invite in
+                            ForEach(viewModel.filteredInvites) { invite in
                                 ManiListRow(
                                     avatar: ManiAvatar(initials: initials(for: invite.name)),
                                     title: invite.name,
@@ -121,11 +131,11 @@ public struct UserListView: View {
         return String(trimmed.prefix(1)).uppercased()
     }
 
-    private func statusKind(for role: AppUserRole) -> ManiStatusKind {
+    private func statusKind(for role: OrgRole) -> ManiStatusKind {
         switch role {
-        case .superAdmin, .admin: return .success
+        case .owner: return .success
         case .manager: return .warning
-        case .standard: return .neutral
+        case .cashier, .accountant: return .neutral
         }
     }
 }

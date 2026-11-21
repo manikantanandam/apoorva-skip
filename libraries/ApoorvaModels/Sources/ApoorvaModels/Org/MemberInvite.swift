@@ -52,7 +52,7 @@ public struct MemberInvite: Codable, Sendable, Hashable, Identifiable {
     public var isPending: Bool { status == .pending }
 
     public static func normalize(email: String) -> String {
-        email.trimmingCharacters(in: .whitespaces).lowercased()
+        email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
     /// One invite per org and email, so re-inviting the same address updates it instead of duplicating.
@@ -61,9 +61,11 @@ public struct MemberInvite: Codable, Sendable, Hashable, Identifiable {
     }
 
     public static func isValid(email: String) -> Bool {
-        let parts = normalize(email: email).split(separator: "@", omittingEmptySubsequences: false)
+        let normalized = normalize(email: email)
+        let parts = normalized.split(separator: "@", omittingEmptySubsequences: false)
         guard parts.count == 2, !parts[0].isEmpty, parts[1].contains("."),
               !parts[1].hasPrefix("."), !parts[1].hasSuffix(".") else { return false }
-        return !normalize(email: email).contains(" ")
+        // The email is part of the Firestore document id, which can't contain "/" (or whitespace we'd mangle).
+        return !normalized.contains("/") && normalized.rangeOfCharacter(from: .whitespacesAndNewlines) == nil
     }
 }

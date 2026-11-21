@@ -15,11 +15,19 @@ public protocol MemberInviteServicing: Sendable {
     /// Invites addressed to this email (the invitee's side). Callers pass a verified email only.
     func pendingInvites(forEmail email: String) async throws -> [MemberInvite]
     /// Joins the invite's org: the user's profile gets the org and its `orgMembership` entry, invite marked accepted.
-    /// `makeCurrent` also selects the org (the invitee had none); `createProfile` writes a full `users/{uid}`
-    /// doc, only for accounts that have no profile yet.
+    /// Re-reads the stored invite first and throws `MemberInviteError.notPending` if it was revoked, declined or
+    /// already used (or addressed to another email). `makeCurrent` also selects the org (the invitee had none).
+    /// A full `users/{uid}` doc is written only when none exists in Firestore.
     func accept(_ invite: MemberInvite, account: AuthAccount, name: String,
-                existingOrgs: [OrganizationSnapshot], makeCurrent: Bool, createProfile: Bool) async throws
+                existingOrgs: [OrganizationSnapshot], makeCurrent: Bool) async throws
     func decline(_ invite: MemberInvite) async throws
+    /// Keeps the per-org role in step when an owner edits a member's role (see `AppUser.member(in:)`).
+    func updateMembershipRole(userId: String, orgId: String, role: OrgRole) async throws
+}
+
+public enum MemberInviteError: Error {
+    /// The invite is no longer pending, or isn't addressed to the signed-in account.
+    case notPending
 }
 
 public final class MemberInviteService: MemberInviteServicing, @unchecked Sendable {
@@ -43,20 +51,32 @@ public final class MemberInviteService: MemberInviteServicing, @unchecked Sendab
     }
 
     public func accept(_ invite: MemberInvite, account: AuthAccount, name: String,
-                       existingOrgs: [OrganizationSnapshot], makeCurrent: Bool, createProfile: Bool) async throws {
+                       existingOrgs: [OrganizationSnapshot], makeCurrent: Bool) async throws {
+        // Trust the stored invite, not the caller's copy: it may have been revoked since the list was loaded.
+        guard let document = try await store.getDocument(path: "\(Self.collection)/\(invite.id)"),
+              let stored = try? Firestore.Decoder().decode(MemberInvite.self, from: document.data),
+              stored.isPending,
+              stored.email == MemberInvite.normalize(email: account.email ?? "") else {
+            throw MemberInviteError.notPending
+        }
+        let invite = stored
+        let createProfile = try await store.getDocument(path: "\(String.users)/\(account.uid)") == nil
+
         let now = Date()
         let snapshot = OrganizationSnapshot(orgId: invite.orgId, name: invite.orgName)
-        let orgs = existingOrgs.filter { $0.orgId != invite.orgId } + [snapshot]
         // An existing (possibly legacy) profile only gets the additive org fields; its name, role, createdAt
         // and the rest are never rewritten (docs/12 §9). The role for this org lives in `orgMembership`.
+        // Org lists are unioned, not rewritten, so another device's newer assignments aren't dropped.
         let membership = OrgMembership(role: invite.role, storeIds: invite.storeIds, isActive: true, joinedAt: now)
         var profile: [String: Any] = [
-            "assignedOrgs": try orgs.map { try Firestore.Encoder().encode($0) },
-            "assignedOrgIds": orgs.map(\.orgId),
+            "assignedOrgIds": StoreArrayUnion([invite.orgId]),
             "orgMembership": [invite.orgId: try Firestore.Encoder().encode(membership)],
             "updatedAt": now,
             "updatedTimestamp": now.timeIntervalSince1970
         ]
+        if !existingOrgs.contains(where: { $0.orgId == invite.orgId }) {
+            profile["assignedOrgs"] = StoreArrayUnion([try Firestore.Encoder().encode(snapshot)])
+        }
         if makeCurrent { profile["selectedOrganization"] = try Firestore.Encoder().encode(snapshot) }
         if createProfile {
             let legacyRole: AppUserRole = invite.role == .manager ? .manager : .standard
@@ -74,6 +94,12 @@ public final class MemberInviteService: MemberInviteServicing, @unchecked Sendab
         try await store.updateData(["status": MemberInvite.Status.accepted.rawValue,
                                     "acceptedBy": account.uid, "acceptedAt": now],
                                    path: "\(Self.collection)/\(invite.id)")
+    }
+
+    public func updateMembershipRole(userId: String, orgId: String, role: OrgRole) async throws {
+        try await store.updateData(["orgMembership.\(orgId).role": role.rawValue,
+                                    "updatedTimestamp": Date().timeIntervalSince1970],
+                                   path: "\(String.users)/\(userId)")
     }
 
     public func decline(_ invite: MemberInvite) async throws {

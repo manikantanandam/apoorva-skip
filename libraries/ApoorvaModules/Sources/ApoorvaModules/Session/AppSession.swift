@@ -43,7 +43,9 @@ public final class AppSession {
     public private(set) var orgId: String?
     public private(set) var settings = OrgSettings()
     public private(set) var hasSettingsDoc = false
+    /// Stores the effective member may use (all of them unless their `storeIds` limits it).
     public private(set) var stores: [Store] = []
+    private var allStores: [Store] = []
     public private(set) var currentStoreId: String = Store.defaultId
     public private(set) var member: Member?
     public private(set) var platform = PlatformConfig()
@@ -196,14 +198,11 @@ public final class AppSession {
             settings = loaded
             hasSettingsDoc = true
         }
-        stores = (try? await storeRepository.all())?.sorted { $0.createdAt < $1.createdAt } ?? []
-        // A synced-away store must not stay selected: vertical and flags would keep reading its ID.
-        if !stores.contains(where: { $0.id == currentStoreId }), let fallback = stores.first {
-            selectStore(fallback.id)
-        }
+        allStores = (try? await storeRepository.all())?.sorted { $0.createdAt < $1.createdAt } ?? []
         if let uid = user?.id {
             member = try? await memberRepository.get(id: uid)
         }
+        applyStoreAccess()
         await refreshPlanUsage()
     }
 
@@ -264,6 +263,8 @@ public final class AppSession {
     }
 
     public func selectStore(_ storeId: String) {
+        // Before stores load the default id is allowed; afterwards only a store this member may use.
+        guard stores.isEmpty || stores.contains(where: { $0.id == storeId }) else { return }
         currentStoreId = storeId
         preferences.set(storeId, forKey: storeKey)
     }
@@ -275,7 +276,23 @@ public final class AppSession {
 
     public func actAs(_ member: Member?) {
         actingMember = member
+        applyStoreAccess()
         analyticsService.setUserProperty(role.rawValue, forName: "role")
+    }
+
+    /// Limits `stores` to the effective member's store access (empty `storeIds` or the owner means every store),
+    /// and moves the selection off a store they can't use: a synced-away store must not stay selected either,
+    /// because vertical and flags would keep reading its ID.
+    private func applyStoreAccess() {
+        let effective = actingMember ?? member
+        if let effective, effective.role != .owner, !effective.storeIds.isEmpty {
+            stores = allStores.filter { effective.storeIds.contains($0.id) }
+        } else {
+            stores = allStores
+        }
+        if !stores.contains(where: { $0.id == currentStoreId }), let fallback = stores.first {
+            selectStore(fallback.id)
+        }
     }
 
     private var storeKey: String { "apoorva.store.\(orgId ?? "none")" }
@@ -286,7 +303,7 @@ public final class AppSession {
     public func seed(user: AppUser? = nil, settings: OrgSettings? = nil, stores: [Store]? = nil, member: Member? = nil) {
         if let user { self.user = user; orgId = user.selectedOrganization?.orgId }
         if let settings { self.settings = settings; hasSettingsDoc = true }
-        if let stores { self.stores = stores }
+        if let stores { self.stores = stores; allStores = stores }
         if let member { self.member = member }
     }
 }

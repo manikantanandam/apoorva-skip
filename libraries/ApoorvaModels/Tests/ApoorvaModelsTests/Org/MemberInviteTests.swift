@@ -30,6 +30,13 @@ struct MemberInviteTests {
         #expect(!MemberInvite.isValid(email: "a b@c.co"))
         #expect(!MemberInvite.isValid(email: "a@@b.co"))
         #expect(!MemberInvite.isValid(email: ""))
+        #expect(!MemberInvite.isValid(email: "anu/pos@shop.in"))
+    }
+
+    @Test func pastedNewlinesAreTrimmed() {
+        #expect(MemberInvite.normalize(email: "Anu@Shop.IN\n") == "anu@shop.in")
+        #expect(MemberInvite.isValid(email: "anu@shop.in\n"))
+        #expect(!MemberInvite.isValid(email: "an\nu@shop.in"))
     }
 
     @Test func codableRoundTrip() throws {

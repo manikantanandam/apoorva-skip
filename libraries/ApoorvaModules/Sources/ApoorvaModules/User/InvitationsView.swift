@@ -37,7 +37,12 @@ extension View {
     func invitationSwitchPrompt(_ viewModel: InvitationsViewModel) -> some View {
         alert("Switch shop now?", isPresented: Binding(get: { viewModel.acceptedOrganization != nil },
                                                        set: { if !$0 { viewModel.acceptedOrganization = nil } })) {
-            Button("Switch") { Task { await viewModel.switchToAcceptedOrganization() } }
+            Button("Switch") {
+                // Read the target now: the alert's dismissal clears `acceptedOrganization` before a Task would run.
+                if let organization = viewModel.acceptedOrganization {
+                    Task { await viewModel.switchTo(organization) }
+                }
+            }
             Button("Later", role: .cancel) { viewModel.acceptedOrganization = nil }
         } message: {
             Text("You joined \(viewModel.acceptedOrganization?.name ?? "the shop"). Switching changes the data shown in the app.")

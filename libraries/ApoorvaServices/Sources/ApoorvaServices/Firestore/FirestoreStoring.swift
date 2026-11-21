@@ -76,6 +76,16 @@ private struct SendableListener: @unchecked Sendable {
 }
 
 /// Values with special meaning to the store. Services use these so they don't import Firestore.
+/// Adds elements to an array field on the server without rewriting it, so concurrent writers don't lose each other's
+/// entries. Use as a field value in `setData`/`updateData`.
+public struct StoreArrayUnion: @unchecked Sendable {
+    public let elements: [Any]
+
+    public init(_ elements: [Any]) {
+        self.elements = elements
+    }
+}
+
 public enum StoreSentinel {
     /// Replaced by the server's commit time. Use for sync cursors — client clocks drift.
     public static let serverTimestamp = "__apoorva_server_timestamp__"
@@ -160,6 +170,9 @@ public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable
         data.mapValues { value in
             if let string = value as? String, string == StoreSentinel.serverTimestamp {
                 return FieldValue.serverTimestamp()
+            }
+            if let union = value as? StoreArrayUnion {
+                return FieldValue.arrayUnion(union.elements)
             }
             return value
         }

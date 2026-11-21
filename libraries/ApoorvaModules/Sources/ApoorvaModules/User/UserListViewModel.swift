@@ -20,7 +20,11 @@ public class UserListViewModel {
     var searchText: String = ""
     var isLoading = false
     var errorMessage: String?
+    /// Set when the member list loaded but the pending invitations didn't, so an empty section isn't mistaken for "none".
+    var invitesLoadFailed = false
     var currentUserId: String?
+    /// Organization the list is for, to show each person's role in it.
+    private(set) var organizationId: String?
 
     public init(userRepository: UserRepositoryProtocol, inviteService: MemberInviteServicing? = nil) {
         self.userRepository = userRepository
@@ -35,6 +39,21 @@ public class UserListViewModel {
         }
     }
 
+    /// Pending invitations matching the search text (name or email), like the member list.
+    var filteredInvites: [MemberInvite] {
+        guard !searchText.isEmpty else { return pendingInvites }
+        let query = searchText.lowercased()
+        return pendingInvites.filter {
+            $0.name.lowercased().contains(query) || $0.email.lowercased().contains(query)
+        }
+    }
+
+    /// The person's role in this organization: the per-org entry if there is one, else the legacy role.
+    func role(of user: AppUser) -> OrgRole {
+        guard let organizationId else { return OrgRole(appRole: user.role) }
+        return user.member(in: organizationId).role
+    }
+
     func load() async {
         isLoading = true
         defer { isLoading = false }
@@ -46,11 +65,22 @@ public class UserListViewModel {
                 users = []
                 return
             }
+            organizationId = orgId
             users = try await userRepository.listUsers(orgId: orgId)
-            // Invites are secondary: a failure here shouldn't hide the member list.
-            pendingInvites = (try? await inviteService?.pendingInvites(orgId: orgId)) ?? []
+            await loadInvites()
         } catch {
             errorMessage = "Unable to load team members."
+        }
+    }
+
+    /// Invites are secondary: a failure here keeps the member list and is reported separately, with a retry.
+    func loadInvites() async {
+        guard let organizationId, let inviteService else { return }
+        do {
+            pendingInvites = try await inviteService.pendingInvites(orgId: organizationId)
+            invitesLoadFailed = false
+        } catch {
+            invitesLoadFailed = true
         }
     }
 
@@ -66,8 +96,15 @@ public class UserListViewModel {
     func updateRole(for user: AppUser, role: AppUserRole) async {
         do {
             try await userRepository.updateUserRole(id: user.id, role: role)
+            var membership = user.orgMembership
+            // A per-org role overrides the legacy one, so an edit must update it too or it would have no effect.
+            if let organizationId, membership[organizationId]?.role != nil {
+                let orgRole = OrgRole(appRole: role)
+                try await inviteService?.updateMembershipRole(userId: user.id, orgId: organizationId, role: orgRole)
+                membership[organizationId]?.role = orgRole
+            }
             if let index = users.firstIndex(where: { $0.id == user.id }) {
-                users[index] = user.copyWith(role: role)
+                users[index] = user.copyWith(role: role, orgMembership: membership)
             }
         } catch {
             errorMessage = "Unable to update role."
