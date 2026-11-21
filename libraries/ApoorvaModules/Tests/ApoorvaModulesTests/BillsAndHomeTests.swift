@@ -74,7 +74,6 @@ struct BillEditViewModelTests {
         var edited: Sale?
         func recordEffects(of sale: Sale, by actorId: String) async throws {}
         func cancel(saleId: String, reason: String, by actorId: String) async throws -> Sale { throw SaleLifecycleError.notFound }
-        func undo(saleId: String, by actorId: String, now: Date) async throws -> Sale { throw SaleLifecycleError.notFound }
         func edit(_ edited: Sale, reason: String, by actorId: String) async throws { self.edited = edited }
     }
 

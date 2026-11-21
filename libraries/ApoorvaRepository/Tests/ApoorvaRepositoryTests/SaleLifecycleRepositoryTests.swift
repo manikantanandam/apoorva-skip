@@ -135,18 +135,6 @@ struct SaleLifecycleRepositoryTests {
         }
     }
 
-    @Test func undoOnlyWithinFiveMinutes() async throws {
-        let sut = try makeSUT()
-        let bill = sale(at: Date().addingTimeInterval(-60))
-        try await sut.sales.confirmSale(bill, heldBillId: nil)
-        await #expect(throws: SaleLifecycleError.undoWindowPassed) {
-            try await sut.lifecycle.undo(saleId: "s1", by: "u1", now: Date().addingTimeInterval(10 * 60))
-        }
-        let undone = try await sut.lifecycle.undo(saleId: "s1", by: "u1", now: Date())
-        #expect(undone.cancelReason == "Undo")
-        #expect(sut.audit.box.actions == ["bill.undo"])
-    }
-
     @Test func storeCreditReturnPutsStockBackAndLowersDue() async throws {
         let sut = try makeSUT()
         let bill = sale(qty: 3, credit: 30)

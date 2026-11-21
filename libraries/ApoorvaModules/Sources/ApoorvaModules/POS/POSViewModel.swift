@@ -415,7 +415,7 @@ public class POSViewModel {
         activeHeldBillId = heldBill.id
     }
 
-    /// Rebuilds the cart from a past sale — the "Edit Sale" / undo path.
+    /// Rebuilds the cart from a past sale — the "Edit Sale" path.
     public func load(from sale: Sale) {
         let items = sale.items.map { saleItem in
             CartItem(

@@ -49,7 +49,6 @@ Entry is More → Admin. Screens 41–48 in `/designs`.
 | Day close / reopen | ✓ / ✓ | ✓ / — | — | — |
 | Edit inventory | ✓ | ✓ | — | — |
 | View insights | ✓ | ✓ (own store) | — | ✓ (read-only) |
-| Undo own bill (5 min) | ✓ | ✓ | ✓ | — |
 | Edit saved bill | ✓ | ✓ | — | — |
 | Purchases & supplier payments | ✓ | ✓ | — | — |
 | Expenses | ✓ | ✓ | — | — |

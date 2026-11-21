@@ -9,7 +9,7 @@ import SwiftUI
 import ApoorvaModels
 import ManiSwiftUIComponents
 
-/// Bill saved (design 45): amount, how it was paid, send receipt, and the undo bar (49).
+/// Bill saved (design 45): amount, how it was paid, and send receipt.
 public struct ReceiptView: View {
     @Environment(\.maniTheme) private var theme
     @Environment(\.openURL) private var openURL
@@ -19,18 +19,14 @@ public struct ReceiptView: View {
     private let cameFromCheckout: Bool
     private let onEditSale: (Sale) -> Void
     private let onDone: () -> Void
-    /// Undo within 5 minutes of saving (design 49). Nil hides the bar.
-    private let onUndo: ((Sale) -> Void)?
     private let onNewBill: (() -> Void)?
     private let onPreview: ((Sale) -> Void)?
-    @State private var now = Date()
 
     public init(
         viewModel: ReceiptViewModel,
         cameFromCheckout: Bool,
         onEditSale: @escaping (Sale) -> Void,
         onDone: @escaping () -> Void,
-        onUndo: ((Sale) -> Void)? = nil,
         onNewBill: (() -> Void)? = nil,
         onPreview: ((Sale) -> Void)? = nil
     ) {
@@ -38,13 +34,8 @@ public struct ReceiptView: View {
         self.cameFromCheckout = cameFromCheckout
         self.onEditSale = onEditSale
         self.onDone = onDone
-        self.onUndo = onUndo
         self.onNewBill = onNewBill
         self.onPreview = onPreview
-    }
-
-    private func undoSecondsLeft(for sale: Sale) -> Int {
-        max(0, Int(sale.timestamp.addingTimeInterval(5 * 60).timeIntervalSince(now)))
     }
 
     public var body: some View {
@@ -57,7 +48,6 @@ public struct ReceiptView: View {
                     .background(theme.base.background.ignoresSafeArea())
             }
         }
-        .everySecond { now = $0 }
         .navigationTitle(cameFromCheckout ? "" : "Receipt")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(cameFromCheckout)
@@ -116,17 +106,17 @@ public struct ReceiptView: View {
             }
             if !cameFromCheckout && !sale.isCancelled {
                 ManiButton("Edit bill", icon: .edit, kind: .outline) { onEditSale(sale) }
+                    .accessibilityIdentifier(AccessibilityID.Receipt.editBill)
             }
         } bottom: {
             VStack(spacing: ManiSpacing.sm) {
-                if let onUndo, !sale.isCancelled, undoSecondsLeft(for: sale) > 0 {
-                    let seconds = undoSecondsLeft(for: sale)
-                    ManiUndoBanner(message: "Saved by mistake? \(seconds / 60):\(String(format: "%02d", seconds % 60)) left",
-                                   actionTitle: "Undo bill") { onUndo(sale) }
-                }
                 if cameFromCheckout {
-                    if let onNewBill { ManiButton("New bill", icon: .plus, action: onNewBill) }
+                    if let onNewBill {
+                        ManiButton("New bill", icon: .plus, action: onNewBill)
+                            .accessibilityIdentifier(AccessibilityID.Receipt.newBill)
+                    }
                     ManiButton("Back to home", kind: .outline, action: onDone)
+                        .accessibilityIdentifier(AccessibilityID.Receipt.home)
                 }
             }
         }

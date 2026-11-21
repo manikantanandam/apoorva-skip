@@ -57,7 +57,6 @@ public enum AccessibilityID {
         public static let newBill = "receipt.newBill"
         public static let home = "receipt.home"
         public static let editBill = "receipt.editBill"
-        public static let undo = "receipt.undo"
     }
 
     public enum UPI {

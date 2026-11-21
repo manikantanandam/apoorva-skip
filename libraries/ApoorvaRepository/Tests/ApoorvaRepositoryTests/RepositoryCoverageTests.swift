@@ -441,7 +441,7 @@ struct SaleLifecycleCoverageTests {
     }
 
     @Test func errorsDescribeThemselves() {
-        for error in [SaleLifecycleError.notFound, .alreadyCancelled, .undoWindowPassed] {
+        for error in [SaleLifecycleError.notFound, .alreadyCancelled] {
             #expect(error.errorDescription?.isEmpty == false)
         }
     }
@@ -449,7 +449,6 @@ struct SaleLifecycleCoverageTests {
     @Test func missingSaleFailsEveryOperation() async throws {
         let harness = try makeHarness()
         await #expect(throws: SaleLifecycleError.notFound) { try await harness.lifecycle.cancel(saleId: "x", reason: "r", by: "u") }
-        await #expect(throws: SaleLifecycleError.notFound) { try await harness.lifecycle.undo(saleId: "x", by: "u", now: Date()) }
         await #expect(throws: SaleLifecycleError.notFound) {
             try await harness.lifecycle.edit(self.sale(items: []), reason: "r", by: "u")
         }
@@ -469,17 +468,6 @@ struct SaleLifecycleCoverageTests {
                                                 inventoryRepository: harness.inventory, customerRepository: harness.customers,
                                                 stockMovements: harness.movements, ledger: harness.ledger, audit: harness.audit)
         await #expect(throws: SaleLifecycleError.alreadyCancelled) { try await lifecycle.cancel(saleId: "s1", reason: "r", by: "u") }
-    }
-
-    @Test func undoPastTheWindowIsRefusedAndInsideItIsLoggedAsUndo() async throws {
-        let harness = try makeHarness()
-        let saved = sale(items: [line("pen", qty: 2)], at: Date(timeIntervalSince1970: 1_000))
-        harness.sales.sales["s1"] = saved
-        await #expect(throws: SaleLifecycleError.undoWindowPassed) {
-            try await harness.lifecycle.undo(saleId: "s1", by: "u", now: Date(timeIntervalSince1970: 1_000 + 301))
-        }
-        try await harness.lifecycle.undo(saleId: "s1", by: "u", now: Date(timeIntervalSince1970: 1_100))
-        #expect(harness.audit.box.actions == ["bill.undo"])
     }
 
     @Test func recordEffectsSkipsEmptyLinesAndMissingPhone() async throws {

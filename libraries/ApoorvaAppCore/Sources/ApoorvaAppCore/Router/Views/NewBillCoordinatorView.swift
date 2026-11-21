@@ -266,15 +266,6 @@ struct NewBillCoordinatorView: View {
                         coordinator.popToRoot()
                     },
                     onDone: close,
-                    onUndo: session.can(.undoOwnBill) ? { sale in
-                        Task {
-                            _ = try? await container.repositoryContainer.saleLifecycleRepository.undo(
-                                saleId: sale.id, by: session.actorId, now: Date())
-                            await session.refreshPlanUsage()
-                            posViewModel.load(from: sale)
-                            coordinator.popToRoot()
-                        }
-                    } : nil,
                     onNewBill: { coordinator.popToRoot() },
                     onPreview: { sale in coordinator.push(.receiptPreview(saleId: sale.id)) }
                 )

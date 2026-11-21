@@ -137,7 +137,7 @@ public class RepositoryContainer {
         audit: auditLogger
     )
 
-    /// Keeps a bill's stock, dues and audit trail consistent across save / cancel / undo / edit.
+    /// Keeps a bill's stock, dues and audit trail consistent across save / cancel / edit.
     public lazy var saleLifecycleRepository: SaleLifecycleRepositoryProtocol = SaleLifecycleRepository(
         saleRepository: saleRepository,
         inventoryRepository: inventoryRepository,
