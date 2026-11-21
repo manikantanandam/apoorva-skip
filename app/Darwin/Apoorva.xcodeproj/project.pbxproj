@@ -22,6 +22,7 @@
 		7A0000012F00000100A00008 /* CustomerPickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00008 /* CustomerPickerScreen.swift */; };
 		7A0000012F00000100A00009 /* POSUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00009 /* POSUITests.swift */; };
 		7A0000012F00000100A00010 /* CustomerPickerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00010 /* CustomerPickerUITests.swift */; };
+		7A0000012F00000100A00011 /* KiranaPOSUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00011 /* KiranaPOSUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,6 +79,7 @@
 		7A0000022F00000100A00008 /* CustomerPickerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerPickerScreen.swift; sourceTree = "<group>"; };
 		7A0000022F00000100A00009 /* POSUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = POSUITests.swift; sourceTree = "<group>"; };
 		7A0000022F00000100A00010 /* CustomerPickerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerPickerUITests.swift; sourceTree = "<group>"; };
+		7A0000022F00000100A00011 /* KiranaPOSUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KiranaPOSUITests.swift; sourceTree = "<group>"; };
 		7A0000022F00000100A00005 /* ApoorvaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ApoorvaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -123,6 +125,7 @@
 			children = (
 				7A0000022F00000100A00009 /* POSUITests.swift */,
 				7A0000022F00000100A00010 /* CustomerPickerUITests.swift */,
+				7A0000022F00000100A00011 /* KiranaPOSUITests.swift */,
 			);
 			path = POS;
 			sourceTree = "<group>";
@@ -356,6 +359,7 @@
 				7A0000012F00000100A00008 /* CustomerPickerScreen.swift in Sources */,
 				7A0000012F00000100A00009 /* POSUITests.swift in Sources */,
 				7A0000012F00000100A00010 /* CustomerPickerUITests.swift in Sources */,
+				7A0000012F00000100A00011 /* KiranaPOSUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
