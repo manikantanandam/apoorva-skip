@@ -123,7 +123,7 @@ struct SaleTests {
         #expect(sale.payments.isEmpty)
         
         // Date & Bool Fallbacks
-        #expect(sale.timestamp.timeIntervalSinceNow > -2.0)
+        #expect(sale.timestamp == Date(timeIntervalSince1970: 0))
         #expect(sale.updatedAt?.timeIntervalSinceNow ?? -1.0 > -2.0)
         #expect(sale.isDeleted == false)
     }
