@@ -14,13 +14,16 @@ struct ScreenScroll<Content: View, Bottom: View>: View {
     private let spacing: CGFloat
     private let content: Content
     private let bottom: Bottom
+    /// False when no bar is pinned: an empty `safeAreaInset` would still reserve space under the scroll content.
+    private let hasBottom: Bool
 
     init(spacing: CGFloat = ManiSpacing.lg,
          @ViewBuilder content: () -> Content,
-         @ViewBuilder bottom: () -> Bottom = { EmptyView() }) {
+         @ViewBuilder bottom: () -> Bottom) {
         self.spacing = spacing
         self.content = content()
         self.bottom = bottom()
+        self.hasBottom = true
     }
 
     private var scroll: some View {
@@ -44,8 +47,7 @@ struct ScreenScroll<Content: View, Bottom: View>: View {
         }
         .background(theme.base.background.ignoresSafeArea())
         #else
-        if bottom is EmptyView {
-            // No pinned bar: an empty safeAreaInset still reserves space under the scroll content.
+        if !hasBottom {
             scroll
                 .background(theme.base.background.ignoresSafeArea())
         } else {
@@ -58,6 +60,15 @@ struct ScreenScroll<Content: View, Bottom: View>: View {
                 }
         }
         #endif
+    }
+}
+
+extension ScreenScroll where Bottom == EmptyView {
+    init(spacing: CGFloat = ManiSpacing.lg, @ViewBuilder content: () -> Content) {
+        self.spacing = spacing
+        self.content = content()
+        self.bottom = EmptyView()
+        self.hasBottom = false
     }
 }
 
