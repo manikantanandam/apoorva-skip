@@ -34,8 +34,8 @@ struct ScreenScroll<Content: View, Bottom: View>: View {
     }
 
     var body: some View {
-        #if os(Android)
-        // SkipSwiftUI has no safeAreaInset; stack the bottom bar under the scroll view instead.
+        // Stacked rather than a safeAreaInset: an empty inset left a huge blank scroll area on every screen,
+        // and SkipSwiftUI has no safeAreaInset anyway.
         VStack(spacing: 0) {
             scroll
             bottom
@@ -43,15 +43,6 @@ struct ScreenScroll<Content: View, Bottom: View>: View {
                 .padding(.bottom, ManiSpacing.sm)
         }
         .background(theme.base.background.ignoresSafeArea())
-        #else
-        scroll
-            .background(theme.base.background.ignoresSafeArea())
-            .safeAreaInset(edge: .bottom) {
-                bottom
-                    .padding(.horizontal, ManiSpacing.lg)
-                    .padding(.bottom, ManiSpacing.sm)
-            }
-        #endif
     }
 }
 
