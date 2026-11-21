@@ -34,7 +34,17 @@ public enum CustomerFilter: String, CaseIterable, Sendable {
     case newThisMonth = "New this month"
 }
 
+public enum CustomerSort: String, CaseIterable, Sendable {
+    case recent = "Recent"
+    case highestDue = "Highest due"
+    case topSpenders = "Top spenders"
+    case name = "A–Z"
+}
+
 extension Customer {
+    /// "••1463" style form for shared screens.
+    var maskedPhone: String { phone.count > 4 ? "••\(phone.suffix(4))" : phone }
+
     /// Five or more visits.
     var isRegular: Bool { totalSales >= 5 }
 
@@ -63,6 +73,7 @@ public class CustomerListViewModel {
     var customers: [Customer] = []
     var searchText: String = ""
     public var filter: CustomerFilter = .all
+    public var sort: CustomerSort = .recent
 
     let repository: CustomerRepositoryProtocol
 
@@ -75,15 +86,44 @@ public class CustomerListViewModel {
         var list: [Customer]
         switch filter {
         case .all: list = customers
-        case .withDues: list = customers.filter { $0.dueBalance > 0 }.sorted { $0.dueBalance > $1.dueBalance }
+        case .withDues: list = customers.filter { $0.dueBalance > 0 }
         case .regulars: list = customers.filter(\.isRegular)
         case .newThisMonth: list = customers.filter { Date(timeIntervalSince1970: $0.createdAt) >= startOfMonth }
         }
-        guard !searchText.isEmpty else { return list }
-        let digits = searchText.filter(\.isNumber)
-        return list.filter {
-            $0.name.localizedCaseInsensitiveContains(searchText) || (!digits.isEmpty && $0.phone.contains(digits))
+        if !searchText.isEmpty {
+            let digits = searchText.filter(\.isNumber)
+            list = list.filter {
+                $0.name.localizedCaseInsensitiveContains(searchText) || (!digits.isEmpty && $0.phone.contains(digits))
+            }
         }
+        switch sort {
+        case .recent:
+            // `customers` is already newest-first; "With dues" keeps its biggest-first order.
+            return filter == .withDues ? list.sorted { $0.dueBalance > $1.dueBalance } : list
+        case .highestDue: return list.sorted { $0.dueBalance > $1.dueBalance }
+        case .topSpenders: return list.sorted { $0.totalAmountSpent > $1.totalAmountSpent }
+        case .name: return list.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+        }
+    }
+
+    /// Letter-grouped rows, used only when sorted A–Z.
+    public var alphabeticalSections: [(letter: String, customers: [Customer])] {
+        var sections: [(letter: String, customers: [Customer])] = []
+        for customer in filteredCustomers {
+            let first = String(customer.name.trimmingCharacters(in: .whitespaces).prefix(1)).uppercased()
+            let letter = first.isEmpty || !(first.first?.isLetter ?? false) ? "#" : first
+            if let last = sections.indices.last, sections[last].letter == letter {
+                sections[last].customers.append(customer)
+            } else {
+                sections.append((letter, [customer]))
+            }
+        }
+        return sections
+    }
+
+    /// Jumps to the dues list from the summary header.
+    public func showDues() {
+        filter = .withDues
     }
 
     public var totalDue: Double { customers.reduce(0) { $0 + max(0, $1.dueBalance) } }

@@ -15,6 +15,7 @@ public struct CustomerListView: View {
 
     @Bindable var viewModel: CustomerListViewModel
 
+    @AppStorage("customerList.showFullPhone") private var showFullPhone = true
     @State private var isShowingFormatSheet = false
     @State private var selectedFormat: FileFormat?
     @State private var exportURL: URL?
@@ -38,7 +39,11 @@ public struct CustomerListView: View {
 
     public var body: some View {
         ScreenScroll(spacing: ManiSpacing.md) {
-            ScreenSubtitle(text: viewModel.subtitle)
+            Button { viewModel.showDues() } label: {
+                ScreenSubtitle(text: viewModel.subtitle)
+            }
+            .buttonStyle(.plain)
+            .disabled(viewModel.totalDue <= 0)
             ManiSearchField(text: $viewModel.searchText, placeholder: "Name or phone")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ManiSpacing.sm) {
@@ -54,16 +59,18 @@ public struct CustomerListView: View {
                                actionTitle: viewModel.customers.isEmpty ? "Add customer" : nil,
                                action: viewModel.customers.isEmpty ? onAddCustomer : nil)
             } else {
-                RowsCard {
-                    ForEach(viewModel.filteredCustomers) { item in
-                        ManiListRow(avatar: ManiAvatar(initials: initials(for: item.name)),
-                                    title: item.name,
-                                    subtitle: "\(item.phone) · \(item.lastVisitText)",
-                                    value: item.dueBalance > 0 ? Money.format(item.dueBalance) : "—",
-                                    status: item.dueBalance > 0 ? ("Due", .warning) : nil) { onSelectCustomer(item) }
-                            .contextMenu {
-                                Button("Call") { call(item) }
-                            }
+                if viewModel.sort == .name {
+                    ForEach(viewModel.alphabeticalSections, id: \.letter) { section in
+                        Text(section.letter)
+                            .font(theme.typography.secondary.weight(.semibold))
+                            .foregroundStyle(theme.base.textSecondary)
+                        RowsCard {
+                            ForEach(section.customers) { row($0) }
+                        }
+                    }
+                } else {
+                    RowsCard {
+                        ForEach(viewModel.filteredCustomers) { row($0) }
                     }
                 }
             }
@@ -80,6 +87,10 @@ public struct CustomerListView: View {
                 Menu {
                     if let onImport { Button("Import from contacts", action: onImport) }
                     if let onOffers { Button("Wishes & offers", action: onOffers) }
+                    Picker("Sort by", selection: $viewModel.sort) {
+                        ForEach(CustomerSort.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    }
+                    Button(showFullPhone ? "Show last 4 digits" : "Show full numbers") { showFullPhone.toggle() }
                     Button("Export") { isShowingFormatSheet = true }
                     Button("Sync now") { Task { await viewModel.forceSync() } }
                 } label: {
@@ -111,6 +122,47 @@ public struct CustomerListView: View {
             ShareSheet(activityItems: [url])
                 .presentationDetents([.medium, .large])
         }
+    }
+
+    private func row(_ item: Customer) -> some View {
+        let visits = item.totalSales == 1 ? "1 visit" : "\(item.totalSales) visits"
+        let phone = showFullPhone ? item.phone : item.maskedPhone
+        let detail = item.totalSales > 0 ? "\(visits) · \(item.lastVisitText)" : item.lastVisitText
+        return ManiListRow(avatar: ManiAvatar(initials: initials(for: item.name)),
+                           title: item.name,
+                           subtitle: "\(phone) · \(detail)",
+                           value: item.totalAmountSpent > 0 ? Money.format(item.totalAmountSpent) : "—",
+                           status: badge(for: item)) { onSelectCustomer(item) }
+            .contextMenu {
+                Button("Call") { call(item) }
+                Button("WhatsApp") { whatsApp(item) }
+                Button("Copy number") { copy(item.phone) }
+            }
+    }
+
+    private func badge(for item: Customer) -> (String, ManiStatusKind)? {
+        if item.dueBalance > 0 { return ("\(Money.format(item.dueBalance)) due", .warning) }
+        if item.isRegular { return ("Regular", .success) }
+        if Date(timeIntervalSince1970: item.createdAt) >= (Calendar.current.dateInterval(of: .month, for: Date())?.start ?? Date()) {
+            return ("New", .neutral)
+        }
+        return nil
+    }
+
+    private func copy(_ text: String) {
+        #if !os(Android)
+        UIPasteboard.general.string = text
+        #endif
+    }
+
+    private func whatsApp(_ customer: Customer) {
+        let digits = customer.phone.filter(\.isNumber)
+        guard !digits.isEmpty, let url = URL(string: "https://wa.me/\(digits.count == 10 ? "91" + digits : digits)") else { return }
+        #if os(Android)
+        Task { @MainActor in _ = await UIApplication.shared.open(url) }
+        #else
+        UIApplication.shared.open(url)
+        #endif
     }
 
     private func initials(for name: String) -> String {
