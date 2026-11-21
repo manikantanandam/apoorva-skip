@@ -1,0 +1,50 @@
+name: UI Tests
+
+# Runs the XCUITest target (ApoorvaUITests) on an iOS simulator.
+# - Called by ci.yml on every push to main (UI tests do not run on pull requests).
+# - Run manually from the Actions tab ("Run workflow") to verify the UI tests on any branch without merging;
+#   optionally pass a filter such as LoginUITests or CustomerListUITests/testCustomerList.
+on:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Optional filter: TestClass or TestClass/testMethod (empty runs every UI test)"
+        required: false
+        default: ""
+
+jobs:
+  ui-tests:
+    name: UI Tests
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+
+      - name: Install xcbeautify
+        run: brew install xcbeautify
+
+      # The app target bundles both plists (gitignored), so the build fails without them.
+      - name: Write Firebase Config
+        env:
+          GOOGLE_SERVICE_INFO_PLIST_DEBUG_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_DEBUG_B64 }}
+          GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64 }}
+        run: scripts/setup-firebase-config.sh
+
+      - name: Run UI Tests
+        env:
+          TEST_FILTER: ${{ inputs.test }} # via env so the input is never interpolated into the shell script
+        run: |
+          xcrun simctl list devices available > /dev/null
+          scripts/ui-test.sh $TEST_FILTER
+
+      - name: Upload UI Test Results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-test-results
+          path: ${{ runner.temp }}/apoorva-xc/ApoorvaUITests.*
