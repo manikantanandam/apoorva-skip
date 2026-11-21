@@ -94,6 +94,8 @@ public final class CashDayViewModel {
     /// `dayKey`s of days whose closing balance is saved: a day close from this app, or a legacy daily summary that
     /// has closing balances. The calendar marks these green.
     public private(set) var closedDayKeys: Set<String> = []
+    /// The organization's accounts, so entry rows can name the account they touched.
+    public private(set) var accounts: [Account] = []
 
     private let summaries: DailyCashflowSummaryRepositoryProtocol
     private let saleRepository: SaleRepositoryProtocol
@@ -116,7 +118,8 @@ public final class CashDayViewModel {
         let allSummaries = (try? await summaries.getDailyCashflowSummaries()) ?? []
         // Transfers move money by account id, so the day needs to know which accounts are cash. The fixed legacy
         // cash id stays included for organizations whose accounts use it.
-        let cashAccountIds = Set(await loadAccounts().filter { $0.type == .cash && !$0.isDeleted }.map(\.id))
+        accounts = await loadAccounts().filter { !$0.isDeleted }
+        let cashAccountIds = Set(accounts.filter { $0.type == .cash }.map(\.id))
             .union([CashflowTransaction.PaymentMode.cash.accountId])
         day = CashDay(date: date, summaries: allSummaries,
                       sales: (try? await saleRepository.getSales()) ?? [],

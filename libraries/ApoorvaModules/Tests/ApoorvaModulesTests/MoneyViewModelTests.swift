@@ -513,11 +513,11 @@ struct CashEntryEditTests {
         #expect(money.updatedEntries.first?.subCategory == .water)
     }
 
-    @Test func rowSubtitleShowsTheCategoryPath() {
+    @Test func categoryPathSkipsUnknownAndDuplicateParts() {
         var utility = entry(type: .debit)
         utility.category = .utilities
         utility.subCategory = .rent
-        #expect(utility.rowSubtitle.hasPrefix("Utilities › Rent · Out · "))
+        #expect(utility.categoryPath == "Utilities › Rent")
         var sameName = entry()
         sameName.category = .salesRevenue
         sameName.subCategory = .salesRevenue
@@ -526,7 +526,86 @@ struct CashEntryEditTests {
         unknown.category = .unknown
         unknown.subCategory = .unknown
         #expect(unknown.categoryPath == nil)
-        #expect(unknown.rowSubtitle.hasPrefix("In · "))
+    }
+
+    @Test func rowTitleIsTheSubCategoryWithCategoryAccountTimeAndNoteBelow() {
+        let drawer = Account(id: CashflowTransaction.PaymentMode.cash.accountId, name: "Cash drawer", type: .cash, currentBalance: 0)
+        var rent = entry(type: .debit)
+        rent.category = .utilities
+        rent.subCategory = .rent
+        rent.particulars = "Rent · shop lease"
+        #expect(rent.rowTitle == "Rent")
+        #expect(rent.noteText == "shop lease")
+        let subtitle = rent.rowSubtitle(accounts: [drawer])
+        #expect(subtitle.hasPrefix("Utilities · Cash drawer · "))
+        #expect(subtitle.hasSuffix(" · shop lease"))
+    }
+
+    @Test func theNoteIsOptionalSoNoParticularsAndGeneratedLabelsAreNotShownAsNotes() {
+        var noNote = entry()
+        noNote.category = .inventory
+        noNote.subCategory = .readyStock
+        for text in ["No particulars", "", "  ", "Ready Stock", "Inventory", "Cash in"] {
+            noNote.particulars = text
+            #expect(noNote.noteText == nil)
+        }
+        #expect(!noNote.rowSubtitle(accounts: []).contains("No particulars"))
+        // A legacy free-text description is still shown, under its sub-category.
+        noNote.particulars = "Shop flowers decoration"
+        #expect(noNote.noteText == "Shop flowers decoration")
+        #expect(noNote.rowSubtitle(accounts: []).hasSuffix(" · Shop flowers decoration"))
+    }
+
+    @Test func rowTitleFallsBackToCategoryThenNote() {
+        var onlyCategory = entry()
+        onlyCategory.category = .utilities
+        onlyCategory.subCategory = .unknown
+        #expect(onlyCategory.rowTitle == "Utilities")
+        #expect(!onlyCategory.rowSubtitle(accounts: []).hasPrefix("Utilities ·"))   // not repeated as the category
+        var neither = entry()
+        neither.category = .unknown
+        neither.subCategory = nil
+        neither.particulars = "Float from owner"
+        #expect(neither.rowTitle == "Float from owner")
+        neither.particulars = "No particulars"
+        #expect(neither.rowTitle == "Entry")
+    }
+
+    @Test func accountNameFollowsTheDirectionAndFallsBackToTheMode() {
+        let cash = Account(id: "acc-cash", name: "Cash", type: .cash, currentBalance: 0)
+        let bank = Account(id: "acc-bank", name: "HDFC", type: .bank, currentBalance: 0)
+        var cashIn = entry()
+        cashIn.toAccountId = "acc-bank"
+        // The category is the title here (no sub-category), so the subtitle starts with the account.
+        #expect(cashIn.rowSubtitle(accounts: [cash, bank]).hasPrefix("HDFC · "))
+        var cashOut = entry(type: .debit)
+        cashOut.fromAccountId = "acc-cash"
+        #expect(cashOut.rowSubtitle(accounts: [cash, bank]).hasPrefix("Cash · "))
+        // No ids and no accounts: name the mode.
+        var legacy = entry(mode: .upi)
+        legacy.toAccountId = ""
+        legacy.fromAccountId = ""
+        #expect(legacy.rowSubtitle(accounts: []).hasPrefix("Bank · "))
+        legacy.paymentMode = .cash
+        #expect(legacy.rowSubtitle(accounts: []).hasPrefix("Cash · "))
+    }
+
+    @Test func aTransferRowShowsFromToAndItsNoteOnly() {
+        let cash = Account(id: "acc-cash", name: "Cash", type: .cash, currentBalance: 0)
+        let bank = Account(id: "acc-bank", name: "HDFC", type: .bank, currentBalance: 0)
+        var transfer = entry(type: .debit)
+        transfer.category = .internalTransfer
+        transfer.subCategory = .internalTransfer
+        transfer.fromAccountId = "acc-cash"
+        transfer.toAccountId = "acc-bank"
+        transfer.particulars = "Transfer Cash → HDFC · deposit"
+        #expect(transfer.rowTitle == "Internal Transfer")
+        #expect(transfer.noteText == "deposit")
+        let subtitle = transfer.rowSubtitle(accounts: [cash, bank])
+        #expect(subtitle.hasPrefix("Cash → HDFC · "))
+        #expect(subtitle.hasSuffix(" · deposit"))
+        transfer.particulars = "Transfer Cash → HDFC"
+        #expect(transfer.noteText == nil)
     }
 
     @Test func deleteSoftDeletesTheOriginalEntry() async {

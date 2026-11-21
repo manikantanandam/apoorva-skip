@@ -45,6 +45,11 @@
 - The day list shows a transfer with no +/- sign ("Internal Transfer · time"). Editing a transfer shows its two accounts (no direction or category); one-sided legacy transfers edit like ordinary entries.
 - Not done: bill sales, expenses and the daily summary's opening and closing balances still key off the fixed cash id; a transfer doesn't update `organization.accounts[].currentBalance` (neither do other entries).
 
+## Entry rows on the day screen (2026-11-22)
+- The row title was the particulars, but the notes are optional (and the app writes a generated label into them, legacy entries say "No particulars"). Now: **title = sub-category** (else category, else the note, else "Entry"; "Internal Transfer" for transfers); **subtitle = category · account · time · note**, where the category is dropped if it equals the title and the note is only shown when there is one. The In/Out words are gone (the +/- sign already says it). A transfer's subtitle is "From → To · time · note".
+- The account is the one money went to (cash in) or came from (cash out), by name from the org accounts (`CashDayViewModel.accounts`). Entries without an account id name the account matching their mode, or "Cash"/"Bank" if accounts aren't known.
+- `noteText` strips what this app writes into particulars ("Rent", "Cash in", "Transfer A → B", optionally followed by " · note"), so only the real note shows; any other text (legacy descriptions) is shown as the note.
+
 ## Why
 - Soft delete keeps delta sync and history intact and matches how other screens delete.
 - Writing only the changed fields on delete, and rebuilding accounts only when needed, limits what we rewrite on legacy documents (docs/12 §9).

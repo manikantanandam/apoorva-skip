@@ -78,8 +78,8 @@ public struct CashDayView: View {
                         ManiListRow(title: "Bill sales (cash)", subtitle: "In · auto", value: "+" + Money.format(day.cashSales))
                     }
                     ForEach(day.entries, id: \.id) { entry in
-                        ManiListRow(title: entry.particulars,
-                                    subtitle: entry.rowSubtitle,
+                        ManiListRow(title: entry.rowTitle,
+                                    subtitle: entry.rowSubtitle(accounts: viewModel.accounts),
                                     // A transfer is neither in nor out of the shop, so it carries no sign.
                                     value: (entry.isTransfer ? "" : (entry.transactionType == .credit ? "+" : "−")) + Money.format(entry.amount),
                                     action: viewModel.isClosed ? nil : onEdit.map { edit in { edit(entry) } })
@@ -268,14 +268,58 @@ extension CashflowTransaction {
         return parts.isEmpty ? nil : parts.joined(separator: " › ")
     }
 
-    /// Second line of an entry row: category path, then direction, time and mode.
-    var rowSubtitle: String {
-        if isTransfer { return "\(categoryPath ?? "Internal Transfer") · \(timestamp.timeOnly)" }
-        let direction = transactionType == .credit ? "In" : "Out"
-        let mode = paymentMode == .cash ? "Cash" : "Bank"
-        let detail = "\(direction) · \(timestamp.timeOnly) · \(mode)"
-        guard let categoryPath else { return detail }
-        return "\(categoryPath) · \(detail)"
+    /// Row title: what the money was for (the sub-category), else the category. The notes are optional, so they
+    /// are only the title for an entry that has neither.
+    var rowTitle: String {
+        if isTransfer { return CashflowCategory.internalTransfer.rawValue }
+        if let sub = subCategory, sub != .unknown { return sub.rawValue }
+        if category != .unknown { return category.rawValue }
+        return noteText ?? "Entry"
+    }
+
+    /// The optional note: the particulars without the label this app writes into them ("Rent", "Cash in",
+    /// "Transfer A → B"), and nil for an empty or "No particulars" entry.
+    var noteText: String? {
+        let text = particulars.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, text.lowercased() != "no particulars" else { return nil }
+        if isTransfer, text.hasPrefix("Transfer ") {
+            guard let range = text.range(of: " · ") else { return nil }
+            return String(text[range.upperBound...])
+        }
+        for label in [subCategory?.rawValue, category.rawValue, "Cash in"].compactMap({ $0 }) {
+            if text == label { return nil }
+            if text.hasPrefix(label + " · ") { return String(text.dropFirst(label.count + 3)) }
+        }
+        return text
+    }
+
+    /// Second line of an entry row: category, the account, the time, then the note if there is one. A transfer shows
+    /// "From → To" instead of a category and account.
+    func rowSubtitle(accounts: [Account]) -> String {
+        var parts: [String] = []
+        if isTransfer {
+            let from = accountName(for: fromAccountId, in: accounts) ?? "?"
+            let to = accountName(for: toAccountId, in: accounts) ?? "?"
+            parts.append("\(from) → \(to)")
+        } else {
+            if category != .unknown, category.rawValue != rowTitle { parts.append(category.rawValue) }
+            parts.append(accountLabel(in: accounts))
+        }
+        parts.append(timestamp.timeOnly)
+        if let noteText { parts.append(noteText) }
+        return parts.joined(separator: " · ")
+    }
+
+    private func accountName(for id: String, in accounts: [Account]) -> String? {
+        id.isEmpty ? nil : accounts.first { $0.id == id }?.name
+    }
+
+    /// The account money went to (cash in) or came from (cash out). Older entries have no account id, so they name the
+    /// account matching their payment mode, or "Cash" / "Bank" when the accounts aren't known.
+    private func accountLabel(in accounts: [Account]) -> String {
+        if let name = accountName(for: transactionType == .credit ? toAccountId : fromAccountId, in: accounts) { return name }
+        if paymentMode == .cash { return accounts.first { $0.type == .cash }?.name ?? "Cash" }
+        return (accounts.first { $0.type == .bank } ?? accounts.first { $0.type == .upi })?.name ?? "Bank"
     }
 }
 
