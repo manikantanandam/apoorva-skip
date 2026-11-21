@@ -15,11 +15,9 @@ import ApoorvaModels
 public struct SplashView: View {
     @Environment(\.maniTheme) private var theme
     private let onGetStarted: () -> Void
-    private let onDemo: () -> Void
 
-    public init(onGetStarted: @escaping () -> Void, onDemo: @escaping () -> Void) {
+    public init(onGetStarted: @escaping () -> Void) {
         self.onGetStarted = onGetStarted
-        self.onDemo = onDemo
     }
 
     public var body: some View {
@@ -42,52 +40,10 @@ public struct SplashView: View {
             Spacer()
             ManiButton("Get started", action: onGetStarted)
                 .accessibilityIdentifier(AccessibilityID.Splash.getStarted)
-            ManiButton("See a demo shop", kind: .outline, action: onDemo)
-                .accessibilityIdentifier(AccessibilityID.Splash.demo)
         }
         .padding(ManiSpacing.xl)
         .background(theme.base.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-    }
-}
-
-// MARK: - 02 Demo shop
-
-public struct DemoShopView: View {
-    @State private var selection: Vertical = .fancy
-    private let onTry: (Vertical) -> Void
-    private let onStartOwn: () -> Void
-
-    public init(onTry: @escaping (Vertical) -> Void, onStartOwn: @escaping () -> Void) {
-        self.onTry = onTry
-        self.onStartOwn = onStartOwn
-    }
-
-    public var body: some View {
-        ScreenScroll {
-            ManiEmptyState(icon: .sparkles, title: "See how Apoorva works",
-                           message: "Try a sample shop with items, customers and bills. Nothing you do here is saved.")
-            ManiPickList(options: Vertical.allCases.map {
-                ManiPickOption(value: $0, title: sampleName(for: $0), subtitle: $0.title,
-                               swatch: ThemeStore.swatchColor(for: $0.defaultAccent))
-            }, selection: $selection)
-        } bottom: {
-            VStack(spacing: ManiSpacing.sm) {
-                ManiButton("Try sample shop") { onTry(selection) }
-                    .accessibilityIdentifier(AccessibilityID.DemoShop.trySample)
-                ManiButton("Start my own shop", kind: .outline, action: onStartOwn)
-            }
-        }
-        .navigationTitle("Demo")
-    }
-
-    private func sampleName(for vertical: Vertical) -> String {
-        switch vertical {
-        case .kirana: "Sri Lakshmi Stores"
-        case .fancy: "Glitz Gifts & Fancy"
-        case .jewellery: "Swarna One Gram"
-        case .parlour: "Glow Beauty Parlour"
-        }
     }
 }
 

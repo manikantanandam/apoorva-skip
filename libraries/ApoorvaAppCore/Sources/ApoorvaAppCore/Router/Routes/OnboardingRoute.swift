@@ -2,7 +2,6 @@ import Foundation
 
 enum OnboardingRoute: Hashable, Identifiable {
     case splash
-    case demoShop
     case signInHub
     case otp(phone: String)
     case emailSignIn

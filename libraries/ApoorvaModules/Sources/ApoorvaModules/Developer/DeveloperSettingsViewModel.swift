@@ -18,7 +18,7 @@ public class DeveloperSettingsViewModel {
     private let authService: AuthServicing
     private let environmentStore: EnvironmentStore
     private var tools: DeveloperToolsProtocol
-    private let clearLocalDatabaseAction: () -> Void
+    private let clearLocalDatabaseAction: () async -> Void
     private let terminateAppAction: () -> Void
 
     /// Environment the app was launched with; switching only takes effect after relaunch.
@@ -36,7 +36,7 @@ public class DeveloperSettingsViewModel {
     public init(authService: AuthServicing,
                 environmentStore: EnvironmentStore,
                 tools: DeveloperToolsProtocol,
-                clearLocalDatabase: @escaping () -> Void,
+                clearLocalDatabase: @escaping () async -> Void,
                 terminateApp: @escaping () -> Void) {
         self.authService = authService
         self.environmentStore = environmentStore
@@ -53,13 +53,13 @@ public class DeveloperSettingsViewModel {
     public var canSwitchEnvironment: Bool { pendingEnvironment != activeEnvironment }
 
     /// Signs out, wipes local state for a clean switch, persists the new environment, then kills the app.
-    public func confirmEnvironmentSwitch() {
+    public func confirmEnvironmentSwitch() async {
         logger.info("confirmEnvironmentSwitch: active=\(activeEnvironment) pending=\(pendingEnvironment) canSwitch=\(canSwitchEnvironment)")
         guard canSwitchEnvironment else { return }
         do {
             try authService.logout()
             if activeEnvironment.allowsDestructiveTools {
-                clearLocalDatabaseAction()
+                await clearLocalDatabaseAction()
             }
             if let bundleId = Bundle.main.bundleIdentifier {
                 UserDefaults.standard.removePersistentDomain(forName: bundleId)
@@ -71,8 +71,10 @@ public class DeveloperSettingsViewModel {
         }
     }
 
-    public func clearLocalDatabase() {
+    public func clearLocalDatabase() async {
         guard canClearDatabase else { return }
-        clearLocalDatabaseAction()
+        await clearLocalDatabaseAction()
+        // Restart so in-memory caches (session, view models) don't keep showing the cleared rows.
+        terminateAppAction()
     }
 }

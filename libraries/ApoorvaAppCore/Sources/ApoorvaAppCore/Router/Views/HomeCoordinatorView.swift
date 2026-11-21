@@ -64,9 +64,7 @@ struct HomeCoordinatorView: View {
 
     private func refreshSyncText() async {
         let engine = container.repositoryContainer.syncEngine
-        if session.isDemo {
-            syncText = "Demo"
-        } else if await engine.failedCount > 0 {
+        if await engine.failedCount > 0 {
             syncText = "Offline"
         } else if await engine.lastSuccessfulSync != nil {
             syncText = "Synced"

@@ -182,47 +182,47 @@ struct DeveloperSettingsViewModelCoverageTests {
                                           terminateApp: { counter.terminations += 1 })
     }
 
-    @Test func destructiveToolsFollowTheActiveEnvironment() {
+    @Test func destructiveToolsFollowTheActiveEnvironment() async {
         let counter = Counter()
         let debug = makeSUT(active: .debug, counter: counter)
         #expect(debug.canClearDatabase == AppEnvironment.debug.allowsDestructiveTools)
-        debug.clearLocalDatabase()
+        await debug.clearLocalDatabase()
         #expect(counter.clears == (AppEnvironment.debug.allowsDestructiveTools ? 1 : 0))
 
         let production = makeSUT(active: .production, counter: counter)
         let before = counter.clears
-        production.clearLocalDatabase()
+        await production.clearLocalDatabase()
         #expect(counter.clears == before + (AppEnvironment.production.allowsDestructiveTools ? 1 : 0))
     }
 
-    @Test func switchingDoesNothingUntilADifferentEnvironmentIsPicked() {
+    @Test func switchingDoesNothingUntilADifferentEnvironmentIsPicked() async {
         let auth = ScriptedAuth()
         let counter = Counter()
         let sut = makeSUT(active: .debug, auth: auth, counter: counter)
-        sut.confirmEnvironmentSwitch()
+        await sut.confirmEnvironmentSwitch()
         #expect(auth.logoutCount == 0 && counter.terminations == 0)
     }
 
-    @Test func switchingSignsOutClearsAndTerminates() {
+    @Test func switchingSignsOutClearsAndTerminates() async {
         for active in AppEnvironment.allCases {
             let auth = ScriptedAuth()
             let counter = Counter()
             let sut = makeSUT(active: active, auth: auth, counter: counter)
             sut.pendingEnvironment = AppEnvironment.allCases.first { $0 != active }!
             #expect(sut.canSwitchEnvironment)
-            sut.confirmEnvironmentSwitch()
+            await sut.confirmEnvironmentSwitch()
             #expect(auth.logoutCount == 1 && counter.terminations == 1)
             #expect(counter.clears == (active.allowsDestructiveTools ? 1 : 0))
         }
     }
 
-    @Test func switchingReportsSignOutFailures() {
+    @Test func switchingReportsSignOutFailures() async {
         let auth = ScriptedAuth()
         auth.logoutError = Failure()
         let counter = Counter()
         let sut = makeSUT(active: .debug, auth: auth, counter: counter)
         sut.pendingEnvironment = .production
-        sut.confirmEnvironmentSwitch()
+        await sut.confirmEnvironmentSwitch()
         #expect(sut.errorMessage != nil && counter.terminations == 0)
     }
 }
@@ -344,7 +344,7 @@ struct QuickAddLineViewModelCoverageTests {
 
     @Test func discountModesHaveLabels() {
         #expect(QuickDiscountMode.finalPrice.fieldLabel == "Final price per unit")
-        #expect(QuickDiscountMode.percent.fieldLabel == "Discount %")
+        #expect(QuickDiscountMode.percent.fieldLabel == "Discount % per unit")
         #expect(QuickDiscountMode.amount.fieldLabel == "Discount per unit")
     }
 
