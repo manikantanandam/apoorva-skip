@@ -22,6 +22,8 @@
 		7A0000012F00000100A00008 /* CustomerPickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00008 /* CustomerPickerScreen.swift */; };
 		7A0000012F00000100A00009 /* POSUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00009 /* POSUITests.swift */; };
 		7A0000012F00000100A00010 /* CustomerPickerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00010 /* CustomerPickerUITests.swift */; };
+		7A0000012F00000100A00012 /* CustomerListUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00012 /* CustomerListUITests.swift */; };
+		7A0000012F00000100A00013 /* CustomerListScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00013 /* CustomerListScreen.swift */; };
 		7A0000012F00000100A00011 /* KiranaPOSUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A0000022F00000100A00011 /* KiranaPOSUITests.swift */; };
 /* End PBXBuildFile section */
 
@@ -79,6 +81,8 @@
 		7A0000022F00000100A00008 /* CustomerPickerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerPickerScreen.swift; sourceTree = "<group>"; };
 		7A0000022F00000100A00009 /* POSUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = POSUITests.swift; sourceTree = "<group>"; };
 		7A0000022F00000100A00010 /* CustomerPickerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerPickerUITests.swift; sourceTree = "<group>"; };
+		7A0000022F00000100A00012 /* CustomerListUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerListUITests.swift; sourceTree = "<group>"; };
+		7A0000022F00000100A00013 /* CustomerListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerListScreen.swift; sourceTree = "<group>"; };
 		7A0000022F00000100A00011 /* KiranaPOSUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KiranaPOSUITests.swift; sourceTree = "<group>"; };
 		7A0000022F00000100A00005 /* ApoorvaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ApoorvaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -106,10 +110,19 @@
 			isa = PBXGroup;
 			children = (
 				7A0000052F00000100A00002 /* Login */,
+				7A0000052F00000100A00006 /* Customers */,
 				7A0000052F00000100A00005 /* POS */,
 				7A0000052F00000100A00003 /* Support */,
 			);
 			path = UITests;
+			sourceTree = "<group>";
+		};
+		7A0000052F00000100A00006 /* Customers */ = {
+			isa = PBXGroup;
+			children = (
+				7A0000022F00000100A00012 /* CustomerListUITests.swift */,
+			);
+			path = Customers;
 			sourceTree = "<group>";
 		};
 		7A0000052F00000100A00002 /* Login */ = {
@@ -147,6 +160,7 @@
 				7A0000022F00000100A00006 /* HomeScreen.swift */,
 				7A0000022F00000100A00007 /* POSScreen.swift */,
 				7A0000022F00000100A00008 /* CustomerPickerScreen.swift */,
+				7A0000022F00000100A00013 /* CustomerListScreen.swift */,
 			);
 			path = Screens;
 			sourceTree = "<group>";
@@ -359,6 +373,8 @@
 				7A0000012F00000100A00008 /* CustomerPickerScreen.swift in Sources */,
 				7A0000012F00000100A00009 /* POSUITests.swift in Sources */,
 				7A0000012F00000100A00010 /* CustomerPickerUITests.swift in Sources */,
+				7A0000012F00000100A00012 /* CustomerListUITests.swift in Sources */,
+				7A0000012F00000100A00013 /* CustomerListScreen.swift in Sources */,
 				7A0000012F00000100A00011 /* KiranaPOSUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

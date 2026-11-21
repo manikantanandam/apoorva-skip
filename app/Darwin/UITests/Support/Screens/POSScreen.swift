@@ -67,7 +67,8 @@ struct POSScreen {
         XCTAssertTrue(receiptHome.waitForExistence(timeout: 15), "Receipt did not appear after collecting")
     }
 
-    func paymentMode(_ name: String) -> XCUIElement { app.buttons[AccessibilityID.Checkout.mode(name)] }
+    /// The app builds the id from the mode's raw value, which is lowercase ("cash", "upi", ...).
+    func paymentMode(_ name: String) -> XCUIElement { app.buttons[AccessibilityID.Checkout.mode(name.lowercased())] }
     var creditNote: XCUIElement { app.descendants(matching: .any)[AccessibilityID.Checkout.creditNote] }
     var changeDue: XCUIElement { app.descendants(matching: .any)[AccessibilityID.Checkout.changeDue] }
 
@@ -78,7 +79,11 @@ struct POSScreen {
 
     func openMenu(_ entry: String) {
         moreMenu.tap()
-        app.buttons[entry].tap()
+        let item = app.buttons[entry]
+        // A tap right after a sheet closes can be swallowed, so retry once before failing.
+        if !item.waitForExistence(timeout: 2) { moreMenu.tap() }
+        XCTAssertTrue(item.waitForExistence(timeout: 5), "\(entry) missing from the More menu")
+        item.tap()
     }
 
     /// Tap a quick tile, then confirm the add-line sheet with its defaults.

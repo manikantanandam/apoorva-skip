@@ -3,6 +3,9 @@ import Observation
 import ApoorvaModels
 import ApoorvaServices
 import ApoorvaModules
+import ManiLogger
+
+private let logger = AppLogger(category: .app)
 
 @MainActor
 @Observable
@@ -29,6 +32,11 @@ public final class AppCoordinator {
     public init(appContainer: AppContainer = AppContainer()) {
         self.appContainer = appContainer
         Task { await observeSession() }
+        #if DEBUG
+        if let vertical = UITestingConfig.seedVerticalName {
+            Task { await UITestSeeder(container: appContainer).run(verticalName: vertical) }
+        }
+        #endif
         Task { await observePlatform() }
         appContainer.onConfigChanged = { [weak self] in Task { await self?.recompute() } }
         Task { await fetchRemoteConfig() }
@@ -65,6 +73,10 @@ public final class AppCoordinator {
     /// Re-derives the phase. Coordinators are only rebuilt when the phase key changes, so a
     /// profile update or a platform config change doesn't reset the user's navigation.
     func recompute() async {
+        #if DEBUG
+        // Seeded UI-test launch: stay on the loading state until the seeder publishes the owner, instead of flashing the signed-out Splash.
+        if UITestingConfig.isSeedEnabled && snapshot.account == nil { return }
+        #endif
         // Each await below can let a newer recompute start. Only the latest one may touch the session or the phase.
         recomputeGeneration += 1
         let generation = recomputeGeneration
@@ -104,6 +116,7 @@ public final class AppCoordinator {
         )
         guard generation == recomputeGeneration else { return }
         appContainer.themeStore.apply(session: session)
+        logger.debug("recompute -> \(newPhase.key)")
         apply(newPhase)
     }
 

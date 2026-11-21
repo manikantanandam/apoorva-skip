@@ -23,7 +23,7 @@ if ! command -v xcbeautify >/dev/null 2>&1; then
 fi
 
 args=(-workspace "$ROOT/app/Project.xcworkspace" -scheme "Apoorva App" -destination "$DESTINATION"
-      -skipPackagePluginValidation -skipMacroValidation -resultBundlePath "$xcresult")
+      -skipPackagePluginValidation -skipMacroValidation -allowProvisioningUpdates -resultBundlePath "$xcresult")
 if [ $# -ge 1 ]; then
   args+=(-only-testing:"ApoorvaUITests/$1")
 else

@@ -21,7 +21,6 @@ jobs:
       pull-requests: write # Delete stale bot comments
     outputs:
       modules: ${{ steps.set-modules.outputs.modules }}
-      run_ui: ${{ steps.ui-paths.outputs.run_ui }}
     steps:
       - name: Remove Stale Coverage and Sonar Comments
         if: github.event_name == 'pull_request'
@@ -57,23 +56,6 @@ jobs:
           JSON=$(scripts/changed-modules.sh "$BASE" "$HEAD")
           echo "Affected modules: $JSON"
           echo "modules=$JSON" >> $GITHUB_OUTPUT
-
-      - name: Decide Whether UI Tests Are Needed
-        id: ui-paths
-        run: |
-          # Pushes to main always run UI tests; PRs only when app code, libraries,
-          # ci.yml or the scripts the UI job runs changed (not Android workflows, docs, designs, .claude).
-          RUN=true
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            if git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" \
-                | grep -Eq '^(app|libraries)/|^\.github/workflows/ci\.yml$|^scripts/(ui-test|setup-firebase-config|build)\.sh$'; then
-              RUN=true
-            else
-              RUN=false
-            fi
-          fi
-          echo "Run UI tests: $RUN"
-          echo "run_ui=$RUN" >> $GITHUB_OUTPUT
 
   build-and-test:
     name: Test ${{ matrix.module }}
@@ -217,40 +199,13 @@ jobs:
         run: |
           gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/comments" -F body=@coverage-comment.md
 
+  # UI tests run only when a change lands on main, not on pull requests.
+  # To verify them on a branch first, run the "UI Tests" workflow manually (ui-tests.yml).
   ui-tests:
     name: UI Tests
-    needs: detect-modules
-    if: needs.detect-modules.outputs.run_ui == 'true'
-    runs-on: macos-15
-    timeout-minutes: 45
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up Xcode Version
-        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
-
-      - name: Install xcbeautify
-        run: brew install xcbeautify
-
-      # The app target bundles both plists (gitignored), so the build fails without them.
-      - name: Write Firebase Config
-        env:
-          GOOGLE_SERVICE_INFO_PLIST_DEBUG_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_DEBUG_B64 }}
-          GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_PRODUCTION_B64 }}
-        run: scripts/setup-firebase-config.sh
-
-      - name: Run UI Tests
-        run: |
-          xcrun simctl list devices available > /dev/null
-          scripts/ui-test.sh
-
-      - name: Upload UI Test Results
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ui-test-results
-          path: ${{ runner.temp }}/apoorva-xc/ApoorvaUITests.*
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/ui-tests.yml
+    secrets: inherit
 
   sonarcloud-analysis:
     name: SonarCloud Scan
