@@ -19,7 +19,7 @@ let package = Package(
         .package(path: "../ApoorvaOfflineStorage"),
         .package(path: "../ApoorvaServices"),
         .package(path: "../ApoorvaModels"),
-        .package(path: "../../../Libraries/ManiLogger"),  // TEMPORARY: restore exact pin after release
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", branch: "feature/android-support"),  // TEMPORARY: restore exact pin after release
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
