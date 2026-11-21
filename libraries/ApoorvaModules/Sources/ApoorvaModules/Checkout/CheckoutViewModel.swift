@@ -10,36 +10,19 @@ import ApoorvaModels
 import ApoorvaRepository
 import ApoorvaServices
 
-public enum CheckoutMode: String, CaseIterable, Sendable {
-    case cash = "Cash", upi = "UPI", card = "Card", credit = "Credit", split = "Split"
-
-    var paymentMode: PaymentMode? {
-        switch self {
-        case .cash: .cash
-        case .upi: .upi
-        case .card: .card
-        case .credit: .credit
-        case .split: nil
-        }
-    }
-}
-
-/// Checkout (design 42), split payment (43) and UPI (44) share this state.
+/// Checkout (design 42) and UPI (44) share this state.
 @MainActor
 @Observable
 public class CheckoutViewModel {
 
-    /// Mutable so checkout can change the customer without losing the chosen payment mode.
+    /// Mutable so checkout can change the customer without losing the entered payment amounts.
     public var cart: PosCart
     public let heldBillId: String?
 
-    public var mode: CheckoutMode = .cash
-    /// Cash handed over, to work out change (optional).
-    public var cashReceivedText = ""
-    /// Split amounts by mode (design 43).
-    public var splitAmounts: [PaymentMode: Double] = [:]
-    public var splitEntryMode: PaymentMode = .cash
-    public var splitEntryText = ""
+    /// Amount typed against each payment mode. All empty means the whole bill is paid in cash.
+    public var amountTexts: [PaymentMode: String] = [:]
+    /// Chip whose amount box is showing; switching it keeps what was typed for the others.
+    public var selectedMode: PaymentMode = .cash
     public var roundOffEnabled: Bool
     public var isProcessing: Bool = false
     public var errorMessage: String?
@@ -92,76 +75,62 @@ public class CheckoutViewModel {
 
     public var finalTotal: Double { max(subtotal - overallDiscountAmount - roundOff, 0) }
 
-    public var enabledModes: [CheckoutMode] {
+    public var enabledModes: [PaymentMode] {
         let allowed = Set(session?.settings.payments.enabledModes ?? PaymentMode.allCases.map(\.rawValue))
-        var modes = CheckoutMode.allCases.filter { mode in
-            guard let payment = mode.paymentMode else { return true }
-            return allowed.contains(payment.rawValue)
-        }
-        if session?.isOn(.splitPayment) == false { modes.removeAll { $0 == .split } }
+        var modes = [PaymentMode.cash, .upi, .card, .credit].filter { allowed.contains($0.rawValue) }
         if session?.isOn(.creditSales) == false || session?.can(.creditSales) == false { modes.removeAll { $0 == .credit } }
         return modes
     }
 
-    /// Credit needs a customer to owe the money.
-    public var creditNeedsCustomer: Bool {
-        (mode == .credit || (splitAmounts[.credit] ?? 0) > 0) && (cart.customerPhone ?? "").isEmpty
+    // MARK: - Payment amounts
+
+    /// Positive amounts typed per mode.
+    private var enteredAmounts: [PaymentMode: Double] {
+        amountTexts.compactMapValues { text in Double(text).flatMap { $0 > 0 ? $0 : nil } }
     }
 
-    public var cashReceived: Double? {
-        mode == .cash ? Double(cashReceivedText) : nil
-    }
+    /// Cash typed in the cash box, to work out change; nil when nothing was typed.
+    public var cashReceived: Double? { enteredAmounts[.cash] }
 
-    public var changeDue: Double {
-        guard mode == .cash, let received = Double(cashReceivedText) else { return 0 }
-        return max(0, received - finalTotal)
-    }
-
-    // MARK: - Split
-
-    public var splitPaid: Double { splitAmounts.values.reduce(0, +) }
-    public var splitRemaining: Double { max(0, finalTotal - splitPaid) }
-
-    public func splitKey(_ key: String) {
-        switch key {
-        case "⌫": splitEntryText = String(splitEntryText.dropLast())
-        case ".": if !splitEntryText.contains(".") { splitEntryText += "." }
-        default: if splitEntryText.count < 8 { splitEntryText += key }
-        }
-    }
-
-    /// Records the typed amount (or the remainder, if nothing typed) against the current mode.
-    public func confirmSplitEntry() {
-        let amount = Double(splitEntryText) ?? splitRemaining
-        guard amount > 0 else { return }
-        splitAmounts[splitEntryMode] = (splitAmounts[splitEntryMode] ?? 0) + min(amount, splitRemaining)
-        splitEntryText = ""
-        if let next = [PaymentMode.cash, .upi, .card, .credit].first(where: { splitAmounts[$0] == nil }) {
-            splitEntryMode = next
-        }
-    }
-
-    public func clearSplit(_ mode: PaymentMode) {
-        splitAmounts[mode] = nil
-    }
-
-    // MARK: - Settlement
-
+    /// What is actually recorded per mode. Nothing typed = the whole bill in cash. Cash typed above
+    /// what the other modes leave to pay is treated as tendered cash, so only the due part is recorded.
     public var payments: [PaymentMode: Double] {
-        if mode == .split { return splitAmounts.filter { $0.value > 0 } }
-        return [mode.paymentMode ?? .cash: finalTotal]
+        let entered = enteredAmounts
+        if entered.isEmpty { return [.cash: finalTotal] }
+        var result = entered
+        if let cash = entered[.cash] {
+            let others = entered.filter { $0.key != .cash }.values.reduce(0, +)
+            if others < finalTotal { result[.cash] = min(cash, finalTotal - others) }
+        }
+        return result
     }
 
     public var activeModes: [PaymentMode] { Array(payments.keys) }
 
-    public var isSettled: Bool {
-        if creditNeedsCustomer { return false }
-        if mode == .split { return abs(splitRemaining) < 0.5 && !splitAmounts.isEmpty }
-        return true
+    public var paid: Double { payments.values.reduce(0, +) }
+    public var remaining: Double { max(0, finalTotal - paid) }
+    /// Typed amounts add up to more than the bill (cash over-tender is not counted).
+    public var overpaid: Double { max(0, paid - finalTotal) }
+
+    public var changeDue: Double {
+        guard let cash = cashReceived else { return 0 }
+        return max(0, cash - (payments[.cash] ?? 0))
     }
 
-    /// UPI alone goes through the QR screen first.
-    public var requiresUPIConfirmation: Bool { mode == .upi }
+    /// Credit needs a customer to owe the money.
+    public var creditNeedsCustomer: Bool {
+        (payments[.credit] ?? 0) > 0 && (cart.customerPhone ?? "").isEmpty
+    }
+
+    public var isSettled: Bool {
+        !creditNeedsCustomer && abs(paid - finalTotal) < 0.5
+    }
+
+    /// Any UPI amount goes through the QR screen first.
+    public var requiresUPIConfirmation: Bool { upiAmount > 0 }
+
+    /// The UPI part of the bill, shown on the QR screen.
+    public var upiAmount: Double { payments[.upi] ?? 0 }
 
     public var upiId: String { session?.settings.payments.upiId ?? "" }
     public var payeeName: String { session?.displayShopName ?? "Apoorva" }
@@ -207,7 +176,7 @@ public class CheckoutViewModel {
                 try? await lifecycle?.recordEffects(of: sale, by: staffId)
             }
             await session?.refreshPlanUsage()
-            analyticsService.log(.billSaved(itemCount: sale.items.count, mode: mode.rawValue))
+            analyticsService.log(.billSaved(itemCount: sale.items.count, mode: activeModes.map(\.title).sorted().joined(separator: "+")))
             return sale
         } catch {
             errorMessage = "Couldn't confirm this sale. Please try again."

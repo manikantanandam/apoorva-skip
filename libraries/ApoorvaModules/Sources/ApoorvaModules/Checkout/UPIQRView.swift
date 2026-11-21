@@ -38,7 +38,7 @@ public struct UPIQRView: View {
                 ManiCard {
                     VStack(spacing: ManiSpacing.md) {
                         UPIQRCode(link: UPILink.pay(upiId: viewModel.upiId, payee: viewModel.payeeName,
-                                                    amount: viewModel.finalTotal, note: "Bill"))
+                                                    amount: viewModel.upiAmount, note: "Bill"))
                             .frame(width: 220, height: 220)
                         Text(viewModel.upiId)
                             .font(theme.typography.secondary)
@@ -47,7 +47,7 @@ public struct UPIQRView: View {
                     .frame(maxWidth: .infinity)
                 }
             }
-            ManiHeroAmount(Money.format(viewModel.finalTotal), caption: "Scan with any UPI app")
+            ManiHeroAmount(Money.format(viewModel.upiAmount), caption: "Scan with any UPI app")
             FlowLayout {
                 ForEach(["GPay", "PhonePe", "Paytm", "BHIM"], id: \.self) { app in
                     ManiStatusBadge(app, kind: .neutral)
@@ -61,7 +61,9 @@ public struct UPIQRView: View {
                 ManiButton("Mark as received", isLoading: viewModel.isProcessing) {
                     Task { if let sale = await viewModel.confirmSale() { onConfirmed(sale) } }
                 }
+                .accessibilityIdentifier(AccessibilityID.UPI.markReceived)
                 ManiButton("Change mode", kind: .outline, action: onChangeMode)
+                    .accessibilityIdentifier(AccessibilityID.UPI.changeMode)
             }
         }
         .navigationTitle("Pay by UPI")

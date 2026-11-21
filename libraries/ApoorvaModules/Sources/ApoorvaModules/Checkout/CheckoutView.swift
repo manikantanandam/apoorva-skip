@@ -9,13 +9,13 @@ import SwiftUI
 import ApoorvaModels
 import ManiSwiftUIComponents
 
-/// Checkout (design 42): customer, totals, payment mode.
+/// Checkout (design 42): customer, totals, and an amount box per payment mode (several = split).
 public struct CheckoutView: View {
     @Environment(\.maniTheme) private var theme
     @Bindable private var viewModel: CheckoutViewModel
+    @State private var isAmountFocused = false
     private let customerSubtitle: String?
     private let onChangeCustomer: () -> Void
-    private let onSplit: () -> Void
     private let onRequireUPIConfirmation: () -> Void
     private let onHold: (() -> Void)?
     private let onConfirmed: (Sale) -> Void
@@ -24,7 +24,6 @@ public struct CheckoutView: View {
         viewModel: CheckoutViewModel,
         customerSubtitle: String? = nil,
         onChangeCustomer: @escaping () -> Void = {},
-        onSplit: @escaping () -> Void = {},
         onRequireUPIConfirmation: @escaping () -> Void,
         onHold: (() -> Void)? = nil,
         onConfirmed: @escaping (Sale) -> Void
@@ -32,7 +31,6 @@ public struct CheckoutView: View {
         self.viewModel = viewModel
         self.customerSubtitle = customerSubtitle
         self.onChangeCustomer = onChangeCustomer
-        self.onSplit = onSplit
         self.onRequireUPIConfirmation = onRequireUPIConfirmation
         self.onHold = onHold
         self.onConfirmed = onConfirmed
@@ -47,9 +45,27 @@ public struct CheckoutView: View {
         if viewModel.overallDiscountAmount > 0 {
             rows.append(ManiKeyValue("Discount", "−" + Money.format(viewModel.overallDiscountAmount)))
         }
-        rows.append(ManiKeyValue("Round off", String(format: "₹%.2f", -viewModel.roundOff)))
+        if abs(viewModel.roundOff) >= 0.005 {
+            rows.append(ManiKeyValue("Round off", String(format: "₹%.2f", -viewModel.roundOff)))
+        }
         rows.append(ManiKeyValue("Total", Money.format(viewModel.finalTotal)))
         return rows
+    }
+
+    /// Mode whose amount box is showing; falls back to the first enabled mode if the chosen one was switched off.
+    private var activeMode: PaymentMode {
+        viewModel.enabledModes.contains(viewModel.selectedMode) ? viewModel.selectedMode : (viewModel.enabledModes.first ?? .cash)
+    }
+
+    /// Chip title carries the amount already entered for that mode, so switching chips never hides it.
+    private func chipTitle(_ mode: PaymentMode) -> String {
+        guard let text = viewModel.amountTexts[mode], let amount = Double(text), amount > 0 else { return mode.title }
+        return "\(mode.title) · \(Money.format(amount))"
+    }
+
+    private var amountPlaceholder: String {
+        let nothingEntered = viewModel.amountTexts.values.allSatisfy { (Double($0) ?? 0) <= 0 }
+        return Money.format(nothingEntered ? viewModel.finalTotal : viewModel.remaining)
     }
 
     public var body: some View {
@@ -60,6 +76,7 @@ public struct CheckoutView: View {
                             subtitle: customerSubtitle ?? (viewModel.cart.customerPhone ?? "Tap to attach a customer"),
                             value: "Change",
                             action: onChangeCustomer)
+                    .accessibilityIdentifier(AccessibilityID.Checkout.customerRow)
             }
 
             ManiKeyValueSummary(rows: summaryRows)
@@ -67,38 +84,46 @@ public struct CheckoutView: View {
             SectionHeader(title: "Payment")
             FlowLayout {
                 ForEach(viewModel.enabledModes, id: \.self) { mode in
-                    ManiChip(mode.rawValue, isSelected: viewModel.mode == mode) {
-                        viewModel.mode = mode
-                        if mode == .split { onSplit() }
+                    ManiChip(chipTitle(mode), isSelected: activeMode == mode) {
+                        viewModel.selectedMode = mode
                     }
+                    .accessibilityIdentifier(AccessibilityID.Checkout.mode(mode.rawValue))
                 }
             }
+            ManiInputField(label: "\(activeMode.title) amount", text: amountBinding(activeMode),
+                           placeholder: amountPlaceholder, keyboard: .default,
+                           focus: $isAmountFocused, submitKind: .done,
+                           onSubmit: { isAmountFocused = false })
+                .accessibilityIdentifier(AccessibilityID.Checkout.cashReceived)
 
-            if viewModel.mode == .cash {
-                ManiInputField(label: "Cash received (optional)", text: $viewModel.cashReceivedText,
-                               placeholder: Money.format(viewModel.finalTotal), keyboard: .decimal)
+            VStack(spacing: ManiSpacing.sm) {
+                ManiBreakdownRow(label: "Paid", value: Money.format(viewModel.paid))
+                ManiBreakdownRow(label: viewModel.overpaid > 0 ? "Over by" : "Pending",
+                                 value: Money.format(viewModel.overpaid > 0 ? viewModel.overpaid : viewModel.remaining),
+                                 emphasis: .total)
                 if viewModel.changeDue > 0 {
-                    ManiBreakdownRow(label: "Change to return", value: Money.format(viewModel.changeDue), emphasis: .total)
+                    ManiBreakdownRow(label: "Change to return", value: Money.format(viewModel.changeDue))
+                        .accessibilityIdentifier(AccessibilityID.Checkout.changeDue)
                 }
-            }
-            if viewModel.mode == .split {
-                ManiNote("Split: \(Money.format(viewModel.splitPaid)) entered, \(Money.format(viewModel.splitRemaining)) left.",
-                         kind: .info)
             }
             if viewModel.creditNeedsCustomer {
                 ManiNote("Credit needs a customer, so the due lands on their account.", kind: .warning)
+                    .accessibilityIdentifier(AccessibilityID.Checkout.creditNote)
             }
             if let errorMessage = viewModel.errorMessage {
                 ManiNote(errorMessage, kind: .error)
+                    .accessibilityIdentifier(AccessibilityID.Checkout.error)
             }
         } bottom: {
             VStack(spacing: ManiSpacing.sm) {
-                ManiButton(viewModel.mode == .split && !viewModel.isSettled ? "Finish split" : "Collect \(Money.format(viewModel.finalTotal))",
+                ManiButton("Collect \(Money.format(viewModel.finalTotal))",
                            isLoading: viewModel.isProcessing,
-                           isEnabled: !viewModel.creditNeedsCustomer,
+                           isEnabled: viewModel.isSettled,
                            action: handleConfirmTapped)
+                    .accessibilityIdentifier(AccessibilityID.Checkout.collect)
                 if let onHold {
                     ManiButton("Hold bill", kind: .outline, action: onHold)
+                        .accessibilityIdentifier(AccessibilityID.Checkout.hold)
                 }
             }
         }
@@ -106,11 +131,12 @@ public struct CheckoutView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    private func amountBinding(_ mode: PaymentMode) -> Binding<String> {
+        Binding(get: { viewModel.amountTexts[mode] ?? "" },
+                set: { viewModel.amountTexts[mode] = $0 })
+    }
+
     private func handleConfirmTapped() {
-        if viewModel.mode == .split && !viewModel.isSettled {
-            onSplit()
-            return
-        }
         if viewModel.requiresUPIConfirmation {
             onRequireUPIConfirmation()
             return
@@ -120,72 +146,6 @@ public struct CheckoutView: View {
                 onConfirmed(sale)
             }
         }
-    }
-}
-
-/// Split payment across modes (design 43).
-public struct SplitPaymentView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: CheckoutViewModel
-    private let onConfirmed: (Sale) -> Void
-
-    public init(viewModel: CheckoutViewModel, onConfirmed: @escaping (Sale) -> Void) {
-        self.viewModel = viewModel
-        self.onConfirmed = onConfirmed
-    }
-
-    private let modes: [PaymentMode] = [.cash, .upi, .card, .credit]
-
-    public var body: some View {
-        ScreenScroll {
-            ScreenSubtitle(text: "Total \(Money.format(viewModel.finalTotal))")
-            if viewModel.splitPaid > 0 {
-                ManiSplitBarCard(title: "Split", caption: nil,
-                                 segments: modes.compactMap { mode in
-                                     viewModel.splitAmounts[mode].map { ManiSplitSegment(mode.title, $0) }
-                                 })
-            }
-            RowsCard {
-                ForEach(modes.filter { viewModel.splitAmounts[$0] != nil }, id: \.self) { mode in
-                    ManiListRow(title: mode.title, subtitle: "Tap to clear",
-                                value: Money.format(viewModel.splitAmounts[mode] ?? 0),
-                                status: ("Paid", .success)) { viewModel.clearSplit(mode) }
-                }
-                ManiListRow(title: viewModel.splitEntryMode.title, subtitle: "Remaining",
-                            value: Money.format(viewModel.splitRemaining), status: ("Pending", .warning))
-            }
-            ManiSegmentedControl(selection: $viewModel.splitEntryMode,
-                                 options: modes.map { ($0, $0.title) })
-            ManiHeroAmount(viewModel.splitEntryText.isEmpty ? Money.format(viewModel.splitRemaining) : "₹" + viewModel.splitEntryText,
-                           caption: "by \(viewModel.splitEntryMode.title.lowercased())")
-            ManiKeypad { key in
-                switch key {
-                case .digit(let value): viewModel.splitKey("\(value)")
-                case .decimal: viewModel.splitKey(".")
-                case .backspace: viewModel.splitKey("⌫")
-                }
-            }
-            if viewModel.creditNeedsCustomer {
-                ManiNote("Credit needs a customer on the bill.", kind: .warning)
-            }
-            if let errorMessage = viewModel.errorMessage {
-                ManiNote(errorMessage, kind: .error)
-            }
-        } bottom: {
-            if viewModel.isSettled {
-                ManiButton("Confirm \(Money.format(viewModel.finalTotal))", isLoading: viewModel.isProcessing) {
-                    Task { if let sale = await viewModel.confirmSale() { onConfirmed(sale) } }
-                }
-            } else {
-                let entry = Double(viewModel.splitEntryText) ?? viewModel.splitRemaining
-                ManiButton("Add \(Money.format(min(entry, viewModel.splitRemaining))) by \(viewModel.splitEntryMode.title.lowercased())",
-                           isEnabled: viewModel.splitRemaining > 0) {
-                    viewModel.confirmSplitEntry()
-                }
-            }
-        }
-        .navigationTitle("Split payment")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

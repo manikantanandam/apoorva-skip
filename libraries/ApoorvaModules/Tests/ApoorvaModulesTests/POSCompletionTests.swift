@@ -116,29 +116,34 @@ struct CheckoutModeTests {
     @Test func roundsOffAndWorksOutChange() {
         let (vm, _, _) = makeSUT(total: 582.6)
         #expect(vm.finalTotal == 583)
-        vm.cashReceivedText = "600"
+        vm.amountTexts[.cash] = "600"
         #expect(vm.changeDue == 17)
+        #expect(vm.payments == [.cash: 583])
     }
 
     @Test func creditNeedsACustomer() async {
         let (vm, sales, _) = makeSUT(total: 100)
-        vm.mode = .credit
+        vm.amountTexts[.credit] = "100"
         #expect(vm.creditNeedsCustomer)
         #expect(await vm.confirmSale() == nil)
         #expect(sales.sales.isEmpty)
     }
 
-    @Test func splitSettlesThenConfirmsAndRecordsEffects() async {
+    @Test func nothingTypedPaysTheWholeBillInCash() {
+        let (vm, _, _) = makeSUT(total: 250)
+        #expect(vm.payments == [.cash: 250])
+        #expect(vm.isSettled)
+        #expect(vm.changeDue == 0)
+    }
+
+    @Test func amountsPerModeSettleThenConfirmAndRecordEffects() async {
         let (vm, sales, lifecycle) = makeSUT(total: 1236, customer: "9")
-        vm.mode = .split
-        vm.splitEntryMode = .cash
-        "620".forEach { vm.splitKey(String($0)) }
-        vm.confirmSplitEntry()
-        #expect(vm.splitEntryMode == .upi)
-        "500".forEach { vm.splitKey(String($0)) }
-        vm.confirmSplitEntry()
+        vm.amountTexts[.cash] = "620"
+        vm.amountTexts[.upi] = "500"
         #expect(!vm.isSettled)
-        vm.confirmSplitEntry() // remainder by card
+        #expect(vm.remaining == 116)
+        #expect(vm.requiresUPIConfirmation)
+        vm.amountTexts[.card] = "116"
         #expect(vm.isSettled)
         let sale = await vm.confirmSale()
         #expect(sale?.payments == [.cash: 620, .upi: 500, .card: 116])
