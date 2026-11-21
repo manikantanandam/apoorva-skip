@@ -259,7 +259,8 @@ public class ModulesContainer {
 
     public func makeCashDayViewModel(date: Date = Date()) -> CashDayViewModel {
         CashDayViewModel(date: date, summaries: repositoryContainer.dailyCashflowRepository, saleRepository: repositoryContainer.saleRepository,
-                         cashflowRepository: repositoryContainer.cashflowRepository, dayCloses: repositoryContainer.dayCloseRepository)
+                         cashflowRepository: repositoryContainer.cashflowRepository, dayCloses: repositoryContainer.dayCloseRepository,
+                         loadAccounts: organizationAccountsLoader())
     }
 
     public func makeCashEntryViewModel(actorId: String) -> CashEntryViewModel {

@@ -34,6 +34,17 @@
 - Edit keeps an entry's account untouched unless the direction or account changed. Entries with no account id fall back to the account matching their mode for display only. An account id not in the org (old or legacy) is shown as "Original account" so it stays selectable.
 - Still open (not changed here): `CashDay` and the daily summary use the fixed cash id for opening and closing balances, and bill sales and expenses still record with the fixed ids, so new orgs' balances may not line up with these entries.
 
+## Badges or dropdown (2026-11-22)
+- Category, sub-category and account can be chosen with badges (chips, the original layout) or with dropdown menus. A "Badges | Dropdown" menu sits in the navigation toolbar (top right) of both the add and edit cash entry screens; the choice is stored per device with `@AppStorage` (`cashEntry.selectionStyle`, default badges) and shared by the two screens. Dropdowns use one row per field (label, current value, chevron) that opens a `Menu`. Nothing about what is saved changes; this is presentation only.
+
+## Internal transfer (2026-11-22)
+- Cash entry now has three kinds: Cash in, Cash out and **Internal transfer** (a segmented control). A transfer asks for a **From account** and a **To account** (always different; picking the same one on both sides moves the other) and saves **one** entry with both `fromAccountId` and `toAccountId`, instead of the earlier two (a debit plus a credit). It needs at least two org accounts.
+- The entry is `category`/`subCategory` Internal Transfer, `transactionType` **debit** (the Admin app only decodes credit and debit, so `unknown` would break it there) and `paymentMode` of the source account. `CashflowTransaction.isTransfer` = Internal Transfer category with both ids set.
+- Day maths: `CashDay` now sums a drawer effect per entry (`cashEffect`): a transfer out of a cash account lowers cash, into one raises it, cash-to-cash and non-cash transfers change nothing; other entries still use payment mode and direction. Older single-sided transfer entries are judged by their one account id; entries with no ids fall back to mode and direction. Cash accounts come from the org (`type == .cash`) plus the fixed legacy cash id.
+- The daily summary list already ignores Internal Transfer entries in income and expense, so a transfer doesn't distort profit.
+- The day list shows a transfer with no +/- sign ("Internal Transfer · time"). Editing a transfer shows its two accounts (no direction or category); one-sided legacy transfers edit like ordinary entries.
+- Not done: bill sales, expenses and the daily summary's opening and closing balances still key off the fixed cash id; a transfer doesn't update `organization.accounts[].currentBalance` (neither do other entries).
+
 ## Why
 - Soft delete keeps delta sync and history intact and matches how other screens delete.
 - Writing only the changed fields on delete, and rebuilding accounts only when needed, limits what we rewrite on legacy documents (docs/12 §9).

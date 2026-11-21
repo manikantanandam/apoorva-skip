@@ -21,6 +21,26 @@ extension Sale {
     var signedTotal: Double { isReturn ? -netPayable : netPayable }
 }
 
+extension CashflowTransaction {
+    /// A transfer between two of the organization's accounts, saved as one entry with both account ids.
+    var isTransfer: Bool { category == .internalTransfer && !fromAccountId.isEmpty && !toAccountId.isEmpty }
+
+    /// Effect on the cash drawer: positive when money enters cash, negative when it leaves, zero otherwise.
+    /// Transfers (and older single-sided transfer entries that carry an account id) are judged by whether their
+    /// account is a cash account; every other entry by its payment mode and direction.
+    func cashEffect(cashAccountIds: Set<String>) -> Double {
+        if category == .internalTransfer && (!fromAccountId.isEmpty || !toAccountId.isEmpty) {
+            return (cashAccountIds.contains(toAccountId) ? amount : 0) - (cashAccountIds.contains(fromAccountId) ? amount : 0)
+        }
+        guard paymentMode == .cash else { return 0 }
+        switch transactionType {
+        case .credit: return amount
+        case .debit: return -amount
+        case .unknown: return 0
+        }
+    }
+}
+
 /// Cash drawer maths for one day, shared by the day screen, close and summary.
 public struct CashDay: Sendable {
     public let date: Date
@@ -31,7 +51,8 @@ public struct CashDay: Sendable {
     public let byMode: [PaymentMode: Double]
     public let entries: [CashflowTransaction]
 
-    public init(date: Date, summaries: [DailyCashflowSummary], sales: [Sale], transactions: [CashflowTransaction]) {
+    public init(date: Date, summaries: [DailyCashflowSummary], sales: [Sale], transactions: [CashflowTransaction],
+                cashAccountIds: Set<String> = [CashflowTransaction.PaymentMode.cash.accountId]) {
         let calendar = Calendar.current
         self.date = calendar.startOfDay(for: date)
         let cashAccount = CashflowTransaction.PaymentMode.cash.accountId
@@ -54,9 +75,9 @@ public struct CashDay: Sendable {
         byMode = modes
         entries = transactions.filter { !$0.isDeleted && calendar.isDate($0.timestamp, inSameDayAs: date) && $0.category != .shopSetup }
             .sorted { $0.timestamp > $1.timestamp }
-        let cashEntries = entries.filter { $0.paymentMode == .cash }
-        cashIn = cashSales + cashEntries.filter { $0.transactionType == .credit }.reduce(0) { $0 + $1.amount }
-        cashOut = cashEntries.filter { $0.transactionType == .debit }.reduce(0) { $0 + $1.amount }
+        let effects = entries.map { $0.cashEffect(cashAccountIds: cashAccountIds) }
+        cashIn = cashSales + effects.filter { $0 > 0 }.reduce(0, +)
+        cashOut = effects.filter { $0 < 0 }.reduce(0) { $0 - $1 }
     }
 
     public var expectedClosing: Double { opening + cashIn - cashOut }
@@ -78,21 +99,29 @@ public final class CashDayViewModel {
     private let saleRepository: SaleRepositoryProtocol
     private let cashflowRepository: CashflowTransactionRepositoryProtocol
     private let dayCloses: any OrgCollectionRepositoryProtocol<DayClose>
+    private let loadAccounts: @Sendable () async -> [Account]
 
     public init(date: Date = Date(), summaries: DailyCashflowSummaryRepositoryProtocol, saleRepository: SaleRepositoryProtocol,
-                cashflowRepository: CashflowTransactionRepositoryProtocol, dayCloses: any OrgCollectionRepositoryProtocol<DayClose>) {
+                cashflowRepository: CashflowTransactionRepositoryProtocol, dayCloses: any OrgCollectionRepositoryProtocol<DayClose>,
+                loadAccounts: @escaping @Sendable () async -> [Account] = { [] }) {
         self.date = date
         self.summaries = summaries
         self.saleRepository = saleRepository
         self.cashflowRepository = cashflowRepository
         self.dayCloses = dayCloses
+        self.loadAccounts = loadAccounts
     }
 
     public func load() async {
         let allSummaries = (try? await summaries.getDailyCashflowSummaries()) ?? []
+        // Transfers move money by account id, so the day needs to know which accounts are cash. The fixed legacy
+        // cash id stays included for organizations whose accounts use it.
+        let cashAccountIds = Set(await loadAccounts().filter { $0.type == .cash && !$0.isDeleted }.map(\.id))
+            .union([CashflowTransaction.PaymentMode.cash.accountId])
         day = CashDay(date: date, summaries: allSummaries,
                       sales: (try? await saleRepository.getSales()) ?? [],
-                      transactions: (try? await cashflowRepository.getCashflowTransactions()) ?? [])
+                      transactions: (try? await cashflowRepository.getCashflowTransactions()) ?? [],
+                      cashAccountIds: cashAccountIds)
         let closes = ((try? await dayCloses.all()) ?? []).filter { !$0.isDeleted }
         close = closes.first { $0.id == date.dayKey }
         closedDayKeys = Set(closes.map(\.id))
@@ -122,7 +151,22 @@ public final class CashDayViewModel {
 @MainActor
 @Observable
 public final class CashEntryViewModel {
-    public private(set) var isIn = false
+    /// What the entry is: money in, money out, or a transfer between two of the organization's accounts.
+    public enum Kind: String, CaseIterable, Sendable {
+        case cashIn, cashOut, transfer
+
+        public var title: String {
+            switch self {
+            case .cashIn: "Cash in"
+            case .cashOut: "Cash out"
+            case .transfer: "Internal transfer"
+            }
+        }
+    }
+
+    public private(set) var kind: Kind = .cashOut
+    public var isIn: Bool { kind == .cashIn }
+    public var isTransfer: Bool { kind == .transfer }
     public var amountText = ""
     public private(set) var category: CashflowCategory = .miscellaneous
     public private(set) var subCategory: CashflowSubCategory = .general
@@ -131,6 +175,9 @@ public final class CashEntryViewModel {
     /// The organization's accounts. Empty until loaded, or if they can't be read (the cash account is used then).
     public private(set) var accounts: [Account] = []
     public private(set) var selectedAccountId: String?
+    /// For a transfer: the account the money leaves and the account it goes to. Always different.
+    public private(set) var fromAccountId: String?
+    public private(set) var toAccountId: String?
 
     private let money: MoneyRepositoryProtocol
     private let actorId: String
@@ -145,12 +192,18 @@ public final class CashEntryViewModel {
     /// Cash in goes to an account, cash out comes from one.
     public var accountTitle: String { isIn ? "To account" : "From account" }
     public var selectedAccount: Account? { accounts.first { $0.id == selectedAccountId } }
+    public var fromAccount: Account? { accounts.first { $0.id == fromAccountId } }
+    public var toAccount: Account? { accounts.first { $0.id == toAccountId } }
+    /// A transfer needs two accounts to move money between.
+    public var transferNeedsMoreAccounts: Bool { isTransfer && accounts.count < 2 }
 
     public func load() async {
         accounts = await loadAccounts().filter { !$0.isDeleted }
         if selectedAccount == nil {
             selectedAccountId = (accounts.first { $0.type == .cash } ?? accounts.first)?.id
         }
+        if fromAccount == nil { fromAccountId = selectedAccountId }
+        if toAccount == nil || toAccountId == fromAccountId { toAccountId = accounts.first { $0.id != fromAccountId }?.id }
     }
 
     public func selectAccount(_ id: String) {
@@ -158,13 +211,35 @@ public final class CashEntryViewModel {
         selectedAccountId = id
     }
 
+    public func selectFromAccount(_ id: String) {
+        guard accounts.contains(where: { $0.id == id }) else { return }
+        fromAccountId = id
+        if toAccountId == id { toAccountId = accounts.first { $0.id != id }?.id }
+    }
+
+    public func selectToAccount(_ id: String) {
+        guard accounts.contains(where: { $0.id == id }) else { return }
+        toAccountId = id
+        if fromAccountId == id { fromAccountId = accounts.first { $0.id != id }?.id }
+    }
+
     public var categories: [CashflowCategory] { CashflowCategory.selectable }
     public var subCategories: [CashflowSubCategory] { category.subCategories }
 
+    public func setKind(_ kind: Kind) {
+        self.kind = kind
+        switch kind {
+        case .cashIn: selectCategory(.salesRevenue)
+        case .cashOut: selectCategory(.miscellaneous)
+        case .transfer:
+            category = .internalTransfer
+            subCategory = .internalTransfer
+        }
+    }
+
     /// Cash in defaults to Sales Revenue and cash out to Miscellaneous; the person can change either.
     public func setDirection(_ isIn: Bool) {
-        self.isIn = isIn
-        selectCategory(isIn ? .salesRevenue : .miscellaneous)
+        setKind(isIn ? .cashIn : .cashOut)
     }
 
     /// Picking a category selects its first sub-category, so the pair is always valid.
@@ -180,15 +255,31 @@ public final class CashEntryViewModel {
 
     public var amount: Double { Double(amountText) ?? 0 }
     public var particulars: String {
-        let base = isIn ? "Cash in" : (subCategory == .general ? category.rawValue : subCategory.rawValue)
+        let base: String
+        switch kind {
+        case .cashIn: base = "Cash in"
+        case .cashOut: base = subCategory == .general ? category.rawValue : subCategory.rawValue
+        case .transfer: base = "Transfer \(fromAccount?.name ?? "?") → \(toAccount?.name ?? "?")"
+        }
         return note.isEmpty ? base : "\(base) · \(note)"
     }
 
-    public func save() async -> Bool {
+    public var canSave: Bool {
         guard amount > 0 else { return false }
+        guard isTransfer else { return true }
+        return fromAccount != nil && toAccount != nil && fromAccountId != toAccountId
+    }
+
+    public func save() async -> Bool {
+        guard canSave else { return false }
         do {
-            try await money.addCashEntry(isIn: isIn, amount: amount, category: category, subCategory: subCategory,
-                                         account: selectedAccount, particulars: particulars, by: actorId)
+            if isTransfer, let from = fromAccount, let to = toAccount {
+                // One entry for the whole transfer, with both account ids.
+                try await money.addTransfer(amount: amount, from: from, to: to, particulars: particulars, by: actorId)
+            } else {
+                try await money.addCashEntry(isIn: isIn, amount: amount, category: category, subCategory: subCategory,
+                                             account: selectedAccount, particulars: particulars, by: actorId)
+            }
             return true
         } catch {
             errorMessage = "Couldn't save the entry."
@@ -210,6 +301,10 @@ public final class CashEntryEditViewModel {
     public private(set) var category: CashflowCategory = .unknown
     public private(set) var subCategory: CashflowSubCategory = .unknown
     public private(set) var selectedAccountId: String?
+    /// A transfer entry (one entry with both account ids) edits its two accounts instead of a direction.
+    public private(set) var isTransfer = false
+    public private(set) var fromAccountId: String?
+    public private(set) var toAccountId: String?
     public var isSaving = false
     public var errorMessage: String?
     public private(set) var isLoaded = false
@@ -223,6 +318,8 @@ public final class CashEntryEditViewModel {
     private var orgAccounts: [Account] = []
     /// The account the entry had when opened, so an untouched account is never rewritten.
     private var originalAccountId: String?
+    private var originalFromId: String?
+    private var originalToId: String?
 
     public init(entryId: String, cashflowRepository: CashflowTransactionRepositoryProtocol,
                 money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async -> [Account] = { [] }) {
@@ -239,9 +336,13 @@ public final class CashEntryEditViewModel {
     /// The organization's accounts, plus the entry's own account when it isn't one of them (an old or legacy id),
     /// so the current choice stays visible and keepable.
     public var accounts: [Account] {
-        guard let originalAccountId, !orgAccounts.contains(where: { $0.id == originalAccountId }) else { return orgAccounts }
         let type: AccountType = original?.paymentMode == .cash ? .cash : .bank
-        return orgAccounts + [Account(id: originalAccountId, name: "Original account", type: type, currentBalance: 0)]
+        var result = orgAccounts
+        for id in [originalAccountId, originalFromId, originalToId].compactMap({ $0 })
+        where !result.contains(where: { $0.id == id }) {
+            result.append(Account(id: id, name: "Original account", type: type, currentBalance: 0))
+        }
+        return result
     }
 
     public func selectAccount(_ id: String) {
@@ -249,8 +350,23 @@ public final class CashEntryEditViewModel {
         selectedAccountId = id
     }
 
+    public func selectFromAccount(_ id: String) {
+        guard accounts.contains(where: { $0.id == id }) else { return }
+        fromAccountId = id
+        if toAccountId == id { toAccountId = accounts.first { $0.id != id }?.id }
+    }
+
+    public func selectToAccount(_ id: String) {
+        guard accounts.contains(where: { $0.id == id }) else { return }
+        toAccountId = id
+        if fromAccountId == id { fromAccountId = accounts.first { $0.id != id }?.id }
+    }
+
     public var amount: Double { Double(amountText) ?? 0 }
-    public var canSave: Bool { isLoaded && amount > 0 && !isSaving }
+    public var canSave: Bool {
+        guard isLoaded, amount > 0, !isSaving else { return false }
+        return !isTransfer || (fromAccountId != nil && toAccountId != nil && fromAccountId != toAccountId)
+    }
     public var date: Date? { original?.timestamp }
 
     public func load() async {
@@ -271,8 +387,16 @@ public final class CashEntryEditViewModel {
         let recorded = found.transactionType == .credit ? found.toAccountId : found.fromAccountId
         let derived = orgAccounts.first { $0.type == (found.paymentMode == .cash ? .cash : .bank) }?.id
             ?? orgAccounts.first { $0.type == .upi }?.id
-        originalAccountId = recorded.isEmpty ? derived : recorded
-        selectedAccountId = originalAccountId
+        isTransfer = found.isTransfer
+        if isTransfer {
+            originalFromId = found.fromAccountId
+            originalToId = found.toAccountId
+            fromAccountId = originalFromId
+            toAccountId = originalToId
+        } else {
+            originalAccountId = recorded.isEmpty ? derived : recorded
+            selectedAccountId = originalAccountId
+        }
         isLoaded = true
     }
 
@@ -304,6 +428,16 @@ public final class CashEntryEditViewModel {
         guard var edited = original else { return nil }
         edited.amount = amount
         edited.particulars = particulars.trimmingCharacters(in: .whitespacesAndNewlines)
+        if isTransfer {
+            // A transfer keeps its category and type; only its two accounts (and the mode of the source) can change.
+            if fromAccountId != originalFromId || toAccountId != originalToId,
+               let from = fromAccountId, let to = toAccountId {
+                edited.fromAccountId = from
+                edited.toAccountId = to
+                if let source = accounts.first(where: { $0.id == from }) { edited.paymentMode = source.type == .cash ? .cash : .upi }
+            }
+            return edited
+        }
         let wasIn = edited.transactionType == .credit
         // Untouched categories keep exactly what the entry had, including values this app doesn't recognise.
         if category != original?.category { edited.category = category }

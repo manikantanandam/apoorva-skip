@@ -80,7 +80,8 @@ public struct CashDayView: View {
                     ForEach(day.entries, id: \.id) { entry in
                         ManiListRow(title: entry.particulars,
                                     subtitle: entry.rowSubtitle,
-                                    value: (entry.transactionType == .credit ? "+" : "−") + Money.format(entry.amount),
+                                    // A transfer is neither in nor out of the shop, so it carries no sign.
+                                    value: (entry.isTransfer ? "" : (entry.transactionType == .credit ? "+" : "−")) + Money.format(entry.amount),
                                     action: viewModel.isClosed ? nil : onEdit.map { edit in { edit(entry) } })
                     }
                     if day.cashSales == 0 && day.entries.isEmpty {
@@ -117,8 +118,65 @@ public struct CashDayView: View {
     }
 }
 
+/// How category, sub-category and account are chosen on the cash entry screens. Remembered on this device.
+enum CashSelectionStyle: String, CaseIterable {
+    case badges, dropdown
+
+    static let storageKey = "cashEntry.selectionStyle"
+
+    var title: String { self == .badges ? "Badges" : "Dropdown" }
+}
+
+/// Toolbar menu to switch between the badge (chip) layout and dropdown menus. Both screens read the same stored choice.
+struct CashSelectionStyleMenu: View {
+    @Binding var style: CashSelectionStyle
+
+    var body: some View {
+        Menu {
+            Picker("Selection style", selection: $style) {
+                ForEach(CashSelectionStyle.allCases, id: \.self) { option in
+                    Text(option.title).tag(option)
+                }
+            }
+        } label: {
+            Image(systemName: style == .badges ? "square.grid.2x2" : "list.bullet")
+        }
+        .accessibilityLabel("Selection style: \(style.title)")
+    }
+}
+
+/// One dropdown: a labelled row showing the current choice that opens a menu of options.
+private struct CashDropdownRow<Options: View>: View {
+    @Environment(\.maniTheme) private var theme
+    let title: String
+    let value: String
+    @ViewBuilder let options: () -> Options
+
+    var body: some View {
+        Menu {
+            options()
+        } label: {
+            HStack {
+                Text(title)
+                    .font(theme.typography.secondary)
+                    .foregroundStyle(theme.base.textSecondary)
+                Spacer()
+                Text(value)
+                    .foregroundStyle(theme.base.text)
+                ManiSwiftUIComponents.IconView(.chevronDown, size: 12, color: theme.base.textSecondary)
+            }
+            .padding(.horizontal, ManiSpacing.md)
+            .frame(minHeight: 48)
+            .background(theme.base.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.base.border, lineWidth: 1))
+        }
+    }
+}
+
 /// Category and sub-category choices for a cash entry, shared by the add and edit screens.
 struct CashCategoryPicker: View {
+    let style: CashSelectionStyle
     let categories: [CashflowCategory]
     let category: CashflowCategory
     let subCategories: [CashflowSubCategory]
@@ -127,6 +185,13 @@ struct CashCategoryPicker: View {
     let onSubCategory: (CashflowSubCategory) -> Void
 
     var body: some View {
+        switch style {
+        case .badges: badges
+        case .dropdown: dropdowns
+        }
+    }
+
+    private var badges: some View {
         VStack(alignment: .leading, spacing: ManiSpacing.sm) {
             SectionHeader(title: "Category")
             FlowLayout {
@@ -144,10 +209,28 @@ struct CashCategoryPicker: View {
             }
         }
     }
+
+    private var dropdowns: some View {
+        VStack(spacing: ManiSpacing.sm) {
+            CashDropdownRow(title: "Category", value: category.rawValue) {
+                ForEach(categories, id: \.self) { option in
+                    Button(option.rawValue) { onCategory(option) }
+                }
+            }
+            if !subCategories.isEmpty {
+                CashDropdownRow(title: "Sub-category", value: subCategory.rawValue) {
+                    ForEach(subCategories, id: \.self) { option in
+                        Button(option.rawValue) { onSubCategory(option) }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// Which account a cash entry touches: "To account" for cash in, "From account" for cash out.
 struct CashAccountPicker: View {
+    let style: CashSelectionStyle
     let title: String
     let accounts: [Account]
     let selectedId: String?
@@ -155,11 +238,20 @@ struct CashAccountPicker: View {
 
     var body: some View {
         if !accounts.isEmpty {
-            VStack(alignment: .leading, spacing: ManiSpacing.sm) {
-                SectionHeader(title: title)
-                FlowLayout {
+            switch style {
+            case .badges:
+                VStack(alignment: .leading, spacing: ManiSpacing.sm) {
+                    SectionHeader(title: title)
+                    FlowLayout {
+                        ForEach(accounts, id: \.id) { account in
+                            ManiChip(account.name, isSelected: account.id == selectedId) { onSelect(account.id) }
+                        }
+                    }
+                }
+            case .dropdown:
+                CashDropdownRow(title: title, value: accounts.first { $0.id == selectedId }?.name ?? "Select") {
                     ForEach(accounts, id: \.id) { account in
-                        ManiChip(account.name, isSelected: account.id == selectedId) { onSelect(account.id) }
+                        Button(account.name) { onSelect(account.id) }
                     }
                 }
             }
@@ -178,6 +270,7 @@ extension CashflowTransaction {
 
     /// Second line of an entry row: category path, then direction, time and mode.
     var rowSubtitle: String {
+        if isTransfer { return "\(categoryPath ?? "Internal Transfer") · \(timestamp.timeOnly)" }
         let direction = transactionType == .credit ? "In" : "Out"
         let mode = paymentMode == .cash ? "Cash" : "Bank"
         let detail = "\(direction) · \(timestamp.timeOnly) · \(mode)"
@@ -191,6 +284,7 @@ extension CashflowTransaction {
 public struct CashEntryView: View {
     @Bindable private var viewModel: CashEntryViewModel
     private let onDone: () -> Void
+    @AppStorage(CashSelectionStyle.storageKey) private var style: CashSelectionStyle = .badges
 
     public init(viewModel: CashEntryViewModel, onDone: @escaping () -> Void) {
         self.viewModel = viewModel
@@ -199,24 +293,39 @@ public struct CashEntryView: View {
 
     public var body: some View {
         ScreenScroll {
-            ManiSegmentedControl(selection: Binding(get: { viewModel.isIn }, set: { viewModel.setDirection($0) }),
-                                 options: [(true, "Cash in"), (false, "Cash out")])
+            ManiSegmentedControl(selection: Binding(get: { viewModel.kind }, set: { viewModel.setKind($0) }),
+                                 options: CashEntryViewModel.Kind.allCases.map { ($0, $0.title) })
             ManiHeroAmount("₹" + (viewModel.amountText.isEmpty ? "0" : viewModel.amountText), caption: viewModel.particulars)
-            CashCategoryPicker(categories: viewModel.categories, category: viewModel.category,
-                               subCategories: viewModel.subCategories, subCategory: viewModel.subCategory,
-                               onCategory: { viewModel.selectCategory($0) }, onSubCategory: { viewModel.selectSubCategory($0) })
-            CashAccountPicker(title: viewModel.accountTitle, accounts: viewModel.accounts,
-                              selectedId: viewModel.selectedAccountId, onSelect: { viewModel.selectAccount($0) })
-            ManiInputField(label: "Note (optional)", text: $viewModel.note, placeholder: viewModel.isIn ? "Owner added float" : "Ramesh Traders")
+            if viewModel.isTransfer {
+                // One entry moves money from one account to another: both ids are saved on it.
+                CashAccountPicker(style: style, title: "From account", accounts: viewModel.accounts,
+                                  selectedId: viewModel.fromAccountId, onSelect: { viewModel.selectFromAccount($0) })
+                CashAccountPicker(style: style, title: "To account", accounts: viewModel.accounts,
+                                  selectedId: viewModel.toAccountId, onSelect: { viewModel.selectToAccount($0) })
+                if viewModel.transferNeedsMoreAccounts {
+                    ManiNote("A transfer needs at least two accounts. Add another account to the organization first.", kind: .warning)
+                }
+            } else {
+                CashCategoryPicker(style: style, categories: viewModel.categories, category: viewModel.category,
+                                   subCategories: viewModel.subCategories, subCategory: viewModel.subCategory,
+                                   onCategory: { viewModel.selectCategory($0) }, onSubCategory: { viewModel.selectSubCategory($0) })
+                CashAccountPicker(style: style, title: viewModel.accountTitle, accounts: viewModel.accounts,
+                                  selectedId: viewModel.selectedAccountId, onSelect: { viewModel.selectAccount($0) })
+            }
+            ManiInputField(label: "Note (optional)", text: $viewModel.note,
+                           placeholder: viewModel.isTransfer ? "Cash deposited at bank" : (viewModel.isIn ? "Owner added float" : "Ramesh Traders"))
             ManiKeypad { key in viewModel.amountText = key.apply(to: viewModel.amountText) }
             if let error = viewModel.errorMessage { ManiNote(error, kind: .error) }
         } bottom: {
-            ManiButton("Save entry", isEnabled: viewModel.amount > 0) {
+            ManiButton("Save entry", isEnabled: viewModel.canSave) {
                 Task { if await viewModel.save() { onDone() } }
             }
         }
         .navigationTitle("Cash entry")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { CashSelectionStyleMenu(style: $style) }
+        }
         .task { await viewModel.load() }
     }
 }
@@ -227,6 +336,7 @@ public struct CashEntryEditView: View {
     @Bindable private var viewModel: CashEntryEditViewModel
     private let onDone: () -> Void
     @State private var confirmsDelete = false
+    @AppStorage(CashSelectionStyle.storageKey) private var style: CashSelectionStyle = .badges
 
     public init(viewModel: CashEntryEditViewModel, onDone: @escaping () -> Void) {
         self.viewModel = viewModel
@@ -239,15 +349,26 @@ public struct CashEntryEditView: View {
                 if let date = viewModel.date {
                     ScreenSubtitle(text: date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute()))
                 }
-                ManiSegmentedControl(selection: $viewModel.isIn, options: [(true, "Cash in"), (false, "Cash out")])
+                if viewModel.isTransfer {
+                    ScreenSubtitle(text: "Internal transfer")
+                } else {
+                    ManiSegmentedControl(selection: $viewModel.isIn, options: [(true, "Cash in"), (false, "Cash out")])
+                }
                 ManiHeroAmount("₹" + (viewModel.amountText.isEmpty ? "0" : viewModel.amountText),
                                caption: viewModel.particulars.isEmpty ? "No particulars" : viewModel.particulars)
                 ManiInputField(label: "Particulars", text: $viewModel.particulars, placeholder: "What was this for?")
-                CashCategoryPicker(categories: viewModel.categories, category: viewModel.category,
-                                   subCategories: viewModel.subCategories, subCategory: viewModel.subCategory,
-                                   onCategory: { viewModel.selectCategory($0) }, onSubCategory: { viewModel.selectSubCategory($0) })
-                CashAccountPicker(title: viewModel.accountTitle, accounts: viewModel.accounts,
-                                  selectedId: viewModel.selectedAccountId, onSelect: { viewModel.selectAccount($0) })
+                if viewModel.isTransfer {
+                    CashAccountPicker(style: style, title: "From account", accounts: viewModel.accounts,
+                                      selectedId: viewModel.fromAccountId, onSelect: { viewModel.selectFromAccount($0) })
+                    CashAccountPicker(style: style, title: "To account", accounts: viewModel.accounts,
+                                      selectedId: viewModel.toAccountId, onSelect: { viewModel.selectToAccount($0) })
+                } else {
+                    CashCategoryPicker(style: style, categories: viewModel.categories, category: viewModel.category,
+                                       subCategories: viewModel.subCategories, subCategory: viewModel.subCategory,
+                                       onCategory: { viewModel.selectCategory($0) }, onSubCategory: { viewModel.selectSubCategory($0) })
+                    CashAccountPicker(style: style, title: viewModel.accountTitle, accounts: viewModel.accounts,
+                                      selectedId: viewModel.selectedAccountId, onSelect: { viewModel.selectAccount($0) })
+                }
                 ManiKeypad { key in viewModel.amountText = key.apply(to: viewModel.amountText) }
             }
             if let error = viewModel.errorMessage { ManiNote(error, kind: .error) }
@@ -263,6 +384,9 @@ public struct CashEntryEditView: View {
         }
         .navigationTitle("Edit entry")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { CashSelectionStyleMenu(style: $style) }
+        }
         .task { await viewModel.load() }
         .alert("Delete this entry?", isPresented: $confirmsDelete) {
             Button("Delete", role: .destructive) {

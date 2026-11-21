@@ -13,6 +13,11 @@ private final class RecordingMoney: MoneyRepositoryProtocol, @unchecked Sendable
     var cashEntries: [(isIn: Bool, amount: Double, particulars: String)] = []
     var cashEntryCategories: [(CashflowCategory, CashflowSubCategory?)] = []
     var cashEntryAccounts: [Account?] = []
+    var transfers: [(amount: Double, from: Account, to: Account, particulars: String)] = []
+    func addTransfer(amount: Double, from: Account, to: Account, particulars: String, by actorId: String) async throws {
+        if fail { throw NSError(domain: "test", code: 1) }
+        transfers.append((amount, from, to, particulars))
+    }
     var expenses: [Expense] = []
     var closes: [DayClose] = []
     var reopened: [Date] = []
@@ -529,5 +534,174 @@ struct CashEntryEditTests {
         await model.load()
         #expect(await model.delete())
         #expect(money.deletedEntries.map(\.id) == ["e1"])
+    }
+}
+
+@MainActor
+struct CashTransferTests {
+    private let cash = Account(id: "acc-cash", name: "Cash", type: .cash, currentBalance: 0)
+    private let bank = Account(id: "acc-bank", name: "HDFC", type: .bank, currentBalance: 0)
+    private let upi = Account(id: "acc-upi", name: "UPI", type: .upi, currentBalance: 0)
+
+    private func transfer(from: String, to: String, amount: Double = 500, id: String = "t1") -> CashflowTransaction {
+        CashflowTransaction(id: id, timestamp: Date(), particulars: "Transfer", amount: amount, transactionType: .debit, paymentMode: .cash,
+                            category: .internalTransfer, subCategory: .internalTransfer, fromAccountId: from, toAccountId: to,
+                            timestampInMs: 0, updatedAtInMs: 0)
+    }
+
+    // MARK: Cash drawer maths
+
+    @Test func aTransferOutOfCashLowersCashAndIntoCashRaisesIt() {
+        let ids: Set<String> = ["acc-cash"]
+        #expect(transfer(from: "acc-cash", to: "acc-bank").cashEffect(cashAccountIds: ids) == -500)
+        #expect(transfer(from: "acc-bank", to: "acc-cash").cashEffect(cashAccountIds: ids) == 500)
+        #expect(transfer(from: "acc-bank", to: "acc-upi").cashEffect(cashAccountIds: ids) == 0)
+        #expect(transfer(from: "acc-cash", to: "acc-cash").cashEffect(cashAccountIds: ids) == 0)
+    }
+
+    @Test func olderSingleSidedTransferEntriesStillCount() {
+        let ids: Set<String> = ["acc-cash"]
+        #expect(transfer(from: "acc-cash", to: "").cashEffect(cashAccountIds: ids) == -500)
+        #expect(transfer(from: "", to: "acc-cash").cashEffect(cashAccountIds: ids) == 500)
+        // No account ids at all: fall back to payment mode and direction like any other entry.
+        #expect(transfer(from: "", to: "").cashEffect(cashAccountIds: ids) == -500)
+    }
+
+    @Test func cashDayCountsATransferByItsAccounts() {
+        let entries = [transfer(from: "acc-cash", to: "acc-bank", amount: 300, id: "a"),
+                       transfer(from: "acc-bank", to: "acc-cash", amount: 100, id: "b"),
+                       transfer(from: "acc-bank", to: "acc-upi", amount: 999, id: "c")]
+        let day = CashDay(date: Date(), summaries: [], sales: [], transactions: entries, cashAccountIds: ["acc-cash"])
+        #expect(day.cashOut == 300)
+        #expect(day.cashIn == 100)
+        #expect(day.expectedClosing == -200)
+    }
+
+    @Test func isTransferNeedsBothAccountIds() {
+        #expect(transfer(from: "a", to: "b").isTransfer)
+        #expect(!transfer(from: "a", to: "").isTransfer)
+        var plain = transfer(from: "a", to: "b")
+        plain.category = .miscellaneous
+        #expect(!plain.isTransfer)
+    }
+
+    // MARK: Add
+
+    @Test func transferDefaultsToFromCashAndToAnotherAccount() async {
+        let model = CashEntryViewModel(money: RecordingMoney(), actorId: "u1", loadAccounts: { [bank, cash] })
+        await model.load()
+        model.setKind(.transfer)
+        #expect(model.isTransfer)
+        #expect(model.category == .internalTransfer)
+        #expect(model.fromAccountId == "acc-cash")
+        #expect(model.toAccountId == "acc-bank")
+    }
+
+    @Test func pickingTheSameAccountOnBothSidesMovesTheOtherOne() async {
+        let model = CashEntryViewModel(money: RecordingMoney(), actorId: "u1", loadAccounts: { [cash, bank, upi] })
+        await model.load()
+        model.setKind(.transfer)
+        model.selectToAccount("acc-cash")
+        #expect(model.toAccountId == "acc-cash")
+        #expect(model.fromAccountId != "acc-cash")
+        model.selectFromAccount("acc-cash")
+        #expect(model.fromAccountId == "acc-cash")
+        #expect(model.toAccountId != "acc-cash")
+        model.selectFromAccount("nope")           // unknown ids are ignored
+        #expect(model.fromAccountId == "acc-cash")
+    }
+
+    @Test func aTransferSavesOneEntryNotTwo() async {
+        let money = RecordingMoney()
+        let model = CashEntryViewModel(money: money, actorId: "u1", loadAccounts: { [cash, bank] })
+        await model.load()
+        model.setKind(.transfer)
+        #expect(!model.canSave)                    // no amount yet
+        model.amountText = "500"
+        model.note = "deposit"
+        #expect(model.particulars == "Transfer Cash → HDFC · deposit")
+        #expect(await model.save())
+        #expect(money.transfers.count == 1)
+        #expect(money.transfers.first?.from.id == "acc-cash")
+        #expect(money.transfers.first?.to.id == "acc-bank")
+        #expect(money.cashEntries.isEmpty)         // not also recorded as a cash in or out
+    }
+
+    @Test func aTransferNeedsTwoAccounts() async {
+        let money = RecordingMoney()
+        let model = CashEntryViewModel(money: money, actorId: "u1", loadAccounts: { [cash] })
+        await model.load()
+        model.setKind(.transfer)
+        model.amountText = "100"
+        #expect(model.transferNeedsMoreAccounts)
+        #expect(!model.canSave)
+        #expect(await model.save() == false)
+        #expect(money.transfers.isEmpty)
+    }
+
+    @Test func switchingBackToCashInOrOutRestoresTheCategories() async {
+        let model = CashEntryViewModel(money: RecordingMoney(), actorId: "u1", loadAccounts: { [cash, bank] })
+        await model.load()
+        model.setKind(.transfer)
+        model.setKind(.cashIn)
+        #expect(model.category == .salesRevenue)
+        #expect(!model.isTransfer)
+        model.setKind(.cashOut)
+        #expect(model.category == .miscellaneous)
+        #expect(CashEntryViewModel.Kind.allCases.map(\.title) == ["Cash in", "Cash out", "Internal transfer"])
+    }
+
+    // MARK: Edit
+
+    private func editSUT(_ entry: CashflowTransaction, accounts: [Account]) -> (CashEntryEditViewModel, RecordingMoney) {
+        let repo = FixedCashflowRepository()
+        repo.items = [entry]
+        let money = RecordingMoney()
+        return (CashEntryEditViewModel(entryId: entry.id, cashflowRepository: repo, money: money, actorId: "u1",
+                                       loadAccounts: { accounts }), money)
+    }
+
+    @Test func editingATransferShowsBothAccountsAndKeepsItsCategory() async {
+        let (model, money) = editSUT(transfer(from: "acc-cash", to: "acc-bank"), accounts: [cash, bank, upi])
+        await model.load()
+        #expect(model.isTransfer)
+        #expect(model.fromAccountId == "acc-cash")
+        #expect(model.toAccountId == "acc-bank")
+        model.amountText = "450"
+        #expect(await model.save())
+        let saved = money.updatedEntries.first
+        #expect(saved?.amount == 450)
+        #expect(saved?.category == .internalTransfer)
+        #expect(saved?.fromAccountId == "acc-cash")      // untouched accounts stay as they were
+        #expect(saved?.toAccountId == "acc-bank")
+        #expect(saved?.transactionType == .debit)
+    }
+
+    @Test func changingATransfersAccountsRewritesBothIds() async {
+        let (model, money) = editSUT(transfer(from: "acc-cash", to: "acc-bank"), accounts: [cash, bank, upi])
+        await model.load()
+        model.selectFromAccount("acc-bank")
+        model.selectToAccount("acc-upi")
+        #expect(await model.save())
+        let saved = money.updatedEntries.first
+        #expect(saved?.fromAccountId == "acc-bank")
+        #expect(saved?.toAccountId == "acc-upi")
+        #expect(saved?.paymentMode == .upi)               // the source is now a bank account
+    }
+
+    @Test func aTransferCannotBeSavedWithTheSameAccountOnBothSides() async {
+        let (model, _) = editSUT(transfer(from: "acc-cash", to: "acc-bank"), accounts: [cash, bank])
+        await model.load()
+        model.selectToAccount("acc-cash")                 // swaps the source away from cash
+        #expect(model.fromAccountId != model.toAccountId)
+        #expect(model.canSave)
+    }
+
+    @Test func aOneSidedLegacyTransferEditsLikeAnOrdinaryEntry() async {
+        let (model, _) = editSUT(transfer(from: "acc-cash", to: ""), accounts: [cash, bank])
+        await model.load()
+        #expect(!model.isTransfer)
+        #expect(model.selectedAccountId == "acc-cash")
+        #expect(model.categories.contains(.internalTransfer))   // its own category stays visible
     }
 }

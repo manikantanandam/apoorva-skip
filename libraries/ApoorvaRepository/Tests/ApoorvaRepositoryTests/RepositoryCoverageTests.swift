@@ -642,6 +642,27 @@ struct StockMoneyPeopleCoverageTests {
         #expect(audit.box.actions == ["cash.in", "cash.out", "cash.out"])
     }
 
+    @Test func aTransferIsOneEntryWithBothAccountIds() async throws {
+        let cashflow = RecordingCashflowRepository()
+        let audit = RecordingAudit()
+        let money = MoneyRepository(expenses: docs(Expense.self), dayCloses: docs(DayClose.self), summaries: nil,
+                                    cashBook: CashBook(repository: cashflow), audit: audit)
+        let cash = Account(id: "cash-1", name: "Cash", type: .cash, currentBalance: 0)
+        let bank = Account(id: "bank-1", name: "HDFC", type: .bank, currentBalance: 0)
+        try await money.addTransfer(amount: 40, from: cash, to: bank, particulars: "deposit", by: "u")
+        try await money.addTransfer(amount: 40, from: bank, to: bank, particulars: "same account", by: "u")   // ignored
+        try await money.addTransfer(amount: 0, from: cash, to: bank, particulars: "no amount", by: "u")      // ignored
+        #expect(cashflow.saved.count == 1)
+        let transfer = try #require(cashflow.saved.first)
+        #expect(transfer.category == .internalTransfer)
+        #expect(transfer.subCategory == .internalTransfer)
+        #expect(transfer.transactionType == .debit)
+        #expect(transfer.paymentMode == .cash)          // the account the money leaves
+        #expect(transfer.fromAccountId == "cash-1")
+        #expect(transfer.toAccountId == "bank-1")
+        #expect(audit.box.actions == ["cash.transfer"])
+    }
+
     @Test func expenseAuditDistinguishesAddFromEdit() async throws {
         let audit = RecordingAudit()
         let money = MoneyRepository(expenses: docs(Expense.self), dayCloses: docs(DayClose.self), summaries: nil,
