@@ -10,6 +10,7 @@ import android.app.Application
 import android.graphics.Color as AndroidColor
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.SystemBarStyle
 import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AppCompatActivity
@@ -53,10 +54,17 @@ open class MainActivity: AppCompatActivity {
     constructor() {
     }
 
+    /// Document picker for CSV imports; Swift triggers it through `FilePicker` (see `FilePicker.kt`).
+    private val openDocument = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        FilePicker.deliver(this, uri)
+    }
+
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         logger.info("starting activity")
         UIApplication.launch(this)
+        FilePicker.launcher = { openDocument.launch(arrayOf("*/*")) }
+        StatementPdf.activity = this
         enableEdgeToEdge()
 
         setContent {
@@ -103,6 +111,7 @@ open class MainActivity: AppCompatActivity {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (StatementPdf.activity === this) StatementPdf.activity = null
         AppDelegate.shared.onDestroy()
     }
 

@@ -102,7 +102,14 @@ struct UPIQRCode: View {
             ManiSwiftUIComponents.IconView(.qrCode, size: 160, color: theme.base.text)
         }
         #else
-        ManiSwiftUIComponents.IconView(.qrCode, size: 160, color: theme.base.text)
+        if let matrix = QREncoder.encode(link) {
+            QRShape(matrix: matrix)
+                .fill(Color.black)
+                .background(Color.white)
+                .aspectRatio(1, contentMode: .fit)
+        } else {
+            ManiSwiftUIComponents.IconView(.qrCode, size: 160, color: theme.base.text)
+        }
         #endif
     }
 

@@ -12,12 +12,15 @@ import ManiSwiftUIComponents
 /// Customers with dues filter (design 61).
 public struct CustomerListView: View {
     @Environment(\.maniTheme) private var theme
+    @Environment(\.openURL) private var openURL
+    @Environment(\.textFileSharer) private var fileSharer
 
     @Bindable var viewModel: CustomerListViewModel
 
     @State private var isShowingFormatSheet = false
     @State private var selectedFormat: FileFormat?
     @State private var exportURL: URL?
+    @State private var exportError: String?
 
     private let onSelectCustomer: (Customer) -> Void
     private let onAddCustomer: () -> Void
@@ -39,6 +42,7 @@ public struct CustomerListView: View {
     public var body: some View {
         ScreenScroll(spacing: ManiSpacing.md) {
             ScreenSubtitle(text: viewModel.subtitle)
+            if let exportError { ManiNote(exportError, kind: .error) }
             ManiSearchField(text: $viewModel.searchText, placeholder: "Name or phone")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: ManiSpacing.sm) {
@@ -95,13 +99,22 @@ public struct CustomerListView: View {
             FormatSelectionSheet { format in
                 selectedFormat = format
                 isShowingFormatSheet = false
+                #if os(Android)  // SkipSwiftUI has no file share sheet, so the injected sharer writes the file and opens Android's.
+                let file = viewModel.exportContent(format: format)
+                if fileSharer?.share(file.content, file.fileName, file.mimeType) != true {
+                    exportError = "Couldn't share the export."
+                }
+                #else
                 if let url = try? viewModel.export(format: format) {
                     // Small delay ensures the current sheet dismisses cleanly
                     // before iOS triggers the native system share sheet
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         self.exportURL = url
                     }
+                } else {
+                    exportError = "Couldn't create the export file."
                 }
+                #endif
             }
             // Sets the sheet to take up roughly half the screen on iOS 16+
             .presentationDetents([.medium])
@@ -121,11 +134,7 @@ public struct CustomerListView: View {
 
     private func call(_ customer: Customer) {
         guard !customer.phone.isEmpty, let url = URL(string: "tel://\(customer.phone)") else { return }
-        #if os(Android)
-        Task { @MainActor in _ = await UIApplication.shared.open(url) }
-        #else
-        UIApplication.shared.open(url)
-        #endif
+        openURL(url)
     }
 }
 

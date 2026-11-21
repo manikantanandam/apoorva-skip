@@ -109,8 +109,12 @@ public struct OrderFormView: View {
                 }
             }
             if viewModel.readyByChoice == .pick {
-                #if os(Android)  // SkipSwiftUI's DatePicker has no date range, so past dates aren't blocked here.
+                #if os(Android)  // SkipSwiftUI's DatePicker has no date range, so clamp past dates back to today.
                 DatePicker("Ready by", selection: $viewModel.pickedDate, displayedComponents: .date)
+                    .onChange(of: viewModel.pickedDate) { _, newValue in
+                        let today = Calendar.current.startOfDay(for: Date())
+                        if newValue < today { viewModel.pickedDate = today }
+                    }
                 #else
                 DatePicker("Ready by", selection: $viewModel.pickedDate, in: Date()..., displayedComponents: .date)
                 #endif

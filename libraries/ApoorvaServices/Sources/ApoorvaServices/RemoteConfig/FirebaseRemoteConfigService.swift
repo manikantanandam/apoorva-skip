@@ -5,6 +5,9 @@
 
 import Foundation
 import SkipFirebaseRemoteConfig
+#if os(Android)
+import SkipBridge  // `AnyDynamicObject`, used to box Remote Config defaults for the Java SDK
+#endif
 import ApoorvaModels
 import ManiLogger
 
@@ -33,6 +36,24 @@ protocol RemoteConfigBackend: Sendable {
     /// Keys the server returned (not compiled defaults).
     func remoteKeys() -> [String]
     func setDefaults(_ defaults: [String: NSObject])
+    /// Installs typed defaults. The default implementation bridges to `NSObject`; Android overrides it because
+    /// skip-firebase takes `[String: AnyDynamicObject]` there.
+    func setDefaultValues(_ defaults: [String: RemoteConfigDefaultValue])
+}
+
+extension RemoteConfigBackend {
+    func setDefaultValues(_ defaults: [String: RemoteConfigDefaultValue]) {
+        var bridged: [String: NSObject] = [:]
+        for (key, value) in defaults {
+            switch value {
+            case .bool(let bool): bridged[key] = bool as NSNumber
+            case .string(let string): bridged[key] = string as NSString
+            case .number(let number): bridged[key] = number as NSNumber
+            case .json(let data): bridged[key] = data as NSData
+            }
+        }
+        setDefaults(bridged)
+    }
 }
 
 public final class FirebaseRemoteConfigService: RemoteConfigServicing {
@@ -116,16 +137,7 @@ public final class FirebaseRemoteConfigService: RemoteConfigServicing {
     }
 
     public func setDefaults(_ defaults: [String: RemoteConfigDefaultValue]) {
-        var bridged: [String: NSObject] = [:]
-        for (key, value) in defaults {
-            switch value {
-            case .bool(let bool): bridged[key] = bool as NSNumber
-            case .string(let string): bridged[key] = string as NSString
-            case .number(let number): bridged[key] = number as NSNumber
-            case .json(let data): bridged[key] = data as NSData
-            }
-        }
-        backend.setDefaults(bridged)
+        backend.setDefaultValues(defaults)
     }
 }
 
@@ -167,10 +179,31 @@ struct FirebaseRemoteConfigBackend: RemoteConfigBackend {
 
     func setDefaults(_ defaults: [String: NSObject]) {
         #if os(Android)
-        // skip-firebase takes `[String: AnyDynamicObject]`, which can't be built from NSObject here yet.
-        // Android runs without in-app defaults until that conversion exists (see docs/decisions/android-readiness.md).
+        // Unused on Android: `setDefaultValues` below builds the Java objects from the typed values instead.
         #else
         RemoteConfig.remoteConfig().setDefaults(defaults)
         #endif
     }
+
+    #if os(Android)
+    /// skip-firebase takes `[String: AnyDynamicObject]`, so box each default as the matching `java.lang` type.
+    func setDefaultValues(_ defaults: [String: RemoteConfigDefaultValue]) {
+        var bridged: [String: AnyDynamicObject] = [:]
+        for (key, value) in defaults {
+            let object: AnyDynamicObject?
+            switch value {
+            case .bool(let bool): object = try? AnyDynamicObject(className: "java.lang.Boolean", bool)
+            case .string(let string): object = try? AnyDynamicObject(className: "java.lang.String", string)
+            case .number(let number): object = try? AnyDynamicObject(className: "java.lang.Double", number)
+            case .json(let data): object = try? AnyDynamicObject(className: "java.lang.String", String(decoding: data, as: UTF8.self))
+            }
+            if let object {
+                bridged[key] = object
+            } else {
+                logger.warning("Remote Config default for \(key) couldn't be converted")
+            }
+        }
+        RemoteConfig.remoteConfig().setDefaults(bridged)
+    }
+    #endif
 }

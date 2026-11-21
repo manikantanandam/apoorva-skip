@@ -156,14 +156,15 @@ struct RowsCard<Content: View>: View {
 }
 
 #if os(Android)
-/// SkipSwiftUI has no `Layout` protocol, so Android scrolls the chips sideways instead of wrapping them.
+/// SkipSwiftUI has no `Layout` protocol, so Android wraps the chips with an adaptive grid (equal-width cells) instead.
 struct FlowLayout<Content: View>: View {
     var spacing: CGFloat = ManiSpacing.sm
     @ViewBuilder var content: Content
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: spacing) { content }
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: spacing, alignment: .leading)],
+                  alignment: .leading, spacing: spacing) {
+            content
         }
     }
 }

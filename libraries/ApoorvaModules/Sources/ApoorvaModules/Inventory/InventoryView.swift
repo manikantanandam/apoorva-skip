@@ -321,7 +321,21 @@ public struct CategoriesView: View {
                                 .foregroundStyle(theme.base.textSecondary)
                         }
                         Spacer()
+                        #if os(Android)  // No drag-to-reorder in SkipSwiftUI, so offer move up/down buttons instead.
+                        let index = viewModel.categories.firstIndex(where: { $0.id == category.id }) ?? 0
+                        Button { Task { await viewModel.move(from: IndexSet(integer: index), to: index - 1) } } label: {
+                            Image(systemName: "chevron.up").foregroundStyle(theme.base.textSecondary)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(index == 0 || viewModel.isMoving)
+                        Button { Task { await viewModel.move(from: IndexSet(integer: index), to: index + 2) } } label: {
+                            Image(systemName: "chevron.down").foregroundStyle(theme.base.textSecondary)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(index >= viewModel.categories.count - 1 || viewModel.isMoving)
+                        #else
                         ManiSwiftUIComponents.IconView(.drag, size: 14, color: theme.base.textSecondary)
+                        #endif
                     }
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -397,25 +411,20 @@ public struct ItemImportView: View {
                         Task { onDone(await viewModel.importReady()) }
                     }
                 }
-                #if !os(Android)  // ShareLink with SharePreview isn't available in SkipSwiftUI.
+                #if os(Android)  // SharePreview isn't available in SkipSwiftUI, so share the template text without a preview.
+                ShareLink(item: ItemCSV.template) {
+                    Text("Download template").frame(maxWidth: .infinity, minHeight: ManiTouchTarget.minimum)
+                }
+                #else
                 ShareLink(item: ItemCSV.template, preview: SharePreview("items-template.csv")) {
                     Text("Download template").frame(maxWidth: .infinity, minHeight: ManiTouchTarget.minimum)
                 }
                 #endif
             }
         }
-        #if !os(Android)  // CSV file picking needs UTType/fileImporter, unavailable in SkipSwiftUI.
-        .fileImporter(isPresented: $isPicking, allowedContentTypes: [.commaSeparatedText, .plainText]) { result in
-            guard case .success(let url) = result else { return }
-            let scoped = url.startAccessingSecurityScopedResource()
-            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-            if let text = try? String(contentsOf: url, encoding: .utf8) {
-                viewModel.read(text: text, fileName: url.lastPathComponent)
-            } else {
-                viewModel.errorMessage = "Couldn't read that file."
-            }
+        .textFileImporter(isPresented: $isPicking, onFailure: { viewModel.errorMessage = "Couldn't read that file." }) { file in
+            viewModel.read(text: file.text, fileName: file.name)
         }
-        #endif
         .navigationTitle("Import items")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

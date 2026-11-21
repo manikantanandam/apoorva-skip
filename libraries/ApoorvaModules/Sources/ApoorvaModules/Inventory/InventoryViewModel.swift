@@ -433,8 +433,14 @@ public final class CategoriesViewModel {
         await load()
     }
 
+    /// True while a reorder is being saved; further moves are ignored until it finishes.
+    public private(set) var isMoving = false
+
     /// Persists a drag-reorder: sortOrder follows the new positions.
     public func move(from source: IndexSet, to destination: Int) async {
+        guard !isMoving else { return }
+        isMoving = true
+        defer { isMoving = false }
         var reordered = categories
         reordered.move(fromOffsets: source, toOffset: destination)
         categories = reordered

@@ -71,16 +71,17 @@ public struct AttendanceView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             Grid(alignment: .center, horizontalSpacing: 6, verticalSpacing: 8) {
                 GridRow {
-                    Text("Staff").font(theme.typography.secondary.weight(.semibold)).gridColumnAlignment(.leading)
+                    Text("Staff").font(theme.typography.secondary.weight(.semibold)).gridColumnAlignment(.leading).staffColumn()
                     ForEach(viewModel.days, id: \.self) { day in
                         Text(viewModel.range == .week ? day.formatted(.dateTime.weekday(.narrow)) : day.formatted(.dateTime.day()))
                             .font(theme.typography.secondary)
+                            .frame(width: 22)
                             .foregroundStyle(theme.base.textSecondary)
                     }
                 }
                 ForEach(viewModel.staff) { member in
                     GridRow {
-                        Text(member.name).font(theme.typography.body).lineLimit(1)
+                        Text(member.name).font(theme.typography.body).lineLimit(1).staffColumn()
                         ForEach(viewModel.days, id: \.self) { day in
                             let status = viewModel.record(for: member, on: day)?.status
                             Text(status?.mark ?? "·")
@@ -98,6 +99,17 @@ public struct AttendanceView: View {
         }
         .background(theme.base.surface)
         .clipShape(RoundedRectangle(cornerRadius: theme.radii.card))
+    }
+}
+
+private extension View {
+    /// Android's `Grid` stand-in stacks rows, so a fixed name column keeps the day cells aligned. iOS sizes it itself.
+    func staffColumn() -> some View {
+        #if os(Android)
+        frame(width: 96, alignment: .leading)
+        #else
+        self
+        #endif
     }
 }
 
