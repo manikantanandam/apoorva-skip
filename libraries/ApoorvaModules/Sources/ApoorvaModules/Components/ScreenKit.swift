@@ -44,13 +44,19 @@ struct ScreenScroll<Content: View, Bottom: View>: View {
         }
         .background(theme.base.background.ignoresSafeArea())
         #else
-        scroll
-            .background(theme.base.background.ignoresSafeArea())
-            .safeAreaInset(edge: .bottom) {
-                bottom
-                    .padding(.horizontal, ManiSpacing.lg)
-                    .padding(.bottom, ManiSpacing.sm)
-            }
+        if bottom is EmptyView {
+            // No pinned bar: an empty safeAreaInset still reserves space under the scroll content.
+            scroll
+                .background(theme.base.background.ignoresSafeArea())
+        } else {
+            scroll
+                .background(theme.base.background.ignoresSafeArea())
+                .safeAreaInset(edge: .bottom) {
+                    bottom
+                        .padding(.horizontal, ManiSpacing.lg)
+                        .padding(.bottom, ManiSpacing.sm)
+                }
+        }
         #endif
     }
 }
