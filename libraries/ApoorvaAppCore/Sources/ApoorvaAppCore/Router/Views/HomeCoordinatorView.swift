@@ -18,7 +18,7 @@ struct HomeCoordinatorView: View {
         self.coordinator = coordinator
         self.container = container
         let viewModel = container.modulesContainer.makeHomeViewModel(session: container.appSession)
-        if (tabs.appCoordinator?.syncGeneration ?? 0) == 0 { viewModel.beginAwaitingInitialSync() }
+        if !(tabs.appCoordinator?.isInitialSyncDone ?? false) { viewModel.beginAwaitingInitialSync() }
         _viewModel = State(initialValue: viewModel)
     }
 
@@ -37,11 +37,14 @@ struct HomeCoordinatorView: View {
         .sheet(item: $coordinator.presentedSheet) { route in
             NavigationStack { destination(for: route) }
         }
-        .onChange(of: tabs.appCoordinator?.syncGeneration) { _, generation in
-            // The cache just got the server's data: show it instead of the pre-sync empty state.
-            guard (generation ?? 0) > 0 else { return }
-            viewModel.markSyncSettled()
+        .onChange(of: tabs.appCoordinator?.syncGeneration) { _, _ in
+            // The cache just got server data: show it instead of the pre-sync empty state.
+            if tabs.appCoordinator?.isInitialSyncDone == true { viewModel.markSyncSettled() }
             Task { await viewModel.load() }
+        }
+        .onChange(of: tabs.appCoordinator?.isInitialSyncDone) { _, done in
+            // An org switch clears the cache and syncs again: wait for it rather than flashing the guide.
+            if done == false { viewModel.beginAwaitingInitialSync() }
         }
         .onChange(of: tabs.isPresentingNewBill) { _, isPresenting in
             if !isPresenting { Task { await viewModel.load() } }

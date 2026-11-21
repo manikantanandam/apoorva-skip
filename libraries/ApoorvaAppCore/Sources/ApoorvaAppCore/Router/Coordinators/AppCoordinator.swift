@@ -26,7 +26,10 @@ public final class AppCoordinator {
     private var platform = PlatformConfig()
     private var lastOrgId: String?
     private var recomputeGeneration = 0
+    /// Bumped each time a sync step lands data in the local cache, so screens reading it can reload.
     private(set) var syncGeneration = 0
+    /// False from sign-in (or an org switch) until the first full sync has finished and the session is reloaded.
+    private(set) var isInitialSyncDone = false
 
     public init(appContainer: AppContainer = AppContainer()) {
         self.appContainer = appContainer
@@ -87,6 +90,7 @@ public final class AppCoordinator {
                 // Switching orgs: never mix two orgs' data in the local cache.
                 try? await appContainer.repositoryContainer.clearLocalData()
                 try? await appContainer.offlineStorageContainer.syncStorage.resetAllSyncStates()
+                isInitialSyncDone = false
             }
             lastOrgId = orgId
         }
@@ -137,6 +141,7 @@ public final class AppCoordinator {
         }
 
         guard changed else { return }
+        if case .ready = newPhase {} else { isInitialSyncDone = false }
         switch newPhase {
         case .loading:
             sessionState = .loading
@@ -163,11 +168,12 @@ public final class AppCoordinator {
     /// Pulls every collection, then re-derives the phase so org status and min version changes take effect.
     func syncAll(force: Bool = false) async {
         await appContainer.repositoryContainer.syncEngine.syncAll(force: force)
-        // Screens that read the local cache (Home) reload when this changes; 0 means no sync has finished yet.
         syncGeneration += 1
         try? await appContainer.repositoryContainer.organizationRepository.sync(force: force)
         await recompute()
         await session.reload()
+        isInitialSyncDone = true
+        syncGeneration += 1
         await appContainer.modulesContainer.invitationsViewModel.refresh()
         appContainer.themeStore.apply(session: session)
         presentTrialEndingIfNeeded()
