@@ -19,6 +19,10 @@ enum AccessibilityID {
         static let emailButton = "signInHub.emailButton"
     }
 
+    enum Customers {
+        static let moreMenu = "customers.moreMenu"
+    }
+
     enum Pos {
         static let customerRow = "pos.customerRow"
         static let billDate = "pos.billDate"

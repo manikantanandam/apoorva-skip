@@ -2,6 +2,9 @@
 //  LoginUITests.swift
 //  ApoorvaUITests
 //
+//  The whole screen is one test so the app launches once. The wrong-password scenario runs first because a
+//  successful sign-in leaves the screen.
+//
 
 import XCTest
 
@@ -17,19 +20,21 @@ final class LoginUITests: XCTestCase {
         login.openEmailSignIn()
     }
 
-    func testLoginWithValidCredentialsLeavesSignInScreen() {
-        login.signIn(email: TestCredentials.email, password: TestCredentials.password)
+    func testLogin() {
+        XCTContext.runActivity(named: "Wrong password shows error") { _ in
+            login.signIn(email: TestCredentials.email, password: "wrong-password")
 
-        let gone = NSPredicate(format: "exists == false")
-        expectation(for: gone, evaluatedWith: login.signInButton)
-        waitForExpectations(timeout: 10)
-        XCTAssertFalse(login.errorNote.exists)
-    }
+            XCTAssertTrue(login.errorNote.waitForExistence(timeout: 10))
+            XCTAssertTrue(login.signInButton.exists)
+        }
 
-    func testLoginWithWrongPasswordShowsError() {
-        login.signIn(email: TestCredentials.email, password: "wrong-password")
+        XCTContext.runActivity(named: "Valid credentials leave sign-in screen") { _ in
+            login.signIn(email: TestCredentials.email, password: TestCredentials.password)
 
-        XCTAssertTrue(login.errorNote.waitForExistence(timeout: 10))
-        XCTAssertTrue(login.signInButton.exists)
+            let gone = NSPredicate(format: "exists == false")
+            expectation(for: gone, evaluatedWith: login.signInButton)
+            waitForExpectations(timeout: 10)
+            XCTAssertFalse(login.errorNote.exists)
+        }
     }
 }

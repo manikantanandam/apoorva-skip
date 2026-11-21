@@ -27,6 +27,21 @@
 - Debugging: run one test (`scripts/ui-test.sh Class/method`), not the whole bundle.
 - CI: the app target bundles both gitignored Firebase plists, so the `ui-tests` job runs `scripts/setup-firebase-config.sh` from repo secrets first. Without it the build fails ("Build input file cannot be found: GoogleService-Info-production.plist", PR #80).
 
+## Seeded launch (2026-11-21)
+- **Entry point:** `-UITesting -UITestingSeed fancy|kirana` (`AppLauncher.launchSeeded`) replaces the removed demo shop. `UITestingConfig.seedVerticalName` is DEBUG-only; `UITestSeeder` (ApoorvaAppCore) is wrapped in `#if DEBUG`, so release builds contain none of it.
+- **Data integrity:** `ServicesContainer` swaps in `FakeUserService`, which emits nothing until the seeder finishes. The seeder writes settings, items, customers and sales while the session has no org, so `OrgCollectionRepository`/repositories write local-only and never touch Firestore, then publishes the owner (org `uitest-org`). Production auth/profile/org flows are unchanged and only reachable without the seed argument.
+- **Fixture:** Ravi Kumar, Meena S (₹1,120 due), Sneha P, Anil Regular (6 visits = Regular), Kavya New (created today, no visits). Customer aggregates are fixed values, not derived from the seeded sales.
+- **Customers list:** `UITests/Customers/CustomerListUITests.swift` + `CustomerListScreen` cover header, rows/badges, search, filters, add customer, detail, long-press actions, More menu. Only new identifier: `customers.moreMenu`. Written without a simulator run; verify first: `UITestSeeder` compiles (Customer/Sale/AppUser inits), Home reaches `waitForSeededHome`, the clear-search key-delete test, long-press menu buttons, and form placeholders ("Anitha Rao", "+91 97010 55443").
+- **Follow-up:** `POSUITests`, `CustomerPickerUITests` and `KiranaPOSUITests` still call `enterDemoShop`; switch them to `launchSeeded` (kirana ones to `launchSeeded(vertical: "kirana")`; the kirana seed has no `variantsJSON`, so the Tea Powder variant tests still need it).
+
+## One test per screen
+- Each UI test class has a single `testX()` that runs named scenarios through `XCTContext.runActivity`, so the app launches and seeds once per class (a launch per test dominated run time). A `scenario(_:_:)` helper resets to a known screen first; scenarios that change data (add customer, hold bills, complete sales) run last.
+- All classes now use `launchSeeded` (the old `enterDemoShop` is unused). `UITestingConfig.isEnabled` swaps `NoOpCustomerService`, `NoOpSaleService` and `NoOpHeldBillService` into `ServicesContainer`, because a seeded owner has an org and the real services would write to an unconfigured Firestore (sales and holds fail otherwise). `UITestSeeder` gives kirana "Tea Powder 250g" sizes so the variant sheet opens.
+- Device quirks: swiping a sheet down doesn't dismiss it (tap its Close); the centre of cart-line and held-bill rows doesn't take taps (tap the left side); a customer row's accessibility label must start with the name (CustomersView sets it explicitly).
+- Not covered: kirana weighed-line edit; POS More-menu, bill-date, manager-PIN and "Apply disabled" checks; checkout credit/split/cash-change (checkout was redesigned in #95 with per-mode amounts, no split screen). Card and UPI sales type the full amount, since nothing typed means all cash.
+- While debugging a failure, comment out the scenarios that already passed and leave a "resume here" marker; restore them before the final full run.
+- `scripts/ui-test.sh` passes `-allowProvisioningUpdates` so a physical-device run can regenerate the runner's profile.
+
 ## Known risks
 - Fixed: `FirebaseApp.configure()` never runs in `-UITesting` mode, so Firebase handles crashed (`FIRIllegalStateException`). Two fixes:
   - `FirebaseFirestoreStore` resolves Firestore lazily via `database()`, which throws when `FirebaseApp.app() == nil`; `listen` then emits one `nil` (missing doc) so the session still resolves (-> onboarding). Never capture an SDK handle at init.

@@ -14,4 +14,14 @@ enum AppLauncher {
         app.launch()
         return app
     }
+
+    /// Launches signed in to a seeded sample shop (`fancy` or `kirana`), landing on Home.
+    /// Mirrors `UITestingConfig.seedLaunchArgument`; the seed is DEBUG-only.
+    @MainActor
+    static func launchSeeded(vertical: String = "fancy") -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments += ["-UITesting", "-UITestingSeed", vertical]
+        app.launch()
+        return app
+    }
 }

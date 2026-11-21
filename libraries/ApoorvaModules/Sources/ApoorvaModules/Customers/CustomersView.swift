@@ -96,6 +96,7 @@ public struct CustomerListView: View {
                 } label: {
                     ManiSwiftUIComponents.IconView(.more, size: 18, color: theme.base.text)
                 }
+                .accessibilityIdentifier(AccessibilityID.Customers.moreMenu)
             }
         }
         .task {
@@ -128,11 +129,17 @@ public struct CustomerListView: View {
         let visits = item.totalSales == 1 ? "1 visit" : "\(item.totalSales) visits"
         let phone = showFullPhone ? item.phone : item.maskedPhone
         let detail = item.totalSales > 0 ? "\(visits) · \(item.lastVisitText)" : item.lastVisitText
+        let subtitle = "\(phone) · \(detail)"
+        let value = item.totalAmountSpent > 0 ? Money.format(item.totalAmountSpent) : "—"
+        let status = badge(for: item)
+        // Spoken label starts with the name; the avatar initials would only add noise.
+        let spoken = [item.name, subtitle, value, status?.0].compactMap { $0 }.joined(separator: ", ")
         return ManiListRow(avatar: ManiAvatar(initials: initials(for: item.name)),
                            title: item.name,
-                           subtitle: "\(phone) · \(detail)",
-                           value: item.totalAmountSpent > 0 ? Money.format(item.totalAmountSpent) : "—",
-                           status: badge(for: item)) { onSelectCustomer(item) }
+                           subtitle: subtitle,
+                           value: value,
+                           status: status) { onSelectCustomer(item) }
+            .accessibilityLabel(spoken)
             .contextMenu {
                 Button("Call") { call(item) }
                 Button("WhatsApp") { whatsApp(item) }

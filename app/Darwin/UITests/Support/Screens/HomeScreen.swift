@@ -34,7 +34,22 @@ struct HomeScreen {
         XCTAssertTrue(seededBill.waitForExistence(timeout: 30), "Sample data was not seeded")
     }
 
+    /// Waits for Home after `AppLauncher.launchSeeded`: seeding saves customers first and bills last, so a listed bill means the data is complete.
+    func waitForSeededHome(timeout: TimeInterval = 60) {
+        // The loading screen shows until seeding finishes and the session resolves; wait on Home's tab bar, not the loading view.
+        XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: timeout), "Seeded launch stayed on the loading screen")
+        XCTAssertTrue(newBillButton.waitForExistence(timeout: timeout), "Seeded Home did not appear")
+        let seededBill = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Ravi Kumar, #D-'")).firstMatch
+        XCTAssertTrue(seededBill.waitForExistence(timeout: timeout), "Sample data was not seeded")
+    }
+
+    func openCustomersTab() {
+        let tab = app.tabBars.buttons["Customers"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 10), "Customers tab missing")
+        tab.tap()
+    }
+
     func openNewBill() {
-        newBillButton.tap()
+        newBillButton.firstMatch.tap() // Home has a quick action and a FAB with this label
     }
 }
