@@ -19,14 +19,17 @@ public struct CashDayView: View {
     private let onAdd: () -> Void
     private let onClose: () -> Void
     private let onHistory: () -> Void
+    /// Opens an entry for editing. Entries of a closed day are read-only, so reopen the day first.
+    private let onEdit: ((CashflowTransaction) -> Void)?
 
     public init(viewModel: CashDayViewModel, canClose: Bool, onAdd: @escaping () -> Void, onClose: @escaping () -> Void,
-                onHistory: @escaping () -> Void) {
+                onHistory: @escaping () -> Void, onEdit: ((CashflowTransaction) -> Void)? = nil) {
         self.viewModel = viewModel
         self.canClose = canClose
         self.onAdd = onAdd
         self.onClose = onClose
         self.onHistory = onHistory
+        self.onEdit = onEdit
     }
 
     private var subtitle: String {
@@ -57,6 +60,9 @@ public struct CashDayView: View {
                 }
                 if !modes.isEmpty { ManiSplitBarCard(title: "Sales by mode", segments: modes) }
                 SectionHeader(title: "Entries", actionTitle: "History", action: onHistory)
+                if onEdit != nil && !viewModel.isClosed && !day.entries.isEmpty {
+                    ScreenSubtitle(text: "Tap an entry to edit or delete it.")
+                }
                 RowsCard {
                     if day.cashSales != 0 {
                         ManiListRow(title: "Bill sales (cash)", subtitle: "In · auto", value: "+" + Money.format(day.cashSales))
@@ -64,7 +70,8 @@ public struct CashDayView: View {
                     ForEach(day.entries, id: \.id) { entry in
                         ManiListRow(title: entry.particulars,
                                     subtitle: "\(entry.transactionType == .credit ? "In" : "Out") · \(entry.timestamp.timeOnly) · \(entry.paymentMode == .cash ? "Cash" : "Bank")",
-                                    value: (entry.transactionType == .credit ? "+" : "−") + Money.format(entry.amount))
+                                    value: (entry.transactionType == .credit ? "+" : "−") + Money.format(entry.amount),
+                                    action: viewModel.isClosed ? nil : onEdit.map { edit in { edit(entry) } })
                     }
                     if day.cashSales == 0 && day.entries.isEmpty {
                         ManiListRow(title: "No entries yet", subtitle: "Bills and cash in/out show here")
@@ -123,6 +130,56 @@ public struct CashEntryView: View {
         }
         .navigationTitle("Cash entry")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// MARK: - Edit cash entry
+
+public struct CashEntryEditView: View {
+    @Bindable private var viewModel: CashEntryEditViewModel
+    private let onDone: () -> Void
+    @State private var confirmsDelete = false
+
+    public init(viewModel: CashEntryEditViewModel, onDone: @escaping () -> Void) {
+        self.viewModel = viewModel
+        self.onDone = onDone
+    }
+
+    public var body: some View {
+        ScreenScroll {
+            if viewModel.isLoaded {
+                if let date = viewModel.date {
+                    ScreenSubtitle(text: date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute()))
+                }
+                ManiSegmentedControl(selection: $viewModel.isIn, options: [(true, "Cash in"), (false, "Cash out")])
+                ManiHeroAmount("₹" + (viewModel.amountText.isEmpty ? "0" : viewModel.amountText),
+                               caption: viewModel.particulars.isEmpty ? "No particulars" : viewModel.particulars)
+                ManiInputField(label: "Particulars", text: $viewModel.particulars, placeholder: "What was this for?")
+                ManiSegmentedControl(selection: $viewModel.isCash, options: [(true, "Cash"), (false, "Bank")])
+                ManiKeypad { key in viewModel.amountText = key.apply(to: viewModel.amountText) }
+            }
+            if let error = viewModel.errorMessage { ManiNote(error, kind: .error) }
+        } bottom: {
+            if viewModel.isLoaded {
+                VStack(spacing: ManiSpacing.sm) {
+                    ManiButton("Save changes", isLoading: viewModel.isSaving, isEnabled: viewModel.canSave) {
+                        Task { if await viewModel.save() { onDone() } }
+                    }
+                    ManiButton("Delete entry", kind: .outline, isEnabled: !viewModel.isSaving) { confirmsDelete = true }
+                }
+            }
+        }
+        .navigationTitle("Edit entry")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await viewModel.load() }
+        .alert("Delete this entry?", isPresented: $confirmsDelete) {
+            Button("Delete", role: .destructive) {
+                Task { if await viewModel.delete() { onDone() } }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("It is removed from the day's cash and the cash book. This can't be undone from the app.")
+        }
     }
 }
 

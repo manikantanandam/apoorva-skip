@@ -32,6 +32,16 @@ public struct CashBook: Sendable {
             fromAccountId: type == .debit ? account.accountId : "", toAccountId: type == .credit ? account.accountId : "",
             person: person, timestampInMs: date.timeIntervalSince1970, updatedAtInMs: Date().timeIntervalSince1970))
     }
+
+    /// Saves an edited entry (any entry, including ones created by the legacy app).
+    public func update(_ entry: CashflowTransaction) async throws {
+        try await repository?.updateCashflowTransaction(entry)
+    }
+
+    /// Soft delete: the entry stays in Firestore with `isDeleted` set, so sync and history keep working.
+    public func softDelete(_ entry: CashflowTransaction) async throws {
+        try await repository?.softDeleteCashflowTransaction(entry)
+    }
 }
 
 extension ExpenseCategory {
@@ -171,6 +181,10 @@ public protocol MoneyRepositoryProtocol: Sendable {
     func saveExpense(_ expense: Expense) async throws
     func closeDay(_ close: DayClose) async throws
     func reopenDay(_ day: Date, by actorId: String) async throws
+    /// Edits an existing cash book entry. The caller decides what changed; the entry keeps its id and date.
+    func updateCashEntry(_ entry: CashflowTransaction, by actorId: String) async throws
+    /// Soft-deletes a cash book entry.
+    func deleteCashEntry(_ entry: CashflowTransaction, by actorId: String) async throws
 }
 
 public final actor MoneyRepository: MoneyRepositoryProtocol {
@@ -194,6 +208,16 @@ public final actor MoneyRepository: MoneyRepositoryProtocol {
         try await cashBook.record(isIn ? .credit : .debit, amount: amount, mode: "cash", category: mapped.0, subCategory: mapped.1,
                                   particulars: particulars)
         await audit?.log(.money, action: isIn ? "cash.in" : "cash.out", summary: "\(particulars) · ₹\(Int(amount))", targetId: nil)
+    }
+
+    public func updateCashEntry(_ entry: CashflowTransaction, by actorId: String) async throws {
+        try await cashBook.update(entry)
+        await audit?.log(.money, action: "cash.edit", summary: "\(entry.particulars) · ₹\(Int(entry.amount))", targetId: entry.id)
+    }
+
+    public func deleteCashEntry(_ entry: CashflowTransaction, by actorId: String) async throws {
+        try await cashBook.softDelete(entry)
+        await audit?.log(.money, action: "cash.delete", summary: "\(entry.particulars) · ₹\(Int(entry.amount))", targetId: entry.id)
     }
 
     public func saveExpense(_ expense: Expense) async throws {

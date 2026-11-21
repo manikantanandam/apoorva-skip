@@ -29,6 +29,16 @@ private final class RecordingMoney: MoneyRepositoryProtocol, @unchecked Sendable
         closes.append(close)
     }
     func reopenDay(_ day: Date, by actorId: String) async throws { reopened.append(day) }
+    var updatedEntries: [CashflowTransaction] = []
+    var deletedEntries: [CashflowTransaction] = []
+    func updateCashEntry(_ entry: CashflowTransaction, by actorId: String) async throws {
+        if fail { throw NSError(domain: "test", code: 1) }
+        updatedEntries.append(entry)
+    }
+    func deleteCashEntry(_ entry: CashflowTransaction, by actorId: String) async throws {
+        if fail { throw NSError(domain: "test", code: 1) }
+        deletedEntries.append(entry)
+    }
 }
 
 private final class FixedCashflowRepository: CashflowTransactionRepositoryProtocol, @unchecked Sendable {
@@ -241,5 +251,99 @@ struct DailySummaryViewModelTests {
         #expect(text.contains("*Glitz*"))
         #expect(text.contains("Top item: Pen"))
         #expect(text.contains("Dues collected"))
+    }
+}
+
+@MainActor
+struct CashEntryEditTests {
+    private func entry(id: String = "e1", type: CashflowTransaction.TransactionType = .credit,
+                       mode: CashflowTransaction.PaymentMode = .cash, deleted: Bool = false) -> CashflowTransaction {
+        CashflowTransaction(id: id, timestamp: Date(timeIntervalSince1970: 1_000), particulars: "No particulars", amount: 600,
+                            transactionType: type, paymentMode: mode, category: .salesRevenue,
+                            fromAccountId: type == .debit ? mode.accountId : "", toAccountId: type == .credit ? mode.accountId : "",
+                            isDeleted: deleted, timestampInMs: 1_000, updatedAtInMs: 1_000)
+    }
+
+    private func makeSUT(_ items: [CashflowTransaction]) -> (CashEntryEditViewModel, RecordingMoney) {
+        let cashflow = FixedCashflowRepository()
+        cashflow.items = items
+        let money = RecordingMoney()
+        return (CashEntryEditViewModel(entryId: "e1", cashflowRepository: cashflow, money: money, actorId: "u1"), money)
+    }
+
+    @Test func loadFillsTheFormFromTheEntry() async {
+        let (model, _) = makeSUT([entry()])
+        await model.load()
+        #expect(model.isLoaded)
+        #expect(model.isIn)
+        #expect(model.isCash)
+        #expect(model.amountText == "600")
+        #expect(model.particulars == "No particulars")
+    }
+
+    @Test func aMissingOrDeletedEntryDoesNotLoad() async {
+        let (missing, _) = makeSUT([])
+        await missing.load()
+        #expect(!missing.isLoaded)
+        #expect(missing.errorMessage != nil)
+        let (deleted, _) = makeSUT([entry(deleted: true)])
+        await deleted.load()
+        #expect(!deleted.isLoaded)
+    }
+
+    @Test func editingTextAndAmountKeepsAccountsAndIdentity() async {
+        let (model, money) = makeSUT([entry()])
+        await model.load()
+        model.amountText = "650"
+        model.particulars = " Float "
+        #expect(await model.save())
+        let saved = money.updatedEntries.first
+        #expect(saved?.id == "e1")
+        #expect(saved?.amount == 650)
+        #expect(saved?.particulars == "Float")
+        #expect(saved?.timestamp == Date(timeIntervalSince1970: 1_000))
+        #expect(saved?.toAccountId == CashflowTransaction.PaymentMode.cash.accountId)
+        #expect(saved?.fromAccountId == "")
+    }
+
+    @Test func changingDirectionOrModeRebuildsTheAccounts() async {
+        let (model, money) = makeSUT([entry()])
+        await model.load()
+        model.isIn = false
+        model.isCash = false
+        #expect(await model.save())
+        let saved = money.updatedEntries.first
+        #expect(saved?.transactionType == .debit)
+        #expect(saved?.paymentMode == .upi)
+        #expect(saved?.fromAccountId == CashflowTransaction.PaymentMode.upi.accountId)
+        #expect(saved?.toAccountId == "")
+    }
+
+    @Test func aLegacyEntryWithAnUnknownTypeIsNotRewrittenUnlessChanged() async {
+        let (model, money) = makeSUT([entry(type: .unknown, mode: .unknown)])
+        await model.load()
+        model.particulars = "Tea"
+        #expect(await model.save())
+        #expect(money.updatedEntries.first?.transactionType == .unknown)
+        #expect(money.updatedEntries.first?.paymentMode == .unknown)
+    }
+
+    @Test func saveNeedsAPositiveAmountAndReportsFailures() async {
+        let (model, money) = makeSUT([entry()])
+        await model.load()
+        model.amountText = ""
+        #expect(!model.canSave)
+        #expect(await model.save() == false)
+        model.amountText = "10"
+        money.fail = true
+        #expect(await model.save() == false)
+        #expect(model.errorMessage != nil)
+    }
+
+    @Test func deleteSoftDeletesTheOriginalEntry() async {
+        let (model, money) = makeSUT([entry()])
+        await model.load()
+        #expect(await model.delete())
+        #expect(money.deletedEntries.map(\.id) == ["e1"])
     }
 }

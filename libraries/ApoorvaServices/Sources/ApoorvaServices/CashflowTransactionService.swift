@@ -15,6 +15,8 @@ public protocol CashflowTransactionServiceProtocol: Sendable {
     func getCashflowTransactions(since lastSync: Date, for orgId: String) async throws -> [CashflowTransaction]
     func addCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws
     func updateCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws
+    /// Soft delete: sets `isDeleted` and `updatedAt` only.
+    func deleteCashflowTransaction(id: String, for orgId: String) async throws
 }
 
 

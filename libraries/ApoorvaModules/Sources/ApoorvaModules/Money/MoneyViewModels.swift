@@ -160,6 +160,98 @@ public final class CashEntryViewModel {
     }
 }
 
+// MARK: - Edit cash entry
+
+/// Edits or soft-deletes one cash book entry from the day screen, including entries made by the legacy app.
+/// Keeps the entry's id, date, category and person; only what the user changes is rewritten.
+@MainActor
+@Observable
+public final class CashEntryEditViewModel {
+    public var isIn = false
+    public var amountText = ""
+    public var particulars = ""
+    public var isCash = true
+    public var isSaving = false
+    public var errorMessage: String?
+    public private(set) var isLoaded = false
+
+    private let entryId: String
+    private let cashflowRepository: CashflowTransactionRepositoryProtocol
+    private let money: MoneyRepositoryProtocol
+    private let actorId: String
+    private var original: CashflowTransaction?
+
+    public init(entryId: String, cashflowRepository: CashflowTransactionRepositoryProtocol,
+                money: MoneyRepositoryProtocol, actorId: String) {
+        self.entryId = entryId
+        self.cashflowRepository = cashflowRepository
+        self.money = money
+        self.actorId = actorId
+    }
+
+    public var amount: Double { Double(amountText) ?? 0 }
+    public var canSave: Bool { isLoaded && amount > 0 && !isSaving }
+    public var date: Date? { original?.timestamp }
+
+    public func load() async {
+        guard !isLoaded else { return }
+        let found = ((try? await cashflowRepository.getCashflowTransactions()) ?? []).first { $0.id == entryId }
+        guard let found, !found.isDeleted else {
+            errorMessage = "This entry no longer exists."
+            return
+        }
+        original = found
+        isIn = found.transactionType == .credit
+        amountText = found.amount.rounded() == found.amount ? String(Int(found.amount)) : String(found.amount)
+        particulars = found.particulars
+        isCash = found.paymentMode == .cash
+        isLoaded = true
+    }
+
+    /// The entry with the user's changes applied. Account ids are rebuilt only when the direction or mode changed.
+    func editedEntry() -> CashflowTransaction? {
+        guard var edited = original else { return nil }
+        edited.amount = amount
+        edited.particulars = particulars.trimmingCharacters(in: .whitespacesAndNewlines)
+        let wasIn = edited.transactionType == .credit
+        let wasCash = edited.paymentMode == .cash
+        if isIn != wasIn { edited.transactionType = isIn ? .credit : .debit }
+        if isIn != wasIn || isCash != wasCash {
+            let mode: CashflowTransaction.PaymentMode = isCash ? .cash : .upi
+            edited.paymentMode = mode
+            edited.fromAccountId = isIn ? "" : mode.accountId
+            edited.toAccountId = isIn ? mode.accountId : ""
+        }
+        return edited
+    }
+
+    public func save() async -> Bool {
+        guard canSave, let edited = editedEntry() else { return false }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            try await money.updateCashEntry(edited, by: actorId)
+            return true
+        } catch {
+            errorMessage = "Couldn't save the changes."
+            return false
+        }
+    }
+
+    public func delete() async -> Bool {
+        guard let original else { return false }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            try await money.deleteCashEntry(original, by: actorId)
+            return true
+        } catch {
+            errorMessage = "Couldn't delete the entry."
+            return false
+        }
+    }
+}
+
 // MARK: - Close day (85)
 
 @MainActor

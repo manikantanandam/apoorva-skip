@@ -266,6 +266,11 @@ public class ModulesContainer {
         CashEntryViewModel(money: repositoryContainer.moneyRepository, actorId: actorId)
     }
 
+    public func makeCashEntryEditViewModel(entryId: String, actorId: String) -> CashEntryEditViewModel {
+        CashEntryEditViewModel(entryId: entryId, cashflowRepository: repositoryContainer.cashflowRepository,
+                               money: repositoryContainer.moneyRepository, actorId: actorId)
+    }
+
     public func makeDayCloseViewModel(date: Date, session: AppSession) -> DayCloseViewModel {
         DayCloseViewModel(date: date, dayViewModel: makeCashDayViewModel(date: date), money: repositoryContainer.moneyRepository,
                           actorId: session.actorId, actorName: session.actorName)
