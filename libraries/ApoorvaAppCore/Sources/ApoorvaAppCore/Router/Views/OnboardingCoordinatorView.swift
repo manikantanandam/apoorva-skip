@@ -42,23 +42,18 @@ struct OnboardingCoordinatorView: View {
         switch route {
         case .splash:
             SplashView(onGetStarted: { coordinator.push(.signInHub) })
-        case .signInHub:
-            SignInHubView(session: session, viewModel: authFlow,
+        case .signInHub, .emailSignIn:
+            SignInHubView(session: session, viewModel: authFlow, login: login,
                           onGoogle: { coordinator.push(.googleChooser) },
                           onPhoneOTP: { phone in coordinator.push(.otp(phone: phone)) },
-                          onEmail: { coordinator.push(.emailSignIn) },
+                          onForgot: {
+                              authFlow.email = login.username
+                              coordinator.push(.forgotPassword)
+                          },
                           onRegister: { coordinator.push(.register) },
                           onJoinWithCode: { coordinator.push(.staffJoin(inviteToken: "")) })
         case .otp:
             PhoneOTPView(viewModel: authFlow)
-        case .emailSignIn:
-            EmailSignInView(session: session, viewModel: login,
-                            onForgot: {
-                                authFlow.email = login.username
-                                coordinator.push(.forgotPassword)
-                            },
-                            onRegister: { coordinator.push(.register) },
-                            onGoogle: { coordinator.push(.googleChooser) })
         case .register:
             RegisterView(session: session, viewModel: authFlow,
                          onRegistered: { coordinator.push(.verifyEmail) },

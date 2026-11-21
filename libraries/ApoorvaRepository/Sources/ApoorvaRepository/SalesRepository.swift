@@ -9,6 +9,9 @@ import Foundation
 import ApoorvaOfflineStorage
 import ApoorvaModels
 import ApoorvaServices
+import ManiLogger
+
+private let logger = AppLogger(category: .sync)
 
 public protocol SaleRepositoryProtocol: Sendable {
     func getSales() async throws -> [Sale]
@@ -138,17 +141,20 @@ public final actor SaleRepository: SaleRepositoryProtocol {
     public func sync(force: Bool) async throws {
         let user = try await userRepository.getCurrentUser()
         guard let orgId = user.selectedOrganization?.orgId else {
+            logger.info("sales.sync: skipped, no selected organization")
             return
         }
-        
+
         let sales: [Sale]
-        
+
         let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: Sale.table.name)
+        logger.info("sales.sync: org=\(orgId) force=\(force) cursor=\(String(describing: lastUpdatedDate))")
         if let lastUpdatedDate, !force {
             sales = try await service.getSales(since: SyncCursor.queryStart(from: lastUpdatedDate), for: orgId)
         } else {
             sales = try await service.getSales(for: orgId)
         }
+        logger.info("sales.sync: fetched \(sales.count) sales from Firestore")
         try await storage.saveSales(sales: sales)
 
         // New sales match on `timestamp`, edits/cancellations on `updatedAt` — track whichever is newest.

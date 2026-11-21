@@ -12,7 +12,6 @@ struct LoginScreen {
     let app: XCUIApplication
 
     var getStartedButton: XCUIElement { app.buttons[AccessibilityID.Splash.getStarted] }
-    var emailOptionButton: XCUIElement { app.buttons[AccessibilityID.SignInHub.emailButton] }
     var emailField: XCUIElement { app.textFields[AccessibilityID.EmailSignIn.email] }
     var passwordField: XCUIElement { app.secureTextFields[AccessibilityID.EmailSignIn.password] }
     var signInButton: XCUIElement { app.buttons[AccessibilityID.EmailSignIn.signInButton] }
@@ -21,8 +20,6 @@ struct LoginScreen {
     /// Splash -> hub -> email sign-in form.
     func openEmailSignIn(timeout: TimeInterval = 10) {
         if getStartedButton.waitForExistence(timeout: timeout) { getStartedButton.tap() }
-        XCTAssertTrue(emailOptionButton.waitForExistence(timeout: timeout), "Sign-in hub did not appear")
-        emailOptionButton.tap()
         XCTAssertTrue(emailField.waitForExistence(timeout: timeout), "Email sign-in form did not appear")
     }
 

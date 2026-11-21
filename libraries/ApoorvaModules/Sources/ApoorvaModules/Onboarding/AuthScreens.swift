@@ -52,31 +52,61 @@ public struct SplashView: View {
 public struct SignInHubView: View {
     private let session: AppSession
     @Bindable private var viewModel: AuthFlowViewModel
+    @Bindable private var login: LoginViewModel
     private let onGoogle: () -> Void
     private let onPhoneOTP: (String) -> Void
-    private let onEmail: () -> Void
+    private let onForgot: () -> Void
     private let onRegister: () -> Void
     private let onJoinWithCode: () -> Void
 
-    public init(session: AppSession, viewModel: AuthFlowViewModel, onGoogle: @escaping () -> Void,
-                onPhoneOTP: @escaping (String) -> Void, onEmail: @escaping () -> Void,
-                onRegister: @escaping () -> Void, onJoinWithCode: @escaping () -> Void) {
+    public init(session: AppSession, viewModel: AuthFlowViewModel, login: LoginViewModel,
+                onGoogle: @escaping () -> Void, onPhoneOTP: @escaping (String) -> Void,
+                onForgot: @escaping () -> Void, onRegister: @escaping () -> Void,
+                onJoinWithCode: @escaping () -> Void) {
         self.session = session
         self.viewModel = viewModel
+        self.login = login
         self.onGoogle = onGoogle
         self.onPhoneOTP = onPhoneOTP
-        self.onEmail = onEmail
+        self.onForgot = onForgot
         self.onRegister = onRegister
         self.onJoinWithCode = onJoinWithCode
     }
 
     public var body: some View {
         ScreenScroll {
-            ManiAppBar(title: "Welcome")
-            ScreenSubtitle(text: "Sign in or create your shop account")
-
-            if session.isOn(.authGoogle) {
-                ManiProviderButton(provider: .google, title: "Continue with Google", action: onGoogle)
+            if session.isOn(.authEmailPassword) {
+                ManiInputField(label: "Email", text: $login.username, placeholder: "you@shop.in", keyboard: .email)
+                    .accessibilityIdentifier(AccessibilityID.EmailSignIn.email)
+                ManiInputField(label: "Password", text: $login.password, isSecure: true)
+                    .accessibilityIdentifier(AccessibilityID.EmailSignIn.password)
+                Button("Forgot password?", action: onForgot)
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                if let error = login.errorMessage {
+                    ManiNote(error, kind: .error)
+                        .accessibilityIdentifier(AccessibilityID.EmailSignIn.error)
+                }
+                ManiButton("Sign in", isLoading: login.isLoggingIn, isEnabled: login.isLoginEnabled) {
+                    login.loginPressed()
+                }
+                .accessibilityIdentifier(AccessibilityID.EmailSignIn.signInButton)
+                if session.isOn(.authRegistrationsOpen) {
+                    Button("No account? Create one", action: onRegister)
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                #if DEBUG
+                Menu {
+                    ForEach(DebugTestUsers.all) { user in
+                        Button("\(user.name) (\(user.email))") { login.selectDebugUser(user) }
+                    }
+                } label: {
+                    Label("Select test user", systemImage: "person.2.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                }
+                #endif
             }
             if session.isOn(.authPhoneOTP) {
                 ScreenSubtitle(text: "or use your phone")
@@ -85,14 +115,8 @@ public struct SignInHubView: View {
                     Task { if await viewModel.sendOTP() { onPhoneOTP(viewModel.phone) } }
                 }
             }
-            if session.isOn(.authEmailPassword) {
-                ManiButton("Sign in with email", icon: .mail, kind: session.isOn(.authPhoneOTP) ? .outline : .primary, action: onEmail)
-                    .accessibilityIdentifier(AccessibilityID.SignInHub.emailButton)
-                if session.isOn(.authRegistrationsOpen) {
-                    Button("New here? Create an account with email", action: onRegister)
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                }
+            if session.isOn(.authGoogle) {
+                ManiProviderButton(provider: .google, title: "Continue with Google", action: onGoogle)
             }
             Button("Have an invite code from your shop?", action: onJoinWithCode)
                 .font(.subheadline)
@@ -102,7 +126,7 @@ public struct SignInHubView: View {
             }
             ManiNote("Only the sign-in methods turned on for Apoorva are shown. Works offline after the first sign-in.")
         }
-        .toolbar(.hidden, for: .navigationBar)
+        .navigationTitle("Sign in")
     }
 }
 
@@ -139,54 +163,6 @@ public struct PhoneOTPView: View {
         }
         .navigationTitle("Verify phone")
         .everySecond { now = $0 }
-    }
-}
-
-// MARK: - 07 Email sign-in
-
-public struct EmailSignInView: View {
-    private let session: AppSession
-    @Bindable private var viewModel: LoginViewModel
-    private let onForgot: () -> Void
-    private let onRegister: () -> Void
-    private let onGoogle: () -> Void
-
-    public init(session: AppSession, viewModel: LoginViewModel, onForgot: @escaping () -> Void,
-                onRegister: @escaping () -> Void, onGoogle: @escaping () -> Void) {
-        self.session = session
-        self.viewModel = viewModel
-        self.onForgot = onForgot
-        self.onRegister = onRegister
-        self.onGoogle = onGoogle
-    }
-
-    public var body: some View {
-        ScreenScroll {
-            ManiInputField(label: "Email", text: $viewModel.username, placeholder: "you@shop.in", keyboard: .email)
-                .accessibilityIdentifier(AccessibilityID.EmailSignIn.email)
-            ManiInputField(label: "Password", text: $viewModel.password, isSecure: true)
-                .accessibilityIdentifier(AccessibilityID.EmailSignIn.password)
-            Button("Forgot password?", action: onForgot)
-                .font(.subheadline.weight(.semibold))
-                .frame(maxWidth: .infinity, alignment: .trailing)
-            if let error = viewModel.errorMessage {
-                ManiNote(error, kind: .error)
-                    .accessibilityIdentifier(AccessibilityID.EmailSignIn.error)
-            }
-            ManiButton("Sign in", isLoading: viewModel.isLoggingIn, isEnabled: viewModel.isLoginEnabled) {
-                viewModel.loginPressed()
-            }
-            .accessibilityIdentifier(AccessibilityID.EmailSignIn.signInButton)
-            if session.isOn(.authGoogle) {
-                ManiProviderButton(provider: .google, title: "Continue with Google", action: onGoogle)
-            }
-            if session.isOn(.authRegistrationsOpen) {
-                Button("No account? Create one", action: onRegister)
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-            }
-        }
-        .navigationTitle("Sign in")
     }
 }
 
