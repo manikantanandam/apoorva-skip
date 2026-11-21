@@ -62,6 +62,7 @@ public struct WeightSheet: View {
         ScreenScroll {
             if entry.pricePerUnit == 0 {
                 ManiInputField(label: "Price per \(unit)", text: $priceText, placeholder: "₹", keyboard: .decimal)
+                    .accessibilityIdentifier(AccessibilityID.WeightSheet.price)
             }
             ManiSegmentedControl(selection: $entry.mode, options: WeightEntry.Mode.allCases.map { ($0, $0.rawValue) })
             ManiHeroAmount(entry.mode == .weight ? "\(String(format: "%.3f", current.weight)) \(unit)" : "₹" + (entry.text.isEmpty ? "0" : entry.text),
@@ -80,6 +81,7 @@ public struct WeightSheet: View {
             ManiButton("Add to bill · \(String(format: "₹%.2f", current.amount))", isEnabled: current.weight > 0 && price > 0) {
                 onAdd(current.weight, price)
             }
+            .accessibilityIdentifier(AccessibilityID.WeightSheet.add)
         }
         .navigationTitle(item.name)
         .navigationBarTitleDisplayMode(.inline)
@@ -166,10 +168,12 @@ public struct VariantSheet: View {
                 ManiSwatchRow(options: variants.colours.map { ($0.name, $0.name, Color(hex: $0.hex)) }, selection: $colour)
             }
             ManiInputField(label: "Quantity", text: $quantityText, keyboard: .number)
+                .accessibilityIdentifier(AccessibilityID.VariantSheet.quantity)
         } bottom: {
             ManiButton("Add to bill · \(Money.format(price * Double(quantity)))") {
                 onAdd([size, colour].filter { !$0.isEmpty }.joined(separator: " · "), quantity)
             }
+            .accessibilityIdentifier(AccessibilityID.VariantSheet.add)
         }
         .navigationTitle(item.name)
         .navigationBarTitleDisplayMode(.inline)
@@ -267,6 +271,7 @@ public struct BillDiscountView: View {
                     ManiChip("\(Int(percent))%", isSelected: viewModel.mode == .percent && Double(viewModel.valueText) == percent) {
                         viewModel.preset(percent)
                     }
+                    .accessibilityIdentifier(AccessibilityID.BillDiscount.preset(Int(percent)))
                 }
                 if viewModel.roundDownTarget < viewModel.subtotal {
                     ManiChip("Round to \(Money.format(viewModel.roundDownTarget))") { viewModel.roundTotal() }
@@ -277,6 +282,7 @@ public struct BillDiscountView: View {
             if viewModel.needsApproval {
                 SectionHeader(title: "Manager PIN")
                 ManiCodeField(length: 4, code: viewModel.managerPin, secure: true)
+                    .accessibilityIdentifier(AccessibilityID.BillDiscount.managerPin)
                 if let error = viewModel.errorMessage { ManiNote(error, kind: .error) }
                 ManiKeypad(showsDecimal: false) { key in
                     switch key {
@@ -291,9 +297,11 @@ public struct BillDiscountView: View {
         } bottom: {
             HStack(spacing: ManiSpacing.sm) {
                 ManiButton("Remove", kind: .outline) { onApply(0, nil) }
+                    .accessibilityIdentifier(AccessibilityID.BillDiscount.remove)
                 ManiButton("Apply discount", isEnabled: viewModel.canApply) {
                     onApply(viewModel.amount, viewModel.appliedPercent)
                 }
+                .accessibilityIdentifier(AccessibilityID.BillDiscount.apply)
             }
         }
         .navigationTitle("Bill discount")

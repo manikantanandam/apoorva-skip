@@ -131,4 +131,209 @@ final class CustomerPickerUITests: XCTestCase {
         XCTAssertTrue(picker.searchField.exists)
         XCTAssertTrue(picker.customer(named: "Ravi Kumar").exists)
     }
+
+    // MARK: - Creating a customer
+
+    func testValidPhoneAndNameEnablesAddAndAttach() {
+        fillForm(phone: "9000011111", name: "Kiran Test")
+
+        XCTAssertTrue(picker.addAndAttachButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(picker.addAndAttachButton.isEnabled)
+    }
+
+    func testAddAndAttachCreatesCustomerAndAttachesToBill() {
+        fillForm(phone: "9000011111", name: "Kiran Test")
+        picker.addAndAttachButton.tap()
+
+        pos.waitForScreen()
+        XCTAssertTrue(pos.walkInLabel.waitForNonExistence(timeout: 5), "Still walk-in after creating a customer")
+        XCTAssertTrue(pos.customerRow.label.contains("Kiran Test"), "POS row shows: \(pos.customerRow.label)")
+    }
+
+    func testNewCustomerAppearsInPickerAfterCreation() {
+        fillForm(phone: "9000011111", name: "Kiran Test")
+        picker.addAndAttachButton.tap()
+        pos.waitForScreen()
+        pos.openCustomerPicker()
+        picker.waitForScreen()
+
+        XCTAssertTrue(picker.customer(named: "Kiran Test").waitForExistence(timeout: 10), "Created customer missing from list")
+    }
+
+    func testPhoneWithNineDigitsKeepsButtonDisabled() {
+        fillForm(phone: "900001111", name: "Kiran Test")
+
+        XCTAssertTrue(picker.addAndAttachButton.waitForExistence(timeout: 5))
+        XCTAssertFalse(picker.addAndAttachButton.isEnabled)
+    }
+
+    func testPhoneWithElevenDigitsKeepsButtonDisabled() {
+        fillForm(phone: "90000111112", name: "Kiran Test")
+
+        XCTAssertTrue(picker.addAndAttachButton.waitForExistence(timeout: 5))
+        XCTAssertFalse(picker.addAndAttachButton.isEnabled)
+    }
+
+    func testPhoneWithSpacesCountsOnlyDigits() {
+        fillForm(phone: "90000 11111", name: "Kiran Test")
+
+        XCTAssertTrue(picker.addAndAttachButton.waitForExistence(timeout: 5))
+        XCTAssertTrue(picker.addAndAttachButton.isEnabled, "Ten digits with a space should be accepted")
+    }
+
+    func testLettersInPhoneKeepButtonDisabled() {
+        fillForm(phone: "abcdefghij", name: "Kiran Test")
+
+        XCTAssertTrue(picker.addAndAttachButton.waitForExistence(timeout: 5))
+        XCTAssertFalse(picker.addAndAttachButton.isEnabled)
+    }
+
+    func testPhoneWithoutNameKeepsButtonDisabled() {
+        fillForm(phone: "9000011111", name: nil)
+
+        XCTAssertTrue(picker.addAndAttachButton.waitForExistence(timeout: 5))
+        XCTAssertFalse(picker.addAndAttachButton.isEnabled)
+    }
+
+    func testNameWithoutPhoneKeepsButtonDisabled() {
+        fillForm(phone: nil, name: "Kiran Test")
+
+        XCTAssertTrue(picker.addAndAttachButton.waitForExistence(timeout: 5))
+        XCTAssertFalse(picker.addAndAttachButton.isEnabled)
+    }
+
+    func testWhitespaceOnlyNameKeepsButtonDisabled() {
+        fillForm(phone: "9000011111", name: "   ")
+
+        XCTAssertTrue(picker.addAndAttachButton.waitForExistence(timeout: 5))
+        XCTAssertFalse(picker.addAndAttachButton.isEnabled)
+    }
+
+    func testExistingPhoneReusesExistingCustomer() {
+        fillForm(phone: "9848012345", name: "Someone Else")
+        picker.addAndAttachButton.tap()
+
+        pos.waitForScreen()
+        XCTAssertTrue(pos.customerRow.label.contains("Ravi Kumar"), "Duplicate phone should attach the existing customer: \(pos.customerRow.label)")
+        XCTAssertFalse(pos.customerRow.label.contains("Someone Else"))
+    }
+
+    func testCreatedCustomerNameIsTrimmed() {
+        fillForm(phone: "9000011111", name: "  Kiran Test  ")
+        picker.addAndAttachButton.tap()
+
+        pos.waitForScreen()
+        XCTAssertTrue(pos.customerRow.label.contains("Kiran Test"))
+    }
+
+    // MARK: - Search edge cases
+
+    func testSearchByPhoneFindsCustomer() {
+        picker.searchField.tap()
+        picker.searchField.typeText("9123456780")
+
+        XCTAssertTrue(picker.customer(named: "Meena S").waitForExistence(timeout: 5))
+        XCTAssertTrue(picker.customer(named: "Ravi Kumar").waitForNonExistence(timeout: 5))
+    }
+
+    func testSearchIsCaseInsensitive() {
+        picker.searchField.tap()
+        picker.searchField.typeText("meena")
+
+        XCTAssertTrue(picker.customer(named: "Meena S").waitForExistence(timeout: 5))
+    }
+
+    func testSearchWithNoMatchListsNobody() {
+        picker.searchField.tap()
+        picker.searchField.typeText("zzzzqq")
+
+        XCTAssertTrue(picker.customer(named: "Ravi Kumar").waitForNonExistence(timeout: 5))
+        XCTAssertFalse(picker.customer(named: "Meena S").exists)
+        XCTAssertFalse(picker.customer(named: "Sneha P").exists)
+    }
+
+    func testUnknownPhoneInSearchPrefillsNewCustomerPhone() {
+        picker.searchField.tap()
+        picker.searchField.typeText("9000022222")
+        XCTAssertTrue(picker.customer(named: "Ravi Kumar").waitForNonExistence(timeout: 5))
+        dismissKeyboard()
+
+        XCTAssertTrue(picker.phoneField.waitForExistence(timeout: 5))
+        XCTAssertEqual(picker.phoneField.value as? String, "9000022222")
+    }
+
+    func testClearingSearchRestoresFullList() {
+        picker.searchField.tap()
+        picker.searchField.typeText("Meena")
+        XCTAssertTrue(picker.customer(named: "Ravi Kumar").waitForNonExistence(timeout: 5))
+        picker.searchField.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 5))
+
+        XCTAssertTrue(picker.customer(named: "Ravi Kumar").waitForExistence(timeout: 5))
+        XCTAssertTrue(picker.customer(named: "Sneha P").exists)
+    }
+
+    // MARK: - Picker navigation
+
+    func testBackWithoutSelectingKeepsWalkIn() {
+        app.buttons["BackButton"].tap()
+
+        pos.waitForScreen()
+        XCTAssertTrue(pos.walkInLabel.exists)
+    }
+
+    func testPickingCustomerThenReopeningAndChoosingWalkInResetsToWalkIn() {
+        picker.customer(named: "Ravi Kumar").tap()
+        pos.waitForScreen()
+        pos.openCustomerPicker()
+        picker.waitForScreen()
+        picker.walkInButton.tap()
+
+        pos.waitForScreen()
+        XCTAssertTrue(pos.walkInLabel.waitForExistence(timeout: 5), "Walk-in should detach the previous customer")
+    }
+
+    func testSwitchingBetweenCustomersReplacesTheAttachedOne() {
+        picker.customer(named: "Ravi Kumar").tap()
+        pos.waitForScreen()
+        pos.openCustomerPicker()
+        picker.waitForScreen()
+        XCTAssertTrue(picker.customer(named: "Meena S").waitForExistence(timeout: 10))
+        picker.customer(named: "Meena S").tap()
+
+        pos.waitForScreen()
+        XCTAssertTrue(pos.customerRow.label.contains("Meena S"))
+        XCTAssertFalse(pos.customerRow.label.contains("Ravi Kumar"))
+    }
+
+    func testCustomerWithDuesShowsDuesInRow() {
+        XCTAssertTrue(picker.customer(named: "Meena S").waitForExistence(timeout: 10))
+        XCTAssertTrue(picker.customer(named: "Meena S").label.contains("dues"), "Meena has a due balance: \(picker.customer(named: "Meena S").label)")
+    }
+
+    // MARK: - Helpers
+
+    /// Types into the new-customer form; nil leaves a field untouched. Submitting Name restores the bottom bar.
+    private func fillForm(phone: String?, name: String?) {
+        XCTAssertTrue(picker.phoneField.waitForExistence(timeout: 10))
+        if let phone {
+            picker.phoneField.tap()
+            picker.phoneField.typeText(phone)
+        }
+        if let name {
+            XCTAssertTrue(picker.nameField.waitForExistence(timeout: 5))
+            picker.nameField.tap()
+            picker.nameField.typeText(name + "\n")
+        } else if picker.nameField.exists {
+            picker.nameField.tap()
+            picker.nameField.typeText("\n")
+        }
+        XCTAssertTrue(picker.walkInButton.waitForExistence(timeout: 5), "Bottom bar should return after submitting the form")
+    }
+
+    private func dismissKeyboard() {
+        for key in ["Return", "return", "Search", "Done"] {
+            let button = app.keyboards.buttons[key]
+            if button.exists { button.tap(); return }
+        }
+    }
 }
