@@ -27,9 +27,12 @@ public struct OrganizationListView: View {
                     .padding(.top, ManiSpacing.sm)
             }
 
-            if let invitations, invitations.count > 0 {
+            if let invitations {
                 VStack(alignment: .leading, spacing: ManiSpacing.sm) {
                     SectionHeader(title: "Invitations")
+                    if invitations.invites.isEmpty {
+                        ScreenSubtitle(text: "No pending invitations")
+                    }
                     ForEach(invitations.invites) { invite in
                         InvitationCard(invite: invite, viewModel: invitations)
                     }

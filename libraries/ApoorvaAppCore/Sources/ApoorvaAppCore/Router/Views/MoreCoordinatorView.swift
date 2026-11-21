@@ -152,6 +152,7 @@ struct MoreCoordinatorView: View {
                 onSelectOrganization: { coordinator.present(.admin(.selectOrganization)) },
                 onShowOrganizations: { coordinator.push(.admin(.stores)) },
                 onShowTeamMembers: { coordinator.push(.admin(.members)) },
+                onShowOrganizationDetails: { coordinator.push(.admin(.organizationDetails)) },
                 onShowDeveloperSettings: container.showsDeveloperTools ? { coordinator.push(.developer(.hub)) } : nil
             )
         default:
@@ -182,6 +183,7 @@ struct MoreCoordinatorView: View {
             AdminHomeView(session: session, memberCount: memberCount, lastSync: lastSync) { item in
                 switch item {
                 case .stores: coordinator.push(.admin(.stores))
+                case .organization: coordinator.push(.admin(.organizationDetails))
                 case .members: coordinator.push(.admin(.members))
                 case .permissions: coordinator.push(.admin(.permissions))
                 case .theme: coordinator.push(.admin(.theme))
@@ -198,6 +200,8 @@ struct MoreCoordinatorView: View {
         case .members:
             UserListView(viewModel: container.modulesContainer.makeUserListViewModel(),
                          onAddMember: session.can(.admin) ? { coordinator.push(.admin(.memberAdd)) } : nil)
+        case .organizationDetails:
+            OrganizationDetailsView(viewModel: container.modulesContainer.makeOrganizationDetailsViewModel(session: session))
         case .memberAdd:
             AddMemberView(viewModel: container.modulesContainer.makeAddMemberViewModel(stores: session.stores),
                           onDone: { coordinator.pop() })

@@ -177,6 +177,13 @@ public class ModulesContainer {
         authService: servicesContainer.authService,
         userRepository: repositoryContainer.userRepository)
 
+    public func makeOrganizationDetailsViewModel(session: AppSession) -> OrganizationDetailsViewModel {
+        OrganizationDetailsViewModel(session: session,
+                                     organizationRepository: repositoryContainer.organizationRepository,
+                                     memberRepository: repositoryContainer.memberRepository,
+                                     inviteService: servicesContainer.memberInviteService)
+    }
+
     public func makeAddMemberViewModel(stores: [Store]) -> AddMemberViewModel {
         AddMemberViewModel(inviteService: servicesContainer.memberInviteService,
                            userRepository: repositoryContainer.userRepository,

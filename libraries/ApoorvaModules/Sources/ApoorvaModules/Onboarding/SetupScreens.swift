@@ -25,8 +25,14 @@ public struct ChooseVerticalView: View {
 
     public var body: some View {
         ScreenScroll {
-            if let invitations, invitations.count > 0 {
-                InvitationBanner(count: invitations.count) { showsInvitations = true }
+            if let invitations {
+                if invitations.count > 0 {
+                    InvitationBanner(count: invitations.count) { showsInvitations = true }
+                } else {
+                    Button("Joining a shop? Check invitations") { showsInvitations = true }
+                        .font(.subheadline)
+                        .frame(maxWidth: .infinity)
+                }
             }
             ManiAppBar(title: "What do you sell?")
             ScreenSubtitle(text: "We tailor billing and theme to your shop")

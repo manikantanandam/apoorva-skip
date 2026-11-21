@@ -71,8 +71,10 @@ public struct MoreMenuView: View {
             group("People", items: peopleItems)
 
             RowsCard {
-                if let invitations, invitations.count > 0 {
-                    NavRow(icon: .people, title: "Invitations (\(invitations.count))", subtitle: "Shops that invited you to join") {
+                if let invitations {
+                    NavRow(icon: .people,
+                           title: invitations.count > 0 ? "Invitations (\(invitations.count))" : "Invitations",
+                           subtitle: invitations.count > 0 ? "Shops that invited you to join" : "No pending invitations") {
                         showsInvitations = true
                     }
                     Divider()
