@@ -53,7 +53,8 @@ public final class InvitationsViewModel {
         let name = (user?.name.isEmpty == false ? user?.name : nil) ?? invite.name
         do {
             try await inviteService.accept(invite, account: account, name: name,
-                                           existingOrgs: user?.assignedOrgs ?? [], makeCurrent: !hasCurrentOrg)
+                                           existingOrgs: user?.assignedOrgs ?? [], makeCurrent: !hasCurrentOrg,
+                                           createProfile: user == nil)
             invites.removeAll { $0.id == invite.id }
             if hasCurrentOrg { acceptedOrganization = OrganizationSnapshot(orgId: invite.orgId, name: invite.orgName) }
         } catch {

@@ -15,9 +15,10 @@ public protocol MemberInviteServicing: Sendable {
     /// Invites addressed to this email (the invitee's side). Callers pass a verified email only.
     func pendingInvites(forEmail email: String) async throws -> [MemberInvite]
     /// Joins the invite's org: membership doc, profile assigned to the org, invite marked accepted.
-    /// `makeCurrent` also selects the org and writes the full profile (the invitee had no org yet).
+    /// `makeCurrent` also selects the org (the invitee had none); `createProfile` writes a full `users/{uid}`
+    /// doc, only for accounts that have no profile yet.
     func accept(_ invite: MemberInvite, account: AuthAccount, name: String,
-                existingOrgs: [OrganizationSnapshot], makeCurrent: Bool) async throws
+                existingOrgs: [OrganizationSnapshot], makeCurrent: Bool, createProfile: Bool) async throws
     func decline(_ invite: MemberInvite) async throws
 }
 
@@ -42,7 +43,7 @@ public final class MemberInviteService: MemberInviteServicing, @unchecked Sendab
     }
 
     public func accept(_ invite: MemberInvite, account: AuthAccount, name: String,
-                       existingOrgs: [OrganizationSnapshot], makeCurrent: Bool) async throws {
+                       existingOrgs: [OrganizationSnapshot], makeCurrent: Bool, createProfile: Bool) async throws {
         let now = Date()
         try OrgCollectionService<Member>(store: store).upsert(
             Member(id: account.uid, name: name, email: account.email ?? invite.email, role: invite.role,
@@ -50,24 +51,25 @@ public final class MemberInviteService: MemberInviteServicing, @unchecked Sendab
 
         let snapshot = OrganizationSnapshot(orgId: invite.orgId, name: invite.orgName)
         let orgs = existingOrgs.filter { $0.orgId != invite.orgId } + [snapshot]
+        // An existing (possibly legacy) profile only gets the additive org fields; its name, role, createdAt
+        // and the rest are never rewritten (docs/12 §9).
         var profile: [String: Any] = [
-            "id": account.uid,
             "assignedOrgs": try orgs.map { try Firestore.Encoder().encode($0) },
             "assignedOrgIds": orgs.map(\.orgId),
             "updatedAt": now,
-            "updatedTimestamp": now.timeIntervalSince1970,
-            "isDeleted": false
+            "updatedTimestamp": now.timeIntervalSince1970
         ]
-        if makeCurrent {
-            // An existing user's legacy role is left alone; the member doc carries the per-org role.
+        if makeCurrent { profile["selectedOrganization"] = try Firestore.Encoder().encode(snapshot) }
+        if createProfile {
             let legacyRole: AppUserRole = invite.role == .manager ? .manager : .standard
+            profile["id"] = account.uid
             profile["name"] = name
             profile["email"] = account.email ?? invite.email
             profile["role"] = legacyRole.rawValue
             profile["status"] = "active"
             profile["createdAt"] = now
             profile["url"] = ""
-            profile["selectedOrganization"] = try Firestore.Encoder().encode(snapshot)
+            profile["isDeleted"] = false
         }
         try store.setData(profile, path: "\(String.users)/\(account.uid)", merge: true)
 
@@ -84,8 +86,9 @@ public final class MemberInviteService: MemberInviteServicing, @unchecked Sendab
         let documents = try await store.getDocuments(
             collection: Self.collection,
             query: StoreQuery(conditions: [.isIn(field: field, values: [value])]))
-        return try documents
-            .map { try Firestore.Decoder().decode(MemberInvite.self, from: $0.data) }
+        // Skip documents that aren't member invites (e.g. old code-based invites) instead of failing the list.
+        return documents
+            .compactMap { try? Firestore.Decoder().decode(MemberInvite.self, from: $0.data) }
             .filter(\.isPending)
             .sorted { $0.createdAt > $1.createdAt }
     }
