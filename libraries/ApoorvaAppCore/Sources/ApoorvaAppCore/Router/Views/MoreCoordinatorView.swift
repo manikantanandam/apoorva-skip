@@ -310,8 +310,8 @@ struct MoreCoordinatorView: View {
         case .cashflowDay(let date):
             Retained(container.modulesContainer.makeCashDayViewModel(date: date)) { viewModel in
                 CashDayView(viewModel: viewModel, canClose: session.can(.dayClose),
-                            onAdd: { coordinator.push(.money(.cashflowAdd(date: date))) },
-                            onClose: { coordinator.push(.money(.cashflowClose(date: date))) },
+                            onAdd: { coordinator.push(.money(.cashflowAdd(date: viewModel.date))) },
+                            onClose: { coordinator.push(.money(.cashflowClose(date: viewModel.date))) },
                             onHistory: { coordinator.push(.money(.cashflowHistory)) },
                             onEdit: { entry in coordinator.push(.money(.cashflowEdit(entryId: entry.id))) })
             }

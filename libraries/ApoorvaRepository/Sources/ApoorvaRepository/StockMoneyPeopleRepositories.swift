@@ -38,11 +38,13 @@ public struct CashBook: Sendable {
 
     /// Records a transfer between two accounts as ONE entry carrying both account ids. It is stored as a debit
     /// (the Admin app only knows credit and debit) with the payment mode of the account the money leaves.
-    public func recordTransfer(amount: Double, from: Account, to: Account, particulars: String, at date: Date = Date()) async throws {
+    /// Pass the same `id` when retrying a failed save, so a write that already reached the server isn't duplicated.
+    public func recordTransfer(id: String = UUID().uuidString, amount: Double, from: Account, to: Account, particulars: String,
+                               at date: Date = Date()) async throws {
         guard let repository, amount > 0, from.id != to.id else { return }
         let mode: CashflowTransaction.PaymentMode = from.type == .cash ? .cash : .upi
         try await repository.saveCashflowTransaction(transaction: CashflowTransaction(
-            timestamp: date, particulars: particulars, amount: amount, transactionType: .debit, paymentMode: mode,
+            id: id, timestamp: date, particulars: particulars, amount: amount, transactionType: .debit, paymentMode: mode,
             category: .internalTransfer, subCategory: .internalTransfer, fromAccountId: from.id, toAccountId: to.id,
             timestampInMs: date.timeIntervalSince1970, updatedAtInMs: Date().timeIntervalSince1970))
     }
@@ -194,8 +196,9 @@ public protocol MoneyRepositoryProtocol: Sendable {
     /// `account` is the account the money goes to (cash in) or comes from (cash out); nil uses the cash account.
     func addCashEntry(isIn: Bool, amount: Double, category: CashflowCategory, subCategory: CashflowSubCategory?,
                       account: Account?, particulars: String, by actorId: String) async throws
-    /// Moves money between two accounts, saved as a single entry (not a debit and a credit).
-    func addTransfer(amount: Double, from: Account, to: Account, particulars: String, by actorId: String) async throws
+    /// Moves money between two accounts, saved as a single entry (not a debit and a credit). `id` is the entry's id;
+    /// reuse it when retrying a failed save so the transfer is written at most once.
+    func addTransfer(id: String, amount: Double, from: Account, to: Account, particulars: String, by actorId: String) async throws
     func saveExpense(_ expense: Expense) async throws
     func closeDay(_ close: DayClose) async throws
     func reopenDay(_ day: Date, by actorId: String) async throws
@@ -228,9 +231,9 @@ public final actor MoneyRepository: MoneyRepositoryProtocol {
         await audit?.log(.money, action: isIn ? "cash.in" : "cash.out", summary: "\(particulars) · ₹\(Int(amount))", targetId: nil)
     }
 
-    public func addTransfer(amount: Double, from: Account, to: Account, particulars: String, by actorId: String) async throws {
+    public func addTransfer(id: String, amount: Double, from: Account, to: Account, particulars: String, by actorId: String) async throws {
         guard amount > 0, from.id != to.id else { return }
-        try await cashBook.recordTransfer(amount: amount, from: from, to: to, particulars: particulars)
+        try await cashBook.recordTransfer(id: id, amount: amount, from: from, to: to, particulars: particulars)
         await audit?.log(.money, action: "cash.transfer", summary: "\(from.name) → \(to.name) · ₹\(Int(amount))", targetId: nil)
     }
 

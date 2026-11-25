@@ -88,11 +88,14 @@ public struct CashDayView: View {
                         ManiListRow(title: "No entries yet", subtitle: "Bills and cash in/out show here")
                     }
                 }
+            } else if let error = viewModel.errorMessage {
+                ManiNote(error, kind: .error)
+                ManiButton("Try again") { Task { await viewModel.load() } }
             } else {
                 ProgressView()
             }
         } bottom: {
-            if viewModel.isToday && !viewModel.isClosed && canClose {
+            if viewModel.isToday && !viewModel.isClosed && canClose && viewModel.day != nil {
                 ManiButton("Close day", icon: .lock, action: onClose)
             }
         }
@@ -470,7 +473,7 @@ public struct DayCloseView: View {
             ManiNote("Closing locks today's entries. Owners can reopen from Cash history.", kind: .info)
             if let error = viewModel.errorMessage { ManiNote(error, kind: .error) }
         } bottom: {
-            ManiButton("Close day", icon: .lock, isLoading: viewModel.isSaving, isEnabled: !viewModel.countedText.isEmpty) {
+            ManiButton("Close day", icon: .lock, isLoading: viewModel.isSaving, isEnabled: viewModel.canClose) {
                 Task { if await viewModel.close() { onDone() } }
             }
         }

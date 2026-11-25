@@ -649,11 +649,12 @@ struct StockMoneyPeopleCoverageTests {
                                     cashBook: CashBook(repository: cashflow), audit: audit)
         let cash = Account(id: "cash-1", name: "Cash", type: .cash, currentBalance: 0)
         let bank = Account(id: "bank-1", name: "HDFC", type: .bank, currentBalance: 0)
-        try await money.addTransfer(amount: 40, from: cash, to: bank, particulars: "deposit", by: "u")
-        try await money.addTransfer(amount: 40, from: bank, to: bank, particulars: "same account", by: "u")   // ignored
-        try await money.addTransfer(amount: 0, from: cash, to: bank, particulars: "no amount", by: "u")      // ignored
+        try await money.addTransfer(id: "t-1", amount: 40, from: cash, to: bank, particulars: "deposit", by: "u")
+        try await money.addTransfer(id: "t-2", amount: 40, from: bank, to: bank, particulars: "same account", by: "u")   // ignored
+        try await money.addTransfer(id: "t-3", amount: 0, from: cash, to: bank, particulars: "no amount", by: "u")      // ignored
         #expect(cashflow.saved.count == 1)
         let transfer = try #require(cashflow.saved.first)
+        #expect(transfer.id == "t-1")
         #expect(transfer.category == .internalTransfer)
         #expect(transfer.subCategory == .internalTransfer)
         #expect(transfer.transactionType == .debit)

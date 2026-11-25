@@ -97,16 +97,19 @@ public final class CashDayViewModel {
     public private(set) var closedDayKeys: Set<String> = []
     /// The organization's accounts, so entry rows can name the account they touched.
     public private(set) var accounts: [Account] = []
+    /// Set when the accounts couldn't be read. The day's totals are left out (`day` stays nil) rather than worked out
+    /// without knowing which accounts are cash.
+    public private(set) var errorMessage: String?
 
     private let summaries: DailyCashflowSummaryRepositoryProtocol
     private let saleRepository: SaleRepositoryProtocol
     private let cashflowRepository: CashflowTransactionRepositoryProtocol
     private let dayCloses: any OrgCollectionRepositoryProtocol<DayClose>
-    private let loadAccounts: @Sendable () async -> [Account]
+    private let loadAccounts: @Sendable () async throws -> [Account]
 
     public init(date: Date = Date(), summaries: DailyCashflowSummaryRepositoryProtocol, saleRepository: SaleRepositoryProtocol,
                 cashflowRepository: CashflowTransactionRepositoryProtocol, dayCloses: any OrgCollectionRepositoryProtocol<DayClose>,
-                loadAccounts: @escaping @Sendable () async -> [Account] = { [] }) {
+                loadAccounts: @escaping @Sendable () async throws -> [Account] = { [] }) {
         self.date = date
         self.summaries = summaries
         self.saleRepository = saleRepository
@@ -117,19 +120,30 @@ public final class CashDayViewModel {
 
     public func load() async {
         let allSummaries = (try? await summaries.getDailyCashflowSummaries()) ?? []
-        // Transfers move money by account id, so the day needs to know which accounts are cash. The fixed legacy
-        // cash id stays included for organizations whose accounts use it.
-        accounts = await loadAccounts().filter { !$0.isDeleted }
-        let cashAccountIds = Set(accounts.filter { $0.type == .cash }.map(\.id))
+        let closes = ((try? await dayCloses.all()) ?? []).filter { !$0.isDeleted }
+        close = closes.first { $0.id == date.dayKey }
+        closedDayKeys = Set(closes.map(\.id))
+            .union(allSummaries.filter { !$0.closingBalances.isEmpty }.map(\.id))
+        // Transfers move money by account id, so the day needs to know which accounts are cash. Without the
+        // accounts a transfer from a cash account would count as zero, so show no totals instead of wrong ones.
+        let allAccounts: [Account]
+        do {
+            allAccounts = try await loadAccounts()
+            errorMessage = nil
+        } catch {
+            day = nil
+            errorMessage = "Couldn't load the accounts, so the cash totals can't be worked out. Try again."
+            return
+        }
+        accounts = allAccounts.filter { !$0.isDeleted }
+        // Deleted cash accounts still count, so their past transfers keep their effect. The fixed legacy cash id
+        // stays included for organizations whose accounts use it.
+        let cashAccountIds = Set(allAccounts.filter { $0.type == .cash }.map(\.id))
             .union([CashflowTransaction.PaymentMode.cash.accountId])
         day = CashDay(date: date, summaries: allSummaries,
                       sales: (try? await saleRepository.getSales()) ?? [],
                       transactions: (try? await cashflowRepository.getCashflowTransactions()) ?? [],
                       cashAccountIds: cashAccountIds)
-        let closes = ((try? await dayCloses.all()) ?? []).filter { !$0.isDeleted }
-        close = closes.first { $0.id == date.dayKey }
-        closedDayKeys = Set(closes.map(\.id))
-            .union(allSummaries.filter { !$0.closingBalances.isEmpty }.map(\.id))
     }
 
     public var isClosed: Bool { close != nil }
@@ -185,10 +199,13 @@ public final class CashEntryViewModel {
 
     private let money: MoneyRepositoryProtocol
     private let actorId: String
-    private let loadAccounts: @Sendable () async -> [Account]
+    private let loadAccounts: @Sendable () async throws -> [Account]
     private let analyticsService: AnalyticsServicing
+    /// The id the next transfer is saved with. Kept after a failed save so a retry rewrites the same entry instead of
+    /// adding a second one when the first write already reached the server.
+    private var pendingTransferId = UUID().uuidString
 
-    public init(money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async -> [Account] = { [] },
+    public init(money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async throws -> [Account] = { [] },
                 analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.money = money
         self.actorId = actorId
@@ -205,7 +222,7 @@ public final class CashEntryViewModel {
     public var transferNeedsMoreAccounts: Bool { isTransfer && accounts.count < 2 }
 
     public func load() async {
-        accounts = await loadAccounts().filter { !$0.isDeleted }
+        accounts = ((try? await loadAccounts()) ?? []).filter { !$0.isDeleted }
         if selectedAccount == nil {
             selectedAccountId = (accounts.first { $0.type == .cash } ?? accounts.first)?.id
         }
@@ -230,7 +247,8 @@ public final class CashEntryViewModel {
         if fromAccountId == id { fromAccountId = accounts.first { $0.id != id }?.id }
     }
 
-    public var categories: [CashflowCategory] { CashflowCategory.selectable }
+    /// Shop setup entries are left off the day screen, so they aren't offered here either.
+    public var categories: [CashflowCategory] { CashflowCategory.selectable.filter { $0 != .shopSetup } }
     public var subCategories: [CashflowSubCategory] { category.subCategories }
 
     public func setKind(_ kind: Kind) {
@@ -282,7 +300,9 @@ public final class CashEntryViewModel {
         do {
             if isTransfer, let from = fromAccount, let to = toAccount {
                 // One entry for the whole transfer, with both account ids.
-                try await money.addTransfer(amount: amount, from: from, to: to, particulars: particulars, by: actorId)
+                try await money.addTransfer(id: pendingTransferId, amount: amount, from: from, to: to,
+                                            particulars: particulars, by: actorId)
+                pendingTransferId = UUID().uuidString
             } else {
                 try await money.addCashEntry(isIn: isIn, amount: amount, category: category, subCategory: subCategory,
                                              account: selectedAccount, particulars: particulars, by: actorId)
@@ -321,7 +341,7 @@ public final class CashEntryEditViewModel {
     private let cashflowRepository: CashflowTransactionRepositoryProtocol
     private let money: MoneyRepositoryProtocol
     private let actorId: String
-    private let loadAccounts: @Sendable () async -> [Account]
+    private let loadAccounts: @Sendable () async throws -> [Account]
     private var original: CashflowTransaction?
     private var orgAccounts: [Account] = []
     /// The account the entry had when opened, so an untouched account is never rewritten.
@@ -332,7 +352,7 @@ public final class CashEntryEditViewModel {
     private let analyticsService: AnalyticsServicing
 
     public init(entryId: String, cashflowRepository: CashflowTransactionRepositoryProtocol,
-                money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async -> [Account] = { [] },
+                money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async throws -> [Account] = { [] },
                 analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.entryId = entryId
         self.cashflowRepository = cashflowRepository
@@ -394,7 +414,7 @@ public final class CashEntryEditViewModel {
         particulars = found.particulars
         category = found.category
         subCategory = found.subCategory ?? .unknown
-        orgAccounts = await loadAccounts().filter { !$0.isDeleted }
+        orgAccounts = ((try? await loadAccounts()) ?? []).filter { !$0.isDeleted }
         // Entries made without an account id (older ones) fall back to the account matching their mode.
         let recorded = found.transactionType == .credit ? found.toAccountId : found.fromAccountId
         let derived = orgAccounts.first { $0.type == (found.paymentMode == .cash ? .cash : .bank) }?.id
@@ -413,9 +433,10 @@ public final class CashEntryEditViewModel {
     }
 
     /// The categories to offer, plus the entry's own when it isn't normally selectable (an unknown or
-    /// internal-transfer entry), so what it has now stays visible and keepable.
+    /// internal-transfer entry), so what it has now stays visible and keepable. Shop setup is left out because the
+    /// day screen hides those entries.
     public var categories: [CashflowCategory] {
-        let selectable = CashflowCategory.selectable
+        let selectable = CashflowCategory.selectable.filter { $0 != .shopSetup }
         return selectable.contains(category) ? selectable : selectable + [category]
     }
 
@@ -523,16 +544,24 @@ public final class DayCloseViewModel {
 
     public func load() async {
         await dayViewModel.load()
-        expected = dayViewModel.day?.expectedClosing ?? 0
+        // Without the day's totals there is no expected closing to save, so closing stays blocked.
+        guard let day = dayViewModel.day else {
+            errorMessage = dayViewModel.errorMessage ?? "Couldn't work out the expected closing. Try again."
+            return
+        }
+        errorMessage = nil
+        expected = day.expectedClosing
         if countedText.isEmpty { countedText = String(Int(expected.rounded())) }
     }
+
+    public var canClose: Bool { dayViewModel.day != nil && !countedText.isEmpty }
 
     public var counted: Double { Double(countedText) ?? 0 }
     public var difference: Double { counted - expected }
     public var tomorrow: Date { Calendar.current.date(byAdding: .day, value: 1, to: date) ?? date }
 
     public func close() async -> Bool {
-        guard !countedText.isEmpty else { return false }
+        guard canClose else { return false }
         isSaving = true
         defer { isSaving = false }
         do {

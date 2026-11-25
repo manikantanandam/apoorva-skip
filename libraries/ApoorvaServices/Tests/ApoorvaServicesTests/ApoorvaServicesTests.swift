@@ -211,6 +211,17 @@ struct CashflowTransactionServiceTests {
         #expect(written.updatedAt > epoch(1_000))
     }
 
+    @Test func updateLeavesUnrecognisedCategoriesAsStored() async throws {
+        let store = MockFirestoreStore()
+        var legacy = makeTransaction("1")
+        legacy.category = .unknown          // what decoding gives for a category this app doesn't know
+        legacy.subCategory = .unknown
+        try await CashflowTransactionService(store: store).updateCashflowTransaction(legacy, for: "o")
+        #expect(store.writes.first?.data["category"] == nil)
+        #expect(store.writes.first?.data["subCategory"] == nil)
+        #expect(store.writes.first?.data["amount"] as? Double == 5)
+    }
+
     @Test func deleteSoftDeletes() async throws {
         let store = MockFirestoreStore()
         try await CashflowTransactionService(store: store).deleteCashflowTransaction(id: "1", for: "o")

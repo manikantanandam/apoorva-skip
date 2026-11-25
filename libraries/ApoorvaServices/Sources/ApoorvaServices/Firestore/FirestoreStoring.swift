@@ -199,7 +199,10 @@ extension FirestoreStoring {
         return records
     }
 
-    func set<T: Encodable>(_ value: T, path: String, merge: Bool = false) throws {
-        try setData(try Firestore.Encoder().encode(value), path: path, merge: merge)
+    /// `omitting` leaves those fields out of the write; with `merge` the stored values are kept.
+    func set<T: Encodable>(_ value: T, path: String, merge: Bool = false, omitting keys: Set<String> = []) throws {
+        var data = try Firestore.Encoder().encode(value)
+        for key in keys { data.removeValue(forKey: key) }
+        try setData(data, path: path, merge: merge)
     }
 }

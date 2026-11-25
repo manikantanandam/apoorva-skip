@@ -54,7 +54,12 @@ public final class CashflowTransactionService: CashflowTransactionServiceProtoco
         updatedTransaction.updatedAt = now
         updatedTransaction.updatedAtInMs = now.timeIntervalSince1970
 
-        try store.set(updatedTransaction, path: documentPath(transaction.id, orgId: orgId), merge: true)
+        // `.unknown` only comes from decoding a category this app doesn't recognise (e.g. a legacy one). The raw
+        // value isn't kept, so leave those fields out and let the merge keep what is stored.
+        var omitted: Set<String> = []
+        if updatedTransaction.category == .unknown { omitted.insert("category") }
+        if updatedTransaction.subCategory == .unknown { omitted.insert("subCategory") }
+        try store.set(updatedTransaction, path: documentPath(transaction.id, orgId: orgId), merge: true, omitting: omitted)
     }
 
     public func deleteCashflowTransaction(id: String, for orgId: String) async throws {

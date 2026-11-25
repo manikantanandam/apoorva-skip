@@ -14,7 +14,9 @@ private final class RecordingMoney: MoneyRepositoryProtocol, @unchecked Sendable
     var cashEntryCategories: [(CashflowCategory, CashflowSubCategory?)] = []
     var cashEntryAccounts: [Account?] = []
     var transfers: [(amount: Double, from: Account, to: Account, particulars: String)] = []
-    func addTransfer(amount: Double, from: Account, to: Account, particulars: String, by actorId: String) async throws {
+    var transferIds: [String] = []
+    func addTransfer(id: String, amount: Double, from: Account, to: Account, particulars: String, by actorId: String) async throws {
+        transferIds.append(id)
         if fail { throw NSError(domain: "test", code: 1) }
         transfers.append((amount, from, to, particulars))
     }
@@ -103,6 +105,31 @@ struct CashDayViewModelTests {
         try? await closes.save(DayClose(date: Date(), expectedCash: 500, countedCash: 500, note: "", carryForward: true, closedBy: "u", closedByName: "U"))
         await model.load()
         #expect(model.isClosed)
+    }
+
+    @Test func aFailedAccountLookupShowsNoTotals() async {
+        let model = CashDayViewModel(summaries: StubDailyCashflowRepository(), saleRepository: StubSaleRepository(),
+                                     cashflowRepository: FixedCashflowRepository(), dayCloses: StubOrgRepository<DayClose>(),
+                                     loadAccounts: { throw NSError(domain: "test", code: 1) })
+        await model.load()
+        #expect(model.day == nil)
+        #expect(model.errorMessage != nil)
+    }
+
+    @Test func aDeletedCashAccountKeepsItsPastTransfers() async {
+        var deletedCash = Account(id: "acc-old-cash", name: "Old till", type: .cash, currentBalance: 0)
+        deletedCash.isDeleted = true
+        let cashflow = FixedCashflowRepository()
+        cashflow.items = [CashflowTransaction(timestamp: Date(), particulars: "Deposit", amount: 500, transactionType: .debit,
+                                              paymentMode: .cash, category: .internalTransfer, subCategory: .internalTransfer,
+                                              fromAccountId: "acc-old-cash", toAccountId: "acc-bank",
+                                              timestampInMs: 0, updatedAtInMs: 0)]
+        let model = CashDayViewModel(summaries: StubDailyCashflowRepository(), saleRepository: StubSaleRepository(),
+                                     cashflowRepository: cashflow, dayCloses: StubOrgRepository<DayClose>(),
+                                     loadAccounts: { [deletedCash] })
+        await model.load()
+        #expect(model.day?.cashOut == 500)
+        #expect(model.accounts.isEmpty)            // still hidden from pickers and rows
     }
 
     @Test func closedDayKeysCombineDayClosesAndSavedClosingBalances() async {
@@ -716,6 +743,27 @@ struct CashTransferTests {
         #expect(!model.canSave)
         #expect(await model.save() == false)
         #expect(money.transfers.isEmpty)
+    }
+
+    @Test func aRetriedTransferReusesItsId() async {
+        let money = RecordingMoney()
+        let model = CashEntryViewModel(money: money, actorId: "u1", loadAccounts: { [cash, bank] })
+        await model.load()
+        model.setKind(.transfer)
+        model.amountText = "500"
+        money.fail = true
+        #expect(await model.save() == false)
+        money.fail = false
+        #expect(await model.save())
+        #expect(money.transferIds.count == 2)
+        #expect(money.transferIds[0] == money.transferIds[1])
+        #expect(await model.save())                // the next transfer is a new entry
+        #expect(money.transferIds[2] != money.transferIds[1])
+    }
+
+    @Test func shopSetupIsNotOffered() async {
+        let model = CashEntryViewModel(money: RecordingMoney(), actorId: "u1")
+        #expect(!model.categories.contains(.shopSetup))
     }
 
     @Test func switchingBackToCashInOrOutRestoresTheCategories() async {

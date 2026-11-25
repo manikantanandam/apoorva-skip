@@ -278,13 +278,15 @@ public class ModulesContainer {
                                loadAccounts: organizationAccountsLoader(), analyticsService: servicesContainer.analyticsService)
     }
 
-    /// Reads the selected organization's embedded accounts; empty if there is no organization or it can't be read.
-    private func organizationAccountsLoader() -> @Sendable () async -> [Account] {
+    /// Reads the selected organization's embedded accounts; empty if there is no organization (legacy data uses the
+    /// fixed cash account then). Throws if the user or organization can't be read, so callers don't mistake a failed
+    /// lookup for an organization without accounts.
+    private func organizationAccountsLoader() -> @Sendable () async throws -> [Account] {
         let users = repositoryContainer.userRepository
         let organizations = repositoryContainer.organizationRepository
         return {
-            guard let orgId = try? await users.getCurrentUser().selectedOrganization?.orgId,
-                  let organization = try? await organizations.getOrganization(orgId: orgId) else { return [] }
+            guard let orgId = try await users.getCurrentUser().selectedOrganization?.orgId,
+                  let organization = try await organizations.getOrganization(orgId: orgId) else { return [] }
             return organization.accounts
         }
     }

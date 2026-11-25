@@ -50,6 +50,15 @@
 - The account is the one money went to (cash in) or came from (cash out), by name from the org accounts (`CashDayViewModel.accounts`). Entries without an account id name the account matching their mode, or "Cash"/"Bank" if accounts aren't known.
 - `noteText` strips what this app writes into particulars ("Rent", "Cash in", "Transfer A → B", optionally followed by " · note"), so only the real note shows; any other text (legacy descriptions) is shown as the note.
 
+## PR #104 CodeRabbit fixes (2026-11-25)
+- Account lookup failure: the org accounts loader now throws instead of returning `[]` (still `[]` when no org is selected). `CashDayViewModel` then shows an error + "Try again" and no totals; Close day is hidden and `DayCloseViewModel.canClose` is false, so a closing is never saved from a wrong expected amount. The entry/edit screens keep the old fallback (`try?`).
+- Deleted cash accounts still count as cash when working out a day's transfers; they stay out of pickers and rows.
+- Close day / add use the day screen's current `viewModel.date`, not the route date it was opened with.
+- Shop setup is no longer offered on the entry/edit screens (the day screen hides those entries).
+- `CashflowTransactionService.updateCashflowTransaction` leaves `category`/`subCategory` out of the merge write when they are `.unknown`, so a legacy value this app can't decode isn't overwritten with "Unknown". This replaces the "risk accepted" note below for categories.
+- Transfers take an `id` (`MoneyRepositoryProtocol.addTransfer(id:)` → `CashBook.recordTransfer(id:)`); `CashEntryViewModel` keeps it after a failed save so a retry hits the same document (the service's add skips an existing id). Cash in/out entries don't do this yet.
+- Not changed: edit lock still uses `isClosed` (a `DayClose`), not `closedDayKeys`. Legacy-closed days (summary with closing balances) have no reopen path in this app, so locking them would make them uneditable for good.
+
 ## Why
 - Soft delete keeps delta sync and history intact and matches how other screens delete.
 - Writing only the changed fields on delete, and rebuilding accounts only when needed, limits what we rewrite on legacy documents (docs/12 §9).
