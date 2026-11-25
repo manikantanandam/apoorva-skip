@@ -9,6 +9,7 @@ import Foundation
 import Observation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaServices
 
 public enum InventoryFilter: Hashable, Sendable {
     case all, low, out
@@ -274,13 +275,16 @@ public final class ItemFormViewModel {
     private let inventoryRepository: InventoryItemRepositoryProtocol
     private let categoryRepository: (any OrgCollectionRepositoryProtocol<ItemCategory>)?
     private let audit: AuditLogging?
+    private let analyticsService: AnalyticsServicing
 
     public init(itemId: String?, inventoryRepository: InventoryItemRepositoryProtocol,
-                categoryRepository: (any OrgCollectionRepositoryProtocol<ItemCategory>)?, audit: AuditLogging?) {
+                categoryRepository: (any OrgCollectionRepositoryProtocol<ItemCategory>)?, audit: AuditLogging?,
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.itemId = itemId
         self.inventoryRepository = inventoryRepository
         self.categoryRepository = categoryRepository
         self.audit = audit
+        self.analyticsService = analyticsService
     }
 
     public var isEditing: Bool { itemId != nil }
@@ -364,6 +368,7 @@ public final class ItemFormViewModel {
                 try await inventoryRepository.updateInventoryItem(item)
             }
             await audit?.log(.stock, action: original == nil ? "item.add" : "item.edit", summary: item.name, targetId: item.id)
+            analyticsService.log(.itemSaved(isNew: original == nil, hasVariants: item.variantsJSON != nil, hasBarcode: item.barcode != nil))
             return item
         } catch {
             errorMessage = "Couldn't save the item. Try again."

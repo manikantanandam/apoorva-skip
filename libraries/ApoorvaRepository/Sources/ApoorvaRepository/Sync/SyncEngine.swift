@@ -31,12 +31,15 @@ public actor SyncEngine {
     private(set) var statuses: [String: SyncStatus] = [:]
     private let performanceMonitoringService: PerformanceMonitoringServicing
     private let crashReportingService: CrashReportingServicing
+    private let analyticsService: AnalyticsServicing
 
     public init(repositories: [any SyncableRepository] = [],
                 performanceMonitoringService: PerformanceMonitoringServicing = NoOpPerformanceMonitoringService(),
-                crashReportingService: CrashReportingServicing = NoOpCrashReportingService()) {
+                crashReportingService: CrashReportingServicing = NoOpCrashReportingService(),
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.performanceMonitoringService = performanceMonitoringService
         self.crashReportingService = crashReportingService
+        self.analyticsService = analyticsService
         for repository in repositories where !self.repositories.contains(where: { $0.syncKey == repository.syncKey }) {
             self.repositories.append(repository)
             statuses[repository.syncKey] = SyncStatus(key: repository.syncKey)
@@ -55,9 +58,12 @@ public actor SyncEngine {
 
     @discardableResult
     public func syncAll(force: Bool = false) async -> [SyncStatus] {
+        let start = Date()
         for repository in repositories {
             await sync(repository, force: force)
         }
+        analyticsService.log(.syncCompleted(durationMs: Int(Date().timeIntervalSince(start) * 1000),
+                                            collectionCount: repositories.count, failedCount: failedCount))
         return allStatuses()
     }
 
@@ -86,6 +92,7 @@ public actor SyncEngine {
             statuses[key]?.lastError = error.localizedDescription
             logger.error("sync failed key=\(key): \(error)")
             crashReportingService.recordNonFatal(error, context: "sync.\(key)")
+            analyticsService.log(.syncFailed(collection: key, reason: String(describing: type(of: error))))
         }
         statuses[key]?.isSyncing = false
     }

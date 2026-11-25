@@ -626,11 +626,42 @@ struct StockMoneyPeopleCoverageTests {
         let audit = RecordingAudit()
         let money = MoneyRepository(expenses: docs(Expense.self), dayCloses: docs(DayClose.self), summaries: nil,
                                     cashBook: CashBook(repository: cashflow), audit: audit)
-        try await money.addCashEntry(isIn: true, amount: 10, category: nil, particulars: "in", by: "u")
-        try await money.addCashEntry(isIn: false, amount: 10, category: nil, particulars: "out", by: "u")
-        try await money.addCashEntry(isIn: false, amount: 10, category: .rent, particulars: "rent", by: "u")
+        let bank = Account(id: "bank-1", name: "HDFC", type: .bank, currentBalance: 0)
+        try await money.addCashEntry(isIn: true, amount: 10, category: .salesRevenue, subCategory: .salesRevenue, account: nil, particulars: "in", by: "u")
+        try await money.addCashEntry(isIn: false, amount: 10, category: .miscellaneous, subCategory: .general, account: nil, particulars: "out", by: "u")
+        try await money.addCashEntry(isIn: false, amount: 10, category: .salary, subCategory: .wages, account: bank, particulars: "wages", by: "u")
         #expect(cashflow.saved.map(\.transactionType) == [.credit, .debit, .debit])
+        // A chosen account decides the mode and the side it is recorded on; none falls back to the cash account.
+        #expect(cashflow.saved.map(\.paymentMode) == [.cash, .cash, .upi])
+        #expect(cashflow.saved[0].toAccountId == CashflowTransaction.PaymentMode.cash.accountId)
+        #expect(cashflow.saved[0].fromAccountId == "")
+        #expect(cashflow.saved[2].fromAccountId == "bank-1")
+        #expect(cashflow.saved[2].toAccountId == "")
+        #expect(cashflow.saved.map(\.category) == [.salesRevenue, .miscellaneous, .salary])
+        #expect(cashflow.saved.map(\.subCategory) == [.salesRevenue, .general, .wages])
         #expect(audit.box.actions == ["cash.in", "cash.out", "cash.out"])
+    }
+
+    @Test func aTransferIsOneEntryWithBothAccountIds() async throws {
+        let cashflow = RecordingCashflowRepository()
+        let audit = RecordingAudit()
+        let money = MoneyRepository(expenses: docs(Expense.self), dayCloses: docs(DayClose.self), summaries: nil,
+                                    cashBook: CashBook(repository: cashflow), audit: audit)
+        let cash = Account(id: "cash-1", name: "Cash", type: .cash, currentBalance: 0)
+        let bank = Account(id: "bank-1", name: "HDFC", type: .bank, currentBalance: 0)
+        try await money.addTransfer(id: "t-1", amount: 40, from: cash, to: bank, particulars: "deposit", by: "u")
+        try await money.addTransfer(id: "t-2", amount: 40, from: bank, to: bank, particulars: "same account", by: "u")   // ignored
+        try await money.addTransfer(id: "t-3", amount: 0, from: cash, to: bank, particulars: "no amount", by: "u")      // ignored
+        #expect(cashflow.saved.count == 1)
+        let transfer = try #require(cashflow.saved.first)
+        #expect(transfer.id == "t-1")
+        #expect(transfer.category == .internalTransfer)
+        #expect(transfer.subCategory == .internalTransfer)
+        #expect(transfer.transactionType == .debit)
+        #expect(transfer.paymentMode == .cash)          // the account the money leaves
+        #expect(transfer.fromAccountId == "cash-1")
+        #expect(transfer.toAccountId == "bank-1")
+        #expect(audit.box.actions == ["cash.transfer"])
     }
 
     @Test func expenseAuditDistinguishesAddFromEdit() async throws {

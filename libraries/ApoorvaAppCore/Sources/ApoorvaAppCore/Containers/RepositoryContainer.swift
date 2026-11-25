@@ -181,7 +181,8 @@ public class RepositoryContainer {
             stockMovementRepository,
             auditRepository
         ], performanceMonitoringService: servicesContainer.performanceMonitoringService,
-           crashReportingService: servicesContainer.crashReportingService)
+           crashReportingService: servicesContainer.crashReportingService,
+           analyticsService: servicesContainer.analyticsService)
     }()
 
     /// Clears all local SQLite tables and the cached-user UserDefaults keys, in place, no restart needed.

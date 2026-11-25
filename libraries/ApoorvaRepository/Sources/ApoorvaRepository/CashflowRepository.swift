@@ -19,7 +19,19 @@ public protocol CashflowTransactionRepositoryProtocol: Sendable {
     func updateCashflowTransaction(_ transaction: CashflowTransaction) async throws
     func deleteCashflowTransaction(id: String) async throws // Hard delete
     func markAsDeleted(id: String) async throws  // Soft delete
+    /// Soft-deletes in Firestore (`isDeleted`, new `updatedAt`) and refreshes the local cache. Unlike
+    /// `markAsDeleted`, which only touches the local copy.
+    func softDeleteCashflowTransaction(_ transaction: CashflowTransaction) async throws
     func sync(force: Bool) async throws
+}
+
+public extension CashflowTransactionRepositoryProtocol {
+    /// Fallback for repositories without a dedicated soft delete: save the entry with `isDeleted` set.
+    func softDeleteCashflowTransaction(_ transaction: CashflowTransaction) async throws {
+        var deleted = transaction
+        deleted.isDeleted = true
+        try await updateCashflowTransaction(deleted)
+    }
 }
 
 
@@ -65,6 +77,14 @@ public final actor CashflowTransactionRepository: CashflowTransactionRepositoryP
     
     public func markAsDeleted(id: String) async throws {
         try await storage.markAsDeleted(id: id)
+    }
+
+    public func softDeleteCashflowTransaction(_ transaction: CashflowTransaction) async throws {
+        let user = try await userRepository.getCurrentUser()
+        guard let orgId = user.selectedOrganization?.orgId else { return }
+        // Only isDeleted and updatedAt are written, so a legacy document keeps every other field as it was.
+        try await service.deleteCashflowTransaction(id: transaction.id, for: orgId)
+        try await sync(force: false)
     }
     
     public func sync(force: Bool) async throws {

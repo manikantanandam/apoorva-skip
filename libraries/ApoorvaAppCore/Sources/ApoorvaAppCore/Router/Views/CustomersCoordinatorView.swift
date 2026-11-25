@@ -27,8 +27,10 @@ struct CustomersCoordinatorView: View {
                 onOffers: session.isOn(.offersMessages) ? { coordinator.push(.offers) } : nil
             )
             .navigationTitle("Customers")
+            .trackScreen("customers")
             .navigationDestination(for: CustomersRoute.self) { route in
                 destination(for: route)
+                    .trackScreen(route, in: "customers")
             }
         }
         .onChange(of: coordinator.path) { _, path in

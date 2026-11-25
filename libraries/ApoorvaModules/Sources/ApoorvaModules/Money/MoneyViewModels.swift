@@ -10,6 +10,7 @@ import Foundation
 import Observation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaServices
 
 extension Sale {
     /// Signed amount paid by a mode: returns count against the day.
@@ -19,6 +20,26 @@ extension Sale {
     }
 
     var signedTotal: Double { isReturn ? -netPayable : netPayable }
+}
+
+extension CashflowTransaction {
+    /// A transfer between two of the organization's accounts, saved as one entry with both account ids.
+    var isTransfer: Bool { category == .internalTransfer && !fromAccountId.isEmpty && !toAccountId.isEmpty }
+
+    /// Effect on the cash drawer: positive when money enters cash, negative when it leaves, zero otherwise.
+    /// Transfers (and older single-sided transfer entries that carry an account id) are judged by whether their
+    /// account is a cash account; every other entry by its payment mode and direction.
+    func cashEffect(cashAccountIds: Set<String>) -> Double {
+        if category == .internalTransfer && (!fromAccountId.isEmpty || !toAccountId.isEmpty) {
+            return (cashAccountIds.contains(toAccountId) ? amount : 0) - (cashAccountIds.contains(fromAccountId) ? amount : 0)
+        }
+        guard paymentMode == .cash else { return 0 }
+        switch transactionType {
+        case .credit: return amount
+        case .debit: return -amount
+        case .unknown: return 0
+        }
+    }
 }
 
 /// Cash drawer maths for one day, shared by the day screen, close and summary.
@@ -31,7 +52,8 @@ public struct CashDay: Sendable {
     public let byMode: [PaymentMode: Double]
     public let entries: [CashflowTransaction]
 
-    public init(date: Date, summaries: [DailyCashflowSummary], sales: [Sale], transactions: [CashflowTransaction]) {
+    public init(date: Date, summaries: [DailyCashflowSummary], sales: [Sale], transactions: [CashflowTransaction],
+                cashAccountIds: Set<String> = [CashflowTransaction.PaymentMode.cash.accountId]) {
         let calendar = Calendar.current
         self.date = calendar.startOfDay(for: date)
         let cashAccount = CashflowTransaction.PaymentMode.cash.accountId
@@ -54,9 +76,9 @@ public struct CashDay: Sendable {
         byMode = modes
         entries = transactions.filter { !$0.isDeleted && calendar.isDate($0.timestamp, inSameDayAs: date) && $0.category != .shopSetup }
             .sorted { $0.timestamp > $1.timestamp }
-        let cashEntries = entries.filter { $0.paymentMode == .cash }
-        cashIn = cashSales + cashEntries.filter { $0.transactionType == .credit }.reduce(0) { $0 + $1.amount }
-        cashOut = cashEntries.filter { $0.transactionType == .debit }.reduce(0) { $0 + $1.amount }
+        let effects = entries.map { $0.cashEffect(cashAccountIds: cashAccountIds) }
+        cashIn = cashSales + effects.filter { $0 > 0 }.reduce(0, +)
+        cashOut = effects.filter { $0 < 0 }.reduce(0) { $0 - $1 }
     }
 
     public var expectedClosing: Double { opening + cashIn - cashOut }
@@ -70,30 +92,70 @@ public final class CashDayViewModel {
     public var date: Date
     public private(set) var day: CashDay?
     public private(set) var close: DayClose?
+    /// `dayKey`s of days whose closing balance is saved: a day close from this app, or a legacy daily summary that
+    /// has closing balances. The calendar marks these green.
+    public private(set) var closedDayKeys: Set<String> = []
+    /// The organization's accounts, so entry rows can name the account they touched.
+    public private(set) var accounts: [Account] = []
+    /// Set when the accounts couldn't be read. The day's totals are left out (`day` stays nil) rather than worked out
+    /// without knowing which accounts are cash.
+    public private(set) var errorMessage: String?
 
     private let summaries: DailyCashflowSummaryRepositoryProtocol
     private let saleRepository: SaleRepositoryProtocol
     private let cashflowRepository: CashflowTransactionRepositoryProtocol
     private let dayCloses: any OrgCollectionRepositoryProtocol<DayClose>
+    private let loadAccounts: @Sendable () async throws -> [Account]
 
     public init(date: Date = Date(), summaries: DailyCashflowSummaryRepositoryProtocol, saleRepository: SaleRepositoryProtocol,
-                cashflowRepository: CashflowTransactionRepositoryProtocol, dayCloses: any OrgCollectionRepositoryProtocol<DayClose>) {
+                cashflowRepository: CashflowTransactionRepositoryProtocol, dayCloses: any OrgCollectionRepositoryProtocol<DayClose>,
+                loadAccounts: @escaping @Sendable () async throws -> [Account] = { [] }) {
         self.date = date
         self.summaries = summaries
         self.saleRepository = saleRepository
         self.cashflowRepository = cashflowRepository
         self.dayCloses = dayCloses
+        self.loadAccounts = loadAccounts
     }
 
     public func load() async {
-        day = CashDay(date: date, summaries: (try? await summaries.getDailyCashflowSummaries()) ?? [],
+        let allSummaries = (try? await summaries.getDailyCashflowSummaries()) ?? []
+        let closes = ((try? await dayCloses.all()) ?? []).filter { !$0.isDeleted }
+        close = closes.first { $0.id == date.dayKey }
+        closedDayKeys = Set(closes.map(\.id))
+            .union(allSummaries.filter { !$0.closingBalances.isEmpty }.map(\.id))
+        // Transfers move money by account id, so the day needs to know which accounts are cash. Without the
+        // accounts a transfer from a cash account would count as zero, so show no totals instead of wrong ones.
+        let allAccounts: [Account]
+        do {
+            allAccounts = try await loadAccounts()
+            errorMessage = nil
+        } catch {
+            day = nil
+            errorMessage = "Couldn't load the accounts, so the cash totals can't be worked out. Try again."
+            return
+        }
+        accounts = allAccounts.filter { !$0.isDeleted }
+        // Deleted cash accounts still count, so their past transfers keep their effect. The fixed legacy cash id
+        // stays included for organizations whose accounts use it.
+        let cashAccountIds = Set(allAccounts.filter { $0.type == .cash }.map(\.id))
+            .union([CashflowTransaction.PaymentMode.cash.accountId])
+        day = CashDay(date: date, summaries: allSummaries,
                       sales: (try? await saleRepository.getSales()) ?? [],
-                      transactions: (try? await cashflowRepository.getCashflowTransactions()) ?? [])
-        close = (try? await dayCloses.get(id: date.dayKey)).flatMap { $0?.isDeleted == false ? $0 : nil }
+                      transactions: (try? await cashflowRepository.getCashflowTransactions()) ?? [],
+                      cashAccountIds: cashAccountIds)
     }
 
     public var isClosed: Bool { close != nil }
     public var isToday: Bool { Calendar.current.isDateInToday(date) }
+
+    /// Jumps to a day picked in the calendar. Future days are ignored.
+    public func go(to target: Date) async {
+        let calendar = Calendar.current
+        guard calendar.startOfDay(for: target) <= calendar.startOfDay(for: Date()) else { return }
+        date = target
+        await load()
+    }
 
     public func step(_ days: Int) async {
         guard let next = Calendar.current.date(byAdding: .day, value: days, to: date), next <= Date() else { return }
@@ -107,54 +169,348 @@ public final class CashDayViewModel {
 @MainActor
 @Observable
 public final class CashEntryViewModel {
-    public enum Purpose: String, CaseIterable, Sendable {
-        case supplier = "Supplier", rent = "Rent", salary = "Salary", tea = "Tea & snacks", other = "Other"
+    /// What the entry is: money in, money out, or a transfer between two of the organization's accounts.
+    public enum Kind: String, CaseIterable, Sendable {
+        case cashIn, cashOut, transfer
 
-        var category: ExpenseCategory {
+        public var title: String {
             switch self {
-            case .supplier: .supplier
-            case .rent: .rent
-            case .salary: .salary
-            case .tea: .tea
-            case .other: .other
-            }
-        }
-
-        var title: String {
-            switch self {
-            case .supplier: "Supplier payment"
-            default: rawValue
+            case .cashIn: "Cash in"
+            case .cashOut: "Cash out"
+            case .transfer: "Internal transfer"
             }
         }
     }
 
-    public var isIn = false
+    public private(set) var kind: Kind = .cashOut
+    public var isIn: Bool { kind == .cashIn }
+    public var isTransfer: Bool { kind == .transfer }
     public var amountText = ""
-    public var purpose: Purpose = .supplier
+    public private(set) var category: CashflowCategory = .miscellaneous
+    public private(set) var subCategory: CashflowSubCategory = .general
     public var note = ""
     public var errorMessage: String?
+    /// The organization's accounts. Empty until loaded, or if they can't be read (the cash account is used then).
+    public private(set) var accounts: [Account] = []
+    public private(set) var selectedAccountId: String?
+    /// For a transfer: the account the money leaves and the account it goes to. Always different.
+    public private(set) var fromAccountId: String?
+    public private(set) var toAccountId: String?
 
     private let money: MoneyRepositoryProtocol
     private let actorId: String
+    private let loadAccounts: @Sendable () async throws -> [Account]
+    private let analyticsService: AnalyticsServicing
+    /// The id the next transfer is saved with. Kept after a failed save so a retry rewrites the same entry instead of
+    /// adding a second one when the first write already reached the server.
+    private var pendingTransferId = UUID().uuidString
 
-    public init(money: MoneyRepositoryProtocol, actorId: String) {
+    public init(money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async throws -> [Account] = { [] },
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.money = money
         self.actorId = actorId
+        self.loadAccounts = loadAccounts
+        self.analyticsService = analyticsService
+    }
+
+    /// Cash in goes to an account, cash out comes from one.
+    public var accountTitle: String { isIn ? "To account" : "From account" }
+    public var selectedAccount: Account? { accounts.first { $0.id == selectedAccountId } }
+    public var fromAccount: Account? { accounts.first { $0.id == fromAccountId } }
+    public var toAccount: Account? { accounts.first { $0.id == toAccountId } }
+    /// A transfer needs two accounts to move money between.
+    public var transferNeedsMoreAccounts: Bool { isTransfer && accounts.count < 2 }
+
+    public func load() async {
+        accounts = ((try? await loadAccounts()) ?? []).filter { !$0.isDeleted }
+        if selectedAccount == nil {
+            selectedAccountId = (accounts.first { $0.type == .cash } ?? accounts.first)?.id
+        }
+        if fromAccount == nil { fromAccountId = selectedAccountId }
+        if toAccount == nil || toAccountId == fromAccountId { toAccountId = accounts.first { $0.id != fromAccountId }?.id }
+    }
+
+    public func selectAccount(_ id: String) {
+        guard accounts.contains(where: { $0.id == id }) else { return }
+        selectedAccountId = id
+    }
+
+    public func selectFromAccount(_ id: String) {
+        guard accounts.contains(where: { $0.id == id }) else { return }
+        fromAccountId = id
+        if toAccountId == id { toAccountId = accounts.first { $0.id != id }?.id }
+    }
+
+    public func selectToAccount(_ id: String) {
+        guard accounts.contains(where: { $0.id == id }) else { return }
+        toAccountId = id
+        if fromAccountId == id { fromAccountId = accounts.first { $0.id != id }?.id }
+    }
+
+    /// Shop setup entries are left off the day screen, so they aren't offered here either.
+    public var categories: [CashflowCategory] { CashflowCategory.selectable.filter { $0 != .shopSetup } }
+    public var subCategories: [CashflowSubCategory] { category.subCategories }
+
+    public func setKind(_ kind: Kind) {
+        self.kind = kind
+        switch kind {
+        case .cashIn: selectCategory(.salesRevenue)
+        case .cashOut: selectCategory(.miscellaneous)
+        case .transfer:
+            category = .internalTransfer
+            subCategory = .internalTransfer
+        }
+    }
+
+    /// Cash in defaults to Sales Revenue and cash out to Miscellaneous; the person can change either.
+    public func setDirection(_ isIn: Bool) {
+        setKind(isIn ? .cashIn : .cashOut)
+    }
+
+    /// Picking a category selects its first sub-category, so the pair is always valid.
+    public func selectCategory(_ category: CashflowCategory) {
+        self.category = category
+        subCategory = category.subCategories.first ?? .unknown
+    }
+
+    public func selectSubCategory(_ subCategory: CashflowSubCategory) {
+        guard category.subCategories.contains(subCategory) else { return }
+        self.subCategory = subCategory
     }
 
     public var amount: Double { Double(amountText) ?? 0 }
     public var particulars: String {
-        let base = isIn ? "Cash in" : purpose.title
+        let base: String
+        switch kind {
+        case .cashIn: base = "Cash in"
+        case .cashOut: base = subCategory == .general ? category.rawValue : subCategory.rawValue
+        case .transfer: base = "Transfer \(fromAccount?.name ?? "?") → \(toAccount?.name ?? "?")"
+        }
         return note.isEmpty ? base : "\(base) · \(note)"
     }
 
-    public func save() async -> Bool {
+    public var canSave: Bool {
         guard amount > 0 else { return false }
+        guard isTransfer else { return true }
+        return fromAccount != nil && toAccount != nil && fromAccountId != toAccountId
+    }
+
+    public func save() async -> Bool {
+        guard canSave else { return false }
         do {
-            try await money.addCashEntry(isIn: isIn, amount: amount, category: isIn ? nil : purpose.category, particulars: particulars, by: actorId)
+            if isTransfer, let from = fromAccount, let to = toAccount {
+                // One entry for the whole transfer, with both account ids.
+                try await money.addTransfer(id: pendingTransferId, amount: amount, from: from, to: to,
+                                            particulars: particulars, by: actorId)
+                pendingTransferId = UUID().uuidString
+            } else {
+                try await money.addCashEntry(isIn: isIn, amount: amount, category: category, subCategory: subCategory,
+                                             account: selectedAccount, particulars: particulars, by: actorId)
+            }
+            analyticsService.log(.cashEntryAdded(kind: kind.rawValue, category: category.rawValue, value: amount))
             return true
         } catch {
             errorMessage = "Couldn't save the entry."
+            return false
+        }
+    }
+}
+
+// MARK: - Edit cash entry
+
+/// Edits or soft-deletes one cash book entry from the day screen, including entries made by the legacy app.
+/// Keeps the entry's id, date, category and person; only what the user changes is rewritten.
+@MainActor
+@Observable
+public final class CashEntryEditViewModel {
+    public var isIn = false
+    public var amountText = ""
+    public var particulars = ""
+    public private(set) var category: CashflowCategory = .unknown
+    public private(set) var subCategory: CashflowSubCategory = .unknown
+    public private(set) var selectedAccountId: String?
+    /// A transfer entry (one entry with both account ids) edits its two accounts instead of a direction.
+    public private(set) var isTransfer = false
+    public private(set) var fromAccountId: String?
+    public private(set) var toAccountId: String?
+    public var isSaving = false
+    public var errorMessage: String?
+    public private(set) var isLoaded = false
+
+    private let entryId: String
+    private let cashflowRepository: CashflowTransactionRepositoryProtocol
+    private let money: MoneyRepositoryProtocol
+    private let actorId: String
+    private let loadAccounts: @Sendable () async throws -> [Account]
+    private var original: CashflowTransaction?
+    private var orgAccounts: [Account] = []
+    /// The account the entry had when opened, so an untouched account is never rewritten.
+    private var originalAccountId: String?
+    private var originalFromId: String?
+    private var originalToId: String?
+
+    private let analyticsService: AnalyticsServicing
+
+    public init(entryId: String, cashflowRepository: CashflowTransactionRepositoryProtocol,
+                money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async throws -> [Account] = { [] },
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
+        self.entryId = entryId
+        self.cashflowRepository = cashflowRepository
+        self.money = money
+        self.actorId = actorId
+        self.loadAccounts = loadAccounts
+        self.analyticsService = analyticsService
+    }
+
+    /// Cash in goes to an account, cash out comes from one.
+    public var accountTitle: String { isIn ? "To account" : "From account" }
+
+    /// The organization's accounts, plus the entry's own account when it isn't one of them (an old or legacy id),
+    /// so the current choice stays visible and keepable.
+    public var accounts: [Account] {
+        let type: AccountType = original?.paymentMode == .cash ? .cash : .bank
+        var result = orgAccounts
+        for id in [originalAccountId, originalFromId, originalToId].compactMap({ $0 })
+        where !result.contains(where: { $0.id == id }) {
+            result.append(Account(id: id, name: "Original account", type: type, currentBalance: 0))
+        }
+        return result
+    }
+
+    public func selectAccount(_ id: String) {
+        guard accounts.contains(where: { $0.id == id }) else { return }
+        selectedAccountId = id
+    }
+
+    public func selectFromAccount(_ id: String) {
+        guard accounts.contains(where: { $0.id == id }) else { return }
+        fromAccountId = id
+        if toAccountId == id { toAccountId = accounts.first { $0.id != id }?.id }
+    }
+
+    public func selectToAccount(_ id: String) {
+        guard accounts.contains(where: { $0.id == id }) else { return }
+        toAccountId = id
+        if fromAccountId == id { fromAccountId = accounts.first { $0.id != id }?.id }
+    }
+
+    public var amount: Double { Double(amountText) ?? 0 }
+    public var canSave: Bool {
+        guard isLoaded, amount > 0, !isSaving else { return false }
+        return !isTransfer || (fromAccountId != nil && toAccountId != nil && fromAccountId != toAccountId)
+    }
+    public var date: Date? { original?.timestamp }
+
+    public func load() async {
+        guard !isLoaded else { return }
+        let found = ((try? await cashflowRepository.getCashflowTransactions()) ?? []).first { $0.id == entryId }
+        guard let found, !found.isDeleted else {
+            errorMessage = "This entry no longer exists."
+            return
+        }
+        original = found
+        isIn = found.transactionType == .credit
+        amountText = found.amount.rounded() == found.amount ? String(Int(found.amount)) : String(found.amount)
+        particulars = found.particulars
+        category = found.category
+        subCategory = found.subCategory ?? .unknown
+        orgAccounts = ((try? await loadAccounts()) ?? []).filter { !$0.isDeleted }
+        // Entries made without an account id (older ones) fall back to the account matching their mode.
+        let recorded = found.transactionType == .credit ? found.toAccountId : found.fromAccountId
+        let derived = orgAccounts.first { $0.type == (found.paymentMode == .cash ? .cash : .bank) }?.id
+            ?? orgAccounts.first { $0.type == .upi }?.id
+        isTransfer = found.isTransfer
+        if isTransfer {
+            originalFromId = found.fromAccountId
+            originalToId = found.toAccountId
+            fromAccountId = originalFromId
+            toAccountId = originalToId
+        } else {
+            originalAccountId = recorded.isEmpty ? derived : recorded
+            selectedAccountId = originalAccountId
+        }
+        isLoaded = true
+    }
+
+    /// The categories to offer, plus the entry's own when it isn't normally selectable (an unknown or
+    /// internal-transfer entry), so what it has now stays visible and keepable. Shop setup is left out because the
+    /// day screen hides those entries.
+    public var categories: [CashflowCategory] {
+        let selectable = CashflowCategory.selectable.filter { $0 != .shopSetup }
+        return selectable.contains(category) ? selectable : selectable + [category]
+    }
+
+    public var subCategories: [CashflowSubCategory] {
+        let options = category.subCategories
+        // The entry's current sub-category stays listed even if this category doesn't normally offer it.
+        return options.contains(subCategory) ? options : options + [subCategory]
+    }
+
+    public func selectCategory(_ category: CashflowCategory) {
+        guard category != self.category else { return }
+        self.category = category
+        subCategory = category.subCategories.first ?? .unknown
+    }
+
+    public func selectSubCategory(_ subCategory: CashflowSubCategory) {
+        self.subCategory = subCategory
+    }
+
+    /// The entry with the user's changes applied. Account ids are rebuilt only when the direction or account changed.
+    func editedEntry() -> CashflowTransaction? {
+        guard var edited = original else { return nil }
+        edited.amount = amount
+        edited.particulars = particulars.trimmingCharacters(in: .whitespacesAndNewlines)
+        if isTransfer {
+            // A transfer keeps its category and type; only its two accounts (and the mode of the source) can change.
+            if fromAccountId != originalFromId || toAccountId != originalToId,
+               let from = fromAccountId, let to = toAccountId {
+                edited.fromAccountId = from
+                edited.toAccountId = to
+                if let source = accounts.first(where: { $0.id == from }) { edited.paymentMode = source.type == .cash ? .cash : .upi }
+            }
+            return edited
+        }
+        let wasIn = edited.transactionType == .credit
+        // Untouched categories keep exactly what the entry had, including values this app doesn't recognise.
+        if category != original?.category { edited.category = category }
+        if subCategory != (original?.subCategory ?? .unknown) { edited.subCategory = subCategory }
+        if isIn != wasIn { edited.transactionType = isIn ? .credit : .debit }
+        if isIn != wasIn || selectedAccountId != originalAccountId {
+            // Cash in goes TO the account, cash out comes FROM it; the other side stays empty.
+            let chosen = accounts.first { $0.id == selectedAccountId }
+            if let chosen { edited.paymentMode = chosen.type == .cash ? .cash : .upi }
+            let accountId = selectedAccountId ?? edited.paymentMode.accountId
+            edited.fromAccountId = isIn ? "" : accountId
+            edited.toAccountId = isIn ? accountId : ""
+        }
+        return edited
+    }
+
+    public func save() async -> Bool {
+        guard canSave, let edited = editedEntry() else { return false }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            try await money.updateCashEntry(edited, by: actorId)
+            analyticsService.log(.cashEntryEdited(category: edited.category.rawValue))
+            return true
+        } catch {
+            errorMessage = "Couldn't save the changes."
+            return false
+        }
+    }
+
+    public func delete() async -> Bool {
+        guard let original else { return false }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            try await money.deleteCashEntry(original, by: actorId)
+            analyticsService.log(.cashEntryDeleted(category: original.category.rawValue))
+            return true
+        } catch {
+            errorMessage = "Couldn't delete the entry."
             return false
         }
     }
@@ -188,16 +544,24 @@ public final class DayCloseViewModel {
 
     public func load() async {
         await dayViewModel.load()
-        expected = dayViewModel.day?.expectedClosing ?? 0
+        // Without the day's totals there is no expected closing to save, so closing stays blocked.
+        guard let day = dayViewModel.day else {
+            errorMessage = dayViewModel.errorMessage ?? "Couldn't work out the expected closing. Try again."
+            return
+        }
+        errorMessage = nil
+        expected = day.expectedClosing
         if countedText.isEmpty { countedText = String(Int(expected.rounded())) }
     }
+
+    public var canClose: Bool { dayViewModel.day != nil && !countedText.isEmpty }
 
     public var counted: Double { Double(countedText) ?? 0 }
     public var difference: Double { counted - expected }
     public var tomorrow: Date { Calendar.current.date(byAdding: .day, value: 1, to: date) ?? date }
 
     public func close() async -> Bool {
-        guard !countedText.isEmpty else { return false }
+        guard canClose else { return false }
         isSaving = true
         defer { isSaving = false }
         do {
@@ -334,12 +698,15 @@ public final class ExpenseFormViewModel {
     private let repository: any OrgCollectionRepositoryProtocol<Expense>
     private let money: MoneyRepositoryProtocol
     private let actorId: String
+    private let analyticsService: AnalyticsServicing
 
-    public init(expenseId: String?, repository: any OrgCollectionRepositoryProtocol<Expense>, money: MoneyRepositoryProtocol, actorId: String) {
+    public init(expenseId: String?, repository: any OrgCollectionRepositoryProtocol<Expense>, money: MoneyRepositoryProtocol, actorId: String,
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.expenseId = expenseId
         self.repository = repository
         self.money = money
         self.actorId = actorId
+        self.analyticsService = analyticsService
     }
 
     public func load() async {
@@ -369,6 +736,7 @@ public final class ExpenseFormViewModel {
         expense.updatedAt = Date()
         do {
             try await money.saveExpense(expense)
+            analyticsService.log(.expenseAdded(category: category.rawValue, value: amount, isNew: original == nil))
             return true
         } catch {
             errorMessage = "Couldn't save the expense."

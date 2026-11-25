@@ -49,6 +49,7 @@ enum MoneyRoute: Hashable {
     case cashflowHistory
     case cashflowDay(date: Date)
     case cashflowAdd(date: Date)
+    case cashflowEdit(entryId: String)
     case cashflowClose(date: Date)
     case transactions
     case expenses

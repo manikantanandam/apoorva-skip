@@ -61,7 +61,8 @@ public class ModulesContainer {
                                  ledgerRepository: repositoryContainer.customerLedgerRepository,
                                  supplierRepository: repositoryContainer.supplierRepository,
                                  dailyCashflowRepository: repositoryContainer.dailyCashflowRepository,
-                                 organizationRepository: repositoryContainer.organizationRepository)
+                                 organizationRepository: repositoryContainer.organizationRepository,
+                                 analyticsService: servicesContainer.analyticsService)
     }
 
     public func makePinSwitchViewModel(session: AppSession) -> PinSwitchViewModel {
@@ -81,7 +82,8 @@ public class ModulesContainer {
             },
             salesLoader: { [saleRepository = repositoryContainer.saleRepository] in
                 (try? await saleRepository.getSales()) ?? []
-            }
+            },
+            analyticsService: servicesContainer.analyticsService
         )
     }
 
@@ -217,7 +219,8 @@ public class ModulesContainer {
 
     public func makeItemFormViewModel(itemId: String?) -> ItemFormViewModel {
         ItemFormViewModel(itemId: itemId, inventoryRepository: repositoryContainer.inventoryRepository,
-                          categoryRepository: repositoryContainer.categoryRepository, audit: repositoryContainer.auditLogger)
+                          categoryRepository: repositoryContainer.categoryRepository, audit: repositoryContainer.auditLogger,
+                          analyticsService: servicesContainer.analyticsService)
     }
 
     public func makeCategoriesViewModel() -> CategoriesViewModel {
@@ -252,18 +255,40 @@ public class ModulesContainer {
         PurchaseFormViewModel(supplierId: supplierId, prefill: lines, supplierRepository: repositoryContainer.supplierRepository,
                               purchaseRepository: repositoryContainer.purchaseRepository,
                               inventoryRepository: repositoryContainer.inventoryRepository,
-                              stock: repositoryContainer.stockRepository, actorId: actorId)
+                              stock: repositoryContainer.stockRepository, actorId: actorId,
+                              analyticsService: servicesContainer.analyticsService)
     }
 
     // MARK: - Money (83–95)
 
     public func makeCashDayViewModel(date: Date = Date()) -> CashDayViewModel {
         CashDayViewModel(date: date, summaries: repositoryContainer.dailyCashflowRepository, saleRepository: repositoryContainer.saleRepository,
-                         cashflowRepository: repositoryContainer.cashflowRepository, dayCloses: repositoryContainer.dayCloseRepository)
+                         cashflowRepository: repositoryContainer.cashflowRepository, dayCloses: repositoryContainer.dayCloseRepository,
+                         loadAccounts: organizationAccountsLoader())
     }
 
     public func makeCashEntryViewModel(actorId: String) -> CashEntryViewModel {
-        CashEntryViewModel(money: repositoryContainer.moneyRepository, actorId: actorId)
+        CashEntryViewModel(money: repositoryContainer.moneyRepository, actorId: actorId,
+                           loadAccounts: organizationAccountsLoader(), analyticsService: servicesContainer.analyticsService)
+    }
+
+    public func makeCashEntryEditViewModel(entryId: String, actorId: String) -> CashEntryEditViewModel {
+        CashEntryEditViewModel(entryId: entryId, cashflowRepository: repositoryContainer.cashflowRepository,
+                               money: repositoryContainer.moneyRepository, actorId: actorId,
+                               loadAccounts: organizationAccountsLoader(), analyticsService: servicesContainer.analyticsService)
+    }
+
+    /// Reads the selected organization's embedded accounts; empty if there is no organization (legacy data uses the
+    /// fixed cash account then). Throws if the user or organization can't be read, so callers don't mistake a failed
+    /// lookup for an organization without accounts.
+    private func organizationAccountsLoader() -> @Sendable () async throws -> [Account] {
+        let users = repositoryContainer.userRepository
+        let organizations = repositoryContainer.organizationRepository
+        return {
+            guard let orgId = try await users.getCurrentUser().selectedOrganization?.orgId,
+                  let organization = try await organizations.getOrganization(orgId: orgId) else { return [] }
+            return organization.accounts
+        }
     }
 
     public func makeDayCloseViewModel(date: Date, session: AppSession) -> DayCloseViewModel {
@@ -282,7 +307,8 @@ public class ModulesContainer {
 
     public func makeExpenseFormViewModel(expenseId: String?, actorId: String) -> ExpenseFormViewModel {
         ExpenseFormViewModel(expenseId: expenseId, repository: repositoryContainer.expenseRepository,
-                             money: repositoryContainer.moneyRepository, actorId: actorId)
+                             money: repositoryContainer.moneyRepository, actorId: actorId,
+                             analyticsService: servicesContainer.analyticsService)
     }
 
     public func makeDailySummaryViewModel(session: AppSession) -> DailySummaryViewModel {
@@ -327,12 +353,14 @@ public class ModulesContainer {
     }
 
     public func makeCustomerFormViewModel(phone: String?) -> CustomerFormViewModel {
-        CustomerFormViewModel(phone: phone, repository: repositoryContainer.customerRepository)
+        CustomerFormViewModel(phone: phone, repository: repositoryContainer.customerRepository,
+                              analyticsService: servicesContainer.analyticsService)
     }
 
     public func makeCollectDueViewModel(phone: String, actorId: String) -> CollectDueViewModel {
         CollectDueViewModel(phone: phone, customerRepository: repositoryContainer.customerRepository,
-                            dues: repositoryContainer.duesRepository, actorId: actorId)
+                            dues: repositoryContainer.duesRepository, actorId: actorId,
+                            analyticsService: servicesContainer.analyticsService)
     }
 
     public func makeDueReminderViewModel(phone: String, session: AppSession) -> DueReminderViewModel {
@@ -362,7 +390,8 @@ public class ModulesContainer {
     public func makeOrderFormViewModel(session: AppSession) -> OrderFormViewModel {
         OrderFormViewModel(orders: repositoryContainer.orderRepository, customerRepository: repositoryContainer.customerRepository,
                            dues: repositoryContainer.duesRepository, audit: repositoryContainer.auditLogger,
-                           actorId: session.actorId, actorName: session.actorName)
+                           actorId: session.actorId, actorName: session.actorName,
+                           analyticsService: servicesContainer.analyticsService)
     }
 
     public func makeOrderDetailViewModel(orderId: String, session: AppSession) -> OrderDetailViewModel {
@@ -401,7 +430,8 @@ public class ModulesContainer {
     }
 
     public func makeCancelBillViewModel(saleId: String, actorId: String) -> CancelBillViewModel {
-        CancelBillViewModel(saleId: saleId, lifecycle: repositoryContainer.saleLifecycleRepository, actorId: actorId)
+        CancelBillViewModel(saleId: saleId, lifecycle: repositoryContainer.saleLifecycleRepository, actorId: actorId,
+                            analyticsService: servicesContainer.analyticsService)
     }
 
     public func makeBillEditViewModel(saleId: String, actorId: String) -> BillEditViewModel {

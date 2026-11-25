@@ -29,9 +29,34 @@ struct CashflowCategoryTests {
     @Test("CaseIterable contains all defined categories")
     func testAllCases() {
         let allCases = CashflowCategory.allCases
-        #expect(allCases.count == 8)
+        #expect(allCases.count == 9)
         #expect(allCases.contains(.shopSetup))
+        #expect(allCases.contains(.salary))
         #expect(allCases.contains(.unknown))
+    }
+
+    @Test("Admin app categories decode instead of falling back to unknown")
+    func adminCategoryRawValues() {
+        #expect(CashflowCategory(rawValue: "Salary") == .salary)
+    }
+
+    @Test("Every category offers its Admin sub-categories and none are unknown")
+    func subCategoryMapping() {
+        #expect(CashflowCategory.salary.subCategories == [.wages, .advances, .bonuses])
+        #expect(CashflowCategory.inventory.subCategories == [.rawMaterials, .readyStock, .packaging])
+        #expect(CashflowCategory.salesRevenue.subCategories == [.salesRevenue])
+        #expect(CashflowCategory.unknown.subCategories.isEmpty)
+        for category in CashflowCategory.allCases {
+            #expect(!category.subCategories.contains(.unknown))
+        }
+    }
+
+    @Test("Selectable categories leave out unknown and internal transfers")
+    func selectableCategories() {
+        #expect(!CashflowCategory.selectable.contains(.unknown))
+        #expect(!CashflowCategory.selectable.contains(.internalTransfer))
+        #expect(CashflowCategory.selectable.contains(.salary))
+        #expect(CashflowCategory.selectable.count == 7)
     }
     
     @Test("CashflowCategory encodes and decodes to valid JSON")

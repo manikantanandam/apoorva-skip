@@ -19,14 +19,18 @@ public struct CashDayView: View {
     private let onAdd: () -> Void
     private let onClose: () -> Void
     private let onHistory: () -> Void
+    /// Opens an entry for editing. Entries of a closed day are read-only, so reopen the day first.
+    private let onEdit: ((CashflowTransaction) -> Void)?
+    @State private var showsCalendar = false
 
     public init(viewModel: CashDayViewModel, canClose: Bool, onAdd: @escaping () -> Void, onClose: @escaping () -> Void,
-                onHistory: @escaping () -> Void) {
+                onHistory: @escaping () -> Void, onEdit: ((CashflowTransaction) -> Void)? = nil) {
         self.viewModel = viewModel
         self.canClose = canClose
         self.onAdd = onAdd
         self.onClose = onClose
         self.onHistory = onHistory
+        self.onEdit = onEdit
     }
 
     private var subtitle: String {
@@ -39,7 +43,16 @@ public struct CashDayView: View {
         ScreenScroll {
             HStack {
                 Button { Task { await viewModel.step(-1) } } label: { ManiSwiftUIComponents.IconView(.chevronRight, size: 14).rotationEffect(.degrees(180)) }
-                ScreenSubtitle(text: subtitle).frame(maxWidth: .infinity)
+                Button { showsCalendar = true } label: {
+                    HStack(spacing: ManiSpacing.xs) {
+                        ScreenSubtitle(text: subtitle)
+                        Image(systemName: "calendar")
+                            .font(.footnote)
+                            .foregroundStyle(theme.base.textSecondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .accessibilityLabel("Pick a date")
                 Button { Task { await viewModel.step(1) } } label: { ManiSwiftUIComponents.IconView(.chevronRight, size: 14) }
                     .disabled(viewModel.isToday)
             }
@@ -57,24 +70,32 @@ public struct CashDayView: View {
                 }
                 if !modes.isEmpty { ManiSplitBarCard(title: "Sales by mode", segments: modes) }
                 SectionHeader(title: "Entries", actionTitle: "History", action: onHistory)
+                if onEdit != nil && !viewModel.isClosed && !day.entries.isEmpty {
+                    ScreenSubtitle(text: "Tap an entry to edit or delete it.")
+                }
                 RowsCard {
                     if day.cashSales != 0 {
                         ManiListRow(title: "Bill sales (cash)", subtitle: "In · auto", value: "+" + Money.format(day.cashSales))
                     }
                     ForEach(day.entries, id: \.id) { entry in
-                        ManiListRow(title: entry.particulars,
-                                    subtitle: "\(entry.transactionType == .credit ? "In" : "Out") · \(entry.timestamp.timeOnly) · \(entry.paymentMode == .cash ? "Cash" : "Bank")",
-                                    value: (entry.transactionType == .credit ? "+" : "−") + Money.format(entry.amount))
+                        ManiListRow(title: entry.rowTitle,
+                                    subtitle: entry.rowSubtitle(accounts: viewModel.accounts),
+                                    // A transfer is neither in nor out of the shop, so it carries no sign.
+                                    value: (entry.isTransfer ? "" : (entry.transactionType == .credit ? "+" : "−")) + Money.format(entry.amount),
+                                    action: viewModel.isClosed ? nil : onEdit.map { edit in { edit(entry) } })
                     }
                     if day.cashSales == 0 && day.entries.isEmpty {
                         ManiListRow(title: "No entries yet", subtitle: "Bills and cash in/out show here")
                     }
                 }
+            } else if let error = viewModel.errorMessage {
+                ManiNote(error, kind: .error)
+                ManiButton("Try again") { Task { await viewModel.load() } }
             } else {
                 ProgressView()
             }
         } bottom: {
-            if viewModel.isToday && !viewModel.isClosed && canClose {
+            if viewModel.isToday && !viewModel.isClosed && canClose && viewModel.day != nil {
                 ManiButton("Close day", icon: .lock, action: onClose)
             }
         }
@@ -88,6 +109,220 @@ public struct CashDayView: View {
             }
         }
         .task { await viewModel.load() }
+        .sheet(isPresented: $showsCalendar) {
+            ScreenScroll {
+                ManiAppBar(title: "Pick a date")
+                CashCalendarView(selected: viewModel.date, closedDayKeys: viewModel.closedDayKeys) { picked in
+                    showsCalendar = false
+                    Task { await viewModel.go(to: picked) }
+                }
+            }
+        }
+    }
+}
+
+/// How category, sub-category and account are chosen on the cash entry screens. Remembered on this device.
+enum CashSelectionStyle: String, CaseIterable {
+    case badges, dropdown
+
+    static let storageKey = "cashEntry.selectionStyle"
+
+    var title: String { self == .badges ? "Badges" : "Dropdown" }
+}
+
+/// Toolbar menu to switch between the badge (chip) layout and dropdown menus. Both screens read the same stored choice.
+struct CashSelectionStyleMenu: View {
+    @Binding var style: CashSelectionStyle
+
+    var body: some View {
+        Menu {
+            Picker("Selection style", selection: $style) {
+                ForEach(CashSelectionStyle.allCases, id: \.self) { option in
+                    Text(option.title).tag(option)
+                }
+            }
+        } label: {
+            Image(systemName: style == .badges ? "square.grid.2x2" : "list.bullet")
+        }
+        .accessibilityLabel("Selection style: \(style.title)")
+    }
+}
+
+/// One dropdown: a labelled row showing the current choice that opens a menu of options.
+private struct CashDropdownRow<Options: View>: View {
+    @Environment(\.maniTheme) private var theme
+    let title: String
+    let value: String
+    @ViewBuilder let options: () -> Options
+
+    var body: some View {
+        Menu {
+            options()
+        } label: {
+            HStack {
+                Text(title)
+                    .font(theme.typography.secondary)
+                    .foregroundStyle(theme.base.textSecondary)
+                Spacer()
+                Text(value)
+                    .foregroundStyle(theme.base.text)
+                ManiSwiftUIComponents.IconView(.chevronDown, size: 12, color: theme.base.textSecondary)
+            }
+            .padding(.horizontal, ManiSpacing.md)
+            .frame(minHeight: 48)
+            .background(theme.base.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.base.border, lineWidth: 1))
+        }
+    }
+}
+
+/// Category and sub-category choices for a cash entry, shared by the add and edit screens.
+struct CashCategoryPicker: View {
+    let style: CashSelectionStyle
+    let categories: [CashflowCategory]
+    let category: CashflowCategory
+    let subCategories: [CashflowSubCategory]
+    let subCategory: CashflowSubCategory
+    let onCategory: (CashflowCategory) -> Void
+    let onSubCategory: (CashflowSubCategory) -> Void
+
+    var body: some View {
+        switch style {
+        case .badges: badges
+        case .dropdown: dropdowns
+        }
+    }
+
+    private var badges: some View {
+        VStack(alignment: .leading, spacing: ManiSpacing.sm) {
+            SectionHeader(title: "Category")
+            FlowLayout {
+                ForEach(categories, id: \.self) { option in
+                    ManiChip(option.rawValue, isSelected: option == category) { onCategory(option) }
+                }
+            }
+            if !subCategories.isEmpty {
+                SectionHeader(title: "Sub-category")
+                FlowLayout {
+                    ForEach(subCategories, id: \.self) { option in
+                        ManiChip(option.rawValue, isSelected: option == subCategory) { onSubCategory(option) }
+                    }
+                }
+            }
+        }
+    }
+
+    private var dropdowns: some View {
+        VStack(spacing: ManiSpacing.sm) {
+            CashDropdownRow(title: "Category", value: category.rawValue) {
+                ForEach(categories, id: \.self) { option in
+                    Button(option.rawValue) { onCategory(option) }
+                }
+            }
+            if !subCategories.isEmpty {
+                CashDropdownRow(title: "Sub-category", value: subCategory.rawValue) {
+                    ForEach(subCategories, id: \.self) { option in
+                        Button(option.rawValue) { onSubCategory(option) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Which account a cash entry touches: "To account" for cash in, "From account" for cash out.
+struct CashAccountPicker: View {
+    let style: CashSelectionStyle
+    let title: String
+    let accounts: [Account]
+    let selectedId: String?
+    let onSelect: (String) -> Void
+
+    var body: some View {
+        if !accounts.isEmpty {
+            switch style {
+            case .badges:
+                VStack(alignment: .leading, spacing: ManiSpacing.sm) {
+                    SectionHeader(title: title)
+                    FlowLayout {
+                        ForEach(accounts, id: \.id) { account in
+                            ManiChip(account.name, isSelected: account.id == selectedId) { onSelect(account.id) }
+                        }
+                    }
+                }
+            case .dropdown:
+                CashDropdownRow(title: title, value: accounts.first { $0.id == selectedId }?.name ?? "Select") {
+                    ForEach(accounts, id: \.id) { account in
+                        Button(account.name) { onSelect(account.id) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+extension CashflowTransaction {
+    /// "Utilities › Rent", skipping parts the app doesn't recognise; nil when neither is known.
+    var categoryPath: String? {
+        var parts: [String] = []
+        if category != .unknown { parts.append(category.rawValue) }
+        if let sub = subCategory, sub != .unknown, sub.rawValue != category.rawValue { parts.append(sub.rawValue) }
+        return parts.isEmpty ? nil : parts.joined(separator: " › ")
+    }
+
+    /// Row title: what the money was for (the sub-category), else the category. The notes are optional, so they
+    /// are only the title for an entry that has neither.
+    var rowTitle: String {
+        if isTransfer { return CashflowCategory.internalTransfer.rawValue }
+        if let sub = subCategory, sub != .unknown { return sub.rawValue }
+        if category != .unknown { return category.rawValue }
+        return noteText ?? "Entry"
+    }
+
+    /// The optional note: the particulars without the label this app writes into them ("Rent", "Cash in",
+    /// "Transfer A → B"), and nil for an empty or "No particulars" entry.
+    var noteText: String? {
+        let text = particulars.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, text.lowercased() != "no particulars" else { return nil }
+        if isTransfer, text.hasPrefix("Transfer ") {
+            guard let range = text.range(of: " · ") else { return nil }
+            return String(text[range.upperBound...])
+        }
+        for label in [subCategory?.rawValue, category.rawValue, "Cash in"].compactMap({ $0 }) {
+            if text == label { return nil }
+            if text.hasPrefix(label + " · ") { return String(text.dropFirst(label.count + 3)) }
+        }
+        return text
+    }
+
+    /// Second line of an entry row: category, the account, the time, then the note if there is one. A transfer shows
+    /// "From → To" instead of a category and account.
+    func rowSubtitle(accounts: [Account]) -> String {
+        var parts: [String] = []
+        if isTransfer {
+            let from = accountName(for: fromAccountId, in: accounts) ?? "?"
+            let to = accountName(for: toAccountId, in: accounts) ?? "?"
+            parts.append("\(from) → \(to)")
+        } else {
+            if category != .unknown, category.rawValue != rowTitle { parts.append(category.rawValue) }
+            parts.append(accountLabel(in: accounts))
+        }
+        parts.append(timestamp.timeOnly)
+        if let noteText { parts.append(noteText) }
+        return parts.joined(separator: " · ")
+    }
+
+    private func accountName(for id: String, in accounts: [Account]) -> String? {
+        id.isEmpty ? nil : accounts.first { $0.id == id }?.name
+    }
+
+    /// The account money went to (cash in) or came from (cash out). Older entries have no account id, so they name the
+    /// account matching their payment mode, or "Cash" / "Bank" when the accounts aren't known.
+    private func accountLabel(in accounts: [Account]) -> String {
+        if let name = accountName(for: transactionType == .credit ? toAccountId : fromAccountId, in: accounts) { return name }
+        if paymentMode == .cash { return accounts.first { $0.type == .cash }?.name ?? "Cash" }
+        return (accounts.first { $0.type == .bank } ?? accounts.first { $0.type == .upi })?.name ?? "Bank"
     }
 }
 
@@ -96,6 +331,7 @@ public struct CashDayView: View {
 public struct CashEntryView: View {
     @Bindable private var viewModel: CashEntryViewModel
     private let onDone: () -> Void
+    @AppStorage(CashSelectionStyle.storageKey) private var style: CashSelectionStyle = .badges
 
     public init(viewModel: CashEntryViewModel, onDone: @escaping () -> Void) {
         self.viewModel = viewModel
@@ -104,25 +340,109 @@ public struct CashEntryView: View {
 
     public var body: some View {
         ScreenScroll {
-            ManiSegmentedControl(selection: $viewModel.isIn, options: [(true, "Cash in"), (false, "Cash out")])
+            ManiSegmentedControl(selection: Binding(get: { viewModel.kind }, set: { viewModel.setKind($0) }),
+                                 options: CashEntryViewModel.Kind.allCases.map { ($0, $0.title) })
             ManiHeroAmount("₹" + (viewModel.amountText.isEmpty ? "0" : viewModel.amountText), caption: viewModel.particulars)
-            if !viewModel.isIn {
-                FlowLayout {
-                    ForEach(CashEntryViewModel.Purpose.allCases, id: \.self) { purpose in
-                        ManiChip(purpose.rawValue, isSelected: viewModel.purpose == purpose) { viewModel.purpose = purpose }
-                    }
+            if viewModel.isTransfer {
+                // One entry moves money from one account to another: both ids are saved on it.
+                CashAccountPicker(style: style, title: "From account", accounts: viewModel.accounts,
+                                  selectedId: viewModel.fromAccountId, onSelect: { viewModel.selectFromAccount($0) })
+                CashAccountPicker(style: style, title: "To account", accounts: viewModel.accounts,
+                                  selectedId: viewModel.toAccountId, onSelect: { viewModel.selectToAccount($0) })
+                if viewModel.transferNeedsMoreAccounts {
+                    ManiNote("A transfer needs at least two accounts. Add another account to the organization first.", kind: .warning)
                 }
+            } else {
+                CashCategoryPicker(style: style, categories: viewModel.categories, category: viewModel.category,
+                                   subCategories: viewModel.subCategories, subCategory: viewModel.subCategory,
+                                   onCategory: { viewModel.selectCategory($0) }, onSubCategory: { viewModel.selectSubCategory($0) })
+                CashAccountPicker(style: style, title: viewModel.accountTitle, accounts: viewModel.accounts,
+                                  selectedId: viewModel.selectedAccountId, onSelect: { viewModel.selectAccount($0) })
             }
-            ManiInputField(label: "Note (optional)", text: $viewModel.note, placeholder: viewModel.isIn ? "Owner added float" : "Ramesh Traders")
+            ManiInputField(label: "Note (optional)", text: $viewModel.note,
+                           placeholder: viewModel.isTransfer ? "Cash deposited at bank" : (viewModel.isIn ? "Owner added float" : "Ramesh Traders"))
             ManiKeypad { key in viewModel.amountText = key.apply(to: viewModel.amountText) }
             if let error = viewModel.errorMessage { ManiNote(error, kind: .error) }
         } bottom: {
-            ManiButton("Save entry", isEnabled: viewModel.amount > 0) {
+            ManiButton("Save entry", isEnabled: viewModel.canSave) {
                 Task { if await viewModel.save() { onDone() } }
             }
         }
         .navigationTitle("Cash entry")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { CashSelectionStyleMenu(style: $style) }
+        }
+        .task { await viewModel.load() }
+    }
+}
+
+// MARK: - Edit cash entry
+
+public struct CashEntryEditView: View {
+    @Bindable private var viewModel: CashEntryEditViewModel
+    private let onDone: () -> Void
+    @State private var confirmsDelete = false
+    @AppStorage(CashSelectionStyle.storageKey) private var style: CashSelectionStyle = .badges
+
+    public init(viewModel: CashEntryEditViewModel, onDone: @escaping () -> Void) {
+        self.viewModel = viewModel
+        self.onDone = onDone
+    }
+
+    public var body: some View {
+        ScreenScroll {
+            if viewModel.isLoaded {
+                if let date = viewModel.date {
+                    ScreenSubtitle(text: date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute()))
+                }
+                if viewModel.isTransfer {
+                    ScreenSubtitle(text: "Internal transfer")
+                } else {
+                    ManiSegmentedControl(selection: $viewModel.isIn, options: [(true, "Cash in"), (false, "Cash out")])
+                }
+                ManiHeroAmount("₹" + (viewModel.amountText.isEmpty ? "0" : viewModel.amountText),
+                               caption: viewModel.particulars.isEmpty ? "No particulars" : viewModel.particulars)
+                ManiInputField(label: "Particulars", text: $viewModel.particulars, placeholder: "What was this for?")
+                if viewModel.isTransfer {
+                    CashAccountPicker(style: style, title: "From account", accounts: viewModel.accounts,
+                                      selectedId: viewModel.fromAccountId, onSelect: { viewModel.selectFromAccount($0) })
+                    CashAccountPicker(style: style, title: "To account", accounts: viewModel.accounts,
+                                      selectedId: viewModel.toAccountId, onSelect: { viewModel.selectToAccount($0) })
+                } else {
+                    CashCategoryPicker(style: style, categories: viewModel.categories, category: viewModel.category,
+                                       subCategories: viewModel.subCategories, subCategory: viewModel.subCategory,
+                                       onCategory: { viewModel.selectCategory($0) }, onSubCategory: { viewModel.selectSubCategory($0) })
+                    CashAccountPicker(style: style, title: viewModel.accountTitle, accounts: viewModel.accounts,
+                                      selectedId: viewModel.selectedAccountId, onSelect: { viewModel.selectAccount($0) })
+                }
+                ManiKeypad { key in viewModel.amountText = key.apply(to: viewModel.amountText) }
+            }
+            if let error = viewModel.errorMessage { ManiNote(error, kind: .error) }
+        } bottom: {
+            if viewModel.isLoaded {
+                VStack(spacing: ManiSpacing.sm) {
+                    ManiButton("Save changes", isLoading: viewModel.isSaving, isEnabled: viewModel.canSave) {
+                        Task { if await viewModel.save() { onDone() } }
+                    }
+                    ManiButton("Delete entry", kind: .outline, isEnabled: !viewModel.isSaving) { confirmsDelete = true }
+                }
+            }
+        }
+        .navigationTitle("Edit entry")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) { CashSelectionStyleMenu(style: $style) }
+        }
+        .task { await viewModel.load() }
+        .alert("Delete this entry?", isPresented: $confirmsDelete) {
+            Button("Delete", role: .destructive) {
+                Task { if await viewModel.delete() { onDone() } }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("It is removed from the day's cash and the cash book. This can't be undone from the app.")
+        }
     }
 }
 
@@ -153,7 +473,7 @@ public struct DayCloseView: View {
             ManiNote("Closing locks today's entries. Owners can reopen from Cash history.", kind: .info)
             if let error = viewModel.errorMessage { ManiNote(error, kind: .error) }
         } bottom: {
-            ManiButton("Close day", icon: .lock, isLoading: viewModel.isSaving, isEnabled: !viewModel.countedText.isEmpty) {
+            ManiButton("Close day", icon: .lock, isLoading: viewModel.isSaving, isEnabled: viewModel.canClose) {
                 Task { if await viewModel.close() { onDone() } }
             }
         }

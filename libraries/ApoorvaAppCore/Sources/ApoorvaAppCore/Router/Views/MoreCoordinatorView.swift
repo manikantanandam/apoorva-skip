@@ -24,14 +24,17 @@ struct MoreCoordinatorView: View {
                 onSearch: { tabs.present(.search) }
             )
             .toolbar(.hidden, for: .navigationBar)
+            .trackScreen("more")
             .navigationDestination(for: MoreRoute.self) { route in
                 destination(for: route)
+                    .trackScreen(route, in: "more")
             }
             .task { await loadCounts() }
         }
         .sheet(item: $coordinator.presentedSheet) { route in
             NavigationStack {
                 destination(for: route)
+                    .trackScreen(route, in: "more")
             }
         }
         .sheet(isPresented: $isSwitchingStaff) {
@@ -307,9 +310,14 @@ struct MoreCoordinatorView: View {
         case .cashflowDay(let date):
             Retained(container.modulesContainer.makeCashDayViewModel(date: date)) { viewModel in
                 CashDayView(viewModel: viewModel, canClose: session.can(.dayClose),
-                            onAdd: { coordinator.push(.money(.cashflowAdd(date: date))) },
-                            onClose: { coordinator.push(.money(.cashflowClose(date: date))) },
-                            onHistory: { coordinator.push(.money(.cashflowHistory)) })
+                            onAdd: { coordinator.push(.money(.cashflowAdd(date: viewModel.date))) },
+                            onClose: { coordinator.push(.money(.cashflowClose(date: viewModel.date))) },
+                            onHistory: { coordinator.push(.money(.cashflowHistory)) },
+                            onEdit: { entry in coordinator.push(.money(.cashflowEdit(entryId: entry.id))) })
+            }
+        case .cashflowEdit(let entryId):
+            Retained(container.modulesContainer.makeCashEntryEditViewModel(entryId: entryId, actorId: session.actorId)) { viewModel in
+                CashEntryEditView(viewModel: viewModel) { coordinator.pop() }
             }
         case .cashflowAdd:
             Retained(container.modulesContainer.makeCashEntryViewModel(actorId: session.actorId)) { viewModel in

@@ -21,16 +21,42 @@ public struct CashBook: Sendable {
     }
 
     /// `mode` is "cash", or anything else (upi, card, bank), which lands in the bank account.
+    /// `account`, when given, is the org account the money goes to (cash in) or comes from (cash out); its type
+    /// decides the payment mode and its id is used instead of the fixed legacy account ids.
     public func record(_ type: CashflowTransaction.TransactionType, amount: Double, mode: String, category: CashflowCategory,
                        subCategory: CashflowSubCategory? = nil, particulars: String, person: String? = nil,
-                       at date: Date = Date()) async throws {
+                       at date: Date = Date(), account chosen: Account? = nil) async throws {
         guard let repository, amount > 0, mode != PaymentMode.credit.rawValue else { return }
-        let account: CashflowTransaction.PaymentMode = mode == "cash" ? .cash : .upi
+        let account: CashflowTransaction.PaymentMode = chosen.map { $0.type == .cash ? .cash : .upi } ?? (mode == "cash" ? .cash : .upi)
+        let accountId = chosen?.id ?? account.accountId
         try await repository.saveCashflowTransaction(transaction: CashflowTransaction(
             timestamp: date, particulars: particulars, amount: amount, transactionType: type, paymentMode: account,
             category: category, subCategory: subCategory,
-            fromAccountId: type == .debit ? account.accountId : "", toAccountId: type == .credit ? account.accountId : "",
+            fromAccountId: type == .debit ? accountId : "", toAccountId: type == .credit ? accountId : "",
             person: person, timestampInMs: date.timeIntervalSince1970, updatedAtInMs: Date().timeIntervalSince1970))
+    }
+
+    /// Records a transfer between two accounts as ONE entry carrying both account ids. It is stored as a debit
+    /// (the Admin app only knows credit and debit) with the payment mode of the account the money leaves.
+    /// Pass the same `id` when retrying a failed save, so a write that already reached the server isn't duplicated.
+    public func recordTransfer(id: String = UUID().uuidString, amount: Double, from: Account, to: Account, particulars: String,
+                               at date: Date = Date()) async throws {
+        guard let repository, amount > 0, from.id != to.id else { return }
+        let mode: CashflowTransaction.PaymentMode = from.type == .cash ? .cash : .upi
+        try await repository.saveCashflowTransaction(transaction: CashflowTransaction(
+            id: id, timestamp: date, particulars: particulars, amount: amount, transactionType: .debit, paymentMode: mode,
+            category: .internalTransfer, subCategory: .internalTransfer, fromAccountId: from.id, toAccountId: to.id,
+            timestampInMs: date.timeIntervalSince1970, updatedAtInMs: Date().timeIntervalSince1970))
+    }
+
+    /// Saves an edited entry (any entry, including ones created by the legacy app).
+    public func update(_ entry: CashflowTransaction) async throws {
+        try await repository?.updateCashflowTransaction(entry)
+    }
+
+    /// Soft delete: the entry stays in Firestore with `isDeleted` set, so sync and history keep working.
+    public func softDelete(_ entry: CashflowTransaction) async throws {
+        try await repository?.softDeleteCashflowTransaction(entry)
     }
 }
 
@@ -167,10 +193,19 @@ public final actor StockRepository: StockRepositoryProtocol {
 // MARK: - Money
 
 public protocol MoneyRepositoryProtocol: Sendable {
-    func addCashEntry(isIn: Bool, amount: Double, category: ExpenseCategory?, particulars: String, by actorId: String) async throws
+    /// `account` is the account the money goes to (cash in) or comes from (cash out); nil uses the cash account.
+    func addCashEntry(isIn: Bool, amount: Double, category: CashflowCategory, subCategory: CashflowSubCategory?,
+                      account: Account?, particulars: String, by actorId: String) async throws
+    /// Moves money between two accounts, saved as a single entry (not a debit and a credit). `id` is the entry's id;
+    /// reuse it when retrying a failed save so the transfer is written at most once.
+    func addTransfer(id: String, amount: Double, from: Account, to: Account, particulars: String, by actorId: String) async throws
     func saveExpense(_ expense: Expense) async throws
     func closeDay(_ close: DayClose) async throws
     func reopenDay(_ day: Date, by actorId: String) async throws
+    /// Edits an existing cash book entry. The caller decides what changed; the entry keeps its id and date.
+    func updateCashEntry(_ entry: CashflowTransaction, by actorId: String) async throws
+    /// Soft-deletes a cash book entry.
+    func deleteCashEntry(_ entry: CashflowTransaction, by actorId: String) async throws
 }
 
 public final actor MoneyRepository: MoneyRepositoryProtocol {
@@ -189,11 +224,27 @@ public final actor MoneyRepository: MoneyRepositoryProtocol {
         self.audit = audit
     }
 
-    public func addCashEntry(isIn: Bool, amount: Double, category: ExpenseCategory?, particulars: String, by actorId: String) async throws {
-        let mapped = category?.cashflow ?? (isIn ? (.salesRevenue, nil) : (.miscellaneous, .general))
-        try await cashBook.record(isIn ? .credit : .debit, amount: amount, mode: "cash", category: mapped.0, subCategory: mapped.1,
-                                  particulars: particulars)
+    public func addCashEntry(isIn: Bool, amount: Double, category: CashflowCategory, subCategory: CashflowSubCategory?,
+                             account: Account?, particulars: String, by actorId: String) async throws {
+        try await cashBook.record(isIn ? .credit : .debit, amount: amount, mode: "cash", category: category,
+                                  subCategory: subCategory, particulars: particulars, account: account)
         await audit?.log(.money, action: isIn ? "cash.in" : "cash.out", summary: "\(particulars) · ₹\(Int(amount))", targetId: nil)
+    }
+
+    public func addTransfer(id: String, amount: Double, from: Account, to: Account, particulars: String, by actorId: String) async throws {
+        guard amount > 0, from.id != to.id else { return }
+        try await cashBook.recordTransfer(id: id, amount: amount, from: from, to: to, particulars: particulars)
+        await audit?.log(.money, action: "cash.transfer", summary: "\(from.name) → \(to.name) · ₹\(Int(amount))", targetId: nil)
+    }
+
+    public func updateCashEntry(_ entry: CashflowTransaction, by actorId: String) async throws {
+        try await cashBook.update(entry)
+        await audit?.log(.money, action: "cash.edit", summary: "\(entry.particulars) · ₹\(Int(entry.amount))", targetId: entry.id)
+    }
+
+    public func deleteCashEntry(_ entry: CashflowTransaction, by actorId: String) async throws {
+        try await cashBook.softDelete(entry)
+        await audit?.log(.money, action: "cash.delete", summary: "\(entry.particulars) · ₹\(Int(entry.amount))", targetId: entry.id)
     }
 
     public func saveExpense(_ expense: Expense) async throws {

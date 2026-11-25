@@ -193,6 +193,7 @@ final class MockCashflowService: CashflowTransactionServiceProtocol, @unchecked 
     func getCashflowTransactions(since lastSync: Date, for orgId: String) async throws -> [CashflowTransaction] { calls.append("since"); return result }
     func addCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws { calls.append("add") }
     func updateCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws { calls.append("updateRemote") }
+    func deleteCashflowTransaction(id: String, for orgId: String) async throws { calls.append("deleteRemote") }
 }
 
 func makeTransaction(updatedAt: Date = Date(timeIntervalSince1970: 100)) -> CashflowTransaction {
