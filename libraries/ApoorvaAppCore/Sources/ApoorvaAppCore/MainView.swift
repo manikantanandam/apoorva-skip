@@ -37,10 +37,12 @@ public struct MainView: View {
         .sheet(item: $coordinator.presentedGlobalRoute) { route in
             GlobalRouteView(route: route, coordinator: coordinator)
                 .maniTheme(from: coordinator.appContainer.themeStore)
+                .trackScreen(route, in: "global")
         }
         .fullScreenCover(item: $coordinator.fullScreenBlockingRoute) { route in
             GlobalRouteView(route: route, coordinator: coordinator)
                 .maniTheme(from: coordinator.appContainer.themeStore)
+                .trackScreen(route, in: "global")
         }
         .maniTheme(from: coordinator.appContainer.themeStore)
         .onChange(of: scenePhase) { _, phase in
@@ -48,6 +50,7 @@ public struct MainView: View {
                 Task { await coordinator.syncAll() }
             }
         }
+        .environment(\.analyticsService, coordinator.appContainer.servicesContainer.analyticsService)
     }
 }
 

@@ -29,13 +29,15 @@ struct HomeCoordinatorView: View {
             HomeView(session: session, viewModel: viewModel, syncText: syncText,
                      invitations: container.modulesContainer.invitationsViewModel, onAction: handle)
                 .toolbar(.hidden, for: .navigationBar)
+                .trackScreen("home")
                 .navigationDestination(for: HomeRoute.self) { route in
                     destination(for: route)
+                        .trackScreen(route, in: "home")
                 }
                 .task { await refreshSyncText() }
         }
         .sheet(item: $coordinator.presentedSheet) { route in
-            NavigationStack { destination(for: route) }
+            NavigationStack { destination(for: route).trackScreen(route, in: "home") }
         }
         .onChange(of: tabs.appCoordinator?.syncGeneration) { _, _ in
             // The cache just got server data: show it instead of the pre-sync empty state.

@@ -129,6 +129,7 @@ public struct CheckoutView: View {
         }
         .navigationTitle("Checkout")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear { viewModel.checkoutStarted() }
     }
 
     private func amountBinding(_ mode: PaymentMode) -> Binding<String> {

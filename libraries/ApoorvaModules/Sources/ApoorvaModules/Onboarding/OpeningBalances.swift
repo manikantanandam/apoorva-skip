@@ -10,6 +10,7 @@ import Observation
 import ManiSwiftUIComponents
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaServices
 
 public struct OpeningDue: Identifiable, Hashable, Sendable {
     public let id = UUID()
@@ -37,19 +38,22 @@ public final class OpeningBalancesViewModel {
     private let supplierRepository: any OrgCollectionRepositoryProtocol<Supplier>
     private let dailyCashflowRepository: DailyCashflowSummaryRepositoryProtocol
     private let organizationRepository: OrganizationRepositoryProtocol
+    private let analyticsService: AnalyticsServicing
 
     public init(session: AppSession,
                 customerRepository: CustomerRepositoryProtocol,
                 ledgerRepository: any OrgCollectionRepositoryProtocol<CustomerLedgerEntry>,
                 supplierRepository: any OrgCollectionRepositoryProtocol<Supplier>,
                 dailyCashflowRepository: DailyCashflowSummaryRepositoryProtocol,
-                organizationRepository: OrganizationRepositoryProtocol) {
+                organizationRepository: OrganizationRepositoryProtocol,
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.session = session
         self.customerRepository = customerRepository
         self.ledgerRepository = ledgerRepository
         self.supplierRepository = supplierRepository
         self.dailyCashflowRepository = dailyCashflowRepository
         self.organizationRepository = organizationRepository
+        self.analyticsService = analyticsService
     }
 
     public var customersOwe: Double { dues.filter { !$0.isSupplier }.reduce(0) { $0 + $1.amount } }
@@ -119,6 +123,9 @@ public final class OpeningBalancesViewModel {
                     updatedAt: now.timeIntervalSince1970, locked: false))
             }
             try await session.saveSettings { $0.profile.openingBalancesSavedAt = now }
+            analyticsService.log(.openingBalancesSaved(customerCount: dues.filter { !$0.isSupplier }.count,
+                                                       supplierCount: dues.filter(\.isSupplier).count,
+                                                       hasCash: (Double(cashInDrawer) ?? 0) > 0))
             return true
         } catch {
             errorMessage = "Couldn't save balances. Try again."

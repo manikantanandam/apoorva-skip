@@ -25,8 +25,10 @@ struct OnboardingCoordinatorView: View {
     var body: some View {
         NavigationStack(path: $coordinator.path) {
             destination(for: coordinator.root)
+                .trackScreen(coordinator.root, in: "onboarding")
                 .navigationDestination(for: OnboardingRoute.self) { route in
                     destination(for: route)
+                        .trackScreen(route, in: "onboarding")
                 }
         }
         .onAppear {

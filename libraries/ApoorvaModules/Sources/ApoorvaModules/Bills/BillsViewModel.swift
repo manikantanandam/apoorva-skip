@@ -7,6 +7,7 @@ import Foundation
 import Observation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaServices
 
 public enum BillQuickFilter: String, CaseIterable, Sendable {
     case today = "Today"
@@ -206,11 +207,14 @@ public final class CancelBillViewModel {
 
     private let lifecycle: SaleLifecycleRepositoryProtocol
     private let actorId: String
+    private let analyticsService: AnalyticsServicing
 
-    public init(saleId: String, lifecycle: SaleLifecycleRepositoryProtocol, actorId: String) {
+    public init(saleId: String, lifecycle: SaleLifecycleRepositoryProtocol, actorId: String,
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.saleId = saleId
         self.lifecycle = lifecycle
         self.actorId = actorId
+        self.analyticsService = analyticsService
     }
 
     public func cancel() async -> Bool {
@@ -219,6 +223,8 @@ public final class CancelBillViewModel {
         let fullReason = note.trimmingCharacters(in: .whitespaces).isEmpty ? reason : "\(reason) — \(note)"
         do {
             try await lifecycle.cancel(saleId: saleId, reason: fullReason, by: actorId)
+            // The preset reason only: the free-text note can hold customer details.
+            analyticsService.log(.refund(transactionId: saleId, value: nil, reason: reason))
             return true
         } catch {
             errorMessage = error.localizedDescription

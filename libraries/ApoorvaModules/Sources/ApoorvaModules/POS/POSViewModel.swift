@@ -7,6 +7,7 @@ import Foundation
 import Observation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaServices
 import ManiLogger
 
 private let logger = AppLogger(category: .ui)
@@ -76,19 +77,30 @@ public class POSViewModel {
     private let customerRepository: CustomerRepositoryProtocol?
     private let categoryLoader: (@Sendable () async -> [String: String])?
     private let salesLoader: (@Sendable () async -> [Sale])?
+    private let analyticsService: AnalyticsServicing
 
     public init(inventoryRepository: InventoryItemRepositoryProtocol,
                 heldBillRepository: HeldBillRepositoryProtocol,
                 memberRepository: (any OrgCollectionRepositoryProtocol<Member>)? = nil,
                 customerRepository: CustomerRepositoryProtocol? = nil,
                 categoryLoader: (@Sendable () async -> [String: String])? = nil,
-                salesLoader: (@Sendable () async -> [Sale])? = nil) {
+                salesLoader: (@Sendable () async -> [Sale])? = nil,
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.inventoryRepository = inventoryRepository
         self.heldBillRepository = heldBillRepository
         self.memberRepository = memberRepository
         self.customerRepository = customerRepository
         self.categoryLoader = categoryLoader
         self.salesLoader = salesLoader
+        self.analyticsService = analyticsService
+    }
+
+    private func logAdded(value: Double, quantity: Int, source: String) {
+        analyticsService.log(.addToCart(value: value, quantity: quantity, source: source))
+    }
+
+    private func logRemoved(_ line: CartItem) {
+        analyticsService.log(.removeFromCart(value: line.mrp * Double(line.quantity) * (line.weight ?? 1), quantity: line.quantity))
     }
 
     // MARK: - Customer fields (kept for the existing customer row)
@@ -236,6 +248,11 @@ public class POSViewModel {
     }
 
     public func addOne(_ item: InventoryItem) {
+        addOne(item, source: "tap")
+    }
+
+    private func addOne(_ item: InventoryItem, source: String) {
+        logAdded(value: price(of: item) ?? 0, quantity: 1, source: source)
         if let index = cart.items.firstIndex(where: { $0.category.id == item.id && $0.variant == nil && $0.weight == nil }) {
             cart.items[index].quantity += 1
         } else {
@@ -247,6 +264,7 @@ public class POSViewModel {
 
     public func decrement(_ item: InventoryItem) {
         guard let index = cart.items.lastIndex(where: { $0.category.id == item.id }) else { return }
+        analyticsService.log(.removeFromCart(value: cart.items[index].mrp, quantity: 1))
         if cart.items[index].quantity > 1 {
             cart.items[index].quantity -= 1
         } else {
@@ -256,12 +274,14 @@ public class POSViewModel {
 
     public func addWeighted(_ item: InventoryItem, weight: Double, pricePerUnit: Double) {
         guard weight > 0 else { return }
+        logAdded(value: pricePerUnit * weight, quantity: 1, source: "weight")
         cart.items.append(CartItem(category: item, mrp: pricePerUnit, quantity: 1, weight: weight,
                                    unit: item.unit ?? "kg", lineId: UUID().uuidString))
     }
 
     public func addVariant(_ item: InventoryItem, variant: String, quantity: Int) {
         let lineId = "\(item.id)#\(variant)"
+        logAdded(value: (price(of: item) ?? 0) * Double(quantity), quantity: quantity, source: "variant")
         if let index = cart.items.firstIndex(where: { $0.lineId == lineId }) {
             cart.items[index].quantity += quantity
         } else {
@@ -280,6 +300,7 @@ public class POSViewModel {
             items.append(item)
             items.sort()
         }
+        logAdded(value: amount, quantity: 1, source: "custom")
         cart.items.append(CartItem(category: item, mrp: amount, quantity: 1, lineId: UUID().uuidString))
     }
 
@@ -304,10 +325,12 @@ public class POSViewModel {
 
     public func remove(at index: Int) {
         guard cart.items.indices.contains(index) else { return }
+        logRemoved(cart.items[index])
         cart.items.remove(at: index)
     }
 
     public func removeLine(id: String) {
+        cart.items.filter { $0.lineId == id }.forEach(logRemoved)
         cart.items.removeAll { $0.lineId == id }
     }
 
@@ -351,6 +374,7 @@ public class POSViewModel {
         guard let amount = Double(calculatorText), amount > 0 else { return }
         let number = cart.items.count + 1
         let item = InventoryItem(id: "custom-\(UUID().uuidString)", name: "Item \(number) · \(calculatorCategory)", sellPrice: amount)
+        logAdded(value: amount, quantity: 1, source: "calculator")
         cart.items.append(CartItem(category: item, mrp: amount, quantity: 1, lineId: UUID().uuidString))
         calculatorText = ""
     }
@@ -360,8 +384,10 @@ public class POSViewModel {
     /// Adds the item with this barcode; returns it, or nil when no item matches.
     @discardableResult
     public func addScanned(barcode: String) -> InventoryItem? {
-        guard let item = items.first(where: { $0.barcode == barcode }) else { return nil }
-        addOne(item)
+        let match = items.first { $0.barcode == barcode }
+        analyticsService.log(.scanUsed(matched: match != nil))
+        guard let item = match else { return nil }
+        addOne(item, source: "scan")
         return item
     }
 
@@ -399,6 +425,7 @@ public class POSViewModel {
             } else {
                 try await heldBillRepository.saveHeldBill(bill)
             }
+            analyticsService.log(.billHeld(itemCount: bill.items.count, value: bill.total))
             clearCart()
             await refreshHeldBillsCount()
         } catch {

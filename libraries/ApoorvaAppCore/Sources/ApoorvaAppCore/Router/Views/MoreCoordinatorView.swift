@@ -24,14 +24,17 @@ struct MoreCoordinatorView: View {
                 onSearch: { tabs.present(.search) }
             )
             .toolbar(.hidden, for: .navigationBar)
+            .trackScreen("more")
             .navigationDestination(for: MoreRoute.self) { route in
                 destination(for: route)
+                    .trackScreen(route, in: "more")
             }
             .task { await loadCounts() }
         }
         .sheet(item: $coordinator.presentedSheet) { route in
             NavigationStack {
                 destination(for: route)
+                    .trackScreen(route, in: "more")
             }
         }
         .sheet(isPresented: $isSwitchingStaff) {

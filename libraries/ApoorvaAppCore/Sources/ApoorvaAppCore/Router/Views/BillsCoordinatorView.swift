@@ -23,13 +23,16 @@ struct BillsCoordinatorView: View {
                           onSelect: { sale in coordinator.push(.detail(billId: sale.id)) },
                           onFilters: { coordinator.presentFilters() })
                 .toolbar(.hidden, for: .navigationBar)
+                .trackScreen("bills")
                 .navigationDestination(for: BillsRoute.self) { route in
                     destination(for: route)
+                        .trackScreen(route, in: "bills")
                 }
         }
         .sheet(isPresented: $coordinator.isPresentingFilters) {
             NavigationStack {
                 BillFiltersView(viewModel: viewModel, onClose: { coordinator.dismissFilters() })
+                    .trackScreen("bills_filters")
             }
             .presentationDetents([.large])
         }

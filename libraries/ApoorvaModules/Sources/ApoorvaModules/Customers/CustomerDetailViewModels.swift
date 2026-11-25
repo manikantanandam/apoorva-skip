@@ -10,6 +10,7 @@ import Foundation
 import Observation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaServices
 
 /// Phone numbers as typed → 10-digit Indian mobile (drops +91 / leading 0).
 enum PhoneNumber {
@@ -142,11 +143,13 @@ public final class CustomerFormViewModel {
 
     private var original: Customer?
     private let repository: CustomerRepositoryProtocol
+    private let analyticsService: AnalyticsServicing
 
-    public init(phone: String?, repository: CustomerRepositoryProtocol) {
+    public init(phone: String?, repository: CustomerRepositoryProtocol, analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.isEditing = phone != nil
         self.phone = phone ?? ""
         self.repository = repository
+        self.analyticsService = analyticsService
     }
 
     public func load() async {
@@ -197,6 +200,7 @@ public final class CustomerFormViewModel {
             } else {
                 try await repository.saveCustomer(customer: customer)
             }
+            analyticsService.log(.customerSaved(isNew: !isEditing, allowsCredit: allowsCredit))
             return customer
         } catch {
             errorMessage = "Couldn't save. Try again."
@@ -220,12 +224,15 @@ public final class CollectDueViewModel {
     private let customerRepository: CustomerRepositoryProtocol
     private let dues: DuesRepositoryProtocol
     private let actorId: String
+    private let analyticsService: AnalyticsServicing
 
-    public init(phone: String, customerRepository: CustomerRepositoryProtocol, dues: DuesRepositoryProtocol, actorId: String) {
+    public init(phone: String, customerRepository: CustomerRepositoryProtocol, dues: DuesRepositoryProtocol, actorId: String,
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.phone = phone
         self.customerRepository = customerRepository
         self.dues = dues
         self.actorId = actorId
+        self.analyticsService = analyticsService
     }
 
     public func load() async {
@@ -243,6 +250,7 @@ public final class CollectDueViewModel {
         defer { isSaving = false }
         do {
             customer = try await dues.collect(phone: phone, amount: amount, mode: mode, by: actorId)
+            analyticsService.log(.dueCollected(value: amount, mode: mode.rawValue))
             return true
         } catch {
             errorMessage = "Couldn't record the payment. Try again."

@@ -10,6 +10,7 @@ import Foundation
 import Observation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaServices
 
 extension Sale {
     /// Signed amount paid by a mode: returns count against the day.
@@ -185,11 +186,14 @@ public final class CashEntryViewModel {
     private let money: MoneyRepositoryProtocol
     private let actorId: String
     private let loadAccounts: @Sendable () async -> [Account]
+    private let analyticsService: AnalyticsServicing
 
-    public init(money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async -> [Account] = { [] }) {
+    public init(money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async -> [Account] = { [] },
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.money = money
         self.actorId = actorId
         self.loadAccounts = loadAccounts
+        self.analyticsService = analyticsService
     }
 
     /// Cash in goes to an account, cash out comes from one.
@@ -283,6 +287,7 @@ public final class CashEntryViewModel {
                 try await money.addCashEntry(isIn: isIn, amount: amount, category: category, subCategory: subCategory,
                                              account: selectedAccount, particulars: particulars, by: actorId)
             }
+            analyticsService.log(.cashEntryAdded(kind: kind.rawValue, category: category.rawValue, value: amount))
             return true
         } catch {
             errorMessage = "Couldn't save the entry."
@@ -324,13 +329,17 @@ public final class CashEntryEditViewModel {
     private var originalFromId: String?
     private var originalToId: String?
 
+    private let analyticsService: AnalyticsServicing
+
     public init(entryId: String, cashflowRepository: CashflowTransactionRepositoryProtocol,
-                money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async -> [Account] = { [] }) {
+                money: MoneyRepositoryProtocol, actorId: String, loadAccounts: @escaping @Sendable () async -> [Account] = { [] },
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.entryId = entryId
         self.cashflowRepository = cashflowRepository
         self.money = money
         self.actorId = actorId
         self.loadAccounts = loadAccounts
+        self.analyticsService = analyticsService
     }
 
     /// Cash in goes to an account, cash out comes from one.
@@ -463,6 +472,7 @@ public final class CashEntryEditViewModel {
         defer { isSaving = false }
         do {
             try await money.updateCashEntry(edited, by: actorId)
+            analyticsService.log(.cashEntryEdited(category: edited.category.rawValue))
             return true
         } catch {
             errorMessage = "Couldn't save the changes."
@@ -476,6 +486,7 @@ public final class CashEntryEditViewModel {
         defer { isSaving = false }
         do {
             try await money.deleteCashEntry(original, by: actorId)
+            analyticsService.log(.cashEntryDeleted(category: original.category.rawValue))
             return true
         } catch {
             errorMessage = "Couldn't delete the entry."
@@ -658,12 +669,15 @@ public final class ExpenseFormViewModel {
     private let repository: any OrgCollectionRepositoryProtocol<Expense>
     private let money: MoneyRepositoryProtocol
     private let actorId: String
+    private let analyticsService: AnalyticsServicing
 
-    public init(expenseId: String?, repository: any OrgCollectionRepositoryProtocol<Expense>, money: MoneyRepositoryProtocol, actorId: String) {
+    public init(expenseId: String?, repository: any OrgCollectionRepositoryProtocol<Expense>, money: MoneyRepositoryProtocol, actorId: String,
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.expenseId = expenseId
         self.repository = repository
         self.money = money
         self.actorId = actorId
+        self.analyticsService = analyticsService
     }
 
     public func load() async {
@@ -693,6 +707,7 @@ public final class ExpenseFormViewModel {
         expense.updatedAt = Date()
         do {
             try await money.saveExpense(expense)
+            analyticsService.log(.expenseAdded(category: category.rawValue, value: amount, isNew: original == nil))
             return true
         } catch {
             errorMessage = "Couldn't save the expense."

@@ -36,6 +36,7 @@ public class CheckoutViewModel {
     private let session: AppSession?
     private let analyticsService: AnalyticsServicing
     private let performanceMonitoringService: PerformanceMonitoringServicing
+    private var didLogBeginCheckout = false
 
     public init(
         cart: PosCart,
@@ -137,6 +138,13 @@ public class CheckoutViewModel {
 
     /// Writes the sale (local + Firestore), bumps the customer, clears the held bill, then records
     /// stock and dues. Returns the sale for the receipt.
+    /// Logs `begin_checkout` once per checkout, even when the screen reappears after the UPI QR step.
+    public func checkoutStarted() {
+        guard !didLogBeginCheckout else { return }
+        didLogBeginCheckout = true
+        analyticsService.log(.beginCheckout(value: finalTotal, itemCount: cart.items.count))
+    }
+
     public func confirmSale() async -> Sale? {
         guard isSettled else {
             if creditNeedsCustomer { errorMessage = "Add a customer to sell on credit." }
@@ -176,7 +184,14 @@ public class CheckoutViewModel {
                 try? await lifecycle?.recordEffects(of: sale, by: staffId)
             }
             await session?.refreshPlanUsage()
-            analyticsService.log(.billSaved(itemCount: sale.items.count, mode: activeModes.map(\.title).sorted().joined(separator: "+")))
+            let modes = activeModes.map(\.title).sorted().joined(separator: "+")
+            analyticsService.log(.billSaved(itemCount: sale.items.count, mode: modes))
+            if let originalId = sale.returnOfSaleId {
+                analyticsService.log(.refund(transactionId: originalId, value: abs(sale.netPayable), reason: "return"))
+            } else {
+                analyticsService.log(.purchase(transactionId: sale.id, value: sale.netPayable, discount: overallDiscountAmount,
+                                               itemCount: sale.items.count, paymentType: modes))
+            }
             return sale
         } catch {
             errorMessage = "Couldn't confirm this sale. Please try again."
