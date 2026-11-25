@@ -9,6 +9,7 @@ import Foundation
 import Observation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaServices
 
 // MARK: - Orders list (58)
 
@@ -69,15 +70,18 @@ public final class OrderFormViewModel {
     private let audit: AuditLogging?
     private let actorId: String
     private let actorName: String
+    private let analyticsService: AnalyticsServicing
 
     public init(orders: any OrgCollectionRepositoryProtocol<Order>, customerRepository: CustomerRepositoryProtocol,
-                dues: DuesRepositoryProtocol, audit: AuditLogging?, actorId: String, actorName: String) {
+                dues: DuesRepositoryProtocol, audit: AuditLogging?, actorId: String, actorName: String,
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.orders = orders
         self.customerRepository = customerRepository
         self.dues = dues
         self.audit = audit
         self.actorId = actorId
         self.actorName = actorName
+        self.analyticsService = analyticsService
     }
 
     public func load() async {
@@ -145,6 +149,7 @@ public final class OrderFormViewModel {
             await audit?.log(.bills, action: "order.create",
                              summary: "Order \(order.number) for \(order.customerName) · \(Money.format(total)), advance \(Money.format(advance))",
                              targetId: order.id)
+            analyticsService.log(.orderCreated(value: total, advance: advance))
             return order
         } catch {
             errorMessage = "Couldn't save the order. Try again."

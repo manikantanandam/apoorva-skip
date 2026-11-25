@@ -8,5 +8,7 @@
 	<string>Scan item barcodes to add them to the bill.</string>
 	<key>NSContactsUsageDescription</key>
 	<string>Pick contacts to add as customers. Only names and numbers are imported.</string>
+	<key>FirebaseAutomaticScreenReportingEnabled</key>
+	<false/>
 </dict>
 </plist>

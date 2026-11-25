@@ -27,5 +27,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Screen views are logged by the app per route (ScreenTracking.swift); the single-activity auto report is noise. -->
+        <meta-data android:name="google_analytics_automatic_screen_reporting_enabled" android:value="false" />
     </application>
 </manifest>

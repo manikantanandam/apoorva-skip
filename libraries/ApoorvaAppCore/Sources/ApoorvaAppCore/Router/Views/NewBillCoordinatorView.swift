@@ -56,12 +56,14 @@ struct NewBillCoordinatorView: View {
                         }
                     }
                 }
+                .trackScreen("new_bill")
                 .navigationDestination(for: NewBillRoute.self) { route in
                     destination(for: route)
+                        .trackScreen(route, in: "new_bill")
                 }
         }
         .sheet(item: $coordinator.presentedSheet) { sheet in
-            NavigationStack { sheetContent(sheet) }
+            NavigationStack { sheetContent(sheet).trackScreen(sheet, in: "new_bill_sheet") }
                 .presentationDetents(sheet.isHalfSheet ? [.medium, .large] : [.large])
                 .presentationDragIndicator(sheet.isHalfSheet ? .visible : .automatic)
         }

@@ -17,8 +17,14 @@
 - Export to CSV/PDF behind the `insights.export` flag. Role-scoped: managers see their own store; staff see only their own stats.
 
 ### 2b. App analytics (for us, Firebase Analytics → BigQuery)
-**Implemented** behind a provider-agnostic `AnalyticsServicing` abstraction (`ApoorvaServices/Observability`) — Firebase Analytics today, swappable for another vendor later without touching call sites. Wired: `sign_in_method` (`LoginViewModel`), `bill_saved` (`CheckoutViewModel`), `trial_started` (`ShopSetupViewModel`). `subscribed` is defined in `AnalyticsEvent` for schema completeness but left unwired — no real purchase/upgrade flow exists yet. The rest of the event table below is deferred follow-up.
-No PII, no customer names, no per-customer amounts. Every event carries `vertical`, `role`, `app_version` and `plan` as user properties.
+**Implemented** behind a provider-agnostic `AnalyticsServicing` abstraction (`ApoorvaServices/Observability`) — Firebase Analytics today, swappable for another vendor later without touching call sites. Wired: `sign_in_method` (`LoginViewModel`), `bill_saved` (`CheckoutViewModel`), `trial_started` (`ShopSetupViewModel`). `subscribed` is defined in `AnalyticsEvent` for schema completeness but left unwired — no real purchase/upgrade flow exists yet.
+Also wired (see `docs/decisions/analytics.md`):
+- **Screen views:** a `screen_view` for every route (`<area>_<route case>`, e.g. `bills_detail`), from `ScreenTracking.swift` at each coordinator view. Firebase's automatic screen reporting is off on iOS (`Info.plist`) and Android (manifest).
+- **GA4 ecommerce:** `add_to_cart` (with a `source`), `remove_from_cart`, `begin_checkout`, `purchase` (`transaction_id` = sale id) and `refund` (for return bills and cancelled bills).
+- **Feature usage:** `bill_held`, `scan_used`, `cash_entry_added/edited/deleted`, `expense_added`, `customer_saved`, `due_collected`, `item_saved`, `purchase_recorded`, `order_created`, `opening_balances_saved`.
+- **Reliability:** `sync_completed` (one per pass) and `sync_failed` (collection and error type) from `SyncEngine`.
+Still deferred: `onboarding_step`, `first_bill_saved`, `search_used`, the monetisation-limit events and the Phase 3b `firestore_usage` event.
+No PII and no customer names. Bill and money **amounts are sent exactly** as `value` + `currency` (INR), so GA4 revenue reports work (changed 2026-11-25). Free-text notes are never sent. Every event carries `vertical`, `role`, `app_version` and `plan` as user properties.
 
 | Area | Events / metrics |
 |------|------------------|

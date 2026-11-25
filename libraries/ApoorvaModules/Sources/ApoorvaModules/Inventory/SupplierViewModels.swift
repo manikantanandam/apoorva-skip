@@ -9,6 +9,7 @@ import Foundation
 import Observation
 import ApoorvaModels
 import ApoorvaRepository
+import ApoorvaServices
 
 // MARK: - Suppliers (80)
 
@@ -183,10 +184,11 @@ public final class PurchaseFormViewModel {
     private let inventoryRepository: InventoryItemRepositoryProtocol
     private let stock: StockRepositoryProtocol
     private let actorId: String
+    private let analyticsService: AnalyticsServicing
 
     public init(supplierId: String?, prefill: [PurchaseLine] = [], supplierRepository: any OrgCollectionRepositoryProtocol<Supplier>,
                 purchaseRepository: any OrgCollectionRepositoryProtocol<Purchase>, inventoryRepository: InventoryItemRepositoryProtocol,
-                stock: StockRepositoryProtocol, actorId: String) {
+                stock: StockRepositoryProtocol, actorId: String, analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
         self.supplierId = supplierId
         self.lines = prefill
         self.supplierRepository = supplierRepository
@@ -194,6 +196,7 @@ public final class PurchaseFormViewModel {
         self.inventoryRepository = inventoryRepository
         self.stock = stock
         self.actorId = actorId
+        self.analyticsService = analyticsService
     }
 
     public func load() async {
@@ -255,6 +258,7 @@ public final class PurchaseFormViewModel {
                                 paidMode: paidMode.rawValue, note: note, createdBy: actorId)
         do {
             try await stock.recordPurchase(purchase, by: actorId)
+            analyticsService.log(.purchaseRecorded(value: total, lineCount: purchase.lines.count, isReturn: purchase.isReturn))
             return purchase
         } catch {
             errorMessage = "Couldn't save the purchase. Try again."
