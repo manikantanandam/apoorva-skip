@@ -6,6 +6,8 @@ plugins {
     id("skip-build-plugin")
     // Turns app/google-services.json into the resources FirebaseApp.configure() reads on Android.
     id("com.google.gms.google-services") version "4.4.2" apply true
+    // Injects the Crashlytics build ID; without it Crashlytics throws at launch.
+    id("com.google.firebase.crashlytics") version "3.0.2" apply true
 }
 
 skip {
