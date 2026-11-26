@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.android.application)
     id("skip-build-plugin")
+    // Turns app/google-services.json into the resources FirebaseApp.configure() reads on Android.
+    id("com.google.gms.google-services") version "4.4.2" apply true
 }
 
 skip {
