@@ -29,6 +29,8 @@ let package = Package(
             dependencies: [
                 .product(name: "ApoorvaModels", package: "ApoorvaModels"),
                 .product(name: "SkipSQL", package: "skip-sql"),
+                // Android has no platform SQLite C library; SkipSQLPlus bundles its own.
+                .product(name: "SkipSQLPlus", package: "skip-sql", condition: .when(platforms: [.android])),
                 .product(name: "ManiLogger", package: "ManiLogger"),
                 .product(name: "ApoorvaUtilities", package: "ManiUtilities")
             ]
