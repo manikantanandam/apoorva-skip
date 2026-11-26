@@ -7,7 +7,7 @@
 
 import Foundation
 import ApoorvaModels
-import SkipSQL
+import SkipSQLPlus
 
 extension DailyCashflowSummary: @retroactive SQLCodable {
     

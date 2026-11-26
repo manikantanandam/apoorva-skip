@@ -5,7 +5,7 @@
 
 import Foundation
 import ApoorvaModels
-import SkipSQL
+import SkipSQLPlus
 import ManiLogger
 
 private let logger = AppLogger(category: .storage)

@@ -28,9 +28,9 @@ let package = Package(
             name: "ApoorvaOfflineStorage",
             dependencies: [
                 .product(name: "ApoorvaModels", package: "ApoorvaModels"),
-                .product(name: "SkipSQL", package: "skip-sql"),
-                // Android has no platform SQLite C library; SkipSQLPlus bundles its own.
-                .product(name: "SkipSQLPlus", package: "skip-sql", condition: .when(platforms: [.android])),
+                // SkipSQLPlus bundles SQLite (Android has no platform SQLite C library). Linking SkipSQL
+                // alongside it duplicates SkipFFI in the Android build, so this is the only SQL product.
+                .product(name: "SkipSQLPlus", package: "skip-sql"),
                 .product(name: "ManiLogger", package: "ManiLogger"),
                 .product(name: "ApoorvaUtilities", package: "ManiUtilities")
             ]

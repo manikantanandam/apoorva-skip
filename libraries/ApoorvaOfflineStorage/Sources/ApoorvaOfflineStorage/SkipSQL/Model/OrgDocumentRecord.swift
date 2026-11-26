@@ -5,7 +5,7 @@
 
 import Foundation
 import ApoorvaUtilities
-import SkipSQL
+import SkipSQLPlus
 
 /// One row per cached org document, for every `OrgDocument` collection. The document
 /// itself is stored as JSON so adding a collection (or a field) never needs a migration.

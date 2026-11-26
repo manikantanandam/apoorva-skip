@@ -5,10 +5,7 @@
 //  Created by Manikanta Nandam on 12/10/26.
 //
 
-@preconcurrency import SkipSQL
-#if os(Android)
-import SkipSQLPlus
-#endif
+@preconcurrency import SkipSQLPlus
 import Foundation
 import ApoorvaModels
 
@@ -26,18 +23,10 @@ public final actor SkipSqlDatabase {
     public init(filepath: String) throws {
         self.context = try SQLContext(
             path: filepath, flags: [.create, .readWrite],
-            configuration: Self.sqliteConfiguration
+            // Bundled SQLite; SkipSQL's `.platform` fatal-errors on Android (no system SQLite C library).
+            configuration: .plus
         )
         try context.migrate(migrations: SchemaMigrations.all)
-    }
-
-    /// `.platform` fatal-errors on Android (no system SQLite C library), so Android uses SkipSQLPlus.
-    private static var sqliteConfiguration: SQLiteConfiguration {
-        #if os(Android)
-        .plus
-        #else
-        .platform
-        #endif
     }
 
     /// Brings the schema up to date. Safe to call repeatedly.

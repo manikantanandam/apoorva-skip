@@ -5,7 +5,7 @@
 
 import Foundation
 import ApoorvaModels
-import SkipSQL
+import SkipSQLPlus
 
 public protocol OrgCollectionStoring<Document>: Sendable {
     associatedtype Document: OrgDocument

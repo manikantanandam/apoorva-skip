@@ -5,7 +5,7 @@
 
 import ApoorvaModels
 import ApoorvaUtilities
-import SkipSQL
+import SkipSQLPlus
 
 extension ApoorvaModels.InventoryItem: @retroactive SQLCodable {
     public static var table: SkipSQLCore.SQLTable {
