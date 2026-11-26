@@ -139,7 +139,7 @@ public struct CustomerListView: View {
                            subtitle: subtitle,
                            value: value,
                            status: status) { onSelectCustomer(item) }
-            .accessibilityLabel(spoken)
+            .accessibilityLabel(Text(spoken))
             .contextMenu {
                 Button("Call") { call(item) }
                 Button("WhatsApp") { whatsApp(item) }

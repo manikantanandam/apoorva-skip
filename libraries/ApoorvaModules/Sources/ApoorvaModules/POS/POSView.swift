@@ -121,7 +121,7 @@ public struct POSView: View {
                 Button { viewModel.isCalculatorMode.toggle() } label: {
                     ManiSwiftUIComponents.IconView(viewModel.isCalculatorMode ? .list : .grid, size: 18, color: theme.base.text)
                 }
-                .accessibilityLabel(viewModel.isCalculatorMode ? "Item list" : "Quick bill")
+                .accessibilityLabel(Text(viewModel.isCalculatorMode ? "Item list" : "Quick bill"))
             }
             Menu {
                 Button("Scan barcode") { onAction(.scan) }
