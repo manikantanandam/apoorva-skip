@@ -18,6 +18,10 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: android-ui-tests-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   parity:
     name: iOS/Android UI test parity
