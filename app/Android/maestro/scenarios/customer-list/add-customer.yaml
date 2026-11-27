@@ -12,9 +12,10 @@ appId: com.apoorva.app
     text: "Save customer"
     enabled: true
 - tapOn: "Save customer"
-# Saving a new customer opens their detail screen; go back to the list.
+# Saving a new customer opens their detail screen; go back to the list. Wait for the "New customer"
+# form title to clear rather than for "Zoya Test" (that name is already in the form field pre-save).
 - extendedWaitUntil:
-    visible: "Zoya Test"
+    notVisible: "New customer"
     timeout: 10000
 - back
 - assertVisible: "Name or phone"
