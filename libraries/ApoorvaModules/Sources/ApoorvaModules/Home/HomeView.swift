@@ -25,14 +25,17 @@ public struct HomeView: View {
     private let syncText: String
     private let onAction: (HomeAction) -> Void
     private let invitations: InvitationsViewModel?
+    private let onRefresh: (() async -> Void)?
     @State var showsInvitations = false
 
+    /// `onRefresh` runs on pull-to-refresh before the local reload, so other devices' entries are pulled down first.
     public init(session: AppSession, viewModel: HomeViewModel, syncText: String, invitations: InvitationsViewModel? = nil,
-                onAction: @escaping (HomeAction) -> Void) {
+                onRefresh: (() async -> Void)? = nil, onAction: @escaping (HomeAction) -> Void) {
         self.session = session
         self.viewModel = viewModel
         self.syncText = syncText
         self.invitations = invitations
+        self.onRefresh = onRefresh
         self.onAction = onAction
     }
 
@@ -82,6 +85,7 @@ public struct HomeView: View {
             }
         }
         .refreshable {
+            await onRefresh?()
             await viewModel.load()
             await invitations?.refresh()
         }

@@ -20,7 +20,9 @@ struct GlobalRouteView: View {
         case .search:
             NotBuiltView(PlaceholderScreen("Search"))
         case .sync:
-            NotBuiltView(PlaceholderScreen("Sync status"))
+            SyncStatusView(viewModel: coordinator.appContainer.modulesContainer.makeSyncStatusViewModel { force in
+                await coordinator.syncAll(force: force)
+            })
         case .conflict:
             NotBuiltView(PlaceholderScreen("Conflict"))
         case .notifications:

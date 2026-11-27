@@ -102,7 +102,7 @@ public final actor CashflowTransactionRepository: CashflowTransactionRepositoryP
         logger.debug("Last updated date \(lastUpdatedDate)")
         
         if let lastUpdatedDate, !force {
-            transactions = try await service.getCashflowTransactions(since: Date(timeIntervalSince1970: lastUpdatedDate), for: orgId)
+            transactions = try await service.getCashflowTransactions(since: SyncCursor.queryStart(from: lastUpdatedDate), for: orgId)
         } else {
             transactions = try await service.getCashflowTransactions(for: orgId)
         }

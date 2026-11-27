@@ -76,7 +76,7 @@ public final actor HeldBillRepository: HeldBillRepositoryProtocol {
 
         let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: HeldBill.table.name)
         if let lastUpdatedDate, !force {
-            heldBills = try await service.getHeldBills(since: Date(timeIntervalSince1970: lastUpdatedDate), for: orgId)
+            heldBills = try await service.getHeldBills(since: SyncCursor.queryStart(from: lastUpdatedDate), for: orgId)
         } else {
             heldBills = try await service.getHeldBills(for: orgId)
         }

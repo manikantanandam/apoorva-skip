@@ -55,7 +55,8 @@ public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
         let user = try await userRepository.getCurrentUser()
         guard let orgId = user.selectedOrganization?.orgId else { return }
         try await service.addDailyCashflowSummary(summary, for: orgId)
-        // Note: Skipping local storage save here to let the sync mechanism handle it, matching the pattern in CashflowTransactionRepository.
+        // Cache it now so the day shows straight away, offline too; the next sync upserts the server copy over it.
+        try await storage.saveDailyCashflowSummaries(summaries: [summary])
     }
     
     public func updateDailyCashflowSummary(summary: DailyCashflowSummary) async throws {
@@ -80,17 +81,17 @@ public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
         let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: DailyCashflowSummary.table.name)
         
         if let lastUpdatedDate, !force {
-            summaries = try await service.getDailyCashflowSummaries(since: lastUpdatedDate.date, for: orgId)
+            summaries = try await service.getDailyCashflowSummaries(since: SyncCursor.queryStart(from: lastUpdatedDate), for: orgId)
         } else {
             summaries = try await service.getDailyCashflowSummaries(for: orgId)
         }
-        
+
         try await storage.saveDailyCashflowSummaries(summaries: summaries)
 
-        try await syncStorage.updateSyncTimestamp(
-            for: DailyCashflowSummary.table.name,
-            timestamp: Date.now.timeIntervalSince1970
-        )
+        // Advance by the newest record's own `updatedAt`, not this device's clock: another device's
+        // write stamped slightly earlier than our "now" would otherwise never be fetched.
+        guard let latest = summaries.map(\.updatedAt).max() else { return }
+        try await syncStorage.updateSyncTimestamp(for: DailyCashflowSummary.table.name, timestamp: latest)
     }
     
     public func refresh(for date: String) async throws {

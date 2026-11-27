@@ -168,6 +168,32 @@ struct SyncEngineCoverageTests {
         #expect(await engine.statuses["bad"]?.lastError != nil)
     }
 
+    @Test func overlappingCallsShareOnePass() async {
+        let flag = Flag()
+        let engine = SyncEngine(repositories: [SyncAdapter("a") { force in
+            flag.forced.append(force)
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }])
+        async let first = engine.syncAll()
+        async let second = engine.syncAll()
+        _ = await (first, second)
+        #expect(flag.forced == [false])
+        #expect(await engine.isSyncing == false)
+    }
+
+    @Test func forcedCallRunsItsOwnPassAfterARunningOne() async {
+        let flag = Flag()
+        let engine = SyncEngine(repositories: [SyncAdapter("a") { force in
+            flag.forced.append(force)
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }])
+        async let delta = engine.syncAll()
+        try? await Task.sleep(nanoseconds: 10_000_000)
+        async let full = engine.syncAll(force: true)
+        _ = await (delta, full)
+        #expect(flag.forced == [false, true])
+    }
+
     @Test func syncStatusInitDefaults() {
         let status = SyncStatus(key: "k")
         #expect(status.lastSuccess == nil && status.lastError == nil && !status.isSyncing)

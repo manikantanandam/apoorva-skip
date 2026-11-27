@@ -89,7 +89,8 @@ private extension DailyCashflowSummaryService {
     func dailyCashflowTransactions(since lastSync: Date? = nil, for orgId: String) async throws -> [DailyCashflowSummary] {
         var query = StoreQuery.all
         if let lastSync = lastSync {
-            query = StoreQuery(conditions: [.greaterThan(field: "updatedAt", date: lastSync)])
+            // `updatedAt` is stored as epoch seconds (a number), so a Timestamp filter would never match.
+            query = StoreQuery(conditions: [.greaterThanNumber(field: "updatedAt", value: lastSync.timeIntervalSince1970)])
         }
         logger.debug("Fetching Daily Cashflow Summaries for Org: \(orgId)")
         let summaries = try await store.fetch(DailyCashflowSummary.self, collection: collectionPath(orgId: orgId), query: query)

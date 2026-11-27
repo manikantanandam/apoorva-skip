@@ -29,6 +29,8 @@ public actor SyncEngine {
 
     private var repositories: [any SyncableRepository] = []
     private(set) var statuses: [String: SyncStatus] = [:]
+    /// The pass in progress. Launch, foreground and pull-to-refresh can all ask at once; they share one pass.
+    private var inFlight: Task<[SyncStatus], Never>?
     private let performanceMonitoringService: PerformanceMonitoringServicing
     private let crashReportingService: CrashReportingServicing
     private let analyticsService: AnalyticsServicing
@@ -56,8 +58,29 @@ public actor SyncEngine {
         for repository in repositories { register(repository) }
     }
 
+    /// Joins a pass already running instead of starting a second one. A forced call waits for it,
+    /// then runs its own full pass, so "re-download everything" is never swallowed by a delta pass.
     @discardableResult
     public func syncAll(force: Bool = false) async -> [SyncStatus] {
+        if let running = inFlight {
+            let result = await running.value
+            if !force { return result }
+        }
+        let task = Task { await runAll(force: force) }
+        inFlight = task
+        let result = await task.value
+        // A forced caller may have started a newer pass while this one finished; leave that one in place.
+        if inFlight == task { inFlight = nil }
+        return result
+    }
+
+    public var isSyncing: Bool { inFlight != nil }
+
+    public func allStatuses() -> [SyncStatus] {
+        repositories.compactMap { statuses[$0.syncKey] }
+    }
+
+    private func runAll(force: Bool) async -> [SyncStatus] {
         let start = Date()
         for repository in repositories {
             await sync(repository, force: force)
@@ -65,10 +88,6 @@ public actor SyncEngine {
         analyticsService.log(.syncCompleted(durationMs: Int(Date().timeIntervalSince(start) * 1000),
                                             collectionCount: repositories.count, failedCount: failedCount))
         return allStatuses()
-    }
-
-    public func allStatuses() -> [SyncStatus] {
-        repositories.compactMap { statuses[$0.syncKey] }
     }
 
     public var failedCount: Int {

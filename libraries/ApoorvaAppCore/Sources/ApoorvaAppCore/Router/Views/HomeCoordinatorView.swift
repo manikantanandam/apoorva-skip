@@ -27,7 +27,8 @@ struct HomeCoordinatorView: View {
     var body: some View {
         NavigationStack(path: $coordinator.path) {
             HomeView(session: session, viewModel: viewModel, syncText: syncText,
-                     invitations: container.modulesContainer.invitationsViewModel, onAction: handle)
+                     invitations: container.modulesContainer.invitationsViewModel,
+                     onRefresh: { await tabs.appCoordinator?.syncAll() }, onAction: handle)
                 .toolbar(.hidden, for: .navigationBar)
                 .trackScreen("home")
                 .navigationDestination(for: HomeRoute.self) { route in
@@ -42,7 +43,10 @@ struct HomeCoordinatorView: View {
         .onChange(of: tabs.appCoordinator?.syncGeneration) { _, _ in
             // The cache just got server data: show it instead of the pre-sync empty state.
             if tabs.appCoordinator?.isInitialSyncDone == true { viewModel.markSyncSettled() }
-            Task { await viewModel.load() }
+            Task {
+                await viewModel.load()
+                await refreshSyncText()
+            }
         }
         .onChange(of: tabs.appCoordinator?.isInitialSyncDone) { _, done in
             // An org switch clears the cache and syncs again: wait for it rather than flashing the guide.
@@ -78,7 +82,9 @@ struct HomeCoordinatorView: View {
 
     private func refreshSyncText() async {
         let engine = container.repositoryContainer.syncEngine
-        if await engine.failedCount > 0 {
+        if await engine.isSyncing {
+            syncText = "Syncing"
+        } else if await engine.failedCount > 0 {
             syncText = "Offline"
         } else if await engine.lastSuccessfulSync != nil {
             syncText = "Synced"
