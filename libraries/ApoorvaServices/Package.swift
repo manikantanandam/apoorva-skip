@@ -17,7 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../ApoorvaModels"),
-        .package(path: "../../../Libraries/ManiLogger"),  // TEMPORARY: restore exact pin after release
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.2.1"),
         .package(url: "https://source.skip.tools/skip-firebase.git", "0.21.0"..<"2.0.0"),
         // Tests only: the app target reaches Firebase through skip-firebase (which re-exports it on Apple platforms).
         .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.19.2")
