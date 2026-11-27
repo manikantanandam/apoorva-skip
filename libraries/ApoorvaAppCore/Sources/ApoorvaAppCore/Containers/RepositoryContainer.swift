@@ -102,7 +102,9 @@ public class RepositoryContainer {
     public lazy var settingsRepository = makeOrgCollectionRepository(OrgSettings.self)
     public lazy var storeRepository = makeOrgCollectionRepository(Store.self)
     /// Members come from the legacy `users` collection; there is no `members` collection.
-    public lazy var memberRepository = UsersMemberRepository(userRepository: userRepository, context: orgContext)
+    public lazy var memberRepository = UsersMemberRepository(userRepository: userRepository, context: orgContext,
+                                                              crashReportingService: servicesContainer.crashReportingService,
+                                                              analyticsService: servicesContainer.analyticsService)
     public lazy var supplierRepository = makeOrgCollectionRepository(Supplier.self)
     public lazy var servicePackageRepository = makeOrgCollectionRepository(ServicePackage.self)
     public lazy var customerPackageRepository = makeOrgCollectionRepository(CustomerPackage.self)

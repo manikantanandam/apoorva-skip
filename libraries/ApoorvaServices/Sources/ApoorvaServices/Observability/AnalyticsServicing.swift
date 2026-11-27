@@ -160,6 +160,14 @@ public extension AnalyticsEvent {
     static func syncFailed(collection: String, reason: String) -> AnalyticsEvent {
         AnalyticsEvent(name: "sync_failed", parameters: ["collection": .string(collection), "reason": .string(reason)])
     }
+
+    /// `UsersMemberRepository.all()` resolved an org but `listUsers(orgId:)` came back empty — every org has
+    /// at least an owner, so this means the org's `users` docs are missing the denormalized `assignedOrgIds`
+    /// field the query filters on (pre-existing orgs from before that field was introduced never got it
+    /// backfilled). `orgIdHash` avoids sending a raw org id to the analytics provider.
+    static func orgMembersQueryEmpty(orgIdHash: String) -> AnalyticsEvent {
+        AnalyticsEvent(name: "org_members_query_empty", parameters: ["org_id_hash": .string(orgIdHash)])
+    }
 }
 
 /// Provider-agnostic event tracking: swap the conformer, not the call sites.

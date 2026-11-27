@@ -84,15 +84,17 @@ public final class BillsViewModel {
         allSales = (try? await repository.getSales()) ?? []
         // Member names come from a live Firestore read with no offline cache; keep the last good
         // names on a transient failure instead of blanking every staff chip back to the fallback.
-        if let members = try? await memberRepository.all() {
+        // `all()` also returns [] (not a thrown error) while the org context isn't resolved yet,
+        // so only overwrite staffNames once we actually get members back.
+        if let members = try? await memberRepository.all(), !members.isEmpty {
             staffNames = Dictionary(uniqueKeysWithValues: members.map { ($0.id, $0.name) })
         }
     }
 
     /// The filters sheet needs staff names but doesn't otherwise trigger a load; retry here if the
-    /// initial fetch hasn't resolved any names yet (e.g. it ran before the network was ready).
+    /// initial fetch hasn't resolved any names yet (e.g. it ran before the org context was ready).
     public func loadStaffNamesIfNeeded() async {
-        guard staffNames.isEmpty, let members = try? await memberRepository.all() else { return }
+        guard staffNames.isEmpty, let members = try? await memberRepository.all(), !members.isEmpty else { return }
         staffNames = Dictionary(uniqueKeysWithValues: members.map { ($0.id, $0.name) })
     }
 
