@@ -54,3 +54,6 @@ appId: com.apoorva.app
 - assertVisible: # name is trimmed
     id: "pos.customerRow"
     text: ".*Kiran Trim.*"
+- assertNotVisible: # the untrimmed input must not survive as-is
+    id: "pos.customerRow"
+    text: ".*  Kiran Trim  .*"
