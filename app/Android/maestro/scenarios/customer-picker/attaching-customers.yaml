@@ -14,7 +14,17 @@ appId: com.apoorva.app
     id: "pos.customerRow"
     text: ".*Ravi Kumar.*"
 
-- runFlow: ../../common/customer-picker.yaml
+# Reopen the picker on the current bill instead of common/customer-picker.yaml, which runs
+# new-bill.yaml and would reset to a fresh walk-in bill, losing Ravi before testing the replacement.
+- tapOn:
+    id: "pos.customerRow"
+- extendedWaitUntil:
+    visible: "Customer for this bill"
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      text: ".*, Meena S, .*"
+    timeout: 8000
 - tapOn: ".*, Meena S, .*"
 - extendedWaitUntil:
     visible:
