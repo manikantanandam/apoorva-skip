@@ -9,14 +9,8 @@ on:
       - "docs/**"
       - "designs/**"
       - "**/*.md"
-  # TEMPORARY: build on PRs to validate APK changes without merging to main.
-  # Release publishing stays gated to main; PR runs only upload a workflow artifact.
-  pull_request:
-    branches: [ "main" ]
-    paths-ignore:
-      - "docs/**"
-      - "designs/**"
-      - "**/*.md"
+  # No pull_request trigger: a release build holds a macOS runner for ~1 h. To check APK changes on a branch,
+  # run this workflow manually; Android UI Tests also compiles the app (debug) on push to main.
   workflow_dispatch:
 
 concurrency:
