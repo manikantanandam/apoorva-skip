@@ -3,7 +3,7 @@ appId: com.apoorva.app
 ---
 - runFlow: ../../common/kirana-new-bill.yaml
 - tapOn:
-    id: "pos.tile.Onions (kg)"
+    id: 'pos\.tile\.Onions \(kg\)'
 - assertVisible: "Onions \\(kg\\)"
 - assertVisible: "By weight"
 - assertVisible: "By amount"
@@ -22,7 +22,7 @@ appId: com.apoorva.app
     enabled: false
 
 - tapOn:
-    id: "pos.tile.Onions (kg)"
+    id: 'pos\.tile\.Onions \(kg\)'
 - tapOn: "1 kg"
 - assertVisible:
     id: "weightSheet.add"
