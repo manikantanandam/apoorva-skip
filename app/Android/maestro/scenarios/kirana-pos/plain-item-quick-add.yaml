@@ -1,0 +1,12 @@
+# iOS: KiranaPOSUITests "Plain item quick add"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/kirana-new-bill.yaml
+- tapOn:
+    id: "pos.tile.Toor Dal 1kg"
+- assertVisible: # plain items keep the MRP/quantity sheet
+    id: "quickAddLine.save"
+- assertNotVisible:
+    id: "weightSheet.add"
+- assertNotVisible:
+    id: "variantSheet.add"

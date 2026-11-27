@@ -1,0 +1,73 @@
+# iOS: POSUITests "Completed sales"
+appId: com.apoorva.app
+---
+# Cash sale, then a new bill starts empty
+- runFlow: ../../common/start-bill.yaml
+- runFlow: ../../common/open-checkout.yaml
+- runFlow: ../../common/complete-cash-sale.yaml
+- assertVisible:
+    id: "receipt.newBill"
+- assertNotVisible: # edit bill is hidden right after checkout
+    id: "receipt.editBill"
+- tapOn:
+    id: "receipt.newBill"
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- assertVisible: "Walk-in customer"
+- assertVisible: "Your cart is empty" # new bill after a sale must start empty
+- assertVisible:
+    id: "pos.checkout"
+    enabled: false
+- assertNotVisible: "Glass Bangles, 1 on bill"
+
+# Card sale
+- runFlow: ../../common/start-bill.yaml
+- runFlow: ../../common/open-checkout.yaml
+- runFlow:
+    file: ../../common/enter-amount.yaml
+    env: { MODE: "card", AMOUNT: "120" }
+- runFlow: ../../common/complete-cash-sale.yaml
+
+# UPI sale
+- runFlow: ../../common/start-bill.yaml
+- runFlow: ../../common/open-checkout.yaml
+- runFlow:
+    file: ../../common/enter-amount.yaml
+    env: { MODE: "upi", AMOUNT: "120" }
+- tapOn:
+    id: "checkout.collect"
+- assertVisible: "Pay by UPI"
+- tapOn:
+    id: "upi.markReceived"
+- extendedWaitUntil:
+    visible:
+      id: "receipt.home"
+    timeout: 15000
+
+# Customer sale, then the next bill starts as walk-in
+- runFlow: ../../common/new-bill.yaml
+- runFlow:
+    file: ../../common/attach-customer.yaml
+    env: { NAME: "Ravi Kumar" }
+- runFlow:
+    file: ../../common/add-item.yaml
+    env: { ITEM: "Glass Bangles" }
+- runFlow: ../../common/open-checkout.yaml
+- runFlow: ../../common/complete-cash-sale.yaml
+- tapOn:
+    id: "receipt.newBill"
+- extendedWaitUntil:
+    visible: "Walk-in customer"
+    timeout: 5000
+
+# Receipt Home returns to Home
+- runFlow: ../../common/start-bill.yaml
+- runFlow: ../../common/open-checkout.yaml
+- runFlow: ../../common/complete-cash-sale.yaml
+- tapOn:
+    id: "receipt.home"
+- extendedWaitUntil:
+    visible: "New bill"
+    timeout: 10000

@@ -1,0 +1,8 @@
+# Twin of app/Darwin/UITests/Login/LoginUITests.swift.
+appId: com.apoorva.app
+name: login
+tags:
+  - login
+---
+- runFlow: scenarios/login/wrong-password-shows-error.yaml
+- runFlow: scenarios/login/valid-credentials-leave-sign-in-screen.yaml

@@ -1,0 +1,39 @@
+# iOS: POSUITests "Bill discount"
+# Manager-PIN steps are not covered on either platform: the seeded user is an owner, who never needs approval.
+appId: com.apoorva.app
+---
+- runFlow: ../../common/start-bill.yaml
+- runFlow:
+    file: ../../common/open-menu.yaml
+    env: { ENTRY: "Bill discount" }
+- assertVisible: "Bill discount"
+- tapOn:
+    id: "billDiscount.preset.10"
+- tapOn:
+    id: "billDiscount.apply"
+- assertVisible: "Discount.*" # cart header shows the applied discount
+- runFlow:
+    file: ../../common/open-menu.yaml
+    env: { ENTRY: "Bill discount" }
+- tapOn:
+    id: "billDiscount.remove"
+- assertVisible: "Add discount"
+
+- runFlow: ../../common/start-bill.yaml
+- runFlow:
+    file: ../../common/open-menu.yaml
+    env: { ENTRY: "Bill discount" }
+- tapOn: "Round to.*" # Rs 120 offers a round-down chip
+- tapOn:
+    id: "billDiscount.apply"
+- assertVisible: "Discount.*"
+
+- runFlow: ../../common/start-bill.yaml
+- runFlow:
+    file: ../../common/open-menu.yaml
+    env: { ENTRY: "Bill discount" }
+- tapOn: "₹ amount"
+- tapOn: "5"
+- tapOn:
+    id: "billDiscount.apply"
+- assertVisible: "Discount.*"

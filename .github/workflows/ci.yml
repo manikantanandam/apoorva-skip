@@ -207,6 +207,14 @@ jobs:
     uses: ./.github/workflows/ui-tests.yml
     secrets: inherit
 
+  # Android twin of ui-tests (Maestro on an emulator); same push-to-main-only rule.
+  # To verify on a branch first, run the "Android UI Tests" workflow manually (android-ui-tests.yml).
+  android-ui-tests:
+    name: Android UI Tests
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/android-ui-tests.yml
+    secrets: inherit
+
   sonarcloud-analysis:
     name: SonarCloud Scan
     needs: build-and-test # Wait for build to finish

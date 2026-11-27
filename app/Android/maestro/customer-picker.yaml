@@ -1,0 +1,12 @@
+# Twin of app/Darwin/UITests/POS/CustomerPickerUITests.swift.
+appId: com.apoorva.app
+name: customer-picker
+tags:
+  - pos
+---
+- runFlow: scenarios/customer-picker/seeded-customers-and-dues.yaml
+- runFlow: scenarios/customer-picker/search.yaml
+- runFlow: scenarios/customer-picker/focus-driven-visibility.yaml
+- runFlow: scenarios/customer-picker/form-validation.yaml
+- runFlow: scenarios/customer-picker/attaching-customers.yaml
+- runFlow: scenarios/customer-picker/creating-customers.yaml

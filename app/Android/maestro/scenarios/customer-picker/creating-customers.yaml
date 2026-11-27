@@ -1,0 +1,56 @@
+# iOS: CustomerPickerUITests "Creating customers"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customer-picker.yaml
+- runFlow:
+    file: ../../common/fill-customer-form.yaml
+    env: { PHONE: "9000011111", NAME: "Kiran Test" }
+- tapOn:
+    id: "customerPicker.addAndAttach"
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- extendedWaitUntil:
+    notVisible: "Walk-in customer"
+    timeout: 5000
+- assertVisible:
+    id: "pos.customerRow"
+    text: ".*Kiran Test.*"
+- tapOn:
+    id: "pos.customerRow"
+- assertVisible: "Customer for this bill"
+- extendedWaitUntil: # created customer is listed
+    visible: ".*, Kiran Test, .*"
+    timeout: 10000
+
+- runFlow: ../../common/customer-picker.yaml
+- runFlow:
+    file: ../../common/fill-customer-form.yaml
+    env: { PHONE: "9848012345", NAME: "Someone Else" }
+- tapOn:
+    id: "customerPicker.addAndAttach"
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- assertVisible: # duplicate phone attaches the existing customer
+    id: "pos.customerRow"
+    text: ".*Ravi Kumar.*"
+- assertNotVisible:
+    id: "pos.customerRow"
+    text: ".*Someone Else.*"
+
+- runFlow: ../../common/customer-picker.yaml
+- runFlow:
+    file: ../../common/fill-customer-form.yaml
+    env: { PHONE: "9000033333", NAME: "  Kiran Trim  " }
+- tapOn:
+    id: "customerPicker.addAndAttach"
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- assertVisible: # name is trimmed
+    id: "pos.customerRow"
+    text: ".*Kiran Trim.*"

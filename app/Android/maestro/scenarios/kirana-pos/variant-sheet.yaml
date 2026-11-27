@@ -1,0 +1,46 @@
+# iOS: KiranaPOSUITests "Variant sheet"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/kirana-new-bill.yaml
+- tapOn:
+    id: "pos.tile.Tea Powder 250g"
+- assertVisible:
+    id: "variantSheet.add"
+- assertVisible: "Size"
+- assertVisible: "100g"
+- assertVisible: "250g"
+- assertVisible: "500g"
+- assertNotVisible: "Colour" # no colour section when the item has no colours
+- assertVisible:
+    id: "variantSheet.quantity"
+    text: "1"
+- assertVisible:
+    id: "variantSheet.add"
+    text: ".*₹120.*"
+
+- runFlow:
+    file: ../../common/set-variant-quantity.yaml
+    env: { QTY: "3" }
+- assertVisible: # 3 x Rs 120
+    id: "variantSheet.add"
+    text: ".*₹360.*"
+- runFlow:
+    file: ../../common/set-variant-quantity.yaml
+    env: { QTY: "" }
+- assertVisible: # blank quantity bills as 1
+    id: "variantSheet.add"
+    text: ".*₹120.*"
+- runFlow:
+    file: ../../common/set-variant-quantity.yaml
+    env: { QTY: "0" }
+- assertVisible: # zero quantity bills as 1
+    id: "variantSheet.add"
+    text: ".*₹120.*"
+
+- hideKeyboard
+- back # dismiss the sheet
+- extendedWaitUntil:
+    notVisible:
+      id: "variantSheet.add"
+    timeout: 5000
+- assertVisible: "Your cart is empty"

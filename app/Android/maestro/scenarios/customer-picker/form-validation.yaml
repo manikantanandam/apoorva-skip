@@ -1,0 +1,35 @@
+# iOS: CustomerPickerUITests "Form validation" (same eight cases, each on a fresh picker)
+appId: com.apoorva.app
+---
+- runFlow:
+    file: ../../common/form-validation-case.yaml
+    label: "valid phone and name"
+    env: { PHONE: "9000011111", NAME: "Kiran Test", ENABLED: "true" }
+- runFlow:
+    file: ../../common/form-validation-case.yaml
+    label: "nine digits"
+    env: { PHONE: "900001111", NAME: "Kiran Test", ENABLED: "false" }
+- runFlow:
+    file: ../../common/form-validation-case.yaml
+    label: "eleven digits"
+    env: { PHONE: "90000111112", NAME: "Kiran Test", ENABLED: "false" }
+- runFlow:
+    file: ../../common/form-validation-case.yaml
+    label: "ten digits with a space"
+    env: { PHONE: "90000 11111", NAME: "Kiran Test", ENABLED: "true" }
+- runFlow:
+    file: ../../common/form-validation-case.yaml
+    label: "letters in phone"
+    env: { PHONE: "abcdefghij", NAME: "Kiran Test", ENABLED: "false" }
+- runFlow:
+    file: ../../common/form-validation-case.yaml
+    label: "phone without name"
+    env: { PHONE: "9000011111", NAME: "", ENABLED: "false" }
+- runFlow:
+    file: ../../common/form-validation-case.yaml
+    label: "name without phone"
+    env: { PHONE: "", NAME: "Kiran Test", ENABLED: "false" }
+- runFlow:
+    file: ../../common/form-validation-case.yaml
+    label: "whitespace-only name"
+    env: { PHONE: "9000011111", NAME: "   ", ENABLED: "false" }

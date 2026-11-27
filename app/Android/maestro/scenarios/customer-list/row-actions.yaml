@@ -1,0 +1,22 @@
+# iOS: CustomerListUITests "Row actions"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customers-list.yaml
+- tapOn: "Meena S, .*"
+- assertVisible: "Meena S"
+- assertVisible: "Balance due"
+- assertVisible: "Collect due"
+- back
+- assertVisible: "Name or phone"
+
+- tapOn: "Ravi Kumar, .*"
+- assertVisible: "Ravi Kumar"
+- assertNotVisible: "Collect due"
+- assertVisible: "New bill"
+- back
+- assertVisible: "Name or phone"
+
+- longPressOn: "Meena S, .*"
+- assertVisible: "Call"
+- assertVisible: "WhatsApp"
+- assertVisible: "Copy number"

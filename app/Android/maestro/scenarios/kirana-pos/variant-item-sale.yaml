@@ -1,0 +1,15 @@
+# iOS: KiranaPOSUITests "Variant item sale"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/kirana-new-bill.yaml
+- tapOn:
+    id: "pos.tile.Tea Powder 250g"
+- runFlow:
+    file: ../../common/set-variant-quantity.yaml
+    env: { QTY: "2" }
+- hideKeyboard
+- tapOn:
+    id: "variantSheet.add"
+- assertVisible: "Current cart"
+- runFlow: ../../common/open-checkout.yaml
+- runFlow: ../../common/complete-cash-sale.yaml

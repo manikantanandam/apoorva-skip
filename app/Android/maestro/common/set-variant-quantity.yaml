@@ -1,0 +1,13 @@
+# Twin of KiranaPOSUITests.setVariantQuantity: replaces the variant sheet's quantity text with QTY ("" leaves it blank).
+appId: com.apoorva.app
+env:
+  QTY: ""
+---
+- tapOn:
+    id: "variantSheet.quantity"
+- eraseText: 4
+- runFlow:
+    when:
+      true: ${!!QTY}
+    commands:
+      - inputText: ${QTY}

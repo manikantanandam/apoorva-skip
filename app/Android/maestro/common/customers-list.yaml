@@ -1,0 +1,9 @@
+# Fresh seeded launch, then the Customers tab (twin of CustomerListUITests.resetToCustomersList).
+appId: com.apoorva.app
+---
+- runFlow: seeded-home.yaml
+- tapOn: "Customers"
+- extendedWaitUntil:
+    visible:
+      text: "Name or phone"
+    timeout: 10000

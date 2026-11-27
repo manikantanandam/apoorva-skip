@@ -1,0 +1,16 @@
+# Twin of app/Darwin/UITests/POS/KiranaPOSUITests.swift (kirana shop).
+# Onions (kg) Rs 35/kg (weighed), Tea Powder 250g Rs 120 (sizes 100g/250g/500g), Toor Dal 1kg Rs 160.
+appId: com.apoorva.app
+name: kirana-pos
+tags:
+  - pos
+---
+- runFlow: scenarios/kirana-pos/weight-sheet.yaml
+- runFlow: scenarios/kirana-pos/weighed-line-in-cart.yaml
+- runFlow: scenarios/kirana-pos/variant-sheet.yaml
+- runFlow: scenarios/kirana-pos/variant-line-in-cart.yaml
+- runFlow: scenarios/kirana-pos/plain-item-quick-add.yaml
+- runFlow: scenarios/kirana-pos/clear-bill.yaml
+- runFlow: scenarios/kirana-pos/weighed-item-sale.yaml
+- runFlow: scenarios/kirana-pos/variant-item-sale.yaml
+- runFlow: scenarios/kirana-pos/mixed-cart-sale.yaml

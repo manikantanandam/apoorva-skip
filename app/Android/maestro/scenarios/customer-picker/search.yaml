@@ -1,0 +1,47 @@
+# iOS: CustomerPickerUITests "Search"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customer-picker.yaml
+- tapOn: "Name or phone"
+- inputText: "Meena"
+- extendedWaitUntil:
+    notVisible: ".*, Ravi Kumar, .*"
+    timeout: 5000
+- assertVisible: ".*, Meena S, .*"
+- eraseText: 5
+- assertVisible: ".*, Ravi Kumar, .*" # clearing search restores the list
+- assertVisible: ".*, Sneha P, .*"
+
+- runFlow: ../../common/customer-picker.yaml
+- tapOn: "Name or phone"
+- inputText: "9123456780"
+- assertVisible: ".*, Meena S, .*"
+- extendedWaitUntil:
+    notVisible: ".*, Ravi Kumar, .*"
+    timeout: 5000
+
+- runFlow: ../../common/customer-picker.yaml
+- tapOn: "Name or phone"
+- inputText: "meena"
+- assertVisible: ".*, Meena S, .*" # search is case-insensitive
+
+- runFlow: ../../common/customer-picker.yaml
+- tapOn: "Name or phone"
+- inputText: "zzzzqq"
+- extendedWaitUntil:
+    notVisible: ".*, Ravi Kumar, .*"
+    timeout: 5000
+- assertNotVisible: ".*, Meena S, .*"
+- assertNotVisible: ".*, Sneha P, .*"
+
+- runFlow: ../../common/customer-picker.yaml
+- tapOn: "Name or phone"
+- inputText: "9000022222"
+- extendedWaitUntil:
+    notVisible: ".*, Ravi Kumar, .*"
+    timeout: 5000
+- hideKeyboard
+# Unknown phone prefills the new customer form: the search field and the phone field both hold the number.
+- assertVisible:
+    text: "9000022222"
+    index: 1

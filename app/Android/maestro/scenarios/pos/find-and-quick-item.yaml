@@ -1,0 +1,40 @@
+# iOS: POSUITests "Find and quick item"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/new-bill.yaml
+- tapOn:
+    id: "pos.find"
+- inputText: "Photo"
+- assertVisible: "Photo Frame"
+# Non-matching items are filtered out (the POS tiles underneath carry a pos.tile. id, results don't).
+- extendedWaitUntil:
+    notVisible:
+      text: "Glass Bangles"
+      id: "^(?!pos\\.tile\\.).*"
+    timeout: 5000
+- tapOn: "Photo Frame"
+- assertVisible:
+    id: "quickAddLine.save"
+
+- runFlow: ../../common/new-bill.yaml
+- tapOn:
+    id: "pos.find"
+- inputText: "zzzzqq"
+- assertVisible: "No match"
+- assertVisible: "Quick item"
+
+- runFlow: ../../common/new-bill.yaml
+- runFlow:
+    file: ../../common/open-menu.yaml
+    env: { ENTRY: "Quick item" }
+- assertVisible: "Quick item"
+- assertVisible: # zero amount is disabled
+    text: "Add.*"
+    enabled: false
+- tapOn: "5"
+- tapOn: "0"
+- tapOn: "Add ₹50.*"
+- assertVisible: "Current cart"
+- assertVisible:
+    id: "pos.checkout"
+    enabled: true

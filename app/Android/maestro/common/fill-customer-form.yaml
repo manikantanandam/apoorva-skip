@@ -1,0 +1,37 @@
+# Twin of CustomerPickerUITests.fillForm: types into the new-customer form; an empty PHONE or NAME leaves that
+# field untouched. Submitting Name restores the bottom bar.
+appId: com.apoorva.app
+env:
+  PHONE: ""
+  NAME: ""
+---
+- extendedWaitUntil:
+    visible: "98480 55667"
+    timeout: 10000
+- runFlow:
+    when:
+      true: ${!!PHONE}
+    commands:
+      - tapOn: "98480 55667"
+      - inputText: ${PHONE}
+- runFlow:
+    when:
+      true: ${!!NAME}
+    commands:
+      - tapOn: "Kiran"
+      - inputText: ${NAME}
+      - pressKey: Enter
+- runFlow:
+    when:
+      true: ${!NAME}
+    commands:
+      - runFlow:
+          when:
+            visible: "Kiran"
+          commands:
+            - tapOn: "Kiran"
+            - pressKey: Enter
+- extendedWaitUntil:
+    visible:
+      id: "customerPicker.walkIn"
+    timeout: 5000

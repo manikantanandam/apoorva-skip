@@ -1,0 +1,18 @@
+# Twin of AppLauncher.launchSeeded + HomeScreen.waitForSeededHome. SEED defaults to fancy.
+# Seeding saves customers first and bills last, so a listed bill means the sample data is complete.
+appId: com.apoorva.app
+env:
+  SEED: fancy
+---
+- runFlow:
+    file: launch.yaml
+    env:
+      SEED: ${SEED}
+- extendedWaitUntil:
+    visible:
+      text: "New bill"
+    timeout: 60000
+- extendedWaitUntil:
+    visible:
+      text: "Ravi Kumar, #D-.*"
+    timeout: 60000

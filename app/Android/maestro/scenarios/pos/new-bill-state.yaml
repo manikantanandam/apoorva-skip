@@ -1,0 +1,16 @@
+# iOS: POSUITests "New bill state"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/new-bill.yaml
+- assertVisible: "Walk-in customer"
+- assertVisible: "Your cart is empty"
+- assertVisible: # disabled until an item is added
+    id: "pos.checkout"
+    enabled: false
+- assertVisible:
+    id: "pos.holdBill"
+    enabled: false
+- tapOn:
+    id: "pos.heldBills"
+- assertVisible: "Held bills"
+- assertVisible: ".*No held bills.*"

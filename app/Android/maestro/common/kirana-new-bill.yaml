@@ -1,0 +1,11 @@
+# Fresh kirana launch on an empty bill (twin of KiranaPOSUITests.setUp + resetToEmptyBill).
+appId: com.apoorva.app
+---
+- runFlow:
+    file: new-bill.yaml
+    env:
+      SEED: kirana
+- extendedWaitUntil:
+    visible:
+      id: "pos.tile.Onions (kg)"
+    timeout: 15000

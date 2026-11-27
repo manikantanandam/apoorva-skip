@@ -1,0 +1,39 @@
+# iOS: POSUITests "UPI and payment modes"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/start-bill.yaml
+- runFlow: ../../common/open-checkout.yaml
+- tapOn:
+    id: "checkout.mode.card"
+- assertVisible:
+    id: "checkout.collect"
+    enabled: true
+- tapOn:
+    id: "checkout.mode.upi"
+- assertVisible:
+    id: "checkout.collect"
+    enabled: true
+- tapOn:
+    id: "checkout.mode.cash"
+- assertVisible:
+    id: "checkout.collect"
+    enabled: true
+
+- runFlow:
+    file: ../../common/enter-amount.yaml
+    env: { MODE: "upi", AMOUNT: "120" }
+- tapOn:
+    id: "checkout.collect"
+- tapOn:
+    id: "upi.changeMode"
+- assertVisible: "Checkout"
+- assertVisible: # change mode returns to checkout with the cart intact
+    id: "checkout.collect"
+
+- tapOn:
+    id: "checkout.collect"
+- assertVisible: "Pay by UPI"
+- back
+- assertVisible: "Checkout"
+- assertNotVisible: # back from the UPI screen does not complete the sale
+    id: "receipt.home"

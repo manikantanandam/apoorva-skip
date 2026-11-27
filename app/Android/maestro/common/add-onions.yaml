@@ -1,0 +1,16 @@
+# Twin of KiranaPOSUITests.addOnions: weight sheet, pick PRESET (e.g. "1 kg"), add.
+appId: com.apoorva.app
+---
+- tapOn:
+    id: "pos.tile.Onions (kg)"
+- extendedWaitUntil:
+    visible:
+      id: "weightSheet.add"
+    timeout: 5000
+- tapOn: ${PRESET}
+- tapOn:
+    id: "weightSheet.add"
+- extendedWaitUntil:
+    notVisible:
+      id: "weightSheet.add"
+    timeout: 5000

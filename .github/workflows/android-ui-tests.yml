@@ -1,0 +1,142 @@
+name: Android UI Tests
+
+# Runs the Maestro flows (app/Android/maestro, twins of the iOS ApoorvaUITests) on an Android emulator.
+# - Called by ci.yml on every push to main (UI tests do not run on pull requests), like ui-tests.yml.
+# - Run manually from the Actions tab ("Run workflow") to verify them on any branch without merging;
+#   optionally pass a flow such as login or customer-list.
+# - The debug APK is built on macOS (Skip needs Xcode); the emulator runs on Linux, since GitHub's
+#   Apple-silicon macOS runners can't run the Android emulator.
+on:
+  # TEMPORARY: run on pushes to this branch, since workflow_dispatch only works once the file is on main. Remove before merging.
+  push:
+    branches: [ "feature/android-ui-tests" ]
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      flow:
+        description: "Optional flow: login, customer-list, customer-picker, pos or kirana-pos (empty runs every flow)"
+        required: false
+        default: ""
+
+jobs:
+  parity:
+    name: iOS/Android UI test parity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check every iOS scenario has a Maestro twin
+        run: scripts/check-ui-test-parity.sh
+
+  build-debug-apk:
+    name: Build debug APK (x86_64)
+    needs: parity
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Skip and Android SDK
+        run: |
+          brew install skiptools/skip/skip
+          skip android sdk install
+
+      # The google-services plugin fails the build without it; test mode never touches Firebase.
+      - name: Write Android Firebase config
+        env:
+          GOOGLE_SERVICE_JSON_ENV: debug
+          GOOGLE_SERVICE_JSON_DEBUG_B64: ${{ secrets.GOOGLE_SERVICE_JSON_DEBUG_B64 }}
+          GOOGLE_SERVICE_JSON_PRODUCTION_B64: ${{ secrets.GOOGLE_SERVICE_JSON_PRODUCTION_B64 }}
+        run: scripts/setup-firebase-config.sh
+
+      - name: Enable Android
+        # CI-only edit of the runner copy; the committed Skip.env keeps SKIP_NO_ANDROID=1.
+        run: sed -i '' '/^SKIP_NO_ANDROID/d' app/Skip.env
+
+      - name: Create debug keystore
+        run: |
+          mkdir -p ~/.android
+          [ -f ~/.android/debug.keystore ] || keytool -genkeypair -v -keystore ~/.android/debug.keystore \
+            -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      # Debug, because UITestingConfig is DEBUG-only; x86_64, because that's the emulator's ABI.
+      - name: Build debug APK
+        working-directory: app
+        run: skip export -v --android --no-ios --debug --arch x86_64 -d "$RUNNER_TEMP/export"
+
+      - name: Collect APK
+        run: |
+          SRC=$(find "$RUNNER_TEMP/export" -name '*.apk' | head -1)
+          [ -n "$SRC" ] || { echo "::error::No APK produced"; exit 1; }
+          cp "$SRC" apoorva-debug.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: apoorva-debug-apk
+          path: apoorva-debug.apk
+          retention-days: 3
+
+  maestro:
+    name: Android UI Tests
+    needs: build-debug-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: apoorva-debug-apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Run Maestro flows
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          FLOW: ${{ inputs.flow }} # via env so the input is never interpolated into the shell script
+          TMPDIR: ${{ runner.temp }} # the script logs to $TMPDIR/apoorva-maestro, uploaded on failure
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: scripts/android-ui-test.sh "$FLOW" apoorva-debug.apk
+
+      - name: Upload Maestro results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-ui-test-results
+          path: ${{ runner.temp }}/apoorva-maestro

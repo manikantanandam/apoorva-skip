@@ -1,0 +1,13 @@
+# iOS: POSUITests "Customer on bill"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/new-bill.yaml
+- runFlow:
+    file: ../../common/attach-customer.yaml
+    env: { NAME: "Meena S" }
+- runFlow:
+    file: ../../common/add-item.yaml
+    env: { ITEM: "Glass Bangles" }
+- assertVisible: # customer stays attached after adding an item
+    id: "pos.customerRow"
+    text: ".*Meena S.*"

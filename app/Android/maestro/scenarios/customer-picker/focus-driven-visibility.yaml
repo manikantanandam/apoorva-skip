@@ -1,0 +1,52 @@
+# iOS: CustomerPickerUITests "Focus-driven visibility"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customer-picker.yaml
+- assertVisible: "Recent"
+- assertVisible: "Name or phone"
+- assertVisible: "New customer"
+- assertVisible: "98480 55667"
+- assertVisible:
+    id: "customerPicker.walkIn"
+- assertVisible:
+    id: "customerPicker.addAndAttach"
+
+- tapOn: "Name or phone"
+- extendedWaitUntil:
+    notVisible: "New customer"
+    timeout: 5000
+- assertNotVisible: "98480 55667"
+- assertNotVisible: "Kiran"
+- assertVisible: ".*, Ravi Kumar, .*" # results stay visible while searching
+- assertNotVisible: "Recent" # Recent hides once the search is focused
+
+- runFlow: ../../common/customer-picker.yaml
+- tapOn: "98480 55667"
+- extendedWaitUntil:
+    notVisible: "Name or phone"
+    timeout: 5000
+- assertNotVisible: ".*, Ravi Kumar, .*"
+- assertNotVisible: "Recent"
+- assertNotVisible:
+    id: "customerPicker.walkIn"
+- assertNotVisible:
+    id: "customerPicker.addAndAttach"
+- assertVisible: "Kiran"
+
+- runFlow: ../../common/customer-picker.yaml
+- tapOn: "Kiran"
+- extendedWaitUntil:
+    notVisible: "Name or phone"
+    timeout: 5000
+- assertNotVisible: ".*, Ravi Kumar, .*"
+- assertNotVisible:
+    id: "customerPicker.walkIn"
+- assertNotVisible:
+    id: "customerPicker.addAndAttach"
+- pressKey: Enter
+- extendedWaitUntil: # bottom bar returns after Done
+    visible:
+      id: "customerPicker.walkIn"
+    timeout: 5000
+- assertVisible: "Name or phone"
+- assertVisible: ".*, Ravi Kumar, .*"

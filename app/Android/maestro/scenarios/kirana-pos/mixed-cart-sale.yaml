@@ -1,0 +1,14 @@
+# iOS: KiranaPOSUITests "Mixed cart sale"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/kirana-new-bill.yaml
+- runFlow:
+    file: ../../common/add-onions.yaml
+    env: { PRESET: "1 kg" }
+- runFlow: ../../common/add-tea.yaml
+- runFlow:
+    file: ../../common/add-item.yaml
+    env: { ITEM: "Toor Dal 1kg" }
+- assertVisible: "3 items"
+- runFlow: ../../common/open-checkout.yaml
+- runFlow: ../../common/complete-cash-sale.yaml

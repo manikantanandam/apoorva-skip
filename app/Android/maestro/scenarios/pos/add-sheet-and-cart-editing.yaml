@@ -1,0 +1,93 @@
+# iOS: POSUITests "Add sheet and cart editing"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/start-bill.yaml
+- assertVisible: "Current cart"
+- assertNotVisible: "Your cart is empty"
+- assertVisible: "Glass Bangles, 1 on bill" # tile shows the quantity badge
+- assertVisible:
+    id: "pos.checkout"
+    enabled: true
+- tapOn: "Glass Bangles, 1 on bill"
+- assertVisible: # a tile already on the bill still opens the sheet
+    id: "quickAddLine.save"
+
+# Dismissing the sheet keeps the cart empty
+- runFlow: ../../common/new-bill.yaml
+- tapOn:
+    id: "pos.tile.Glass Bangles"
+- assertVisible:
+    id: "quickAddLine.save"
+- back
+- extendedWaitUntil:
+    notVisible:
+      id: "quickAddLine.save"
+    timeout: 5000
+- assertVisible: "Your cart is empty"
+- assertVisible:
+    id: "pos.checkout"
+    enabled: false
+
+# Quantity stepper
+- tapOn:
+    id: "pos.tile.Glass Bangles"
+- tapOn:
+    id: "quickAddLine.increase"
+- tapOn:
+    id: "quickAddLine.increase"
+- tapOn:
+    id: "quickAddLine.save"
+- assertVisible: "Glass Bangles, 3 on bill"
+
+- tapOn:
+    id: "pos.tile.Hair Clips Set"
+- tapOn:
+    id: "quickAddLine.decrease"
+- tapOn:
+    id: "quickAddLine.decrease"
+- tapOn:
+    id: "quickAddLine.save"
+- assertVisible: "Hair Clips Set, 1 on bill" # quantity clamps at 1
+
+- runFlow:
+    file: ../../common/add-item.yaml
+    env: { ITEM: "Teddy 12in" }
+- assertVisible: "3 items"
+
+# A blank MRP must not be billable
+- runFlow: ../../common/start-bill.yaml
+- tapOn:
+    id: "pos.tile.Hair Clips Set"
+- assertVisible:
+    id: "quickAddLine.save"
+- tapOn:
+    id: "quickAddLine.mrp"
+- eraseText: 20
+- assertVisible:
+    id: "quickAddLine.save"
+    enabled: false
+
+# Edit sheet from a cart line removes it
+- runFlow: ../../common/start-bill.yaml
+- tapOn:
+    id: "pos.cartLine..*"
+- extendedWaitUntil:
+    visible:
+      id: "quickAddLine.remove"
+    timeout: 5000
+- tapOn:
+    id: "quickAddLine.remove"
+- assertVisible: "Your cart is empty"
+- assertVisible:
+    id: "pos.checkout"
+    enabled: false
+
+# Clear bill from the More menu
+- runFlow: ../../common/start-bill.yaml
+- runFlow:
+    file: ../../common/open-menu.yaml
+    env: { ENTRY: "Clear bill" }
+- assertVisible: "Your cart is empty"
+- assertVisible:
+    id: "pos.checkout"
+    enabled: false

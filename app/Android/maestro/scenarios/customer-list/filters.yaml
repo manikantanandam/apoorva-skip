@@ -1,0 +1,31 @@
+# iOS: CustomerListUITests "Filters"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customers-list.yaml
+- tapOn: "With dues"
+- assertVisible: "Meena S, .*"
+- assertNotVisible: "Ravi Kumar, .*"
+- assertNotVisible: "Anil Regular, .*"
+
+- tapOn: "Name or phone"
+- inputText: "Ravi"
+- assertVisible: "No match" # filter and search combine
+- eraseText: 4
+- hideKeyboard
+
+- tapOn: "Regulars"
+- assertVisible: "Anil Regular, .*"
+- assertNotVisible: "Meena S, .*"
+
+- tapOn: "New this month"
+- assertVisible: "Kavya New, .*"
+- assertNotVisible: "Ravi Kumar, .*"
+
+- tapOn: "All"
+- assertVisible: "Ravi Kumar, .*" # All restores every customer
+- assertVisible: "Kavya New, .*"
+
+- tapOn: ".*₹1,120 due.*"
+- assertVisible: "Meena S, .*" # dues summary filters to customers who owe
+- assertNotVisible: "Ravi Kumar, .*"
+- tapOn: "All"

@@ -1,0 +1,19 @@
+# Twin of app/Darwin/UITests/POS/POSUITests.swift (fancy shop; Glass Bangles is Rs 120).
+# Checkout is limited to basic cash/card/UPI flows, as on iOS (checkout was redesigned in #95).
+appId: com.apoorva.app
+name: pos
+tags:
+  - pos
+---
+- runFlow: scenarios/pos/new-bill-state.yaml
+- runFlow: scenarios/pos/add-sheet-and-cart-editing.yaml
+- runFlow: scenarios/pos/find-and-quick-item.yaml
+- runFlow: scenarios/pos/bill-discount.yaml
+- runFlow: scenarios/pos/hold-and-resume.yaml
+- runFlow: scenarios/pos/close-dialog.yaml
+- runFlow: scenarios/pos/customer-on-bill.yaml
+- runFlow: scenarios/pos/checkout.yaml
+- runFlow: scenarios/pos/upi-and-payment-modes.yaml
+- runFlow: scenarios/pos/checkout-totals.yaml
+- runFlow: scenarios/pos/hold-from-checkout.yaml
+- runFlow: scenarios/pos/completed-sales.yaml

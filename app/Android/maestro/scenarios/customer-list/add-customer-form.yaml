@@ -1,0 +1,11 @@
+# iOS: CustomerListUITests "Add customer form"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customers-list.yaml
+- tapOn: "Add customer"
+- assertVisible: "New customer"
+- assertVisible: # save is disabled until the form is filled
+    text: "Save customer"
+    enabled: false
+- back
+- assertVisible: "Name or phone"

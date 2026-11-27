@@ -1,0 +1,24 @@
+# Twin of AppLauncher.launch / launchSeeded: fake auth, no Firebase, clean state.
+# MainActivity copies these extras into the env vars UITestingConfig reads (see Main.kt).
+# Pass SEED (fancy|kirana) to boot signed in to a seeded sample shop; leave it empty for the sign-in flow.
+appId: com.apoorva.app
+---
+- runFlow:
+    when:
+      true: ${!SEED}
+    commands:
+      - launchApp:
+          clearState: true
+          stopApp: true
+          arguments:
+            UITesting: "true"
+- runFlow:
+    when:
+      true: ${!!SEED}
+    commands:
+      - launchApp:
+          clearState: true
+          stopApp: true
+          arguments:
+            UITesting: "true"
+            UITestingSeed: ${SEED}

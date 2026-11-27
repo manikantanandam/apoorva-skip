@@ -1,0 +1,49 @@
+# iOS: CustomerPickerUITests "Attaching customers"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customer-picker.yaml
+- tapOn: "Ravi Kumar" # Recent chip, labelled with just the name
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- extendedWaitUntil:
+    notVisible: "Walk-in customer"
+    timeout: 5000
+- assertVisible: # recent chip attaches
+    id: "pos.customerRow"
+    text: ".*Ravi Kumar.*"
+
+- runFlow: ../../common/customer-picker.yaml
+- tapOn: ".*, Meena S, .*"
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- assertVisible: # picking a customer attaches them
+    id: "pos.customerRow"
+    text: ".*Meena S.*"
+- assertNotVisible: # switching replaces the attached customer
+    id: "pos.customerRow"
+    text: ".*Ravi Kumar.*"
+
+- tapOn:
+    id: "pos.customerRow"
+- assertVisible: "Customer for this bill"
+- tapOn:
+    id: "customerPicker.walkIn"
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- assertVisible: "Walk-in customer" # walk-in detaches the previous customer
+
+- tapOn:
+    id: "pos.customerRow"
+- assertVisible: "Customer for this bill"
+- back
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- assertVisible: "Walk-in customer" # back without selecting keeps walk-in

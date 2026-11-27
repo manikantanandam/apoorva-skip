@@ -1,0 +1,11 @@
+# iOS: POSUITests "Hold from checkout"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/start-bill.yaml
+- runFlow: ../../common/open-checkout.yaml
+- tapOn:
+    id: "checkout.hold"
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000

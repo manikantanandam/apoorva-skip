@@ -1,0 +1,22 @@
+# Twin of CustomerPickerUITests.resetPicker: fresh walk-in bill, then the picker with seeded customers loaded.
+# The picker loads once on appear, so reopen it until the seeded customers show.
+appId: com.apoorva.app
+---
+- runFlow: new-bill.yaml
+- retry:
+    maxRetries: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Customer for this bill"
+          commands:
+            - back
+      - tapOn:
+          id: "pos.customerRow"
+      - extendedWaitUntil:
+          visible: "Customer for this bill"
+          timeout: 10000
+      - extendedWaitUntil:
+          visible:
+            text: ".*, Ravi Kumar, .*"
+          timeout: 8000

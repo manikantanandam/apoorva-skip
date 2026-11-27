@@ -1,0 +1,46 @@
+# iOS: KiranaPOSUITests "Weight sheet"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/kirana-new-bill.yaml
+- tapOn:
+    id: "pos.tile.Onions (kg)"
+- assertVisible: "Onions \\(kg\\)"
+- assertVisible: "By weight"
+- assertVisible: "By amount"
+- assertVisible: # 0.5 kg at Rs 35 is Rs 18
+    id: "weightSheet.add"
+    text: ".*₹18.*"
+
+- back # dismiss the sheet
+- extendedWaitUntil:
+    notVisible:
+      id: "weightSheet.add"
+    timeout: 5000
+- assertVisible: "Your cart is empty"
+- assertVisible:
+    id: "pos.checkout"
+    enabled: false
+
+- tapOn:
+    id: "pos.tile.Onions (kg)"
+- tapOn: "1 kg"
+- assertVisible:
+    id: "weightSheet.add"
+    text: ".*₹35.*"
+- tapOn: "2 kg"
+- assertVisible:
+    id: "weightSheet.add"
+    text: ".*₹70.*"
+- tapOn: "250 g"
+- assertVisible:
+    id: "weightSheet.add"
+    text: ".*₹9.*"
+
+- tapOn: "By amount"
+- extendedWaitUntil: # presets are weight-only
+    notVisible: "1 kg"
+    timeout: 5000
+- assertVisible:
+    id: "weightSheet.add"
+- tapOn: "By weight"
+- assertVisible: "1 kg"

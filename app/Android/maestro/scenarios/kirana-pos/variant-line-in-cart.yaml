@@ -1,0 +1,18 @@
+# iOS: KiranaPOSUITests "Variant line in cart"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/kirana-new-bill.yaml
+- tapOn:
+    id: "pos.tile.Tea Powder 250g"
+- tapOn: "500g"
+- tapOn:
+    id: "variantSheet.add"
+- extendedWaitUntil:
+    notVisible:
+      id: "variantSheet.add"
+    timeout: 5000
+- assertVisible: "Current cart"
+- assertVisible:
+    id: "pos.checkout"
+    enabled: true
+- assertVisible: ".*500g.*" # chosen size shows on the cart line

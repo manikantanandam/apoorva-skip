@@ -1,0 +1,15 @@
+# Twin of POSUITests.attachCustomer: pick NAME in the customer picker and return to POS.
+appId: com.apoorva.app
+---
+- tapOn:
+    id: "pos.customerRow"
+- extendedWaitUntil:
+    visible:
+      text: ".*, ${NAME}, .*"
+    timeout: 15000
+- tapOn:
+    text: ".*, ${NAME}, .*"
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
