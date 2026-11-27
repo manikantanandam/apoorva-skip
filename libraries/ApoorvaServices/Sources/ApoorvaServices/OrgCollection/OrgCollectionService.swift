@@ -27,6 +27,7 @@ public protocol OrgCollectionServicing<Document>: Sendable {
     func fetch(since: Date?, orgId: String) async throws -> OrgFetchResult<Document>
     func upsert(_ document: Document, orgId: String) throws
     func softDelete(id: String, orgId: String) async throws
+    func pendingWriteCount(orgId: String) async throws -> Int
 }
 
 /// Reads and writes `organizations/{orgId}/{Document.collection}`. Every write stamps
@@ -78,6 +79,10 @@ public final class OrgCollectionService<Document: OrgDocument>: OrgCollectionSer
             "updatedAt": Date(),
             "serverUpdatedAt": StoreSentinel.serverTimestamp
         ], path: documentPath(id, orgId: orgId))
+    }
+
+    public func pendingWriteCount(orgId: String) async throws -> Int {
+        try await store.pendingWriteCount(collection: collectionPath(orgId))
     }
 
     private func collectionPath(_ orgId: String) -> String {

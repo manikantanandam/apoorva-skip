@@ -21,6 +21,7 @@ public protocol CustomerRepositoryProtocol: Sendable {
     func deleteCustomer(phoneNumber: String) async throws // Hard delete
     func markAsDeleted(id: String) async throws  // Soft delete
     func sync(force: Bool) async throws
+    func pendingWriteCount() async -> Int
 }
 
 
@@ -28,6 +29,8 @@ public extension CustomerRepositoryProtocol {
     func getCustomer(phone: String) async throws -> Customer? {
         try await getCustomers().first { $0.phone == phone }
     }
+
+    func pendingWriteCount() async -> Int { 0 }
 }
 
 public final actor CustomerRepository: CustomerRepositoryProtocol {
@@ -108,5 +111,10 @@ public final actor CustomerRepository: CustomerRepositoryProtocol {
         }
         guard let latest = SyncCursor.latest(dates) else { return }
         try await syncStorage.updateSyncTimestamp(for: Customer.table.name, timestamp: latest.timeIntervalSince1970)
+    }
+
+    public func pendingWriteCount() async -> Int {
+        guard let orgId = try? await userRepository.getCurrentUser().selectedOrganization?.orgId else { return 0 }
+        return (try? await service.pendingWriteCount(for: orgId)) ?? 0
     }
 }

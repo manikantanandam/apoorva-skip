@@ -9,6 +9,13 @@ import ManiLogger
 
 private let logger = AppLogger(category: .sync)
 
+/// Thrown by `SyncEngine.withTimeout` when an awaited operation outlives its deadline — turns a
+/// hang into a normal, loggable error instead of something invisible to every observability tool.
+struct SyncTimeoutError: LocalizedError {
+    let seconds: Double
+    var errorDescription: String? { "Timed out after \(Int(seconds))s" }
+}
+
 public struct SyncStatus: Sendable, Equatable {
     public let key: String
     public var lastSuccess: Date?
@@ -34,14 +41,21 @@ public actor SyncEngine {
     private let performanceMonitoringService: PerformanceMonitoringServicing
     private let crashReportingService: CrashReportingServicing
     private let analyticsService: AnalyticsServicing
+    /// Deadline for one collection's `sync(force:)` or `pendingWriteCount()`. Without this, a single
+    /// hung collection blocks every other one queued behind it (both loops are sequential) and never
+    /// surfaces anywhere — `syncCompleted`/`syncFailed` only fire on return or throw, and Performance
+    /// Monitoring's trace-stopping `defer` never runs either.
+    private let timeoutSeconds: Double
 
     public init(repositories: [any SyncableRepository] = [],
                 performanceMonitoringService: PerformanceMonitoringServicing = NoOpPerformanceMonitoringService(),
                 crashReportingService: CrashReportingServicing = NoOpCrashReportingService(),
-                analyticsService: AnalyticsServicing = NoOpAnalyticsService()) {
+                analyticsService: AnalyticsServicing = NoOpAnalyticsService(),
+                timeoutSeconds: Double = 45) {
         self.performanceMonitoringService = performanceMonitoringService
         self.crashReportingService = crashReportingService
         self.analyticsService = analyticsService
+        self.timeoutSeconds = timeoutSeconds
         for repository in repositories where !self.repositories.contains(where: { $0.syncKey == repository.syncKey }) {
             self.repositories.append(repository)
             statuses[repository.syncKey] = SyncStatus(key: repository.syncKey)
@@ -80,6 +94,24 @@ public actor SyncEngine {
         repositories.compactMap { statuses[$0.syncKey] }
     }
 
+    /// Point-in-time pending-upload count per collection, for the Sync status screen. Not computed
+    /// during `syncAll` — only when asked for, so periodic/background syncs stay cheap.
+    public func pendingWriteCounts() async -> [String: Int] {
+        var result: [String: Int] = [:]
+        for repository in repositories {
+            guard let reporting = repository as? PendingWritesReporting else { continue }
+            let key = repository.syncKey
+            do {
+                result[key] = try await Self.withTimeout(seconds: timeoutSeconds) { await reporting.pendingWriteCount() }
+            } catch {
+                logger.error("pendingWriteCount timed out key=\(key): \(error)")
+                crashReportingService.recordNonFatal(error, context: "pendingWriteCount.\(key)")
+                result[key] = 0
+            }
+        }
+        return result
+    }
+
     private func runAll(force: Bool) async -> [SyncStatus] {
         let start = Date()
         for repository in repositories {
@@ -103,7 +135,9 @@ public actor SyncEngine {
         statuses[key, default: SyncStatus(key: key)].isSyncing = true
         do {
             try await performanceMonitoringService.measure("sync_pull") {
-                try await repository.sync(force: force)
+                try await Self.withTimeout(seconds: self.timeoutSeconds) {
+                    try await repository.sync(force: force)
+                }
             }
             statuses[key]?.lastSuccess = Date()
             statuses[key]?.lastError = nil
@@ -111,8 +145,25 @@ public actor SyncEngine {
             statuses[key]?.lastError = error.localizedDescription
             logger.error("sync failed key=\(key): \(error)")
             crashReportingService.recordNonFatal(error, context: "sync.\(key)")
-            analyticsService.log(.syncFailed(collection: key, reason: String(describing: type(of: error))))
+            if error is SyncTimeoutError {
+                analyticsService.log(.syncTimedOut(collection: key, afterSeconds: Int(timeoutSeconds)))
+            } else {
+                analyticsService.log(.syncFailed(collection: key, reason: String(describing: type(of: error))))
+            }
         }
         statuses[key]?.isSyncing = false
+    }
+
+    /// Races `operation` against a deadline; whichever finishes first wins, and the loser is cancelled.
+    private static func withTimeout<T: Sendable>(seconds: Double, operation: @escaping @Sendable () async throws -> T) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask { try await operation() }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw SyncTimeoutError(seconds: seconds)
+            }
+            defer { group.cancelAll() }
+            return try await group.next()!
+        }
     }
 }

@@ -17,6 +17,11 @@ public protocol DailyCashflowSummaryServiceProtocol: Sendable {
     func getDailyCashflowSummary(orgId: String, date: String) async throws -> DailyCashflowSummary
     func addDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws
     func updateDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws
+    func pendingWriteCount(for orgId: String) async throws -> Int
+}
+
+public extension DailyCashflowSummaryServiceProtocol {
+    func pendingWriteCount(for orgId: String) async throws -> Int { 0 }
 }
 
 
@@ -73,6 +78,10 @@ public final class DailyCashflowSummaryService: DailyCashflowSummaryServiceProto
     public func updateDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws {
         // The model has no `updatedAt` injection, so the data is written as is.
         try store.set(summary, path: documentPath(summary.id, orgId: orgId), merge: true)
+    }
+
+    public func pendingWriteCount(for orgId: String) async throws -> Int {
+        try await store.pendingWriteCount(collection: collectionPath(orgId: orgId))
     }
 }
 

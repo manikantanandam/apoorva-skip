@@ -20,6 +20,11 @@ public protocol SaleServiceProtocol: Sendable {
     func updateSaleStatus(saleId: String, status: String, reason: String, by staffId: String, at date: Date, for orgId: String) async throws
     /// Rewrites an existing sale's lines and totals after an edit, recording why.
     func updateSale(_ sale: Sale, for orgId: String) async throws
+    func pendingWriteCount(for orgId: String) async throws -> Int
+}
+
+public extension SaleServiceProtocol {
+    func pendingWriteCount(for orgId: String) async throws -> Int { 0 }
 }
 
 
@@ -86,6 +91,10 @@ public final class SaleService: SaleServiceProtocol {
 
     static func path(_ saleId: String, orgId: String) -> String {
         "\(String.orgPath(orgId, .sales))/\(saleId)"
+    }
+
+    public func pendingWriteCount(for orgId: String) async throws -> Int {
+        try await store.pendingWriteCount(collection: .orgPath(orgId, .sales))
     }
 
     /// Lines, totals and payments, built by hand instead of going through the generic

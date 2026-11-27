@@ -35,6 +35,14 @@ private final class RecordingCrash: CrashReportingServicing, @unchecked Sendable
     func log(_ message: String) {}
 }
 
+private final class RecordingAnalytics: AnalyticsServicing, @unchecked Sendable {
+    var events: [AnalyticsEvent] = []
+    func log(_ event: AnalyticsEvent) { events.append(event) }
+    func setUserProperty(_ value: String?, forName name: String) {}
+    func setUserId(_ id: String?) {}
+    func setAnalyticsCollectionEnabled(_ enabled: Bool) {}
+}
+
 // MARK: - HeldBillRepository
 
 private final class MockHeldBillStorage: HeldBillStorageProtocol, @unchecked Sendable {
@@ -197,6 +205,47 @@ struct SyncEngineCoverageTests {
     @Test func syncStatusInitDefaults() {
         let status = SyncStatus(key: "k")
         #expect(status.lastSuccess == nil && status.lastError == nil && !status.isSyncing)
+    }
+
+    @Test func pendingWriteCountsSumsOnlyReportingRepositories() async {
+        let engine = SyncEngine(repositories: [
+            SyncAdapter("a", pendingWrites: { 2 }) { _ in },
+            SyncAdapter("b", pendingWrites: { 3 }) { _ in }
+        ])
+        #expect(await engine.pendingWriteCounts() == ["a": 2, "b": 3])
+    }
+
+    /// A collection that hangs past the deadline must not block the rest of the pass, and must
+    /// surface as a normal failure instead of staying silently "syncing" forever.
+    @Test func hungCollectionTimesOutAndDoesNotBlockOthers() async {
+        let analytics = RecordingAnalytics()
+        let crash = RecordingCrash()
+        let after = Flag()
+        let engine = SyncEngine(repositories: [
+            SyncAdapter("stuck") { _ in try await Task.sleep(nanoseconds: 5_000_000_000) },
+            SyncAdapter("after") { force in after.forced.append(force) }
+        ], crashReportingService: crash, analyticsService: analytics, timeoutSeconds: 0.05)
+
+        let statuses = await engine.syncAll()
+
+        #expect(statuses.first { $0.key == "stuck" }?.lastError != nil)
+        #expect(!(statuses.first { $0.key == "stuck" }?.isSyncing ?? true))
+        #expect(after.forced == [false])
+        #expect(crash.contexts == ["sync.stuck"])
+        #expect(analytics.events.contains { $0.name == "sync_timed_out" })
+    }
+
+    @Test func pendingWriteCountTimingOutReportsZeroAndKeepsGoing() async {
+        let crash = RecordingCrash()
+        let engine = SyncEngine(repositories: [
+            SyncAdapter("stuck", pendingWrites: { try? await Task.sleep(nanoseconds: 5_000_000_000); return 9 }) { _ in },
+            SyncAdapter("fine", pendingWrites: { 2 }) { _ in }
+        ], crashReportingService: crash, timeoutSeconds: 0.05)
+
+        let counts = await engine.pendingWriteCounts()
+
+        #expect(counts == ["stuck": 0, "fine": 2])
+        #expect(crash.contexts == ["pendingWriteCount.stuck"])
     }
 }
 

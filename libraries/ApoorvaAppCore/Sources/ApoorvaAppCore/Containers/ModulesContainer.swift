@@ -68,7 +68,9 @@ public class ModulesContainer {
     /// `runSync` is the app coordinator's `syncAll`, so a manual sync also refreshes Home and the org phase.
     public func makeSyncStatusViewModel(runSync: @escaping (_ force: Bool) async -> Void) -> SyncStatusViewModel {
         let engine = repositoryContainer.syncEngine
-        return SyncStatusViewModel(loadStatuses: { await engine.allStatuses() }, runSync: runSync)
+        return SyncStatusViewModel(loadStatuses: { await engine.allStatuses() },
+                                    loadPendingWrites: { await engine.pendingWriteCounts() },
+                                    runSync: runSync)
     }
 
     public func makePinSwitchViewModel(session: AppSession) -> PinSwitchViewModel {

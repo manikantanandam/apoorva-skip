@@ -21,6 +21,11 @@ public protocol DailyCashflowSummaryRepositoryProtocol: Sendable {
     func deleteDailyCashflowSummary(id: String) async throws
     func sync(force: Bool) async throws
     func refresh(for date: String) async throws
+    func pendingWriteCount() async -> Int
+}
+
+public extension DailyCashflowSummaryRepositoryProtocol {
+    func pendingWriteCount() async -> Int { 0 }
 }
 
 public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositoryProtocol {
@@ -103,6 +108,11 @@ public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
         let summary = try await service.getDailyCashflowSummary(orgId: orgId, date: date)
         try await storage.saveDailyCashflowSummary(summary: summary)
         logger.info("Refreshed daily summary for date \(date)")
+    }
+
+    public func pendingWriteCount() async -> Int {
+        guard let orgId = try? await getOrganizationId() else { return 0 }
+        return (try? await service.pendingWriteCount(for: orgId)) ?? 0
     }
 }
 

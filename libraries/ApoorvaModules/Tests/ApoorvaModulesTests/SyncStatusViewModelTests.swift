@@ -13,10 +13,12 @@ struct SyncStatusViewModelTests {
     private final class Recorder: @unchecked Sendable {
         var forced: [Bool] = []
         var statuses: [SyncStatus] = []
+        var pendingWrites: [String: Int] = [:]
     }
 
     private func makeViewModel(_ recorder: Recorder) -> SyncStatusViewModel {
         SyncStatusViewModel(loadStatuses: { recorder.statuses },
+                            loadPendingWrites: { recorder.pendingWrites },
                             runSync: { recorder.forced.append($0) })
     }
 
@@ -56,6 +58,15 @@ struct SyncStatusViewModelTests {
         #expect(recorder.forced == [false, true])
         #expect(viewModel.statuses.count == 1)
         #expect(!viewModel.isSyncing)
+    }
+
+    @Test func totalPendingWritesSumsAcrossCollections() async {
+        let recorder = Recorder()
+        recorder.statuses = [SyncStatus(key: "sales", lastSuccess: Date())]
+        recorder.pendingWrites = ["sales": 2, "cashflow": 3]
+        let viewModel = makeViewModel(recorder)
+        await viewModel.load()
+        #expect(viewModel.totalPendingWrites == 5)
     }
 
     @Test func titlesCoverKnownAndOrgCollectionKeys() {

@@ -14,6 +14,9 @@ import ApoorvaOfflineStorage
 final class InMemoryStore: FirestoreStoring, @unchecked Sendable {
     var documents: [String: [String: Any]] = [:]
     var setCount = 0
+    var pendingCount = 0
+
+    func pendingWriteCount(collection path: String) async throws -> Int { pendingCount }
 
     func getDocuments(collection path: String, query: StoreQuery) async throws -> [StoreDocument] {
         documents
@@ -93,6 +96,18 @@ struct OrgCollectionRepositoryTests {
         try await sut.delete(id: "a")
         #expect(try await sut.all().isEmpty)
         #expect(store.documents["organizations/org/customerLedger/a"]?["isDeleted"] as? Bool == true)
+    }
+
+    @Test func pendingWriteCountDelegatesToService() async throws {
+        let (sut, store, _) = try makeSUT()
+        store.pendingCount = 4
+        #expect(await sut.pendingWriteCount() == 4)
+    }
+
+    @Test func pendingWriteCountIsZeroWithoutAnOrg() async throws {
+        let (sut, store, _) = try makeSUT(orgId: nil)
+        store.pendingCount = 4
+        #expect(await sut.pendingWriteCount() == 0)
     }
 
     @Test func changesStreamFiresOnSave() async throws {

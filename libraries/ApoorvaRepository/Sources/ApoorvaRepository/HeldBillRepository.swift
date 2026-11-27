@@ -17,6 +17,11 @@ public protocol HeldBillRepositoryProtocol: Sendable {
     func deleteHeldBill(id: String) async throws
     func markAsDeleted(id: String) async throws
     func sync(force: Bool) async throws
+    func pendingWriteCount() async -> Int
+}
+
+public extension HeldBillRepositoryProtocol {
+    func pendingWriteCount() async -> Int { 0 }
 }
 
 
@@ -86,6 +91,11 @@ public final actor HeldBillRepository: HeldBillRepositoryProtocol {
               let lastUpdatedDate = heldBillWithMaxDate.updatedAt else { return }
 
         try await syncStorage.updateSyncTimestamp(for: HeldBill.table.name, timestamp: lastUpdatedDate.timeIntervalSince1970)
+    }
+
+    public func pendingWriteCount() async -> Int {
+        guard let orgId = try? await userRepository.getCurrentUser().selectedOrganization?.orgId else { return 0 }
+        return (try? await service.pendingWriteCount(for: orgId)) ?? 0
     }
 }
 

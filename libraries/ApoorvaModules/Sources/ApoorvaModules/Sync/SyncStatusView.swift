@@ -20,6 +20,9 @@ public struct SyncStatusView: View {
         List {
             Section {
                 ManiListRow(title: "Status", value: lastSyncText, status: overallBadge)
+                if viewModel.totalPendingWrites > 0 {
+                    ManiListRow(title: "Pending upload", value: "\(viewModel.totalPendingWrites) change\(viewModel.totalPendingWrites == 1 ? "" : "s")")
+                }
                 if viewModel.failedCount > 0 {
                     ManiNote("Some data couldn't be downloaded. Your entries are saved on this phone and upload when you're back online.",
                              kind: .warning)

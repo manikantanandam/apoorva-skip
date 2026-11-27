@@ -21,6 +21,11 @@ public protocol InventoryItemRepositoryProtocol: Sendable {
     func markAsDeleted(id: String) async throws  // Soft delete
     func sync(force: Bool) async throws
     func lastSyncedAt() async throws -> Date?
+    func pendingWriteCount() async -> Int
+}
+
+public extension InventoryItemRepositoryProtocol {
+    func pendingWriteCount() async -> Int { 0 }
 }
 
 
@@ -106,5 +111,10 @@ public final actor InventoryItemRepository: InventoryItemRepositoryProtocol {
         // The query matches on updatedAt OR lastSoldDate, so the cursor tracks the newest of both.
         guard let latest = SyncCursor.latest(items.flatMap { [$0.updatedAt, $0.lastSoldDate] }) else { return }
         try await syncStorage.updateSyncTimestamp(for: InventoryItem.table.name, timestamp: latest.timeIntervalSince1970)
+    }
+
+    public func pendingWriteCount() async -> Int {
+        guard let orgId = try? await userRepository.getCurrentUser().selectedOrganization?.orgId else { return 0 }
+        return (try? await service.pendingWriteCount(for: orgId)) ?? 0
     }
 }

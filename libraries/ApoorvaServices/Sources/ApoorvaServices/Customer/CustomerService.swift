@@ -16,10 +16,12 @@ public protocol CustomerServiceProtocol: Sendable {
     func upsertCustomerAfterSale(phone: String, name: String, saleAmount: Double, saleDate: Date, for orgId: String) async throws
     /// Creates or updates a customer from the customers screens (merge; never removes legacy fields).
     func upsertCustomer(_ customer: Customer, for orgId: String) throws
+    func pendingWriteCount(for orgId: String) async throws -> Int
 }
 
 public extension CustomerServiceProtocol {
     func upsertCustomer(_ customer: Customer, for orgId: String) throws {}
+    func pendingWriteCount(for orgId: String) async throws -> Int { 0 }
 }
 
 
@@ -89,6 +91,10 @@ public final class CustomerService: CustomerServiceProtocol {
             ]
             try store.setData(payload, path: path, merge: false)
         }
+    }
+
+    public func pendingWriteCount(for orgId: String) async throws -> Int {
+        try await store.pendingWriteCount(collection: .orgPath(orgId, .customers))
     }
 }
 

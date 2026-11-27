@@ -157,12 +157,12 @@ public class RepositoryContainer {
         let cashflow = cashflowRepository
         let dailyCashflow = dailyCashflowRepository
         return SyncEngine(repositories: [
-            SyncAdapter("inventory") { try await inventory.sync(force: $0) },
-            SyncAdapter("customers") { try await customers.sync(force: $0) },
-            SyncAdapter("sales") { try await sales.sync(force: $0) },
-            SyncAdapter("heldBills") { try await heldBills.sync(force: $0) },
-            SyncAdapter("cashflow") { try await cashflow.sync(force: $0) },
-            SyncAdapter("dailyCashflowSummaries") { try await dailyCashflow.sync(force: $0) },
+            SyncAdapter("inventory", pendingWrites: { await inventory.pendingWriteCount() }) { try await inventory.sync(force: $0) },
+            SyncAdapter("customers", pendingWrites: { await customers.pendingWriteCount() }) { try await customers.sync(force: $0) },
+            SyncAdapter("sales", pendingWrites: { await sales.pendingWriteCount() }) { try await sales.sync(force: $0) },
+            SyncAdapter("heldBills", pendingWrites: { await heldBills.pendingWriteCount() }) { try await heldBills.sync(force: $0) },
+            SyncAdapter("cashflow", pendingWrites: { await cashflow.pendingWriteCount() }) { try await cashflow.sync(force: $0) },
+            SyncAdapter("dailyCashflowSummaries", pendingWrites: { await dailyCashflow.pendingWriteCount() }) { try await dailyCashflow.sync(force: $0) },
             settingsRepository,
             storeRepository,
             supplierRepository,

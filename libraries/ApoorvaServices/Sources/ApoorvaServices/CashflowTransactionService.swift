@@ -17,6 +17,11 @@ public protocol CashflowTransactionServiceProtocol: Sendable {
     func updateCashflowTransaction(_ transaction: CashflowTransaction, for orgId: String) async throws
     /// Soft delete: sets `isDeleted` and `updatedAt` only.
     func deleteCashflowTransaction(id: String, for orgId: String) async throws
+    func pendingWriteCount(for orgId: String) async throws -> Int
+}
+
+public extension CashflowTransactionServiceProtocol {
+    func pendingWriteCount(for orgId: String) async throws -> Int { 0 }
 }
 
 
@@ -68,6 +73,10 @@ public final class CashflowTransactionService: CashflowTransactionServiceProtoco
             "isDeleted": true,
             "updatedAt": Date()
         ], path: documentPath(id, orgId: orgId))
+    }
+
+    public func pendingWriteCount(for orgId: String) async throws -> Int {
+        try await store.pendingWriteCount(collection: .orgPath(orgId, .cashflow))
     }
 }
 

@@ -29,4 +29,18 @@ struct AppConfigTests {
 
         #expect(config.bool(.holdBills))
     }
+
+    @Test func numberFallsBackToCompiledDefaultWhenNoRemoteValue() {
+        let config = AppConfig(service: NoOpRemoteConfigService())
+
+        #expect(config.number(.syncIntervalSec) == FeatureFlag.syncIntervalSec.defaultNumberValue)
+    }
+
+    @Test func numberReadsRemoteValue() {
+        let service = NoOpRemoteConfigService()
+        service.setDefaults([FeatureFlag.syncIntervalSec.rawValue: .number(60)])
+        let config = AppConfig(service: service)
+
+        #expect(config.number(.syncIntervalSec) == 60)
+    }
 }

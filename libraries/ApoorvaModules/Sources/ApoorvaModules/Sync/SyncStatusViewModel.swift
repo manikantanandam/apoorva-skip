@@ -21,15 +21,21 @@ public final class SyncStatusViewModel {
 
     public private(set) var statuses: [SyncStatus] = []
     public private(set) var isSyncing = false
+    public private(set) var pendingWriteCounts: [String: Int] = [:]
 
     private let loadStatuses: () async -> [SyncStatus]
+    private let loadPendingWrites: () async -> [String: Int]
     private let runSync: (_ force: Bool) async -> Void
 
     public init(loadStatuses: @escaping () async -> [SyncStatus],
+                loadPendingWrites: @escaping () async -> [String: Int],
                 runSync: @escaping (_ force: Bool) async -> Void) {
         self.loadStatuses = loadStatuses
+        self.loadPendingWrites = loadPendingWrites
         self.runSync = runSync
     }
+
+    public var totalPendingWrites: Int { pendingWriteCounts.values.reduce(0, +) }
 
     public var failedCount: Int { statuses.filter { $0.lastError != nil }.count }
 
@@ -48,6 +54,7 @@ public final class SyncStatusViewModel {
 
     public func load() async {
         statuses = await loadStatuses()
+        pendingWriteCounts = await loadPendingWrites()
     }
 
     public func syncNow() async {
@@ -65,6 +72,7 @@ public final class SyncStatusViewModel {
         isSyncing = true
         await runSync(force)
         statuses = await loadStatuses()
+        pendingWriteCounts = await loadPendingWrites()
         isSyncing = false
     }
 
