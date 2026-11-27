@@ -1,5 +1,5 @@
 {
-  "originHash" : "52ec38179face5eb9159d8af98bb4acb2f20bd3e370b89846bead991f100de7f",
+  "originHash" : "ca22dccba043c849b8e348e921f4cfb750af223f84194b12250ee90e260be696",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -105,8 +105,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/manikantanandam/ManiLogger.git",
       "state" : {
-        "branch" : "feature/android-support",
-        "revision" : "7c99cacaa9c913d0ee6718198b08fe18a0c130ea"
+        "revision" : "12ace2bc02e0a9acd852e577cc02037579ccf2f2",
+        "version" : "1.2.1"
       }
     },
     {
@@ -114,8 +114,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/manikantanandam/ManiSwiftUIComponents.git",
       "state" : {
-        "branch" : "feature/android-support",
-        "revision" : "66fd868c39a7225c373f7fb6b1a1ff13ac191e2b"
+        "revision" : "0c816b96ebaeb4b49647519455e6ebed9fef753a",
+        "version" : "1.3.0"
       }
     },
     {

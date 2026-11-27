@@ -17,7 +17,7 @@ let package = Package(
         .package(path: "../ApoorvaModules"),
         .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
         .package(path: "../ApoorvaEnvironment"),
-        .package(path: "../../../Libraries/ManiLogger"),  // TEMPORARY: restore exact pin after release
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.2.1"),
         .package(path: "../ApoorvaServices"),
         .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.19.2"),
         .package(url: "https://github.com/skiptools/skip.git", from: "1.9.13"),
