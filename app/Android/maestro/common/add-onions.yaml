@@ -2,7 +2,7 @@
 appId: com.apoorva.app
 ---
 - tapOn:
-    id: "pos.tile.Onions (kg)"
+    id: 'pos\.tile\.Onions \(kg\)'
 - extendedWaitUntil:
     visible:
       id: "weightSheet.add"
