@@ -157,8 +157,21 @@ struct FirebaseRemoteConfigBackend: RemoteConfigBackend {
         case .static: source = .static
         @unknown default: source = .static
         }
+        #if os(Android)
+        // Android's asBoolean()/asDouble() throw for values like "1.0.0" (Skip bridges them with try!),
+        // so derive both from the string, falling back the way iOS does (false / 0).
+        let string = value.stringValue
+        return RemoteConfigValueInfo(bool: Self.androidBool(string), string: string,
+                                     number: Double(string) ?? 0, data: value.dataValue, source: source)
+        #else
         return RemoteConfigValueInfo(bool: value.boolValue, string: value.stringValue,
                                      number: value.numberValue.doubleValue, data: value.dataValue, source: source)
+        #endif
+    }
+
+    /// Firebase Android's truthy strings (case-insensitive); anything else is false.
+    static func androidBool(_ string: String) -> Bool {
+        ["1", "true", "t", "yes", "y", "on"].contains(string.lowercased())
     }
 
     func remoteKeys() -> [String] {

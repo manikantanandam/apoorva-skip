@@ -5,7 +5,7 @@
 //  Created by Manikanta Nandam on 12/10/26.
 //
 
-@preconcurrency import SkipSQL
+@preconcurrency import SkipSQLPlus
 import Foundation
 import ApoorvaModels
 
@@ -23,7 +23,8 @@ public final actor SkipSqlDatabase {
     public init(filepath: String) throws {
         self.context = try SQLContext(
             path: filepath, flags: [.create, .readWrite],
-            configuration: .platform
+            // Bundled SQLite; SkipSQL's `.platform` fatal-errors on Android (no system SQLite C library).
+            configuration: .plus
         )
         try context.migrate(migrations: SchemaMigrations.all)
     }

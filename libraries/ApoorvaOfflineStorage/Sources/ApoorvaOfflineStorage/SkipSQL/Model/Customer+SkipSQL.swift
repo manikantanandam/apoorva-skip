@@ -5,7 +5,7 @@
 
 import ApoorvaModels
 import ApoorvaUtilities
-import SkipSQL
+import SkipSQLPlus
 
 extension Customer: @retroactive SQLCodable {
 

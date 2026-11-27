@@ -5,7 +5,7 @@
 
 import Foundation
 import ApoorvaModels
-import SkipSQL
+import SkipSQLPlus
 
 /// Ordered, append-only schema steps run by `SQLContext.migrate` (tracked in `PRAGMA user_version`).
 /// Never edit or reorder a step that has shipped — add a new one at the end.

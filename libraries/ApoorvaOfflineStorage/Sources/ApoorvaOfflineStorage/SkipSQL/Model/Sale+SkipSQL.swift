@@ -6,7 +6,7 @@
 //
 
 import ApoorvaModels
-import SkipSQL
+import SkipSQLPlus
 
 extension Sale: @retroactive SQLCodable {
     

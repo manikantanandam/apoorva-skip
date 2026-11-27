@@ -6,7 +6,7 @@
 import Testing
 import Foundation
 import ApoorvaModels
-import SkipSQL
+import SkipSQLPlus
 @testable import ApoorvaOfflineStorage
 
 // MARK: - Helpers

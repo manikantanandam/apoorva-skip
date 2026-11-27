@@ -7,7 +7,7 @@
 
 import Foundation
 import ApoorvaModels
-import SkipSQL
+import SkipSQLPlus
 
 public struct SyncState: Codable, Sendable {
     public let entityName: String

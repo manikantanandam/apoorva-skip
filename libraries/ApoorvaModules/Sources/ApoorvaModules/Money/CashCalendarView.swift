@@ -100,7 +100,7 @@ public struct CashCalendarView: View {
         }
         .buttonStyle(.plain)
         .disabled(isFuture)
-        .accessibilityLabel(day.formatted(.dateTime.weekday(.wide).day().month(.wide)) + (isClosed ? ", closed" : ""))
+        .accessibilityLabel(Text(day.formatted(.dateTime.weekday(.wide).day().month(.wide)) + (isClosed ? ", closed" : "")))
     }
 
     private func legend(color: Color?, text: String) -> some View {

@@ -6,7 +6,7 @@
 import Testing
 import Foundation
 import ApoorvaModels
-import SkipSQL
+import SkipSQLPlus
 @testable import ApoorvaOfflineStorage
 
 struct SchemaMigrationTests {
@@ -17,7 +17,7 @@ struct SchemaMigrationTests {
 
     /// Builds a database the way installs looked before migrations: v1 tables only, user_version 0.
     private func makeLegacyDatabase(at path: String) throws {
-        let context = try SQLContext(path: path, flags: [.create, .readWrite], configuration: .platform)
+        let context = try SQLContext(path: path, flags: [.create, .readWrite], configuration: .plus)
         try context.exec(sql: """
             CREATE TABLE "Customer" ("phone" TEXT PRIMARY KEY, "name" TEXT, "createdAt" REAL, "lastPurchaseDate" REAL,
             "totalSales" INTEGER, "totalAmountSpent" REAL, "updatedAt" REAL, "isDeleted" INTEGER)
