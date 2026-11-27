@@ -8,10 +8,14 @@ env:
     file: launch.yaml
     env:
       SEED: ${SEED}
-- extendedWaitUntil:
-    visible:
-      text: "New bill"
-    timeout: 60000
+- retry: # a system "isn't responding" dialog can cover Home while seeding
+    maxRetries: 2
+    commands:
+      - runFlow: dismiss-system-dialogs.yaml
+      - extendedWaitUntil:
+          visible:
+            text: "New bill"
+          timeout: 30000
 - extendedWaitUntil:
     visible:
       text: "Ravi Kumar, #D-.*"

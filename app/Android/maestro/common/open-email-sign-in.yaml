@@ -5,10 +5,14 @@ appId: com.apoorva.app
     file: launch.yaml
     env:
       SEED: ""
-- extendedWaitUntil:
-    visible:
-      id: "splash.getStarted"
-    timeout: 30000
+- retry: # a system "isn't responding" dialog can cover the splash
+    maxRetries: 2
+    commands:
+      - runFlow: dismiss-system-dialogs.yaml
+      - extendedWaitUntil:
+          visible:
+            id: "splash.getStarted"
+          timeout: 20000
 - tapOn:
     id: "splash.getStarted"
 - runFlow:

@@ -22,3 +22,4 @@ appId: com.apoorva.app
           arguments:
             UITesting: "true"
             UITestingSeed: ${SEED}
+- runFlow: dismiss-system-dialogs.yaml

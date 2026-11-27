@@ -130,9 +130,15 @@ jobs:
           arch: x86_64
           target: google_apis
           profile: pixel_6
+          # The first run starved the software-rendered emulator: Pixel Launcher hit an ANR and its system dialog
+          # covered the app, so every flow failed on its first assertion. More cores/RAM, and no error dialogs.
+          cores: 4
+          ram-size: 4096M
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          script: scripts/android-ui-test.sh "$FLOW" apoorva-debug.apk
+          script: |
+            adb shell settings put global hide_error_dialogs 1
+            scripts/android-ui-test.sh "$FLOW" apoorva-debug.apk
 
       - name: Upload Maestro results
         if: failure()
