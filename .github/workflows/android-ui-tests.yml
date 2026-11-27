@@ -37,7 +37,7 @@ jobs:
     name: Build debug APK (x86_64)
     needs: parity
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
