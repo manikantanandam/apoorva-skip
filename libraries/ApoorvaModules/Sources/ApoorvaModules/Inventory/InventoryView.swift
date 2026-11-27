@@ -15,7 +15,7 @@ import ManiSwiftUIComponents
 // MARK: - List (73)
 
 public struct InventoryView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     @Bindable var viewModel: InventoryViewModel
     private let onSelect: (InventoryItem) -> Void
     private let onAdd: (() -> Void)?
@@ -89,8 +89,8 @@ public struct InventoryView: View {
 // MARK: - Item (74)
 
 public struct InventoryItemView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: InventoryItemViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: InventoryItemViewModel
     private let canEdit: Bool
     private let onAdjust: () -> Void
     private let onEdit: () -> Void
@@ -172,7 +172,7 @@ extension StockMovementReason {
 // MARK: - Adjust (75)
 
 public struct StockAdjustView: View {
-    @Bindable private var viewModel: StockAdjustViewModel
+    @Bindable var viewModel: StockAdjustViewModel
     private let onDone: () -> Void
 
     public init(viewModel: StockAdjustViewModel, onDone: @escaping () -> Void) {
@@ -207,7 +207,7 @@ public struct StockAdjustView: View {
 // MARK: - Add / edit (76)
 
 public struct ItemFormView: View {
-    @Bindable private var viewModel: ItemFormViewModel
+    @Bindable var viewModel: ItemFormViewModel
     private let showsWholesale: Bool
     private let showsWarranty: Bool
     private let onSaved: (InventoryItem) -> Void
@@ -294,10 +294,10 @@ public struct ItemFormView: View {
 // MARK: - Categories (77)
 
 public struct CategoriesView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: CategoriesViewModel
-    @State private var renaming: ItemCategory?
-    @State private var renameText = ""
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: CategoriesViewModel
+    @State var renaming: ItemCategory?
+    @State var renameText = ""
 
     public init(viewModel: CategoriesViewModel) {
         self.viewModel = viewModel
@@ -356,9 +356,9 @@ public struct CategoriesView: View {
 // MARK: - Import (78)
 
 public struct ItemImportView: View {
-    @Bindable private var viewModel: ItemImportViewModel
+    @Bindable var viewModel: ItemImportViewModel
     private let onDone: (Int) -> Void
-    @State private var isPicking = false
+    @State var isPicking = false
 
     public init(viewModel: ItemImportViewModel, onDone: @escaping (Int) -> Void) {
         self.viewModel = viewModel

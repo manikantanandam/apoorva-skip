@@ -12,10 +12,10 @@ import ApoorvaModels
 // MARK: - 13 What do you sell?
 
 public struct ChooseVerticalView: View {
-    @Bindable private var viewModel: ShopSetupViewModel
+    @Bindable var viewModel: ShopSetupViewModel
     private let onContinue: () -> Void
     private let invitations: InvitationsViewModel?
-    @State private var showsInvitations = false
+    @State var showsInvitations = false
 
     public init(viewModel: ShopSetupViewModel, invitations: InvitationsViewModel? = nil, onContinue: @escaping () -> Void) {
         self.viewModel = viewModel
@@ -59,7 +59,7 @@ public struct ChooseVerticalView: View {
 // MARK: - 14 Your shop
 
 public struct ShopSetupView: View {
-    @Bindable private var viewModel: ShopSetupViewModel
+    @Bindable var viewModel: ShopSetupViewModel
     private let onContinue: () -> Void
 
     public init(viewModel: ShopSetupViewModel, onContinue: @escaping () -> Void) {
@@ -88,7 +88,7 @@ public struct ShopSetupView: View {
 // MARK: - 15 Pick a look
 
 public struct PickLookView: View {
-    @Bindable private var viewModel: ShopSetupViewModel
+    @Bindable var viewModel: ShopSetupViewModel
     private let themeStore: ThemeStore
     private let onFinished: () -> Void
 

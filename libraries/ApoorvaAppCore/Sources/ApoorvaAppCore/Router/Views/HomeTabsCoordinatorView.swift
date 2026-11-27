@@ -4,7 +4,7 @@ import ManiSwiftUIComponents
 
 struct HomeTabsCoordinatorView: View {
     @Bindable var coordinator: HomeTabsCoordinator
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
 
     var body: some View {
         TabView(selection: $coordinator.selectedTab) {
@@ -13,11 +13,11 @@ struct HomeTabsCoordinatorView: View {
                 .tag(HomeTabsCoordinator.Tab.home)
 
             BillsCoordinatorView(tabs: coordinator, coordinator: coordinator.billsCoordinator, container: coordinator.container)
-                .tabItem { Label("Bills", systemImage: "list.bullet.rectangle") }
+                .tabItem { Label("Bills", systemImage: ManiSymbol.name("list.bullet.rectangle")) }
                 .tag(HomeTabsCoordinator.Tab.bills)
 
             CustomersCoordinatorView(tabs: coordinator, coordinator: coordinator.customersCoordinator, container: coordinator.container)
-                .tabItem { Label("Customers", systemImage: "person.2") }
+                .tabItem { Label("Customers", systemImage: ManiSymbol.name("person.2")) }
                 .tag(HomeTabsCoordinator.Tab.customers)
 
             MoreCoordinatorView(tabs: coordinator, coordinator: coordinator.moreCoordinator, container: coordinator.container)
@@ -26,7 +26,7 @@ struct HomeTabsCoordinatorView: View {
         }
         .tint(theme.accent.accent)
         .overlay(alignment: .bottom) {
-            if coordinator.container.appSession.can(.createBill) {
+            if coordinator.container.appSession.can(.createBill) && showsNewBillButton {
                 newBillButton
                     .offset(y: -18)
             }
@@ -34,6 +34,16 @@ struct HomeTabsCoordinatorView: View {
         .fullScreenCover(isPresented: $coordinator.isPresentingNewBill) {
             NewBillCoordinatorView(coordinator: coordinator.newBillCoordinator, container: coordinator.container)
         }
+    }
+
+    /// On Android the window shrinks when the keyboard opens and the overlay rides up with it, covering forms'
+    /// Save buttons (`ignoresSafeArea(.keyboard)` doesn't help there), so the button shows only on tab roots.
+    private var showsNewBillButton: Bool {
+        #if os(Android)
+        coordinator.isAtTabRoot
+        #else
+        true
+        #endif
     }
 
     /// Raised 52pt "New bill" button: a circle in Clean, an accent square in Bold (docs/04).

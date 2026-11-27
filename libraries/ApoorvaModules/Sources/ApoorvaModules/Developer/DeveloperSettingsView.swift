@@ -10,7 +10,7 @@ import ManiSwiftUIComponents
 
 public struct DeveloperSettingsView: View {
     @State var viewModel: DeveloperSettingsViewModel
-    @State private var showClearConfirm = false
+    @State var showClearConfirm = false
 
     private let onOpenEnvironment: () -> Void
     private let onOpenFlags: () -> Void

@@ -6,7 +6,8 @@
 #if DEBUG
 import Foundation
 
-/// Debug-only quick-switch accounts for the sign-in screen. Add any number of entries here.
+/// Debug-only quick-switch accounts for the sign-in screen. Add any number of entries here; the first one
+/// prefills the sign-in form in the debug environment.
 struct DebugTestUser: Identifiable {
     let name: String
     let email: String
@@ -16,9 +17,8 @@ struct DebugTestUser: Identifiable {
 
 enum DebugTestUsers {
     static let all: [DebugTestUser] = [
-        DebugTestUser(name: "Lavanya", email: "lavanya@gmail.com", password: "Apoorva@125"),
+        DebugTestUser(name: "Manikanta 1996", email: "manikantanandam1996@gmail.com", password: "Apoorva@125"),
         DebugTestUser(name: "Manikanta", email: "nanirocks125@gmail.com", password: "Nandam@125"),
-        DebugTestUser(name: "Manikanta 1996", email: "manikantanandam1996@gmail.com", password: "Apoorva@123"),
     ]
 }
 #endif

@@ -1,0 +1,3 @@
+# Skip Fuse (native Swift on Android): lets skipstone bridge this module's SwiftUI views.
+skip:
+  mode: 'native'

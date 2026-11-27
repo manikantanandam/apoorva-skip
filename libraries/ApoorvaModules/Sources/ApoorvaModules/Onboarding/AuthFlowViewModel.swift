@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import SkipFuse
 import Observation
 import ApoorvaModels
 import ApoorvaServices
@@ -139,7 +140,7 @@ public final class AuthFlowViewModel {
             try await work()
             return true
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = UserFacingError.message(for: error)
             if let context {
                 crashReportingService.recordNonFatal(error, context: context)
             }

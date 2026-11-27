@@ -4,13 +4,13 @@ import ApoorvaModels
 import ManiSwiftUIComponents
 
 public struct AddUpdateDailyCashflowSummaryView: View {
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.maniTheme) var theme
     @Bindable var viewModel: AddUpdateDailyCashflowSummaryViewModel
     
     // 1. ADD SHEET STATE
-    @State private var activeTransactionSheet: TransactionSheetAction? = nil
-    @State private var transactionToEdit: CashflowTransaction? = nil
+    @State var activeTransactionSheet: TransactionSheetAction? = nil
+    @State var transactionToEdit: CashflowTransaction? = nil
     
     var makeAddUpdateTransactionViewModel: (Date, CashflowTransaction?) -> AddUpdateCashflowTransactionViewModel
     
@@ -171,7 +171,7 @@ public struct AddUpdateDailyCashflowSummaryView: View {
 // MARK: - UI Components
 
 struct ModernFormCard<Content: View>: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     let title: String
     let content: Content
 
@@ -195,7 +195,7 @@ struct ModernFormCard<Content: View>: View {
 }
 
 struct AccountBalanceInputRow: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     let accountName: String
     @Binding var text: String
 

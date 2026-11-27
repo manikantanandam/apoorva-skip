@@ -10,8 +10,8 @@ import ManiSwiftUIComponents
 struct UserRoleEditorView: View {
     let user: AppUser
     let onSave: (AppUserRole) -> Void
-    @State private var selectedRole: AppUserRole
-    @Environment(\.dismiss) private var dismiss
+    @State var selectedRole: AppUserRole
+    @Environment(\.dismiss) var dismiss
 
     init(user: AppUser, onSave: @escaping (AppUserRole) -> Void) {
         self.user = user

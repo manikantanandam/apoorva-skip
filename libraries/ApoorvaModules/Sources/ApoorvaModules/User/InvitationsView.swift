@@ -63,8 +63,8 @@ struct InvitationSwitchPromptModifier: ViewModifier {
 }
 
 public struct InvitationsView: View {
-    @Environment(\.dismiss) private var dismiss
-    @Bindable private var viewModel: InvitationsViewModel
+    @Environment(\.dismiss) var dismiss
+    @Bindable var viewModel: InvitationsViewModel
 
     public init(viewModel: InvitationsViewModel) {
         self.viewModel = viewModel

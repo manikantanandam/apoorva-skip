@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import SkipFuse
 import Observation
 import ApoorvaModels
 import ApoorvaRepository
@@ -64,15 +65,31 @@ public final class AppSession {
     /// Typed app-level config; screens read non-bool flags through it (bool flags via `isOn`).
     public let config: AppConfig
 
-    public init(settingsRepository: any OrgCollectionRepositoryProtocol<OrgSettings>,
-                storeRepository: any OrgCollectionRepositoryProtocol<Store>,
-                memberRepository: any OrgCollectionRepositoryProtocol<Member>,
-                saleRepository: SaleRepositoryProtocol,
-                developerTools: DeveloperToolsProtocol,
-                preferences: UserDefaults = .standard,
-                analyticsService: AnalyticsServicing = NoOpAnalyticsService(),
-                crashReportingService: CrashReportingServicing = NoOpCrashReportingService(),
-                appConfig: AppConfig = AppConfig(service: NoOpRemoteConfigService())) {
+    /// Uses `UserDefaults.standard`. The defaults are injectable only internally (tests): on Android, Skip maps
+    /// `UserDefaults` in this module to an internal bridge type, so it can't appear in a public signature.
+    public convenience init(settingsRepository: any OrgCollectionRepositoryProtocol<OrgSettings>,
+                            storeRepository: any OrgCollectionRepositoryProtocol<Store>,
+                            memberRepository: any OrgCollectionRepositoryProtocol<Member>,
+                            saleRepository: SaleRepositoryProtocol,
+                            developerTools: DeveloperToolsProtocol,
+                            analyticsService: AnalyticsServicing = NoOpAnalyticsService(),
+                            crashReportingService: CrashReportingServicing = NoOpCrashReportingService(),
+                            appConfig: AppConfig = AppConfig(service: NoOpRemoteConfigService())) {
+        self.init(settingsRepository: settingsRepository, storeRepository: storeRepository,
+                  memberRepository: memberRepository, saleRepository: saleRepository,
+                  developerTools: developerTools, preferences: .standard, analyticsService: analyticsService,
+                  crashReportingService: crashReportingService, appConfig: appConfig)
+    }
+
+    init(settingsRepository: any OrgCollectionRepositoryProtocol<OrgSettings>,
+         storeRepository: any OrgCollectionRepositoryProtocol<Store>,
+         memberRepository: any OrgCollectionRepositoryProtocol<Member>,
+         saleRepository: SaleRepositoryProtocol,
+         developerTools: DeveloperToolsProtocol,
+         preferences: UserDefaults,
+         analyticsService: AnalyticsServicing = NoOpAnalyticsService(),
+         crashReportingService: CrashReportingServicing = NoOpCrashReportingService(),
+         appConfig: AppConfig = AppConfig(service: NoOpRemoteConfigService())) {
         self.settingsRepository = settingsRepository
         self.storeRepository = storeRepository
         self.memberRepository = memberRepository

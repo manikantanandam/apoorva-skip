@@ -24,7 +24,7 @@ public struct CustomButton: View {
     let textColor: ApoorvaColor
     let alignment: CustomButtonAlignment
     private let externalIsLoading: Binding<Bool>?
-    @State private var internalIsLoading: Bool = false
+    @State var internalIsLoading: Bool = false
     private var isLoading: Bool {
         get { externalIsLoading?.wrappedValue ?? internalIsLoading }
         nonmutating set {

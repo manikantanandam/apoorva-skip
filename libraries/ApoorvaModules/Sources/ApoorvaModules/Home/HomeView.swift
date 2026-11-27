@@ -19,13 +19,13 @@ public enum HomeAction: Hashable, Sendable {
 }
 
 public struct HomeView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     private let session: AppSession
-    @Bindable private var viewModel: HomeViewModel
+    @Bindable var viewModel: HomeViewModel
     private let syncText: String
     private let onAction: (HomeAction) -> Void
     private let invitations: InvitationsViewModel?
-    @State private var showsInvitations = false
+    @State var showsInvitations = false
 
     public init(session: AppSession, viewModel: HomeViewModel, syncText: String, invitations: InvitationsViewModel? = nil,
                 onAction: @escaping (HomeAction) -> Void) {
@@ -192,7 +192,7 @@ public struct HomeView: View {
 public struct StoreSwitcherView: View {
     private let session: AppSession
     private let salesByStore: [String: Double]
-    @State private var selection: String
+    @State var selection: String
     private let onSwitched: () -> Void
 
     public init(session: AppSession, salesByStore: [String: Double], onSwitched: @escaping () -> Void) {

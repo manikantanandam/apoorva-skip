@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import SkipFuse
 import Observation
 import ApoorvaServices
 import ApoorvaUtilities
@@ -27,12 +28,10 @@ public class LoginViewModel {
         self.authService = authService
         self.analyticsService = analyticsService
         #if DEBUG
-        // Test accounts are prefilled only in debug builds.
-        switch environment {
-        case .debug: self.username = "lavanya@gmail.com"
-        case .production: self.username = ""
-        }
-        self.password = environment == .debug ? "Apoorva@123" : ""
+        // The first test account is prefilled only in debug builds against the debug environment.
+        let testUser = environment == .debug ? DebugTestUsers.all.first : nil
+        self.username = testUser?.email ?? ""
+        self.password = testUser?.password ?? ""
         #else
         self.username = ""
         self.password = ""
@@ -63,7 +62,7 @@ public class LoginViewModel {
             } catch AuthServiceError.accountExistsWithDifferentCredential(let email) {
                 onNeedsLinking?(email)
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = UserFacingError.message(for: error)
             }
         }
     }

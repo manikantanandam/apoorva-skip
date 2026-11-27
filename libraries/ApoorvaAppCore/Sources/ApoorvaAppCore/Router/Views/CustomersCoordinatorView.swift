@@ -6,7 +6,7 @@ struct CustomersCoordinatorView: View {
     let tabs: HomeTabsCoordinator
     @Bindable var coordinator: CustomersCoordinator
     let container: AppContainer
-    @State private var listViewModel: CustomerListViewModel
+    @State var listViewModel: CustomerListViewModel
 
     init(tabs: HomeTabsCoordinator, coordinator: CustomersCoordinator, container: AppContainer) {
         self.tabs = tabs

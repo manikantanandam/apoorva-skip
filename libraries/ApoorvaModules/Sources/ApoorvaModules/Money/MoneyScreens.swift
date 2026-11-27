@@ -13,15 +13,15 @@ import ManiSwiftUIComponents
 // MARK: - Day (83)
 
 public struct CashDayView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: CashDayViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: CashDayViewModel
     private let canClose: Bool
     private let onAdd: () -> Void
     private let onClose: () -> Void
     private let onHistory: () -> Void
     /// Opens an entry for editing. Entries of a closed day are read-only, so reopen the day first.
     private let onEdit: ((CashflowTransaction) -> Void)?
-    @State private var showsCalendar = false
+    @State var showsCalendar = false
 
     public init(viewModel: CashDayViewModel, canClose: Bool, onAdd: @escaping () -> Void, onClose: @escaping () -> Void,
                 onHistory: @escaping () -> Void, onEdit: ((CashflowTransaction) -> Void)? = nil) {
@@ -142,15 +142,15 @@ struct CashSelectionStyleMenu: View {
                 }
             }
         } label: {
-            Image(systemName: style == .badges ? "square.grid.2x2" : "list.bullet")
+            Image(systemName: ManiSymbol.name(style == .badges ? "square.grid.2x2" : "list.bullet"))
         }
         .accessibilityLabel("Selection style: \(style.title)")
     }
 }
 
 /// One dropdown: a labelled row showing the current choice that opens a menu of options.
-private struct CashDropdownRow<Options: View>: View {
-    @Environment(\.maniTheme) private var theme
+struct CashDropdownRow<Options: View>: View {
+    @Environment(\.maniTheme) var theme
     let title: String
     let value: String
     @ViewBuilder let options: () -> Options
@@ -329,9 +329,9 @@ extension CashflowTransaction {
 // MARK: - Cash entry (84)
 
 public struct CashEntryView: View {
-    @Bindable private var viewModel: CashEntryViewModel
+    @Bindable var viewModel: CashEntryViewModel
     private let onDone: () -> Void
-    @AppStorage(CashSelectionStyle.storageKey) private var style: CashSelectionStyle = .badges
+    @AppStorage(CashSelectionStyle.storageKey) var style: CashSelectionStyle = .badges
 
     public init(viewModel: CashEntryViewModel, onDone: @escaping () -> Void) {
         self.viewModel = viewModel
@@ -380,10 +380,10 @@ public struct CashEntryView: View {
 // MARK: - Edit cash entry
 
 public struct CashEntryEditView: View {
-    @Bindable private var viewModel: CashEntryEditViewModel
+    @Bindable var viewModel: CashEntryEditViewModel
     private let onDone: () -> Void
-    @State private var confirmsDelete = false
-    @AppStorage(CashSelectionStyle.storageKey) private var style: CashSelectionStyle = .badges
+    @State var confirmsDelete = false
+    @AppStorage(CashSelectionStyle.storageKey) var style: CashSelectionStyle = .badges
 
     public init(viewModel: CashEntryEditViewModel, onDone: @escaping () -> Void) {
         self.viewModel = viewModel
@@ -449,7 +449,7 @@ public struct CashEntryEditView: View {
 // MARK: - Close day (85)
 
 public struct DayCloseView: View {
-    @Bindable private var viewModel: DayCloseViewModel
+    @Bindable var viewModel: DayCloseViewModel
     private let onDone: () -> Void
 
     public init(viewModel: DayCloseViewModel, onDone: @escaping () -> Void) {
@@ -486,7 +486,7 @@ public struct DayCloseView: View {
 // MARK: - History (86)
 
 public struct CashHistoryView: View {
-    @Bindable private var viewModel: CashHistoryViewModel
+    @Bindable var viewModel: CashHistoryViewModel
     private let canReopen: Bool
     private let onSelect: (Date) -> Void
 
@@ -539,8 +539,8 @@ public struct CashHistoryView: View {
 // MARK: - Expenses (87, 88)
 
 public struct ExpensesView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: ExpensesViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: ExpensesViewModel
     private let onAdd: () -> Void
     private let onSelect: (Expense) -> Void
 
@@ -583,7 +583,7 @@ public struct ExpensesView: View {
 }
 
 public struct ExpenseFormView: View {
-    @Bindable private var viewModel: ExpenseFormViewModel
+    @Bindable var viewModel: ExpenseFormViewModel
     private let onDone: () -> Void
 
     public init(viewModel: ExpenseFormViewModel, onDone: @escaping () -> Void) {
@@ -623,7 +623,7 @@ public struct ExpenseFormView: View {
 // MARK: - Today's summary (89)
 
 public struct DailySummaryView: View {
-    @Bindable private var viewModel: DailySummaryViewModel
+    @Bindable var viewModel: DailySummaryViewModel
 
     public init(viewModel: DailySummaryViewModel) {
         self.viewModel = viewModel

@@ -11,14 +11,14 @@ import ManiSwiftUIComponents
 
 /// Customers with dues filter (design 61).
 public struct CustomerListView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
 
     @Bindable var viewModel: CustomerListViewModel
 
-    @AppStorage("customerList.showFullPhone") private var showFullPhone = true
-    @State private var isShowingFormatSheet = false
-    @State private var selectedFormat: FileFormat?
-    @State private var exportURL: URL?
+    @AppStorage("customerList.showFullPhone") var showFullPhone = true
+    @State var isShowingFormatSheet = false
+    @State var selectedFormat: FileFormat?
+    @State var exportURL: URL?
 
     private let onSelectCustomer: (Customer) -> Void
     private let onAddCustomer: () -> Void

@@ -160,9 +160,17 @@ struct FirebaseRemoteConfigBackend: RemoteConfigBackend {
         #if os(Android)
         // Android's asBoolean()/asDouble() throw for values like "1.0.0" (Skip bridges them with try!),
         // so derive both from the string, falling back the way iOS does (false / 0).
-        let string = value.stringValue
+        var string = value.stringValue
+        var resolvedSource = source
+        var data = value.dataValue
+        // No server value: use the in-app default the way the iOS SDK does.
+        if source == .static, let fallback = AndroidRemoteConfigDefaults.shared.value(forKey: key) {
+            string = fallback
+            resolvedSource = .default
+            data = Data(fallback.utf8)
+        }
         return RemoteConfigValueInfo(bool: Self.androidBool(string), string: string,
-                                     number: Double(string) ?? 0, data: value.dataValue, source: source)
+                                     number: Double(string) ?? 0, data: data, source: resolvedSource)
         #else
         return RemoteConfigValueInfo(bool: value.boolValue, string: value.stringValue,
                                      number: value.numberValue.doubleValue, data: value.dataValue, source: source)
@@ -180,10 +188,41 @@ struct FirebaseRemoteConfigBackend: RemoteConfigBackend {
 
     func setDefaults(_ defaults: [String: NSObject]) {
         #if os(Android)
-        // skip-firebase takes `[String: AnyDynamicObject]`, which can't be built from NSObject here yet.
-        // Android runs without in-app defaults until that conversion exists (see docs/decisions/android-readiness.md).
+        // skip-firebase takes `[String: AnyDynamicObject]`, which can't be built from NSObject here, so the
+        // defaults are kept in memory and applied in `value(forKey:)` (see docs/decisions/android-readiness.md).
+        AndroidRemoteConfigDefaults.shared.set(defaults)
         #else
         RemoteConfig.remoteConfig().setDefaults(defaults)
         #endif
     }
 }
+
+#if os(Android)
+/// In-app Remote Config defaults as strings, process-wide like `RemoteConfig.remoteConfig()`.
+final class AndroidRemoteConfigDefaults: @unchecked Sendable {
+    static let shared = AndroidRemoteConfigDefaults()
+
+    private let lock = NSLock()
+    private var values: [String: String] = [:]
+
+    func set(_ defaults: [String: NSObject]) {
+        var converted: [String: String] = [:]
+        for (key, object) in defaults {
+            if let string = object as? NSString {
+                converted[key] = string as String
+            } else if let number = object as? NSNumber {
+                converted[key] = number.stringValue
+            } else if let data = object as? NSData {
+                converted[key] = String(data: data as Data, encoding: .utf8)
+            }
+        }
+        lock.lock(); defer { lock.unlock() }
+        values.merge(converted) { _, new in new }
+    }
+
+    func value(forKey key: String) -> String? {
+        lock.lock(); defer { lock.unlock() }
+        return values[key]
+    }
+}
+#endif

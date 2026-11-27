@@ -10,7 +10,7 @@ import ManiSwiftUIComponents
 
 public struct EnvironmentSwitchView: View {
     @State var viewModel: DeveloperSettingsViewModel
-    @State private var showConfirm = false
+    @State var showConfirm = false
 
     public init(viewModel: DeveloperSettingsViewModel) {
         self.viewModel = viewModel

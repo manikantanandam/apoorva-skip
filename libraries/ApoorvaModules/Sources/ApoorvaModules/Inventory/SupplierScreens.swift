@@ -12,8 +12,8 @@ import ManiSwiftUIComponents
 // MARK: - Reorder (79)
 
 public struct ReorderView: View {
-    @Environment(\.openURL) private var openURL
-    @Bindable private var viewModel: ReorderViewModel
+    @Environment(\.openURL) var openURL
+    @Bindable var viewModel: ReorderViewModel
     private let onRecordPurchase: (String?, [PurchaseLine]) -> Void
 
     public init(viewModel: ReorderViewModel, onRecordPurchase: @escaping (String?, [PurchaseLine]) -> Void) {
@@ -63,8 +63,8 @@ public struct ReorderView: View {
 // MARK: - Suppliers (80)
 
 public struct SuppliersView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: SuppliersViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: SuppliersViewModel
     private let onAdd: () -> Void
     private let onSelect: (Supplier) -> Void
 
@@ -104,7 +104,7 @@ public struct SuppliersView: View {
 }
 
 public struct SupplierFormView: View {
-    @Bindable private var viewModel: SupplierFormViewModel
+    @Bindable var viewModel: SupplierFormViewModel
     private let onSaved: (Supplier) -> Void
 
     public init(viewModel: SupplierFormViewModel, onSaved: @escaping (Supplier) -> Void) {
@@ -132,11 +132,11 @@ public struct SupplierFormView: View {
 // MARK: - Supplier detail (81)
 
 public struct SupplierDetailView: View {
-    @Environment(\.maniTheme) private var theme
-    @Environment(\.openURL) private var openURL
-    @Bindable private var viewModel: SupplierDetailViewModel
+    @Environment(\.maniTheme) var theme
+    @Environment(\.openURL) var openURL
+    @Bindable var viewModel: SupplierDetailViewModel
     private let onNewPurchase: () -> Void
-    @State private var isPaying = false
+    @State var isPaying = false
 
     public init(viewModel: SupplierDetailViewModel, onNewPurchase: @escaping () -> Void) {
         self.viewModel = viewModel
@@ -211,7 +211,7 @@ public struct SupplierDetailView: View {
 // MARK: - Purchase (82)
 
 public struct PurchaseFormView: View {
-    @Bindable private var viewModel: PurchaseFormViewModel
+    @Bindable var viewModel: PurchaseFormViewModel
     private let onSaved: (Purchase) -> Void
     private let onAddSupplier: () -> Void
 

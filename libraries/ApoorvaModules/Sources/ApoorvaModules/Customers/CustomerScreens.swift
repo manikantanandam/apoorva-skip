@@ -16,9 +16,9 @@ import Contacts
 // MARK: - Detail (62)
 
 public struct CustomerDetailView: View {
-    @Environment(\.maniTheme) private var theme
-    @Environment(\.openURL) private var openURL
-    @Bindable private var viewModel: CustomerDetailViewModel
+    @Environment(\.maniTheme) var theme
+    @Environment(\.openURL) var openURL
+    @Bindable var viewModel: CustomerDetailViewModel
     private let canCollect: Bool
     private let onCollect: () -> Void
     private let onReminder: () -> Void
@@ -103,7 +103,7 @@ public struct CustomerDetailView: View {
 // MARK: - Add / edit (64)
 
 public struct CustomerFormView: View {
-    @Bindable private var viewModel: CustomerFormViewModel
+    @Bindable var viewModel: CustomerFormViewModel
     private let showsCredit: Bool
     private let showsWholesale: Bool
     private let onSaved: (Customer) -> Void
@@ -154,7 +154,7 @@ public struct CustomerFormView: View {
 // MARK: - Collect (66)
 
 public struct CollectDueView: View {
-    @Bindable private var viewModel: CollectDueViewModel
+    @Bindable var viewModel: CollectDueViewModel
     private let onDone: () -> Void
 
     public init(viewModel: CollectDueViewModel, onDone: @escaping () -> Void) {
@@ -190,8 +190,8 @@ public struct CollectDueView: View {
 // MARK: - Reminder (67)
 
 public struct DueReminderView: View {
-    @Environment(\.openURL) private var openURL
-    @Bindable private var viewModel: DueReminderViewModel
+    @Environment(\.openURL) var openURL
+    @Bindable var viewModel: DueReminderViewModel
     private let onSent: () -> Void
 
     public init(viewModel: DueReminderViewModel, onSent: @escaping () -> Void) {
@@ -223,10 +223,10 @@ public struct DueReminderView: View {
 // MARK: - Statement (68)
 
 public struct StatementView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: StatementViewModel
-    @State private var format = Format.pdf
-    @State private var exportURL: URL?
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: StatementViewModel
+    @State var format = Format.pdf
+    @State var exportURL: URL?
 
     enum Format: String, CaseIterable { case pdf = "PDF", image = "Image" }
 
@@ -336,18 +336,19 @@ struct StatementCard: View {
             Divider()
             line("Bills", "+" + Money.format(statement.bills))
             line("Payments", "−" + Money.format(statement.payments))
-            line("Closing balance", Money.format(statement.closing)).bold()
+            line("Closing balance", Money.format(statement.closing), bold: true)
         }
         .padding(20)
         .foregroundStyle(.black)
         .background(Color.white)
     }
 
-    private func line(_ left: String, _ right: String) -> some View {
+    /// `bold` styles the Texts: SkipFuseUI only has `bold()` on `Text`, not on any `View`.
+    private func line(_ left: String, _ right: String, bold: Bool = false) -> some View {
         HStack {
-            Text(left).font(.caption)
+            Text(left).font(bold ? .caption.bold() : .caption)
             Spacer()
-            Text(right).font(.caption.monospacedDigit())
+            Text(right).font(bold ? .caption.monospacedDigit().bold() : .caption.monospacedDigit())
         }
     }
 }
@@ -355,7 +356,7 @@ struct StatementCard: View {
 // MARK: - Import contacts (65)
 
 public struct ImportContactsView: View {
-    @Bindable private var viewModel: ImportContactsViewModel
+    @Bindable var viewModel: ImportContactsViewModel
     private let onDone: (Int) -> Void
 
     public init(viewModel: ImportContactsViewModel, onDone: @escaping (Int) -> Void) {
@@ -433,9 +434,9 @@ public struct DeviceContactsProvider: ContactsProviding {
 // MARK: - Wishes & offers (69)
 
 public struct OffersView: View {
-    @Environment(\.maniTheme) private var theme
-    @Environment(\.openURL) private var openURL
-    @Bindable private var viewModel: OffersViewModel
+    @Environment(\.maniTheme) var theme
+    @Environment(\.openURL) var openURL
+    @Bindable var viewModel: OffersViewModel
 
     public init(viewModel: OffersViewModel) {
         self.viewModel = viewModel

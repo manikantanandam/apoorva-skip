@@ -10,7 +10,7 @@ import ApoorvaUtilities
 import ManiSwiftUIComponents
 
 public struct ProfileView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
 
     @State var viewModel: ProfileViewModel
 

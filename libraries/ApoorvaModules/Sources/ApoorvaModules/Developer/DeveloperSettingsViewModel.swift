@@ -4,6 +4,7 @@
 //
 
 import Foundation
+import SkipFuse
 import Observation
 import ApoorvaModels
 import ApoorvaServices
@@ -61,9 +62,12 @@ public class DeveloperSettingsViewModel {
             if activeEnvironment.allowsDestructiveTools {
                 await clearLocalDatabaseAction()
             }
+            #if !os(Android)
+            // removePersistentDomain is unavailable on Android (see docs/decisions/android-readiness.md).
             if let bundleId = Bundle.main.bundleIdentifier {
                 UserDefaults.standard.removePersistentDomain(forName: bundleId)
             }
+            #endif
             environmentStore.current = pendingEnvironment
             terminateAppAction()
         } catch {

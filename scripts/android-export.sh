@@ -9,6 +9,7 @@
 #   OUT_DIR       export folder (default: $TMPDIR/apoorva-android-export)
 #   ARCH          build one ABI only, e.g. ARCH=aarch64 for arm64 phones (~3x faster; CI uses aarch64).
 #                 Unset builds arm64 + armv7 + x86_64.
+#   CONFIG        release (default, R8-minified like CI) or debug (no R8; faster, for bisecting R8 issues).
 #
 # app/Skip.env keeps SKIP_NO_ANDROID=1 in git; like CI, this drops it for the run and restores it on exit.
 set -euo pipefail
@@ -32,7 +33,7 @@ START=$(date +%s)
 set +e
 ARCH_ARGS=()
 [ -n "${ARCH:-}" ] && ARCH_ARGS=(--arch "$ARCH")
-(cd "$ROOT/app" && skip export -v --android --no-ios --release ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"} -d "$OUT_DIR") > "$LOG" 2>&1
+(cd "$ROOT/app" && skip export -v --android --no-ios "--${CONFIG:-release}" ${ARCH_ARGS[@]+"${ARCH_ARGS[@]}"} -d "$OUT_DIR") > "$LOG" 2>&1
 STATUS=$?
 set -e
 ELAPSED=$(( $(date +%s) - START ))

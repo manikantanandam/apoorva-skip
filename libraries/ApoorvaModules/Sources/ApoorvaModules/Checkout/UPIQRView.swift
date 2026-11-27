@@ -18,8 +18,8 @@ import UIKit
 /// Pay by UPI (design 44): a real `upi://pay` QR for the bill amount. There's no gateway,
 /// so staff confirm by hand once the customer's app shows success.
 public struct UPIQRView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: CheckoutViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: CheckoutViewModel
     private let onChangeMode: () -> Void
     private let onConfirmed: (Sale) -> Void
 
@@ -90,7 +90,7 @@ public enum UPILink {
 
 /// A QR image for any string; falls back to an icon where CoreImage isn't available.
 struct UPIQRCode: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     let link: String
 
     var body: some View {

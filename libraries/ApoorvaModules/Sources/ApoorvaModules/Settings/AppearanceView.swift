@@ -11,7 +11,7 @@ import ApoorvaModels
 /// org locks its theme), larger text, compact lists. Changes apply immediately.
 public struct AppearanceView: View {
     private let session: AppSession
-    @Bindable private var themeStore: ThemeStore
+    @Bindable var themeStore: ThemeStore
 
     public init(session: AppSession, themeStore: ThemeStore) {
         self.session = session

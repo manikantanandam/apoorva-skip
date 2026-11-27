@@ -35,14 +35,14 @@ public struct MoreMenuCounts: Sendable, Equatable {
 /// Design 96: groups as chip rows (Sell · Stock · Money · People), then Settings / Admin / Help.
 /// Items the member can't use are hidden (docs/10: UI hides, view models guard).
 public struct MoreMenuView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     private let session: AppSession
     private let counts: MoreMenuCounts
     private let showsDeveloper: Bool
     private let onSelect: (MoreMenuItem) -> Void
     private let onSearch: () -> Void
     private let invitations: InvitationsViewModel?
-    @State private var showsInvitations = false
+    @State var showsInvitations = false
 
     public init(session: AppSession, counts: MoreMenuCounts, showsDeveloper: Bool, invitations: InvitationsViewModel? = nil,
                 onSelect: @escaping (MoreMenuItem) -> Void, onSearch: @escaping () -> Void) {

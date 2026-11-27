@@ -4,10 +4,10 @@ import ManiSwiftUIComponents
 
 public struct AddUpdateCashflowTransactionView: View {
 
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.maniTheme) var theme
 
-    @State private var viewModel: AddUpdateCashflowTransactionViewModel
+    @State var viewModel: AddUpdateCashflowTransactionViewModel
     
     public init(viewModel: AddUpdateCashflowTransactionViewModel) {
         // This ensures the ViewModel is captured once and never wiped out by parent redraws
@@ -164,7 +164,7 @@ public struct AddUpdateCashflowTransactionView: View {
                     ModernFormCard(title: "Additional Details") {
                         VStack(spacing: 16) {
                             HStack {
-                                Image(systemName: "text.alignleft")
+                                Image(systemName: ManiSymbol.name("text.alignleft"))
                                     .foregroundColor(.secondary)
                                     .frame(width: 24)
                                 TextField("Particulars (e.g. Paint supplies)", text: $viewModel.particulars)
