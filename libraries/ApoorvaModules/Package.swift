@@ -19,8 +19,8 @@ let package = Package(
         .package(path: "../ApoorvaModels"),
         .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
         .package(path: "../ApoorvaEnvironment"),
-        .package(path: "../../../Libraries/ManiLogger"),  // TEMPORARY: restore exact pins after release
-        .package(path: "../../../Libraries/ManiSwiftUIComponents"),
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.2.1"),
+        .package(url: "https://github.com/manikantanandam/ManiSwiftUIComponents.git", exact: "1.3.0"),
         .package(url: "https://github.com/skiptools/skip.git", from: "1.9.13"),
         .package(url: "https://github.com/skiptools/skip-fuse-ui.git", from: "1.0.0")
     ],
