@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import ManiSwiftUIComponents
 
 /// Blocking screen shown when the installed app is older than the `min_app_version` flag.
 public struct ForceUpdateView: View {
@@ -20,7 +21,7 @@ public struct ForceUpdateView: View {
 
     public var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "arrow.down.app")
+            Image(systemName: ManiSymbol.name("arrow.down.app"))
                 .font(.system(size: 56))
                 .foregroundStyle(.secondary)
             Text("Update required")

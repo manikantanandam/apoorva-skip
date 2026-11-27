@@ -5,19 +5,19 @@ import ApoorvaModels
 struct NewBillCoordinatorView: View {
     @Bindable var coordinator: NewBillCoordinator
     let container: AppContainer
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.dismiss) var dismiss
 
     /// Created once per New Bill session (not inline in `body`) so the same cart
     /// survives every push/pop across the flow instead of resetting on redraw.
-    @State private var posViewModel: POSViewModel
+    @State var posViewModel: POSViewModel
     /// Shared across checkout, split and UPI — they act on the same in-progress sale.
-    @State private var checkoutViewModel: CheckoutViewModel?
-    @State private var discountViewModel: BillDiscountViewModel?
-    @State private var isShowingPlanLimit = false
-    @State private var isPlanLimitAcknowledged = false
-    @State private var isConfirmingClose = false
+    @State var checkoutViewModel: CheckoutViewModel?
+    @State var discountViewModel: BillDiscountViewModel?
+    @State var isShowingPlanLimit = false
+    @State var isPlanLimitAcknowledged = false
+    @State var isConfirmingClose = false
     /// Cash handed over for the last sale, for the receipt's "Change returned".
-    @State private var lastCashReceived: Double?
+    @State var lastCashReceived: Double?
 
     init(coordinator: NewBillCoordinator, container: AppContainer) {
         self.coordinator = coordinator
@@ -430,7 +430,7 @@ private extension POSAction {
 }
 
 /// Shown if a route outlives its data (e.g. a line removed while its editor was open).
-private struct ManiMissingView: View {
+struct ManiMissingView: View {
     let title: String
 
     var body: some View {

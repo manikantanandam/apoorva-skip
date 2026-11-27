@@ -16,12 +16,12 @@ struct ExportItem: Identifiable {
 }
 
 public struct CashflowTransactionListView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
 
     @Bindable var viewModel: CashflowTransactionListViewModel
     
     // State for CSV Export
-    @State private var exportItem: ExportItem?
+    @State var exportItem: ExportItem?
     
     // Grid layout for top stats
     private let columns = [
@@ -129,7 +129,7 @@ public struct CashflowTransactionListView: View {
                         await viewModel.update()
                     }
                 }) {
-                    Label("Update", systemImage: "arrow.up")
+                    Label("Update", systemImage: ManiSymbol.name("arrow.up"))
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
@@ -151,7 +151,7 @@ public struct CashflowTransactionListView: View {
                         }
                     }
                 } label: {
-                    Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
+                    Label("Filter", systemImage: ManiSymbol.name("line.3.horizontal.decrease.circle"))
                 }
             }
             
@@ -161,7 +161,7 @@ public struct CashflowTransactionListView: View {
                         await viewModel.forceSync()
                     }
                 }) {
-                    Label("Sync", systemImage: "arrow.clockwise")
+                    Label("Sync", systemImage: ManiSymbol.name("arrow.clockwise"))
                 }
             }
             
@@ -173,7 +173,7 @@ public struct CashflowTransactionListView: View {
                         }
                     }
                 } label: {
-                    Label("Sort", systemImage: "arrow.up.arrow.down")
+                    Label("Sort", systemImage: ManiSymbol.name("arrow.up.arrow.down"))
                 }
             }
         }
@@ -189,7 +189,7 @@ public struct CashflowTransactionListView: View {
 // MARK: - Subviews
 
 struct CashflowCardRowView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
 
     let item: CashflowTransaction
 
@@ -217,7 +217,7 @@ struct CashflowCardRowView: View {
 /// stays a native `Menu`/`Picker` since these are 4 independent filters,
 /// not the single-selection set `ManiChipGroup` is built for.
 struct FilterChip: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     let title: String
 
     var body: some View {

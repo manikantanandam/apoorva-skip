@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SkipFuse
 import Observation
 import ManiSwiftUIComponents
 import ApoorvaModels
@@ -80,7 +81,7 @@ public final class PinSwitchViewModel {
 }
 
 public struct PinSwitchView: View {
-    @Bindable private var viewModel: PinSwitchViewModel
+    @Bindable var viewModel: PinSwitchViewModel
     private let onSwitched: () -> Void
 
     public init(viewModel: PinSwitchViewModel, onSwitched: @escaping () -> Void) {

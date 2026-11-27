@@ -14,13 +14,13 @@ private let logger = AppLogger(category: .ui)
 
 /// Customer for this bill (design 40).
 public struct CustomerPickerView: View {
-    @Bindable private var viewModel: CustomerPickerViewModel
+    @Bindable var viewModel: CustomerPickerViewModel
     private let onSelect: (Customer?) -> Void
 
-    private enum Field { case search, phone, name }
+    enum Field { case search, phone, name }
     // @State, not @FocusState: no `.focused($focus)` is attached here (the Mani fields own the real
     // FocusState and mirror it through a Binding<Bool>), so a FocusState would never invalidate the view.
-    @State private var focus: Field?
+    @State var focus: Field?
 
     private func focusBinding(_ field: Field) -> Binding<Bool> {
         Binding(get: { focus == field }, set: { focus = $0 ? field : (focus == field ? nil : focus) })

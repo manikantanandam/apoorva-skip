@@ -10,8 +10,8 @@ struct HomeCoordinatorView: View {
     let tabs: HomeTabsCoordinator
     @Bindable var coordinator: HomeCoordinator
     let container: AppContainer
-    @State private var viewModel: HomeViewModel
-    @State private var syncText = "Syncing…"
+    @State var viewModel: HomeViewModel
+    @State var syncText = "Syncing…"
 
     init(tabs: HomeTabsCoordinator, coordinator: HomeCoordinator, container: AppContainer) {
         self.tabs = tabs

@@ -6,7 +6,7 @@ struct BillsCoordinatorView: View {
     let tabs: HomeTabsCoordinator
     @Bindable var coordinator: BillsCoordinator
     let container: AppContainer
-    @State private var viewModel: BillsViewModel
+    @State var viewModel: BillsViewModel
 
     init(tabs: HomeTabsCoordinator, coordinator: BillsCoordinator, container: AppContainer) {
         self.tabs = tabs

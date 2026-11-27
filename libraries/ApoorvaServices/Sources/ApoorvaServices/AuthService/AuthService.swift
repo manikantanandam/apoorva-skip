@@ -6,6 +6,7 @@
 import Foundation
 import ApoorvaModels
 import SkipFirebaseAuth
+import ManiLogger
 
 public enum AuthServiceError: Error, LocalizedError, Equatable {
     case notSignedIn
@@ -197,6 +198,9 @@ public final class AuthService: AuthServicing {
     }
 
     static func mapped(_ error: Error, email: String) -> Error {
+        #if os(Android)
+        return androidMapped(error, email: email)
+        #else
         let nsError = error as NSError
         let code = nsError.domain == AuthErrorDomain ? AuthErrorCode(rawValue: nsError.code) : nil
         switch code {
@@ -219,8 +223,34 @@ public final class AuthService: AuthServicing {
         default:
             return error
         }
+        #endif
     }
+
+    #if os(Android)
+    /// Firebase's Java exceptions arrive as `SwiftJNI.ThrowableError` with no `AuthErrorDomain` code, so match
+    /// on the exception class or message in its description instead.
+    private static func androidMapped(_ error: Error, email: String) -> Error {
+        let description = String(describing: error)
+        logger.warning("Auth error: \(description)")
+        let checks: [(needles: [String], mapped: Error)] = [
+            (["UserCollisionException: An account already exists with the same email", "ACCOUNT_EXISTS_WITH_DIFFERENT_CREDENTIAL", "CREDENTIAL_ALREADY_IN_USE"],
+             AuthServiceError.accountExistsWithDifferentCredential(email: email)),
+            (["UserCollisionException", "EMAIL_ALREADY_IN_USE"],
+             AuthServiceError.message("An account with this email already exists. Sign in instead.")),
+            (["WeakPasswordException"], AuthServiceError.message("Use at least 6 characters for your password.")),
+            (["badly formatted", "INVALID_EMAIL"], AuthServiceError.message("Enter a valid email address.")),
+            (["InvalidCredentialsException", "auth credential is incorrect", "WRONG_PASSWORD"],
+             AuthServiceError.message("Email or password is incorrect.")),
+            (["InvalidUserException", "USER_NOT_FOUND"], AuthServiceError.message("No account found for this email.")),
+            (["FirebaseNetworkException"], AuthServiceError.message("No internet connection. Try again when you're online.")),
+            (["TooManyRequestsException"], AuthServiceError.message("Too many attempts. Wait a minute and try again."))
+        ]
+        return checks.first { $0.needles.contains(where: description.contains) }?.mapped ?? error
+    }
+    #endif
 }
+
+private let logger = AppLogger(category: .auth)
 
 // MARK: - Firebase adapter (SDK calls only, no logic)
 

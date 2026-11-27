@@ -41,11 +41,11 @@ public struct WeightEntry: Equatable, Sendable {
 }
 
 public struct WeightSheet: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     private let item: InventoryItem
     private let onAdd: (_ weight: Double, _ pricePerUnit: Double) -> Void
-    @State private var entry: WeightEntry
-    @State private var priceText: String
+    @State var entry: WeightEntry
+    @State var priceText: String
 
     public init(item: InventoryItem, pricePerUnit: Double?, onAdd: @escaping (Double, Double) -> Void) {
         self.item = item
@@ -101,10 +101,10 @@ private extension WeightEntry {
 
 public struct CustomItemSheet: View {
     private let onAdd: (_ name: String, _ amount: Double, _ category: String, _ save: Bool) -> Void
-    @State private var amountText = ""
-    @State private var name = ""
-    @State private var category = "Misc"
-    @State private var saveAsItem = false
+    @State var amountText = ""
+    @State var name = ""
+    @State var category = "Misc"
+    @State var saveAsItem = false
 
     public init(onAdd: @escaping (String, Double, String, Bool) -> Void) {
         self.onAdd = onAdd
@@ -136,14 +136,14 @@ public struct CustomItemSheet: View {
 // MARK: - Variant (32)
 
 public struct VariantSheet: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     private let item: InventoryItem
     private let variants: ItemVariants
     private let price: Double
     private let onAdd: (_ variant: String, _ quantity: Int) -> Void
-    @State private var size: String
-    @State private var colour: String
-    @State private var quantityText = "1"
+    @State var size: String
+    @State var colour: String
+    @State var quantityText = "1"
 
     public init(item: InventoryItem, variants: ItemVariants, price: Double, onAdd: @escaping (String, Int) -> Void) {
         self.item = item
@@ -194,7 +194,7 @@ extension Color {
 // MARK: - Line edit (33)
 
 public struct LineEditView: View {
-    @Bindable private var viewModel: LineEditViewModel
+    @Bindable var viewModel: LineEditViewModel
     private let showsWarranty: Bool
     private let onSave: (CartItem) -> Void
     private let onRemove: () -> Void
@@ -251,7 +251,7 @@ public struct LineEditView: View {
 // MARK: - Bill discount (34)
 
 public struct BillDiscountView: View {
-    @Bindable private var viewModel: BillDiscountViewModel
+    @Bindable var viewModel: BillDiscountViewModel
     private let onApply: (_ amount: Double, _ percent: Double?) -> Void
 
     public init(viewModel: BillDiscountViewModel, onApply: @escaping (Double, Double?) -> Void) {

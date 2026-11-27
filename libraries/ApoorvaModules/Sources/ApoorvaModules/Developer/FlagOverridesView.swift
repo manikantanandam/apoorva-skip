@@ -38,7 +38,7 @@ public struct FlagOverridesView: View {
 
 /// One Remote Config key: its live remote value, an editable override, and an "Overridden" indicator.
 /// The edit control itself varies by `row.kind` — see the per-kind subviews below.
-private struct RemoteConfigKeyRow: View {
+struct RemoteConfigKeyRow: View {
     let row: RemoteConfigRowDisplay
     let viewModel: FlagOverridesViewModel
 
@@ -79,7 +79,7 @@ private struct RemoteConfigKeyRow: View {
     }
 }
 
-private struct BoolOverrideControl: View {
+struct BoolOverrideControl: View {
     let row: RemoteConfigRowDisplay
     let viewModel: FlagOverridesViewModel
 
@@ -91,11 +91,11 @@ private struct BoolOverrideControl: View {
     }
 }
 
-private struct TextOverrideControl: View {
+struct TextOverrideControl: View {
     let row: RemoteConfigRowDisplay
     let viewModel: FlagOverridesViewModel
-    @State private var text: String = ""
-    @State private var invalidEntry = false
+    @State var text: String = ""
+    @State var invalidEntry = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -116,11 +116,11 @@ private struct TextOverrideControl: View {
     }
 }
 
-private struct VersionGateOverrideControl: View {
+struct VersionGateOverrideControl: View {
     let row: RemoteConfigRowDisplay
     let viewModel: FlagOverridesViewModel
-    @State private var enabled = false
-    @State private var minVersion = ""
+    @State var enabled = false
+    @State var minVersion = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {

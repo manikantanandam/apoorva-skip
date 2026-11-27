@@ -8,7 +8,7 @@ import ApoorvaModels
 import ManiSwiftUIComponents
 
 public struct OrganizationListView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     @Bindable var viewModel: OrganizationListViewModel
     private let invitations: InvitationsViewModel?
 

@@ -36,15 +36,15 @@ enum SummarySheetAction: Identifiable {
 }
 
 public struct DailyCashFlowView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
 
     @Bindable var viewModel: DailyCashFlowViewModel
     
     // Summary Sheet State
-    @State private var activeSummarySheet: SummarySheetAction? = nil
+    @State var activeSummarySheet: SummarySheetAction? = nil
     
     // Transaction Sheet State
-    @State private var activeTransactionSheet: TransactionSheetAction? = nil
+    @State var activeTransactionSheet: TransactionSheetAction? = nil
     
     var makeAddUpdateSummaryViewModel: (Date, DailyCashflowSummary?) -> AddUpdateDailyCashflowSummaryViewModel
     
@@ -69,7 +69,7 @@ public struct DailyCashFlowView: View {
             // MARK: - Modern Date Navigator
             HStack {
                 Button(action: { viewModel.prevDate() }) {
-                    Image(systemName: "chevron.left.circle.fill")
+                    Image(systemName: ManiSymbol.name("chevron.left.circle.fill"))
                         .font(.title2)
                         .foregroundStyle(theme.base.textSecondary.opacity(0.5))
                 }
@@ -87,7 +87,7 @@ public struct DailyCashFlowView: View {
                 Spacer()
                 
                 Button(action: { viewModel.nextDate() }) {
-                    Image(systemName: "chevron.right.circle.fill")
+                    Image(systemName: ManiSymbol.name("chevron.right.circle.fill"))
                         .font(.title2)
                         .foregroundStyle(theme.base.textSecondary.opacity(0.5))
                 }
@@ -217,7 +217,7 @@ public struct DailyCashFlowView: View {
                             if summary.locked {
                                 ManiSwiftUIComponents.IconView(.lock, size: 17, color: theme.base.error)
                             } else {
-                                Image(systemName: "lock.open")
+                                Image(systemName: ManiSymbol.name("lock.open"))
                                     .font(.system(size: 17, weight: .semibold))
                                     .foregroundStyle(theme.base.success)
                             }
@@ -226,7 +226,7 @@ public struct DailyCashFlowView: View {
                         Button(action: {
                             activeSummarySheet = .present(viewModel.selectedDate, viewModel.currentSummary)
                         }) {
-                            Image(systemName: viewModel.currentSummary == nil ? "plus.square.dashed" : "pencil.and.list.clipboard")
+                            Image(systemName: ManiSymbol.name(viewModel.currentSummary == nil ? "plus.square.dashed" : "pencil.and.list.clipboard"))
                         }
                     }
                     

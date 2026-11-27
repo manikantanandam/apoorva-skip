@@ -14,9 +14,9 @@ extension EnvironmentValues {
 }
 
 /// Logs a `screen_view` each time the screen appears, including coming back to it, as GA4 expects.
-private struct ScreenTracking: ViewModifier {
+struct ScreenTracking: ViewModifier {
     let name: String
-    @Environment(\.analyticsService) private var analyticsService
+    @Environment(\.analyticsService) var analyticsService
 
     func body(content: Content) -> some View {
         content.onAppear { analyticsService.logScreenView(name) }

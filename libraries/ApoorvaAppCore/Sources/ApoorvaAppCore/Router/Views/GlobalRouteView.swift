@@ -7,7 +7,7 @@ struct GlobalRouteView: View {
     let coordinator: AppCoordinator
 
     private var session: AppSession { coordinator.appContainer.appSession }
-    @State private var showsDeveloper = false
+    @State var showsDeveloper = false
 
     var body: some View {
         NavigationStack {

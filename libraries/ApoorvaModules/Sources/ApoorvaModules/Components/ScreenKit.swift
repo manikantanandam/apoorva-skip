@@ -10,7 +10,7 @@ import ManiSwiftUIComponents
 
 /// Standard scrolling screen: themed background, 16pt padding, optional pinned bottom bar.
 struct ScreenScroll<Content: View, Bottom: View>: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     private let spacing: CGFloat
     private let content: Content
     private let bottom: Bottom
@@ -48,7 +48,7 @@ struct ScreenScroll<Content: View, Bottom: View>: View {
 
 /// Section title with an optional trailing link ("See all", "Statement").
 struct SectionHeader: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     let title: String
     var actionTitle: String?
     var action: (() -> Void)?
@@ -70,7 +70,7 @@ struct SectionHeader: View {
 
 /// Subtitle under a screen title ("212 customers · ₹3,120 due").
 struct ScreenSubtitle: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     let text: String
 
     var body: some View {
@@ -82,7 +82,7 @@ struct ScreenSubtitle: View {
 
 /// Tappable row with icon, title, optional subtitle/value and a chevron — settings and menus.
 struct NavRow: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     let icon: ManiIconName?
     let title: String
     var subtitle: String?

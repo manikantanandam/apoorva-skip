@@ -6,10 +6,10 @@ struct MoreCoordinatorView: View {
     let tabs: HomeTabsCoordinator
     @Bindable var coordinator: MoreCoordinator
     let container: AppContainer
-    @State private var counts = MoreMenuCounts()
-    @State private var memberCount = 0
-    @State private var lastSync: Date?
-    @State private var isSwitchingStaff = false
+    @State var counts = MoreMenuCounts()
+    @State var memberCount = 0
+    @State var lastSync: Date?
+    @State var isSwitchingStaff = false
 
     private var session: AppSession { container.appSession }
 

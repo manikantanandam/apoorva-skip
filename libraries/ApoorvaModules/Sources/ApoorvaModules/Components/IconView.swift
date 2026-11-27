@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ManiSwiftUIComponents
 
 struct IconView: View {
     
@@ -14,7 +15,7 @@ struct IconView: View {
     let color: Color
     
     var body: some View {
-        Image(systemName: icon.rawValue)
+        Image(systemName: ManiSymbol.name(icon.rawValue))
             .font(.system(size: iconSize))
             .foregroundStyle(color)
     }

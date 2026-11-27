@@ -11,7 +11,7 @@ import ManiSwiftUIComponents
 
 /// Held bills: park and resume (design 51).
 public struct HeldBillsView: View {
-    @Bindable private var viewModel: HeldBillsViewModel
+    @Bindable var viewModel: HeldBillsViewModel
     private let onResume: (HeldBill) -> Void
 
     public init(viewModel: HeldBillsViewModel, onResume: @escaping (HeldBill) -> Void) {

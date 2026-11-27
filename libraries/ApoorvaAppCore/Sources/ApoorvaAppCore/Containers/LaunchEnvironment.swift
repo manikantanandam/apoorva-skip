@@ -15,7 +15,8 @@ public enum LaunchEnvironment {
 
     /// Path of the bundled Firebase plist for the current environment.
     /// `nil` means the plist is missing from the bundle.
-    public static func firebasePlistPath(in bundle: Bundle = .main) -> String? {
-        bundle.path(forResource: current.firebasePlistName, ofType: "plist")
+    /// `bundle` is optional rather than defaulting to `.main`: Skip can't bridge `Bundle.main` in a default argument.
+    public static func firebasePlistPath(in bundle: Bundle? = nil) -> String? {
+        (bundle ?? .main).path(forResource: current.firebasePlistName, ofType: "plist")
     }
 }

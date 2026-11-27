@@ -19,8 +19,9 @@ let package = Package(
         .package(path: "../ApoorvaModels"),
         .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
         .package(path: "../ApoorvaEnvironment"),
-        .package(url: "https://github.com/manikantanandam/ManiLogger.git", branch: "feature/android-support"),  // TEMPORARY: restore exact pins after release
-        .package(url: "https://github.com/manikantanandam/ManiSwiftUIComponents.git", branch: "feature/android-support"),
+        .package(path: "../../../Libraries/ManiLogger"),  // TEMPORARY: restore exact pins after release
+        .package(path: "../../../Libraries/ManiSwiftUIComponents"),
+        .package(url: "https://github.com/skiptools/skip.git", from: "1.9.13"),
         .package(url: "https://github.com/skiptools/skip-fuse-ui.git", from: "1.0.0")
     ],
     targets: [
@@ -34,9 +35,13 @@ let package = Package(
                 .product(name: "ApoorvaEnvironment", package: "ApoorvaEnvironment"),
                 .product(name: "ManiLogger", package: "ManiLogger"),
                 .product(name: "ManiSwiftUIComponents", package: "ManiSwiftUIComponents"),
-                // Supplies the `SwiftUI` module on Android (see skip-fuse-ui's `SwiftUI` shim target).
-                .product(name: "SkipFuseUI", package: "skip-fuse-ui", condition: .when(platforms: [.android]))
-            ]
+                // Unconditional (like the app target): skipstone resolves the Kotlin side's dependencies on the
+                // host, so an Android-only condition leaves the generated bridge code without `skip.bridge`.
+                .product(name: "SkipFuseUI", package: "skip-fuse-ui")
+            ],
+            // skipstone generates the SkipUIBridging conformance custom views need to render on Android;
+            // without it they render as EmptyView (see docs/decisions/android-readiness.md).
+            plugins: [.plugin(name: "skipstone", package: "skip")]
         ),
         .testTarget(
             name: "ApoorvaModulesTests",

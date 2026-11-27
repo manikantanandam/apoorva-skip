@@ -1,4 +1,5 @@
 import SwiftUI
+import ManiSwiftUIComponents
 
 /// Generic destination for any screen in the frozen v1 design that hasn't been
 /// built yet. Lets every Route case resolve to a real, navigable destination;
@@ -12,7 +13,7 @@ struct NotBuiltView: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            Image(systemName: "hammer")
+            Image(systemName: ManiSymbol.name("hammer"))
                 .font(.largeTitle)
                 .foregroundStyle(.secondary)
             Text(screen.title)

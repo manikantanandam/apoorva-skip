@@ -8,7 +8,7 @@ import ApoorvaModels
 import ManiSwiftUIComponents
 
 public struct OrganizationDetailsView: View {
-    @Bindable private var viewModel: OrganizationDetailsViewModel
+    @Bindable var viewModel: OrganizationDetailsViewModel
 
     public init(viewModel: OrganizationDetailsViewModel) {
         self.viewModel = viewModel

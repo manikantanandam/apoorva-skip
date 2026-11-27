@@ -14,7 +14,7 @@ import ManiLogger
 private let logger = AppLogger(category: .ui)
 
 public struct DailyCashflowListView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
 
     @Bindable var viewModel: DailyCashFlowListViewModel
 
@@ -87,7 +87,7 @@ public struct DailyCashflowListView: View {
                                 }
                             }
                         } label: {
-                            Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
+                            Label("Filter", systemImage: ManiSymbol.name("line.3.horizontal.decrease.circle"))
                         }
                     }
                     
@@ -99,7 +99,7 @@ public struct DailyCashflowListView: View {
                                 }
                             }
                         } label: {
-                            Label("Sort", systemImage: "arrow.up.arrow.down")
+                            Label("Sort", systemImage: ManiSymbol.name("arrow.up.arrow.down"))
                         }
                     }
                 }

@@ -60,13 +60,13 @@ public struct POSConfig: Sendable {
 
 /// New bill (designs 26 kirana, 29 calculator, 30 fancy, 35 jewellery, 38 parlour, 41 wholesale).
 public struct POSView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: POSViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: POSViewModel
     private let config: POSConfig
     private let onAction: (POSAction) -> Void
 
-    @State private var isShowingDatePicker = false
-    @State private var parlourTab = ParlourTab.services
+    @State var isShowingDatePicker = false
+    @State var parlourTab = ParlourTab.services
 
     enum ParlourTab: String, CaseIterable { case services = "Services", packages = "Packages", products = "Products" }
 

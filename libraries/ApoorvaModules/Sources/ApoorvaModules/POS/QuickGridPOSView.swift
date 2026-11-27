@@ -11,12 +11,12 @@ import ApoorvaModels
 import ManiSwiftUIComponents
 
 public struct QuickGridPOSView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: POSViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: POSViewModel
     private let config: POSConfig
     private let onAction: (POSAction) -> Void
 
-    @State private var isShowingDatePicker = false
+    @State var isShowingDatePicker = false
 
     public init(viewModel: POSViewModel, config: POSConfig, onAction: @escaping (POSAction) -> Void) {
         self.viewModel = viewModel
@@ -210,7 +210,7 @@ public struct QuickGridPOSView: View {
 
 /// Name-only item tile with an accent strip and a quantity badge once it's on the bill.
 struct QuickItemTile: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     let title: String
     let quantity: Int
     let action: () -> Void
@@ -246,7 +246,7 @@ public struct FindItemsSheet: View {
     private let viewModel: POSViewModel
     private let onSelect: (InventoryItem) -> Void
     private let onCustomItem: () -> Void
-    @State private var query = ""
+    @State var query = ""
 
     public init(viewModel: POSViewModel, onSelect: @escaping (InventoryItem) -> Void, onCustomItem: @escaping () -> Void) {
         self.viewModel = viewModel
@@ -278,8 +278,8 @@ public struct FindItemsSheet: View {
 // MARK: - Add / edit line (half sheet)
 
 public struct QuickAddLineSheet: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: QuickAddLineViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: QuickAddLineViewModel
     private let onSave: (CartItem) -> Void
     private let onRemove: () -> Void
 
@@ -371,8 +371,8 @@ public struct QuickAddLineSheet: View {
 
 /// One line of the add-item summary: label, then "qty × price" (left) "=" (centre) amount (right).
 /// The three columns have fixed widths so the "=" lines up across rows; the total keeps the large font.
-private struct QuickSummaryRow: View {
-    @Environment(\.maniTheme) private var theme
+struct QuickSummaryRow: View {
+    @Environment(\.maniTheme) var theme
     let label: String
     let perUnit: String?
     let amount: String
