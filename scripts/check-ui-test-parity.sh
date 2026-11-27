@@ -29,10 +29,10 @@ while IFS= read -r file; do
     scenario="scenarios/$flow/$slug.yaml"
     if [ ! -f "$MAESTRO_DIR/$scenario" ]; then
       missing+=("$class \"$name\" -> $scenario (file missing)")
-    elif ! grep -qF "runFlow: $scenario" "$MAESTRO_DIR/$flow.yaml" 2>/dev/null; then
-      missing+=("$class \"$name\" -> $scenario (not run from $flow.yaml)")
     elif head -1 "$MAESTRO_DIR/$scenario" | grep -q '^# android-skip:'; then
       skipped+=("$class \"$name\": $(head -1 "$MAESTRO_DIR/$scenario" | sed 's/^# android-skip: *//')")
+    elif ! grep -vE '^[[:space:]]*#' "$MAESTRO_DIR/$flow.yaml" 2>/dev/null | grep -qF "runFlow: $scenario"; then
+      missing+=("$class \"$name\" -> $scenario (not run from $flow.yaml)")
     fi
   done < <(grep -oE '(scenario|runActivity\(named:) ?\(?"[^"]+"' "$file" | sed -E 's/.*"([^"]+)"/\1/')
 done < <(find "$IOS_DIR" -name '*UITests.swift' | sort)
