@@ -17,7 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../ApoorvaModels"),
-        .package(path: "../../../Libraries/ManiLogger"),  // TEMPORARY: restore exact pin after release
+        .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.2.1"),
         .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
         .package(url: "https://github.com/skiptools/skip-sql.git", exact: "0.16.1")
     ],
@@ -42,9 +42,8 @@ let package = Package(
                 .product(name: "ApoorvaModels", package: "ApoorvaModels")
             ]
         ),
-        
+
 
     ],
     swiftLanguageModes: [.v6]
 )
-
