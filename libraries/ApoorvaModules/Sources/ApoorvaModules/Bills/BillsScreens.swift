@@ -87,6 +87,10 @@ public struct BillFiltersView: View {
                     ManiChip(range.rawValue, isSelected: draft.range == range) { draft.range = range }
                 }
             }
+            if draft.range == .custom {
+                DatePicker("From", selection: $draft.customStart, in: ...draft.customEnd, displayedComponents: .date)
+                DatePicker("To", selection: $draft.customEnd, in: draft.customStart...Date(), displayedComponents: .date)
+            }
             SectionHeader(title: "Payment")
             FlowLayout {
                 ForEach(PaymentMode.allCases, id: \.self) { mode in
@@ -120,6 +124,7 @@ public struct BillFiltersView: View {
             }
         }
         .navigationTitle("Filters")
+        .task { await viewModel.loadStaffNamesIfNeeded() }
     }
 }
 

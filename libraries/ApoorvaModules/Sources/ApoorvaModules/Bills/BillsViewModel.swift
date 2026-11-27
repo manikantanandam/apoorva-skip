@@ -24,6 +24,7 @@ public enum BillDateRange: String, CaseIterable, Sendable {
     case last7Days = "Last 7 days"
     case thisMonth = "This month"
     case all = "All time"
+    case custom = "Custom"
 }
 
 public enum BillStatusFilter: String, CaseIterable, Sendable {
@@ -36,6 +37,8 @@ public enum BillStatusFilter: String, CaseIterable, Sendable {
 /// Everything the filters sheet (design 57) can set.
 public struct BillFilters: Equatable, Sendable {
     public var range: BillDateRange = .today
+    public var customStart: Date = Calendar.current.startOfDay(for: Date())
+    public var customEnd: Date = Date()
     public var modes: Set<PaymentMode> = []
     public var status: BillStatusFilter = .all
     public var staffIds: Set<String> = []
@@ -79,7 +82,17 @@ public final class BillsViewModel {
 
     public func load() async {
         allSales = (try? await repository.getSales()) ?? []
-        let members = (try? await memberRepository.all()) ?? []
+        // Member names come from a live Firestore read with no offline cache; keep the last good
+        // names on a transient failure instead of blanking every staff chip back to the fallback.
+        if let members = try? await memberRepository.all() {
+            staffNames = Dictionary(uniqueKeysWithValues: members.map { ($0.id, $0.name) })
+        }
+    }
+
+    /// The filters sheet needs staff names but doesn't otherwise trigger a load; retry here if the
+    /// initial fetch hasn't resolved any names yet (e.g. it ran before the network was ready).
+    public func loadStaffNamesIfNeeded() async {
+        guard staffNames.isEmpty, let members = try? await memberRepository.all() else { return }
         staffNames = Dictionary(uniqueKeysWithValues: members.map { ($0.id, $0.name) })
     }
 
@@ -121,12 +134,17 @@ public final class BillsViewModel {
         let now = Date()
         let query = search.trimmingCharacters(in: .whitespaces).lowercased()
         return allSales.filter { sale in
-            let inRange: Bool = switch filters.range {
-            case .today: calendar.isDateInToday(sale.timestamp)
-            case .yesterday: calendar.isDateInYesterday(sale.timestamp)
-            case .last7Days: sale.timestamp >= calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now))!
-            case .thisMonth: calendar.isDate(sale.timestamp, equalTo: now, toGranularity: .month)
-            case .all: true
+            let inRange: Bool
+            switch filters.range {
+            case .today: inRange = calendar.isDateInToday(sale.timestamp)
+            case .yesterday: inRange = calendar.isDateInYesterday(sale.timestamp)
+            case .last7Days: inRange = sale.timestamp >= calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: now))!
+            case .thisMonth: inRange = calendar.isDate(sale.timestamp, equalTo: now, toGranularity: .month)
+            case .all: inRange = true
+            case .custom:
+                let start = calendar.startOfDay(for: filters.customStart)
+                let end = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: filters.customEnd))!
+                inRange = sale.timestamp >= start && sale.timestamp < end
             }
             guard inRange else { return false }
             if !filters.modes.isEmpty && !filters.modes.contains(where: { (sale.payments[$0] ?? 0) > 0 }) { return false }
