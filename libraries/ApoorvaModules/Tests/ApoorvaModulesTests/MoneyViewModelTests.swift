@@ -119,6 +119,7 @@ struct CashDayViewModelTests {
     @Test func aDeletedCashAccountKeepsItsPastTransfers() async {
         var deletedCash = Account(id: "acc-old-cash", name: "Old till", type: .cash, currentBalance: 0)
         deletedCash.isDeleted = true
+        let accounts = [deletedCash] // a `let` copy: Swift 6 rejects capturing the `var` in the @Sendable loader
         let cashflow = FixedCashflowRepository()
         cashflow.items = [CashflowTransaction(timestamp: Date(), particulars: "Deposit", amount: 500, transactionType: .debit,
                                               paymentMode: .cash, category: .internalTransfer, subCategory: .internalTransfer,
@@ -126,7 +127,7 @@ struct CashDayViewModelTests {
                                               timestampInMs: 0, updatedAtInMs: 0)]
         let model = CashDayViewModel(summaries: StubDailyCashflowRepository(), saleRepository: StubSaleRepository(),
                                      cashflowRepository: cashflow, dayCloses: StubOrgRepository<DayClose>(),
-                                     loadAccounts: { [deletedCash] })
+                                     loadAccounts: { accounts })
         await model.load()
         #expect(model.day?.cashOut == 500)
         #expect(model.accounts.isEmpty)            // still hidden from pickers and rows
