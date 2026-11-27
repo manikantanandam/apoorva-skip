@@ -7,5 +7,5 @@ appId: com.apoorva.app
       SEED: kirana
 - extendedWaitUntil:
     visible:
-      id: "pos.tile.Onions (kg)"
+      id: 'pos\.tile\.Onions \(kg\)'
     timeout: 15000
