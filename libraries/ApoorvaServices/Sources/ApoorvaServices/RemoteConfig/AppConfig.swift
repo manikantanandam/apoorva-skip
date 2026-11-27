@@ -25,6 +25,11 @@ public final class AppConfig: Sendable {
         return service.stringValue(forKey: flag.rawValue) ?? flag.defaultStringValue
     }
 
+    public func number(_ flag: FeatureFlag) -> Double {
+        assert(flag.kind == .number)
+        return service.numberValue(forKey: flag.rawValue) ?? flag.defaultNumberValue
+    }
+
     /// Minimum supported app version; below it the app shows the force-update screen.
     public var minAppVersion: String { string(.minAppVersion) }
 

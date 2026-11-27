@@ -27,6 +27,11 @@ public protocol SaleRepositoryProtocol: Sendable {
     /// Saves an edited sale (lines, totals, payments) along with why it was edited.
     func editSale(_ sale: Sale, reason: String) async throws
     func sync(force: Bool) async throws
+    func pendingWriteCount() async -> Int
+}
+
+public extension SaleRepositoryProtocol {
+    func pendingWriteCount() async -> Int { 0 }
 }
 
 
@@ -160,5 +165,10 @@ public final actor SaleRepository: SaleRepositoryProtocol {
         // New sales match on `timestamp`, edits/cancellations on `updatedAt` — track whichever is newest.
         guard let latest = SyncCursor.latest(sales.flatMap { [$0.timestamp, $0.updatedAt] }) else { return }
         try await syncStorage.updateSyncTimestamp(for: Sale.table.name, timestamp: latest.timeIntervalSince1970)
+    }
+
+    public func pendingWriteCount() async -> Int {
+        guard let orgId = try? await userRepository.getCurrentUser().selectedOrganization?.orgId else { return 0 }
+        return (try? await service.pendingWriteCount(for: orgId)) ?? 0
     }
 }

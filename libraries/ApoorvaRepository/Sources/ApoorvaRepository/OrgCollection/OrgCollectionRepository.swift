@@ -51,7 +51,7 @@ public protocol OrgCollectionRepositoryProtocol<Document>: SyncableRepository {
 /// Local-first repository for any `OrgDocument` collection. Writes land in SQLite first (so
 /// the UI updates immediately and works offline), then go to Firestore, whose SDK queues
 /// them until the device is back online.
-public final actor OrgCollectionRepository<Document: OrgDocument>: OrgCollectionRepositoryProtocol {
+public final actor OrgCollectionRepository<Document: OrgDocument>: OrgCollectionRepositoryProtocol, PendingWritesReporting {
 
     private let storage: OrgCollectionLocalStorage<Document>
     private let service: OrgCollectionService<Document>
@@ -123,6 +123,11 @@ public final actor OrgCollectionRepository<Document: OrgDocument>: OrgCollection
             try await syncStorage.updateSyncTimestamp(for: syncKey, timestamp: latest.timeIntervalSince1970)
         }
         if !result.documents.isEmpty { notify() }
+    }
+
+    public func pendingWriteCount() async -> Int {
+        guard let orgId = try? await context.currentOrgId() else { return 0 }
+        return (try? await service.pendingWriteCount(orgId: orgId)) ?? 0
     }
 
     /// Emits whenever the local copy changes (local write or sync), so list screens can reload.

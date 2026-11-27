@@ -321,6 +321,21 @@ struct ContainerWiringTests {
     }
 }
 
+struct AppCoordinatorBackoffTests {
+    @Test func noFailuresUsesBaseInterval() {
+        #expect(AppCoordinator.backoffDelay(base: 30, failures: 0) == 30)
+    }
+
+    @Test func eachFailureDoublesTheWait() {
+        #expect(AppCoordinator.backoffDelay(base: 30, failures: 1) == 60)
+        #expect(AppCoordinator.backoffDelay(base: 30, failures: 2) == 120)
+    }
+
+    @Test func waitNeverExceedsTheCap() {
+        #expect(AppCoordinator.backoffDelay(base: 30, failures: 10, cap: 300) == 300)
+    }
+}
+
 @MainActor
 struct ModulesContainerTests {
     private func sale() -> Sale {

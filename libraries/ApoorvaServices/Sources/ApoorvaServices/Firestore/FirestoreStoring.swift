@@ -23,6 +23,8 @@ public struct StoreDocument: @unchecked Sendable {
 
 public enum StoreCondition: Sendable {
     case greaterThan(field: String, date: Date)
+    /// For fields stored as plain numbers (e.g. epoch seconds). Firestore never matches a number against a Timestamp.
+    case greaterThanNumber(field: String, value: Double)
     case isIn(field: String, values: [String])
     case arrayContains(field: String, value: String)
 }
@@ -50,6 +52,9 @@ public protocol FirestoreStoring: Sendable {
     func updateData(_ fields: [String: Any], path: String) async throws
     /// Live updates for one document; yields nil while it doesn't exist.
     func listen(path: String) -> AsyncStream<StoreDocument?>
+    /// How many documents in this collection are still queued in the offline write cache, right now.
+    /// Point-in-time, not persisted — only meaningful while asked for (e.g. the Sync status screen).
+    func pendingWriteCount(collection path: String) async throws -> Int
 }
 
 public extension FirestoreStoring {
@@ -63,6 +68,9 @@ public extension FirestoreStoring {
             continuation.onTermination = { _ in task.cancel() }
         }
     }
+
+    /// Default for stores without real pending-write tracking (tests, fakes).
+    func pendingWriteCount(collection path: String) async throws -> Int { 0 }
 }
 
 #if os(Android)
@@ -153,11 +161,21 @@ public final class FirebaseFirestoreStore: FirestoreStoring, @unchecked Sendable
         }
     }
 
+    /// Cache-only, not a live listener: a listener that never gets a first server snapshot (e.g.
+    /// offline with nothing cached yet for this path) would otherwise hang indefinitely and, since
+    /// callers walk every collection sequentially, stall everything queued behind it.
+    public func pendingWriteCount(collection path: String) async throws -> Int {
+        let snapshot = try await database().collection(path).getDocuments(source: .cache)
+        return snapshot.documents.filter { $0.metadata.hasPendingWrites }.count
+    }
+
     static func filters(for query: StoreQuery) -> [Filter] {
         query.conditions.map { condition -> Filter in
             switch condition {
             case let .greaterThan(field, date):
                 return Filter.whereField(field, isGreaterThan: Timestamp(date: date))
+            case let .greaterThanNumber(field, value):
+                return Filter.whereField(field, isGreaterThan: value)
             case let .isIn(field, values):
                 return Filter.whereField(field, in: values)
             case let .arrayContains(field, value):

@@ -160,6 +160,13 @@ public extension AnalyticsEvent {
     static func syncFailed(collection: String, reason: String) -> AnalyticsEvent {
         AnalyticsEvent(name: "sync_failed", parameters: ["collection": .string(collection), "reason": .string(reason)])
     }
+
+    /// Fires when a collection's pull hung past its deadline instead of completing or throwing —
+    /// otherwise invisible to `syncCompleted`/`syncFailed` and to Performance Monitoring, since
+    /// neither one ever observes an operation that simply never returns.
+    static func syncTimedOut(collection: String, afterSeconds: Int) -> AnalyticsEvent {
+        AnalyticsEvent(name: "sync_timed_out", parameters: ["collection": .string(collection), "after_seconds": .int(afterSeconds)])
+    }
 }
 
 /// Provider-agnostic event tracking: swap the conformer, not the call sites.

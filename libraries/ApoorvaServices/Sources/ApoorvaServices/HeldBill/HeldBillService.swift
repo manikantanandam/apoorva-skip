@@ -18,6 +18,11 @@ public protocol HeldBillServiceProtocol: Sendable {
     func addHeldBill(_ heldBill: HeldBill, for orgId: String) async throws
     func updateHeldBill(_ heldBill: HeldBill, for orgId: String) async throws
     func deleteHeldBill(id: String, for orgId: String) async throws
+    func pendingWriteCount(for orgId: String) async throws -> Int
+}
+
+public extension HeldBillServiceProtocol {
+    func pendingWriteCount(for orgId: String) async throws -> Int { 0 }
 }
 
 
@@ -53,6 +58,10 @@ public final class HeldBillService: HeldBillServiceProtocol {
             "isDeleted": true,
             "updatedAt": Date()
         ], path: documentPath(id, orgId: orgId))
+    }
+
+    public func pendingWriteCount(for orgId: String) async throws -> Int {
+        try await store.pendingWriteCount(collection: .orgPath(orgId, .heldBills))
     }
 }
 

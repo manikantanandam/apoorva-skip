@@ -150,9 +150,15 @@ final class MockSummaryStorage: DailyCashflowSummaryStorageProtocol, @unchecked 
 
 final class MockSummaryService: DailyCashflowSummaryServiceProtocol, @unchecked Sendable {
     var calls: [String] = []
+    var result: [DailyCashflowSummary] = []
+    var lastSince: Date?
 
-    func getDailyCashflowSummaries(for orgId: String) async throws -> [DailyCashflowSummary] { calls.append("all"); return [] }
-    func getDailyCashflowSummaries(since lastSync: Date, for orgId: String) async throws -> [DailyCashflowSummary] { calls.append("since"); return [] }
+    func getDailyCashflowSummaries(for orgId: String) async throws -> [DailyCashflowSummary] { calls.append("all"); return result }
+    func getDailyCashflowSummaries(since lastSync: Date, for orgId: String) async throws -> [DailyCashflowSummary] {
+        calls.append("since")
+        lastSince = lastSync
+        return result
+    }
     func getDailyCashflowSummary(orgId: String, date: String) async throws -> DailyCashflowSummary { calls.append("fetch:\(date)"); return makeSummary() }
     func addDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws { calls.append("add") }
     func updateDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws { calls.append("updateRemote") }
@@ -182,11 +188,11 @@ struct DailyCashflowSummaryRepositoryTests {
         #expect(storage.calls == ["getAll", "get", "delete"])
     }
 
-    @Test func saveWritesRemoteOnly() async throws {
+    @Test func saveWritesRemoteAndCachesLocally() async throws {
         let (sut, storage, service, _) = try makeSUT(user: try makeUser(orgId: "o"))
         try await sut.saveDailyCashflowSummary(summary: makeSummary())
         #expect(service.calls == ["add"])
-        #expect(storage.calls.isEmpty)
+        #expect(storage.calls == ["saveMany"])
     }
 
     @Test func updateWritesRemoteAndLocal() async throws {
@@ -208,12 +214,24 @@ struct DailyCashflowSummaryRepositoryTests {
 
     @Test func syncFetchesAllThenSinceAndRecordsTimestamp() async throws {
         let (sut, storage, service, sync) = try makeSUT(user: try makeUser(orgId: "o"))
+        service.result = [DailyCashflowSummary(date: Date(timeIntervalSince1970: 0), openingBalances: [], closingBalances: [],
+                                               updatedAt: 7_000, locked: false)]
         try await sut.sync(force: false)
         try await sut.sync(force: false)
         try await sut.sync(force: true)
         #expect(service.calls == ["all", "since", "all"])
         #expect(storage.calls == ["saveMany", "saveMany", "saveMany"])
-        #expect(try await sync.getLastSyncTimestamp(for: DailyCashflowSummary.table.name) != nil)
+        // The cursor is the newest record's own updatedAt, and delta reads start one overlap window before it.
+        #expect(try await sync.getLastSyncTimestamp(for: DailyCashflowSummary.table.name) == 7_000)
+        #expect(service.lastSince == Date(timeIntervalSince1970: 7_000 - 600))
+    }
+
+    @Test func emptySyncLeavesCursorUnset() async throws {
+        let (sut, _, service, sync) = try makeSUT(user: try makeUser(orgId: "o"))
+        try await sut.sync(force: false)
+        try await sut.sync(force: false)
+        #expect(service.calls == ["all", "all"])
+        #expect(try await sync.getLastSyncTimestamp(for: DailyCashflowSummary.table.name) == nil)
     }
 
     @Test func refreshFetchesAndSavesSummary() async throws {

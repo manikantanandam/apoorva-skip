@@ -23,6 +23,7 @@ public protocol CashflowTransactionRepositoryProtocol: Sendable {
     /// `markAsDeleted`, which only touches the local copy.
     func softDeleteCashflowTransaction(_ transaction: CashflowTransaction) async throws
     func sync(force: Bool) async throws
+    func pendingWriteCount() async -> Int
 }
 
 public extension CashflowTransactionRepositoryProtocol {
@@ -32,6 +33,8 @@ public extension CashflowTransactionRepositoryProtocol {
         deleted.isDeleted = true
         try await updateCashflowTransaction(deleted)
     }
+
+    func pendingWriteCount() async -> Int { 0 }
 }
 
 
@@ -102,7 +105,7 @@ public final actor CashflowTransactionRepository: CashflowTransactionRepositoryP
         logger.debug("Last updated date \(lastUpdatedDate)")
         
         if let lastUpdatedDate, !force {
-            transactions = try await service.getCashflowTransactions(since: Date(timeIntervalSince1970: lastUpdatedDate), for: orgId)
+            transactions = try await service.getCashflowTransactions(since: SyncCursor.queryStart(from: lastUpdatedDate), for: orgId)
         } else {
             transactions = try await service.getCashflowTransactions(for: orgId)
         }
@@ -117,6 +120,11 @@ public final actor CashflowTransactionRepository: CashflowTransactionRepositoryP
             for: CashflowTransaction.table.name,
             timestamp: transactionWithMinUpdatedAt.updatedAt.timeIntervalSince1970
         )
+    }
+
+    public func pendingWriteCount() async -> Int {
+        guard let orgId = try? await userRepository.getCurrentUser().selectedOrganization?.orgId else { return 0 }
+        return (try? await service.pendingWriteCount(for: orgId)) ?? 0
     }
 }
 

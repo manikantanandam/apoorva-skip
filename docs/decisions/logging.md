@@ -37,6 +37,14 @@
 - The level filter is back as a segmented control (DEBUG / INFO / WARN / ERROR) and the time range is a chip row (5 min / 15 min / 1 hour / All). Both sit in the pinned header under the search bar, outside the `List`, so the earlier bug where every chip fired on one tap can't happen. The filter-icon dropdown now holds only categories.
 - `scripts/library-registry.json` is bumped to `1.1.0`.
 
+## 2026-11-27 update — local path pins broke CI (PR #110)
+- `feature/sync-screen` shipped six `Package.swift` files with `.package(path: "../../../Libraries/ManiLogger")` (marked TEMPORARY). CI has no sibling `Libraries/` checkout, so every module test failed with `xcodebuild` exit 74 "Could not resolve package dependencies … ManiLogger doesn't exist".
+- The app needs unreleased ManiLogger Android work (skipstone plugin, unconditional SkipFuseUI, optional `AppLogger` subsystem), merged as ManiLogger PR #5 and tagged `v1.2.0`; the registry is bumped and consumers toggled to remote.
+- `v1.2.0` is unusable as a remote pin: its manifest depends on ManiSwiftUIComponents `branch: "feature/android-support"`, and SwiftPM rejects a stable-version package that depends on a branch. `ApoorvaModules` also still uses a local path to ManiSwiftUIComponents. Order that works: release ManiSwiftUIComponents `v1.3.0` (Android work) → ManiLogger `v1.2.1` pinning `from: "1.3.0"` → bump both in the registry and toggle remote.
+- Done: ManiSwiftUIComponents `v1.3.0` (PR #8); ManiLogger PR #6 pins it `from: "1.3.0"` for `v1.2.1`; registry and all consumer manifests moved to `1.3.0` / `1.2.1`. `v1.2.0` is left in place but should not be pinned.
+- Before tagging a library, check its manifest has no `branch:` or `path:` dependencies.
+- Always run `toggle-library.sh status` (full output) before pushing; any `local` row will break CI.
+
 ## Why
 - A bottom-of-graph package lets every module log without a release of the remote utilities library.
 - File sink now = Phase 2 upload only needs a gzip + Storage upload step, no logging changes.

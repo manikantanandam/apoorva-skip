@@ -56,6 +56,9 @@ public struct MainView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, case .ready = coordinator.phase {
                 Task { await coordinator.syncAll() }
+                coordinator.resumePeriodicSync()
+            } else {
+                coordinator.pausePeriodicSync()
             }
         }
         .environment(\.analyticsService, coordinator.appContainer.servicesContainer.analyticsService)

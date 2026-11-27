@@ -31,6 +31,7 @@ public final class AppCoordinator {
     private(set) var syncGeneration = 0
     /// False from sign-in (or an org switch) until the first full sync has finished and the session is reloaded.
     private(set) var isInitialSyncDone = false
+    private var periodicSyncTask: Task<Void, Never>?
 
     public init(appContainer: AppContainer = AppContainer()) {
         self.appContainer = appContainer
@@ -142,7 +143,10 @@ public final class AppCoordinator {
         }
 
         guard changed else { return }
-        if case .ready = newPhase {} else { isInitialSyncDone = false }
+        if case .ready = newPhase {} else {
+            isInitialSyncDone = false
+            stopPeriodicSync()
+        }
         switch newPhase {
         case .loading:
             sessionState = .loading
@@ -161,6 +165,7 @@ public final class AppCoordinator {
         case .ready:
             sessionState = .home(HomeTabsCoordinator(container: appContainer, appCoordinator: self))
             Task { await syncAll() }
+            startPeriodicSync()
         case .forceUpdate, .blocked:
             break
         }
@@ -178,6 +183,45 @@ public final class AppCoordinator {
         await appContainer.modulesContainer.invitationsViewModel.refresh()
         appContainer.themeStore.apply(session: session)
         presentTrialEndingIfNeeded()
+    }
+
+    /// Runs `syncAll` on a timer (`sync.interval_sec`) while the session is `.ready` and the app is
+    /// foregrounded. Backs off (doubling, capped) after a failed pass, and resets on the next clean one.
+    private func startPeriodicSync() {
+        periodicSyncTask?.cancel()
+        periodicSyncTask = Task { [weak self] in
+            var consecutiveFailures = 0
+            while !Task.isCancelled {
+                guard let self else { return }
+                let base = self.appContainer.appConfig.number(.syncIntervalSec)
+                let delay = Self.backoffDelay(base: base, failures: consecutiveFailures)
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                guard !Task.isCancelled else { return }
+                await self.syncAll()
+                let failed = await self.appContainer.repositoryContainer.syncEngine.failedCount
+                consecutiveFailures = failed > 0 ? consecutiveFailures + 1 : 0
+            }
+        }
+    }
+
+    private func stopPeriodicSync() {
+        periodicSyncTask?.cancel()
+        periodicSyncTask = nil
+    }
+
+    /// Pauses the periodic loop while backgrounded and resumes it on foreground, without touching
+    /// the one-shot sync `MainView` already triggers on becoming active.
+    func pausePeriodicSync() { stopPeriodicSync() }
+    func resumePeriodicSync() {
+        guard case .ready = phase, periodicSyncTask == nil else { return }
+        startPeriodicSync()
+    }
+
+    /// `failures == 0` runs at the base interval; each consecutive failure doubles the wait, up to `cap`.
+    /// `nonisolated`: pure computation, no actor state — callable from tests without `@MainActor`.
+    nonisolated static func backoffDelay(base: Double, failures: Int, cap: Double = 300) -> Double {
+        guard failures > 0 else { return base }
+        return min(base * pow(2, Double(failures)), cap)
     }
 
     /// Design 48, once a day in the last 3 days of the trial (owner only).

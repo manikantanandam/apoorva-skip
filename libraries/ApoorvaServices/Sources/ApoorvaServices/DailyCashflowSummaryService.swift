@@ -17,6 +17,11 @@ public protocol DailyCashflowSummaryServiceProtocol: Sendable {
     func getDailyCashflowSummary(orgId: String, date: String) async throws -> DailyCashflowSummary
     func addDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws
     func updateDailyCashflowSummary(_ summary: DailyCashflowSummary, for orgId: String) async throws
+    func pendingWriteCount(for orgId: String) async throws -> Int
+}
+
+public extension DailyCashflowSummaryServiceProtocol {
+    func pendingWriteCount(for orgId: String) async throws -> Int { 0 }
 }
 
 
@@ -74,6 +79,10 @@ public final class DailyCashflowSummaryService: DailyCashflowSummaryServiceProto
         // The model has no `updatedAt` injection, so the data is written as is.
         try store.set(summary, path: documentPath(summary.id, orgId: orgId), merge: true)
     }
+
+    public func pendingWriteCount(for orgId: String) async throws -> Int {
+        try await store.pendingWriteCount(collection: collectionPath(orgId: orgId))
+    }
 }
 
 
@@ -89,7 +98,8 @@ private extension DailyCashflowSummaryService {
     func dailyCashflowTransactions(since lastSync: Date? = nil, for orgId: String) async throws -> [DailyCashflowSummary] {
         var query = StoreQuery.all
         if let lastSync = lastSync {
-            query = StoreQuery(conditions: [.greaterThan(field: "updatedAt", date: lastSync)])
+            // `updatedAt` is stored as epoch seconds (a number), so a Timestamp filter would never match.
+            query = StoreQuery(conditions: [.greaterThanNumber(field: "updatedAt", value: lastSync.timeIntervalSince1970)])
         }
         logger.debug("Fetching Daily Cashflow Summaries for Org: \(orgId)")
         let summaries = try await store.fetch(DailyCashflowSummary.self, collection: collectionPath(orgId: orgId), query: query)

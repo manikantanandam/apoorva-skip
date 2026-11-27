@@ -51,6 +51,10 @@ final class MockFirestoreStore: FirestoreStoring, @unchecked Sendable {
             case let .greaterThan(field, date):
                 guard let value = dateValue(of: data[field]) else { return false }
                 return value > date
+            case let .greaterThanNumber(field, number):
+                // Like Firestore: a number field never matches a Timestamp filter, and vice versa.
+                guard let value = (data[field] as? NSNumber)?.doubleValue else { return false }
+                return value > number
             case let .isIn(field, values):
                 guard let value = data[field] as? String else { return false }
                 return values.contains(value)
@@ -250,6 +254,16 @@ struct DailyCashflowSummaryServiceTests {
         let service = DailyCashflowSummaryService(store: store)
         #expect(try await service.getDailyCashflowSummaries(for: "o").count == 1)
         _ = try await service.getDailyCashflowSummaries(since: epoch(0), for: "o")
+    }
+
+    @Test func deltaMatchesNumericUpdatedAt() async throws {
+        let store = MockFirestoreStore()
+        let old = DailyCashflowSummary(date: epoch(86_400), openingBalances: [], closingBalances: [], updatedAt: 10, locked: false)
+        let new = DailyCashflowSummary(date: epoch(86_400 * 2), openingBalances: [], closingBalances: [], updatedAt: 500, locked: false)
+        try store.put(old, at: "organizations/o/dailyCashflowSummaries/\(old.id)")
+        try store.put(new, at: "organizations/o/dailyCashflowSummaries/\(new.id)")
+        let ids = try await DailyCashflowSummaryService(store: store).getDailyCashflowSummaries(since: epoch(100), for: "o").map(\.id)
+        #expect(ids == [new.id])
     }
 
     @Test func addSkipsExistingAndUpdateMerges() async throws {

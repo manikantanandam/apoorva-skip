@@ -15,10 +15,12 @@ public protocol InventoryItemServiceProtocol: Sendable {
     func getInventoryItems(since lastSync: Date, for orgId: String) async throws -> [InventoryItem]
     /// Creates or updates an item (merge, explicit fields; never removes legacy fields).
     func upsertInventoryItem(_ item: InventoryItem, for orgId: String) throws
+    func pendingWriteCount(for orgId: String) async throws -> Int
 }
 
 public extension InventoryItemServiceProtocol {
     func upsertInventoryItem(_ item: InventoryItem, for orgId: String) throws {}
+    func pendingWriteCount(for orgId: String) async throws -> Int { 0 }
 }
 
 
@@ -62,6 +64,10 @@ public final class InventoryItemService: InventoryItemServiceProtocol {
         if let variantsJSON = item.variantsJSON { data["variantsJSON"] = variantsJSON }
         if let warrantyMonths = item.warrantyMonths { data["warrantyMonths"] = warrantyMonths }
         try store.setData(data, path: "\(String.orgPath(orgId, .inventory))/\(item.id)", merge: true)
+    }
+
+    public func pendingWriteCount(for orgId: String) async throws -> Int {
+        try await store.pendingWriteCount(collection: .orgPath(orgId, .inventory))
     }
 }
 

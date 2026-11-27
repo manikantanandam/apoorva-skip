@@ -36,12 +36,14 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
     case authEmailVerificationRequired = "auth.email_verification_required"
     case authRegistrationsOpen = "auth.registrations_open"
     case minAppVersion = "min_app_version"
+    case syncIntervalSec = "sync.interval_sec"
 
     /// The shape of this flag's value. Non-bool flags are always app-level only (see `isAppOnly`)
     /// since `FlagResolver`'s org/store/role layering is bool-only.
     public var kind: RemoteConfigValueKind {
         switch self {
         case .minAppVersion: return .string
+        case .syncIntervalSec: return .number
         default: return .bool
         }
     }
@@ -67,8 +69,13 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
         }
     }
 
-    /// Only meaningful when `kind == .number`. No number-kind flag exists yet.
-    public var defaultNumberValue: Double { 0 }
+    /// Only meaningful when `kind == .number`.
+    public var defaultNumberValue: Double {
+        switch self {
+        case .syncIntervalSec: return 30
+        default: return 0
+        }
+    }
 
     /// Only meaningful when `kind == .versionGate`. No version-gated flag exists yet.
     public var defaultVersionGateValue: VersionGateValue { VersionGateValue(enabled: false) }

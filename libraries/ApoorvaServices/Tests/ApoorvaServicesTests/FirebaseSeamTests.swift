@@ -358,10 +358,11 @@ struct FirebaseFirestoreStoreHelperTests {
     @Test func buildsOneFilterPerCondition() {
         let query = StoreQuery(conditions: [
             .greaterThan(field: "a", date: epoch(1)),
+            .greaterThanNumber(field: "n", value: 1),
             .isIn(field: "b", values: ["x"]),
             .arrayContains(field: "c", value: "y")
         ])
-        #expect(FirebaseFirestoreStore.filters(for: query).count == 3)
+        #expect(FirebaseFirestoreStore.filters(for: query).count == 4)
         #expect(FirebaseFirestoreStore.filters(for: .all).isEmpty)
     }
 

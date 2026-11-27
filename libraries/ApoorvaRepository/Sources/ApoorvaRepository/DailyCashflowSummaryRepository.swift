@@ -21,6 +21,11 @@ public protocol DailyCashflowSummaryRepositoryProtocol: Sendable {
     func deleteDailyCashflowSummary(id: String) async throws
     func sync(force: Bool) async throws
     func refresh(for date: String) async throws
+    func pendingWriteCount() async -> Int
+}
+
+public extension DailyCashflowSummaryRepositoryProtocol {
+    func pendingWriteCount() async -> Int { 0 }
 }
 
 public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositoryProtocol {
@@ -55,7 +60,8 @@ public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
         let user = try await userRepository.getCurrentUser()
         guard let orgId = user.selectedOrganization?.orgId else { return }
         try await service.addDailyCashflowSummary(summary, for: orgId)
-        // Note: Skipping local storage save here to let the sync mechanism handle it, matching the pattern in CashflowTransactionRepository.
+        // Cache it now so the day shows straight away, offline too; the next sync upserts the server copy over it.
+        try await storage.saveDailyCashflowSummaries(summaries: [summary])
     }
     
     public func updateDailyCashflowSummary(summary: DailyCashflowSummary) async throws {
@@ -80,17 +86,17 @@ public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
         let lastUpdatedDate = try? await syncStorage.getLastSyncTimestamp(for: DailyCashflowSummary.table.name)
         
         if let lastUpdatedDate, !force {
-            summaries = try await service.getDailyCashflowSummaries(since: lastUpdatedDate.date, for: orgId)
+            summaries = try await service.getDailyCashflowSummaries(since: SyncCursor.queryStart(from: lastUpdatedDate), for: orgId)
         } else {
             summaries = try await service.getDailyCashflowSummaries(for: orgId)
         }
-        
+
         try await storage.saveDailyCashflowSummaries(summaries: summaries)
 
-        try await syncStorage.updateSyncTimestamp(
-            for: DailyCashflowSummary.table.name,
-            timestamp: Date.now.timeIntervalSince1970
-        )
+        // Advance by the newest record's own `updatedAt`, not this device's clock: another device's
+        // write stamped slightly earlier than our "now" would otherwise never be fetched.
+        guard let latest = summaries.map(\.updatedAt).max() else { return }
+        try await syncStorage.updateSyncTimestamp(for: DailyCashflowSummary.table.name, timestamp: latest)
     }
     
     public func refresh(for date: String) async throws {
@@ -102,6 +108,11 @@ public final actor DailyCashflowSummaryRepository: DailyCashflowSummaryRepositor
         let summary = try await service.getDailyCashflowSummary(orgId: orgId, date: date)
         try await storage.saveDailyCashflowSummary(summary: summary)
         logger.info("Refreshed daily summary for date \(date)")
+    }
+
+    public func pendingWriteCount() async -> Int {
+        guard let orgId = try? await getOrganizationId() else { return 0 }
+        return (try? await service.pendingWriteCount(for: orgId)) ?? 0
     }
 }
 
