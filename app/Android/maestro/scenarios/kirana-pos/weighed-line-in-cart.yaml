@@ -1,0 +1,22 @@
+# iOS: KiranaPOSUITests "Weighed line in cart"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/kirana-new-bill.yaml
+- runFlow:
+    file: ../../common/add-onions.yaml
+    env: { PRESET: "1 kg" }
+- assertVisible: "Current cart"
+- assertNotVisible: "Your cart is empty"
+- assertVisible:
+    id: "pos.checkout"
+    enabled: true
+- assertVisible: # exactly one cart line
+    id: "pos.cartLine..*"
+- assertNotVisible:
+    id: "pos.cartLine..*"
+    index: 1
+- assertVisible: ".*/kg.*" # cart line shows the per-kg price
+- tapOn:
+    id: "pos.tile.Onions (kg)"
+- assertVisible: # loose items always ask for a weight
+    id: "weightSheet.add"

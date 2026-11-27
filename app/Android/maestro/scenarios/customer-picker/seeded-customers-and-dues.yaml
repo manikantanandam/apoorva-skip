@@ -1,0 +1,9 @@
+# iOS: CustomerPickerUITests "Seeded customers and dues"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customer-picker.yaml
+- assertVisible: ".*, Ravi Kumar, .*"
+- assertVisible: ".*, Meena S, .*dues.*" # Meena has a due balance
+- assertVisible: # Add & attach is disabled until the form is filled
+    id: "customerPicker.addAndAttach"
+    enabled: false

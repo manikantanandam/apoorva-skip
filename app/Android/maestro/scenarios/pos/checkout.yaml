@@ -1,0 +1,35 @@
+# iOS: POSUITests "Checkout"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/start-bill.yaml
+- runFlow: ../../common/open-checkout.yaml
+- assertVisible: "Walk-in customer"
+- assertVisible: "Payment"
+- assertVisible:
+    id: "checkout.mode.cash"
+- assertVisible:
+    id: "checkout.mode.upi"
+- assertVisible:
+    id: "checkout.mode.card"
+- assertVisible:
+    id: "checkout.collect"
+    enabled: true
+- back
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- assertVisible: "Glass Bangles, 1 on bill" # back from checkout keeps the cart
+
+- runFlow: ../../common/new-bill.yaml
+- runFlow:
+    file: ../../common/attach-customer.yaml
+    env: { NAME: "Ravi Kumar" }
+- runFlow:
+    file: ../../common/add-item.yaml
+    env: { ITEM: "Glass Bangles" }
+- runFlow: ../../common/open-checkout.yaml
+- assertVisible:
+    id: "checkout.customerRow"
+    text: ".*Ravi Kumar.*"
+- assertNotVisible: "Walk-in customer"

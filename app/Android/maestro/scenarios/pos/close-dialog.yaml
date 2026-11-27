@@ -1,0 +1,81 @@
+# iOS: POSUITests "Close dialog"
+# The POS screen's own Close is the first "Close" on screen (cart lines have tiny remove buttons with the same
+# label). "Keep billing" is dismissing the dialog, which is the system back on Android.
+appId: com.apoorva.app
+---
+- runFlow: ../../common/new-bill.yaml
+- tapOn:
+    text: "Close"
+    index: 0
+- extendedWaitUntil: # closing an empty cart leaves immediately
+    visible: "New bill"
+    timeout: 10000
+- tapOn:
+    text: "New bill"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- copyTextFrom:
+    id: "pos.heldBills"
+- evalScript: ${output.heldBefore = parseInt((maestro.copiedText.match(/\d+/) || ['0'])[0])}
+
+- runFlow:
+    file: ../../common/add-item.yaml
+    env: { ITEM: "Glass Bangles" }
+- tapOn:
+    text: "Close"
+    index: 0
+- assertVisible: "Discard bill" # unsaved-bill dialog
+- assertVisible: "Hold bill"
+- back # keep billing
+- extendedWaitUntil:
+    notVisible: "Discard bill"
+    timeout: 5000
+- assertVisible: "Glass Bangles, 1 on bill" # keep billing leaves the cart intact
+
+- tapOn:
+    text: "Close"
+    index: 0
+- tapOn: "Discard bill"
+- extendedWaitUntil:
+    visible: "New bill"
+    timeout: 10000
+- tapOn:
+    text: "New bill"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- assertVisible: "Your cart is empty" # discarded cart must not come back
+- copyTextFrom:
+    id: "pos.heldBills"
+- assertTrue: # discard must not park the bill
+    condition: ${parseInt((maestro.copiedText.match(/\d+/) || ['0'])[0]) == output.heldBefore}
+    label: "held count unchanged after discard"
+
+- runFlow:
+    file: ../../common/add-item.yaml
+    env: { ITEM: "Glass Bangles" }
+- tapOn:
+    text: "Close"
+    index: 0
+- tapOn: "Hold bill"
+- extendedWaitUntil:
+    visible: "New bill"
+    timeout: 10000
+- tapOn:
+    text: "New bill"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- assertVisible: "Your cart is empty"
+- copyTextFrom:
+    id: "pos.heldBills"
+- assertTrue:
+    condition: ${parseInt((maestro.copiedText.match(/\d+/) || ['0'])[0]) == output.heldBefore + 1}
+    label: "held count +1 after hold"

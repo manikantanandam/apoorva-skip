@@ -1,0 +1,23 @@
+# iOS: CustomerListUITests "Search"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customers-list.yaml
+- tapOn: "Name or phone"
+- inputText: "Meena"
+- assertVisible: "Meena S, .*"
+- assertNotVisible: "Ravi Kumar, .*"
+
+- eraseText: 5
+- assertVisible: "Ravi Kumar, .*" # clearing search restores the list
+
+- inputText: "9988776655"
+- assertVisible: "Sneha P, .*"
+- assertNotVisible: "Meena S, .*"
+
+- eraseText: 10
+- inputText: "Zzzz"
+- assertVisible: "No match"
+- assertNotVisible: "Ravi Kumar, .*"
+
+- eraseText: 4
+- assertVisible: "Ravi Kumar, .*"

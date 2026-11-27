@@ -1,0 +1,8 @@
+# Twin of POSUITests.startBill: fresh empty bill, then one Glass Bangles (Rs 120).
+appId: com.apoorva.app
+---
+- runFlow: new-bill.yaml
+- runFlow:
+    file: add-item.yaml
+    env:
+      ITEM: "Glass Bangles"

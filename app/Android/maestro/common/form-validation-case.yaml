@@ -1,0 +1,23 @@
+# One CustomerPickerUITests.formValidation case: fresh picker, fill PHONE/NAME, Add & attach enabled == ENABLED.
+appId: com.apoorva.app
+---
+- runFlow: customer-picker.yaml
+- runFlow:
+    file: fill-customer-form.yaml
+    env:
+      PHONE: ${PHONE}
+      NAME: ${NAME}
+- runFlow:
+    when:
+      true: ${ENABLED == 'true'}
+    commands:
+      - assertVisible:
+          id: "customerPicker.addAndAttach"
+          enabled: true
+- runFlow:
+    when:
+      true: ${ENABLED != 'true'}
+    commands:
+      - assertVisible:
+          id: "customerPicker.addAndAttach"
+          enabled: false

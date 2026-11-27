@@ -1,0 +1,15 @@
+# Twin of LoginScreen.signIn. Debug builds prefill the form, so clear each field before typing.
+# Needs EMAIL and PASSWORD.
+appId: com.apoorva.app
+---
+- tapOn:
+    id: "emailSignIn.email"
+- eraseText: 60
+- inputText: ${EMAIL}
+- tapOn:
+    id: "emailSignIn.password"
+- eraseText: 60
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "emailSignIn.signInButton"

@@ -1,0 +1,9 @@
+# iOS: CustomerListUITests "More menu"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customers-list.yaml
+- tapOn:
+    id: "customers.moreMenu"
+- assertVisible: "Export"
+- assertVisible: "Sync now"
+- assertVisible: "Show last 4 digits"

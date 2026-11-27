@@ -1,0 +1,15 @@
+# Twin of POSScreen.addItem: tap a quick tile, confirm the add-line sheet with its defaults. Needs ITEM.
+appId: com.apoorva.app
+---
+- tapOn:
+    id: "pos.tile.${ITEM}"
+- extendedWaitUntil:
+    visible:
+      id: "quickAddLine.save"
+    timeout: 5000
+- tapOn:
+    id: "quickAddLine.save"
+- extendedWaitUntil:
+    notVisible:
+      id: "quickAddLine.save"
+    timeout: 5000

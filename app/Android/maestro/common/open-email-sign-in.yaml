@@ -1,0 +1,28 @@
+# Twin of LoginScreen.openEmailSignIn: fresh unseeded launch, Splash -> sign-in hub -> email sign-in form.
+appId: com.apoorva.app
+---
+- runFlow:
+    file: launch.yaml
+    env:
+      SEED: ""
+- retry: # a system "isn't responding" dialog can cover the splash
+    maxRetries: 2
+    commands:
+      - runFlow: dismiss-system-dialogs.yaml
+      - extendedWaitUntil:
+          visible:
+            id: "splash.getStarted"
+          timeout: 20000
+- tapOn:
+    id: "splash.getStarted"
+- runFlow:
+    when:
+      visible:
+        id: "signInHub.emailButton"
+    commands:
+      - tapOn:
+          id: "signInHub.emailButton"
+- extendedWaitUntil:
+    visible:
+      id: "emailSignIn.email"
+    timeout: 10000

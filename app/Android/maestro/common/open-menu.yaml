@@ -1,0 +1,15 @@
+# Twin of POSScreen.openMenu: POS More menu entry. Needs ENTRY.
+# A tap right after a sheet closes can be swallowed, so retry once.
+appId: com.apoorva.app
+---
+- retry:
+    maxRetries: 1
+    commands:
+      - tapOn:
+          id: "pos.moreMenu"
+      - extendedWaitUntil:
+          visible:
+            text: ${ENTRY}
+          timeout: 3000
+- tapOn:
+    text: ${ENTRY}

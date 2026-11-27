@@ -1,0 +1,11 @@
+# A slow CI emulator can show "<app> isn't responding" (e.g. Pixel Launcher) over the app; it hides every element.
+# Tap Wait while it is up. CI also sets `hide_error_dialogs`, so this is the fallback.
+appId: com.apoorva.app
+---
+- repeat:
+    times: 3
+    while:
+      visible: ".*isn't responding"
+    commands:
+      - tapOn:
+          id: "android:id/aerr_wait"

@@ -1,0 +1,47 @@
+# iOS: POSUITests "Checkout totals"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/start-bill.yaml
+- runFlow: ../../common/open-checkout.yaml
+- copyTextFrom:
+    id: "checkout.collect"
+- evalScript: ${output.single = maestro.copiedText}
+- back
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- runFlow:
+    file: ../../common/add-item.yaml
+    env: { ITEM: "Hair Clips Set" }
+- runFlow: ../../common/open-checkout.yaml
+- copyTextFrom:
+    id: "checkout.collect"
+- assertTrue:
+    condition: ${maestro.copiedText != output.single}
+    label: "two items increase the collect amount"
+
+- runFlow: ../../common/start-bill.yaml
+- runFlow: ../../common/open-checkout.yaml
+- copyTextFrom:
+    id: "checkout.collect"
+- evalScript: ${output.before = maestro.copiedText}
+- back
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- runFlow:
+    file: ../../common/open-menu.yaml
+    env: { ENTRY: "Bill discount" }
+- tapOn:
+    id: "billDiscount.preset.10"
+- tapOn:
+    id: "billDiscount.apply"
+- runFlow: ../../common/open-checkout.yaml
+- copyTextFrom:
+    id: "checkout.collect"
+- assertTrue:
+    condition: ${maestro.copiedText != output.before}
+    label: "collect amount drops after a 10% discount"
+- assertVisible: "Discount" # discount row in the summary

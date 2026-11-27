@@ -1,0 +1,9 @@
+# iOS: KiranaPOSUITests "Weighed item sale"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/kirana-new-bill.yaml
+- runFlow:
+    file: ../../common/add-onions.yaml
+    env: { PRESET: "2 kg" }
+- runFlow: ../../common/open-checkout.yaml
+- runFlow: ../../common/complete-cash-sale.yaml

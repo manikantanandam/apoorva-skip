@@ -1,0 +1,18 @@
+# Fresh seeded launch on an empty walk-in bill (twin of POSUITests.resetToEmptyBill). SEED defaults to fancy.
+appId: com.apoorva.app
+env:
+  SEED: fancy
+---
+- runFlow:
+    file: seeded-home.yaml
+    env:
+      SEED: ${SEED}
+- tapOn:
+    text: "New bill"
+    index: 0 # Home has a quick action and a FAB with this label
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- assertVisible: "Walk-in customer"
+- assertVisible: "Your cart is empty"

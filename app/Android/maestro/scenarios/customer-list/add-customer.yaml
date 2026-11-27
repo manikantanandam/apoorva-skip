@@ -1,0 +1,25 @@
+# iOS: CustomerListUITests "Add customer"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customers-list.yaml
+- tapOn: "Add customer"
+- tapOn: "Anitha Rao"
+- inputText: "Zoya Test"
+- tapOn: "+91 97010 55443"
+- inputText: "9811122233"
+- hideKeyboard
+- assertVisible:
+    text: "Save customer"
+    enabled: true
+- tapOn: "Save customer"
+# Saving a new customer opens their detail screen; go back to the list. Wait for the "New customer"
+# form title to clear rather than for "Zoya Test" (that name is already in the form field pre-save).
+- extendedWaitUntil:
+    notVisible: "New customer"
+    timeout: 10000
+- back
+- assertVisible: "Name or phone"
+- extendedWaitUntil:
+    visible: "Zoya Test, .*"
+    timeout: 10000
+- assertVisible: ".*6 customers.*"

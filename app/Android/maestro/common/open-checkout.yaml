@@ -1,0 +1,13 @@
+# Twin of POSScreen.openCheckout.
+appId: com.apoorva.app
+---
+- assertVisible:
+    id: "pos.checkout"
+    enabled: true
+- tapOn:
+    id: "pos.checkout"
+- extendedWaitUntil:
+    visible:
+      id: "checkout.collect"
+    timeout: 5000
+- assertVisible: "Checkout"

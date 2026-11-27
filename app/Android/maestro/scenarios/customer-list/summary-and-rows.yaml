@@ -1,0 +1,15 @@
+# iOS: CustomerListUITests "Summary and rows"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customers-list.yaml
+- assertVisible: ".*5 customers.*"
+- assertVisible: ".*₹1,120 due.*"
+- assertVisible: "Ravi Kumar, .*"
+- assertVisible: "Meena S, .*"
+- assertVisible: "Sneha P, .*"
+- assertVisible: "Anil Regular, .*"
+- assertVisible: "Kavya New, .*"
+- assertVisible: ".*9848012345.*4 visits.*" # phone and visit count
+- assertVisible: "Meena S, .*₹1,120 due.*" # due badge
+- assertVisible: "Anil Regular, .*Regular.*" # regular badge
+- assertVisible: "Kavya New, .*no visits yet.*"

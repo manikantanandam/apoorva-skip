@@ -1,0 +1,15 @@
+# Twin of KiranaPOSUITests.addTea: variant sheet with its defaults, add.
+appId: com.apoorva.app
+---
+- tapOn:
+    id: "pos.tile.Tea Powder 250g"
+- extendedWaitUntil:
+    visible:
+      id: "variantSheet.add"
+    timeout: 5000
+- tapOn:
+    id: "variantSheet.add"
+- extendedWaitUntil:
+    notVisible:
+      id: "variantSheet.add"
+    timeout: 5000

@@ -1,0 +1,15 @@
+# iOS: KiranaPOSUITests "Clear bill"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/kirana-new-bill.yaml
+- runFlow:
+    file: ../../common/add-onions.yaml
+    env: { PRESET: "1 kg" }
+- runFlow: ../../common/add-tea.yaml
+- runFlow:
+    file: ../../common/open-menu.yaml
+    env: { ENTRY: "Clear bill" }
+- assertVisible: "Your cart is empty"
+- assertVisible:
+    id: "pos.checkout"
+    enabled: false

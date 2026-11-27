@@ -1,0 +1,15 @@
+# Maestro workspace for the Android UI tests (twin of the iOS ApoorvaUITests suite in app/Darwin/UITests).
+# - One top-level flow per iOS test class; one file under scenarios/<flow>/ per iOS scenario.
+# - Every scenario starts from a fresh launch (clearState + reseed), replacing the iOS in-app reset helpers.
+# - scripts/check-ui-test-parity.sh fails when an iOS scenario has no Android twin.
+# Run with scripts/android-ui-test.sh [flow].
+flows:
+  - "*.yaml"
+executionOrder:
+  continueOnFailure: true
+  flowsOrder:
+    - login
+    - customer-list
+    - customer-picker
+    - pos
+    - kirana-pos

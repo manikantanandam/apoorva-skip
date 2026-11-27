@@ -51,7 +51,7 @@ scripts/toggle-library.sh {local|remote|status} [LibraryName]         # switch M
 - If the script reports xcbeautify missing, run `scripts/install-tools.sh`, then rerun the same build command.
 - Report the script's output as it is. Do not open the log file or the `.xcresult` bundle to investigate.
 
-UI tests (`ApoorvaUITests`, XCUITest, stubbed auth via `-UITesting`): `scripts/ui-test.sh [Class[/method]]`. See `docs/decisions/ui-testing.md`.
+UI tests (`ApoorvaUITests`, XCUITest, stubbed auth via `-UITesting`): `scripts/ui-test.sh [Class[/method]]`. Android twins are Maestro flows in `app/Android/maestro/` (`scripts/android-ui-test.sh [flow] [apk]`); every iOS scenario needs one, enforced by `scripts/check-ui-test-parity.sh`. See `docs/decisions/ui-testing.md`.
 
 The raw commands below are for developers working in a terminal:
 

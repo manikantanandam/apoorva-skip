@@ -1,0 +1,11 @@
+# iOS: CustomerListUITests "Mask phone numbers"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/customers-list.yaml
+- tapOn:
+    id: "customers.moreMenu"
+- tapOn: "Show last 4 digits"
+- assertNotVisible: ".*9848012345.*"
+- tapOn:
+    id: "customers.moreMenu"
+- assertVisible: "Show full numbers"

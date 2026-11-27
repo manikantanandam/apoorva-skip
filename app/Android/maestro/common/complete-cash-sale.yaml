@@ -1,0 +1,9 @@
+# Twin of POSScreen.completeCashSale: collect, then wait for the receipt.
+appId: com.apoorva.app
+---
+- tapOn:
+    id: "checkout.collect"
+- extendedWaitUntil:
+    visible:
+      id: "receipt.home"
+    timeout: 15000

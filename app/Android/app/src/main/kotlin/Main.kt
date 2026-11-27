@@ -21,7 +21,10 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +59,7 @@ open class MainActivity: AppCompatActivity {
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         logger.info("starting activity")
+        exportUITestingExtras()
         UIApplication.launch(this)
         enableEdgeToEdge()
 
@@ -129,6 +133,26 @@ open class MainActivity: AppCompatActivity {
         logger.info("onRequestPermissionsResult: ${requestCode}")
     }
 
+    /// Maestro's `launchApp.arguments` arrive as intent extras; Android never fills `ProcessInfo.arguments`, so copy
+    /// them into the environment variables `UITestingConfig` reads (only honoured in DEBUG Swift builds). Always
+    /// set or clear both so a normal relaunch in the same process never stays in test mode.
+    private fun exportUITestingExtras() {
+        val extras = intent?.extras
+        val enabled = extras?.get("UITesting")?.toString()
+        val seed = extras?.get("UITestingSeed")?.toString()
+        if (enabled == "true") {
+            android.system.Os.setenv("APOORVA_UITESTING", "true", true)
+            logger.info("UI testing mode (seed: ${seed ?: "none"})")
+        } else {
+            android.system.Os.unsetenv("APOORVA_UITESTING")
+        }
+        if (seed != null) {
+            android.system.Os.setenv("APOORVA_UITESTING_SEED", seed, true)
+        } else {
+            android.system.Os.unsetenv("APOORVA_UITESTING_SEED")
+        }
+    }
+
     companion object {
     }
 }
@@ -154,6 +178,7 @@ internal fun SyncSystemBarsWithTheme() {
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 internal fun PresentationRootView(context: ComposeContext) {
     val colorScheme = if (isSystemInDarkTheme()) ColorScheme.dark else ColorScheme.light
@@ -161,7 +186,8 @@ internal fun PresentationRootView(context: ComposeContext) {
         PresentationRoot(defaultColorScheme = colorScheme, context = context) { ctx ->
             SyncSystemBarsWithTheme()
             val contentContext = ctx.content()
-            Box(modifier = ctx.modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            // Exposes SwiftUI accessibilityIdentifier test tags as resource-ids so Maestro `id:` selectors match them.
+            Box(modifier = ctx.modifier.fillMaxSize().semantics { testTagsAsResourceId = true }, contentAlignment = Alignment.Center) {
                 AppRootView().Compose(context = contentContext)
             }
         }

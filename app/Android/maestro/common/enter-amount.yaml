@@ -1,0 +1,10 @@
+# Twin of POSUITests.enterAmount: pays the whole bill in MODE (cash|upi|card). Nothing typed means all cash.
+# Needs MODE (lowercase, as in the checkout.mode.<raw> id) and AMOUNT.
+appId: com.apoorva.app
+---
+- tapOn:
+    id: "checkout.mode.${MODE}"
+- tapOn:
+    id: "checkout.cashReceived"
+- inputText: ${AMOUNT}
+- hideKeyboard

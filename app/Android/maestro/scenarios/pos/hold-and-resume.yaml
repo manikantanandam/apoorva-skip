@@ -1,0 +1,28 @@
+# iOS: POSUITests "Hold and resume"
+appId: com.apoorva.app
+---
+- runFlow: ../../common/start-bill.yaml
+- assertVisible:
+    id: "pos.holdBill"
+    enabled: true
+- tapOn:
+    id: "pos.holdBill"
+- assertVisible: "Your cart is empty"
+- assertVisible: "Held bills \\(1\\)"
+
+- runFlow:
+    file: ../../common/add-item.yaml
+    env: { ITEM: "Teddy 12in" }
+- tapOn:
+    id: "pos.holdBill"
+- tapOn:
+    id: "pos.heldBills"
+- assertVisible: "Held bills"
+- tapOn: # rows end in ", Held"
+    text: ".*, Held"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "pos.customerRow"
+    timeout: 10000
+- assertNotVisible: "Your cart is empty" # resuming restores the cart

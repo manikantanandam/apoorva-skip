@@ -1,0 +1,15 @@
+# Twin of app/Darwin/UITests/Customers/CustomerListUITests.swift.
+# Seeded fancy shop: Ravi Kumar, Meena S (Rs 1,120 due), Sneha P, Anil Regular (6 visits), Kavya New (no visits).
+appId: com.apoorva.app
+name: customer-list
+tags:
+  - customers
+---
+- runFlow: scenarios/customer-list/summary-and-rows.yaml
+- runFlow: scenarios/customer-list/search.yaml
+- runFlow: scenarios/customer-list/filters.yaml
+- runFlow: scenarios/customer-list/row-actions.yaml
+- runFlow: scenarios/customer-list/more-menu.yaml
+- runFlow: scenarios/customer-list/add-customer-form.yaml
+- runFlow: scenarios/customer-list/add-customer.yaml
+- runFlow: scenarios/customer-list/mask-phone-numbers.yaml
