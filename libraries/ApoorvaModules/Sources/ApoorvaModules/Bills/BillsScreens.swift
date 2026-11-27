@@ -12,8 +12,8 @@ import ApoorvaModels
 // MARK: - 54 Bills list
 
 public struct BillsListView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: BillsViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: BillsViewModel
     private let onSelect: (Sale) -> Void
     private let onFilters: () -> Void
 
@@ -70,7 +70,7 @@ public struct BillsListView: View {
 
 public struct BillFiltersView: View {
     private let viewModel: BillsViewModel
-    @State private var draft: BillFilters
+    @State var draft: BillFilters
     private let onClose: () -> Void
 
     public init(viewModel: BillsViewModel, onClose: @escaping () -> Void) {
@@ -126,9 +126,9 @@ public struct BillFiltersView: View {
 // MARK: - 55 Bill detail
 
 public struct BillDetailView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     private let session: AppSession
-    @Bindable private var viewModel: BillDetailViewModel
+    @Bindable var viewModel: BillDetailViewModel
     private let onReprint: (Sale) -> Void
     private let onCancel: (Sale) -> Void
     private let onEdit: (Sale) -> Void
@@ -226,7 +226,7 @@ public struct BillDetailView: View {
 // MARK: - 56 Cancel bill
 
 public struct CancelBillView: View {
-    @Bindable private var viewModel: CancelBillViewModel
+    @Bindable var viewModel: CancelBillViewModel
     private let onCancelled: () -> Void
 
     public init(viewModel: CancelBillViewModel, onCancelled: @escaping () -> Void) {
@@ -253,8 +253,8 @@ public struct CancelBillView: View {
 // MARK: - 50 Edit bill
 
 public struct BillEditView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: BillEditViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: BillEditViewModel
     private let onSaved: () -> Void
 
     public init(viewModel: BillEditViewModel, onSaved: @escaping () -> Void) {

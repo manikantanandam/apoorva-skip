@@ -11,9 +11,9 @@ import ManiSwiftUIComponents
 
 /// Checkout (design 42): customer, totals, and an amount box per payment mode (several = split).
 public struct CheckoutView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: CheckoutViewModel
-    @State private var isAmountFocused = false
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: CheckoutViewModel
+    @State var isAmountFocused = false
     private let customerSubtitle: String?
     private let onChangeCustomer: () -> Void
     private let onRequireUPIConfirmation: () -> Void

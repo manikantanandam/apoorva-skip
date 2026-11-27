@@ -110,15 +110,6 @@
       }
     },
     {
-      "identity" : "maniswiftuicomponents",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/manikantanandam/ManiSwiftUIComponents.git",
-      "state" : {
-        "branch" : "feature/android-support",
-        "revision" : "66fd868c39a7225c373f7fb6b1a1ff13ac191e2b"
-      }
-    },
-    {
       "identity" : "maniutilities",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/manikantanandam/ManiUtilities.git",

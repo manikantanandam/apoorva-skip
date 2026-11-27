@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SkipFuse
 import Observation
 import ManiSwiftUIComponents
 import ApoorvaModels
@@ -135,9 +136,9 @@ public final class OpeningBalancesViewModel {
 }
 
 public struct OpeningBalancesView: View {
-    @Bindable private var viewModel: OpeningBalancesViewModel
-    @State private var isAddingDue = false
-    @State private var isImporting = false
+    @Bindable var viewModel: OpeningBalancesViewModel
+    @State var isAddingDue = false
+    @State var isImporting = false
     private let onDone: () -> Void
 
     public init(viewModel: OpeningBalancesViewModel, onDone: @escaping () -> Void) {

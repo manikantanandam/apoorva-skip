@@ -15,10 +15,10 @@ public enum InsightsTab: String, CaseIterable, Sendable {
 }
 
 public struct InsightsView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: InsightsViewModel
-    @State private var tab: InsightsTab
-    @State private var exportURL: URL?
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: InsightsViewModel
+    @State var tab: InsightsTab
+    @State var exportURL: URL?
     private let isServiceShop: Bool
     private let canExport: Bool
 

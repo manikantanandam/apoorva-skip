@@ -32,7 +32,10 @@ public enum UITestingConfig {
 
     /// Clears persisted state so every UI test starts from a first-launch flow.
     public static func resetStateIfNeeded() {
+        #if !os(Android)
+        // UI tests are iOS-only; removePersistentDomain is unavailable on Android.
         guard isEnabled, let domain = Bundle.main.bundleIdentifier else { return }
         UserDefaults.standard.removePersistentDomain(forName: domain)
+        #endif
     }
 }

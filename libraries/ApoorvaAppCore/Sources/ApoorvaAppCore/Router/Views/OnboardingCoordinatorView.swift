@@ -6,9 +6,9 @@ struct OnboardingCoordinatorView: View {
     @Bindable var coordinator: OnboardingCoordinator
 
     /// Shared across the auth screens and the three setup steps, so typed values survive back/forward.
-    @State private var authFlow: AuthFlowViewModel
-    @State private var login: LoginViewModel
-    @State private var shopSetup: ShopSetupViewModel
+    @State var authFlow: AuthFlowViewModel
+    @State var login: LoginViewModel
+    @State var shopSetup: ShopSetupViewModel
 
     init(coordinator: OnboardingCoordinator) {
         self.coordinator = coordinator

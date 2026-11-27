@@ -11,9 +11,9 @@ import ManiSwiftUIComponents
 
 /// Bill saved (design 45): amount, how it was paid, and send receipt.
 public struct ReceiptView: View {
-    @Environment(\.maniTheme) private var theme
-    @Environment(\.openURL) private var openURL
-    @Bindable private var viewModel: ReceiptViewModel
+    @Environment(\.maniTheme) var theme
+    @Environment(\.openURL) var openURL
+    @Bindable var viewModel: ReceiptViewModel
     /// `true` when reached straight from checkout (fresh sale, no back/swipe — "Done"
     /// closes the whole New Bill flow); `false` when viewed from sale history (normal back).
     private let cameFromCheckout: Bool
@@ -125,10 +125,10 @@ public struct ReceiptView: View {
 
 /// Printed receipt preview (design 46). There's no printer driver yet, so Print explains and Share sends the text.
 public struct ReceiptPreviewView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: ReceiptViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: ReceiptViewModel
     private let printerName: String?
-    @State private var isShowingPrinterNote = false
+    @State var isShowingPrinterNote = false
 
     public init(viewModel: ReceiptViewModel, printerName: String? = nil) {
         self.viewModel = viewModel

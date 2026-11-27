@@ -31,8 +31,8 @@ private extension AttendanceStatus {
 // MARK: - Attendance (71)
 
 public struct AttendanceView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: AttendanceViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: AttendanceViewModel
     private let canMark: Bool
 
     public init(viewModel: AttendanceViewModel, canMark: Bool) {
@@ -104,8 +104,8 @@ public struct AttendanceView: View {
 // MARK: - Salary (72)
 
 public struct SalaryView: View {
-    @Bindable private var viewModel: SalaryViewModel
-    @State private var advanceFor: Member?
+    @Bindable var viewModel: SalaryViewModel
+    @State var advanceFor: Member?
 
     public init(viewModel: SalaryViewModel) {
         self.viewModel = viewModel

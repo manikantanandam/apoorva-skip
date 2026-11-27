@@ -13,7 +13,7 @@ import ApoorvaModels
 // MARK: - 01 Splash
 
 public struct SplashView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     private let onGetStarted: () -> Void
 
     public init(onGetStarted: @escaping () -> Void) {
@@ -51,8 +51,8 @@ public struct SplashView: View {
 
 public struct SignInHubView: View {
     private let session: AppSession
-    @Bindable private var viewModel: AuthFlowViewModel
-    @Bindable private var login: LoginViewModel
+    @Bindable var viewModel: AuthFlowViewModel
+    @Bindable var login: LoginViewModel
     private let onGoogle: () -> Void
     private let onPhoneOTP: (String) -> Void
     private let onForgot: () -> Void
@@ -99,7 +99,7 @@ public struct SignInHubView: View {
                         Button("\(user.name) (\(user.email))") { login.selectDebugUser(user) }
                     }
                 } label: {
-                    Label("Select test user", systemImage: "person.2.fill")
+                    Label("Select test user", systemImage: ManiSymbol.name("person.2.fill"))
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                 }
@@ -127,8 +127,8 @@ public struct SignInHubView: View {
 // MARK: - 04 Phone OTP
 
 public struct PhoneOTPView: View {
-    @Bindable private var viewModel: AuthFlowViewModel
-    @State private var now = Date()
+    @Bindable var viewModel: AuthFlowViewModel
+    @State var now = Date()
 
     public init(viewModel: AuthFlowViewModel) {
         self.viewModel = viewModel
@@ -164,7 +164,7 @@ public struct PhoneOTPView: View {
 
 public struct RegisterView: View {
     private let session: AppSession
-    @Bindable private var viewModel: AuthFlowViewModel
+    @Bindable var viewModel: AuthFlowViewModel
     private let onRegistered: () -> Void
     private let onGoogle: () -> Void
 
@@ -203,9 +203,9 @@ public struct RegisterView: View {
 // MARK: - 09 Verify email
 
 public struct VerifyEmailView: View {
-    @Environment(\.openURL) private var openURL
-    @Bindable private var viewModel: AuthFlowViewModel
-    @State private var tick = Date()
+    @Environment(\.openURL) var openURL
+    @Bindable var viewModel: AuthFlowViewModel
+    @State var tick = Date()
     private let email: String
     private let onSetUpShop: () -> Void
     private let onChangeEmail: () -> Void
@@ -254,7 +254,7 @@ public struct VerifyEmailView: View {
 // MARK: - 10 Forgot password
 
 public struct ForgotPasswordView: View {
-    @Bindable private var viewModel: AuthFlowViewModel
+    @Bindable var viewModel: AuthFlowViewModel
     private let onBack: () -> Void
 
     public init(viewModel: AuthFlowViewModel, onBack: @escaping () -> Void) {
@@ -301,7 +301,7 @@ public struct GoogleChooserView: View {
 // MARK: - 12 Link accounts
 
 public struct LinkAccountsView: View {
-    @Bindable private var viewModel: AuthFlowViewModel
+    @Bindable var viewModel: AuthFlowViewModel
     private let onUseDifferentAccount: () -> Void
 
     public init(viewModel: AuthFlowViewModel, onUseDifferentAccount: @escaping () -> Void) {

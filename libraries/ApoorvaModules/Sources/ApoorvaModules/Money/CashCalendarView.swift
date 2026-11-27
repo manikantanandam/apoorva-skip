@@ -33,11 +33,11 @@ enum CashCalendarGrid {
 }
 
 public struct CashCalendarView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     private let selected: Date
     private let closedDayKeys: Set<String>
     private let onPick: (Date) -> Void
-    @State private var month: Date
+    @State var month: Date
 
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)

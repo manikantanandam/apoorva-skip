@@ -16,7 +16,7 @@ import VisionKit
 // MARK: - Jewellery design detail (36)
 
 public struct JewelItemView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     private let item: InventoryItem
     private let price: Double?
     private let similar: [InventoryItem]
@@ -85,12 +85,12 @@ public struct JewelItemView: View {
 // MARK: - Catalog share (37)
 
 public struct CatalogShareView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     private let items: [InventoryItem]
     private let categoryNames: [String: String]
-    @State private var selected: Set<String> = []
-    @State private var category: String?
-    @State private var showsPrices = true
+    @State var selected: Set<String> = []
+    @State var category: String?
+    @State var showsPrices = true
 
     public init(items: [InventoryItem], categoryNames: [String: String] = [:]) {
         self.items = items
@@ -169,7 +169,7 @@ public struct CatalogShareView: View {
 // MARK: - Packages (39)
 
 public struct PackagesView: View {
-    @Bindable private var viewModel: PackagesViewModel
+    @Bindable var viewModel: PackagesViewModel
     private let onSell: (CartItem) -> Void
     private let onUsed: () -> Void
 
@@ -224,7 +224,7 @@ public struct PackagesView: View {
 // MARK: - Return / exchange (52)
 
 public struct ReturnView: View {
-    @Bindable private var viewModel: ReturnViewModel
+    @Bindable var viewModel: ReturnViewModel
     private let onReturned: (Sale) -> Void
     private let onExchange: (PosCart) -> Void
 
@@ -279,12 +279,12 @@ public struct ReturnView: View {
 
 /// Continuous barcode scan. Uses VisionKit's live scanner where supported; otherwise type the code.
 public struct ScanView: View {
-    @Bindable private var viewModel: POSViewModel
+    @Bindable var viewModel: POSViewModel
     private let onDone: () -> Void
-    @State private var scanned: [InventoryItem] = []
-    @State private var manualCode = ""
-    @State private var message: String?
-    @State private var lastCode: (code: String, at: Date)?
+    @State var scanned: [InventoryItem] = []
+    @State var manualCode = ""
+    @State var message: String?
+    @State var lastCode: (code: String, at: Date)?
 
     public init(viewModel: POSViewModel, onDone: @escaping () -> Void) {
         self.viewModel = viewModel

@@ -157,11 +157,41 @@ internal fun SyncSystemBarsWithTheme() {
 @Composable
 internal fun PresentationRootView(context: ComposeContext) {
     val colorScheme = if (isSystemInDarkTheme()) ColorScheme.dark else ColorScheme.light
-    PresentationRoot(defaultColorScheme = colorScheme, context = context) { ctx ->
-        SyncSystemBarsWithTheme()
-        val contentContext = ctx.content()
-        Box(modifier = ctx.modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            AppRootView().Compose(context = contentContext)
+    Material3ColorScheme({ _, isDark -> apoorvaMaterialColors(isDark) }, content = {
+        PresentationRoot(defaultColorScheme = colorScheme, context = context) { ctx ->
+            SyncSystemBarsWithTheme()
+            val contentContext = ctx.content()
+            Box(modifier = ctx.modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                AppRootView().Compose(context = contentContext)
+            }
         }
+    })
+}
+
+/// Skip uses Material 3 dynamic (wallpaper) colours by default, which tinted lists, forms and the area behind the
+/// tab bar brown and large titles pink. These fixed colours match ManiDefaultBaseTheme instead.
+internal fun apoorvaMaterialColors(isDark: Boolean): androidx.compose.material3.ColorScheme {
+    val rgb = { r: Int, g: Int, b: Int -> androidx.compose.ui.graphics.Color(r, g, b) }
+    val primary = rgb(94, 197, 174)
+    return if (isDark) {
+        androidx.compose.material3.darkColorScheme(
+            primary = primary, onPrimary = rgb(11, 13, 18),
+            background = rgb(11, 13, 18), onBackground = rgb(229, 231, 235),
+            surface = rgb(11, 13, 18), onSurface = rgb(229, 231, 235),
+            surfaceVariant = rgb(21, 25, 34), onSurfaceVariant = rgb(161, 167, 179),
+            surfaceContainer = rgb(21, 25, 34), surfaceContainerLow = rgb(21, 25, 34),
+            surfaceContainerHigh = rgb(21, 25, 34), surfaceContainerHighest = rgb(21, 25, 34),
+            outline = rgb(38, 43, 54), outlineVariant = rgb(38, 43, 54)
+        )
+    } else {
+        androidx.compose.material3.lightColorScheme(
+            primary = rgb(13, 148, 136), onPrimary = rgb(255, 255, 255),
+            background = rgb(245, 246, 248), onBackground = rgb(15, 23, 42),
+            surface = rgb(245, 246, 248), onSurface = rgb(15, 23, 42),
+            surfaceVariant = rgb(255, 255, 255), onSurfaceVariant = rgb(71, 85, 105),
+            surfaceContainer = rgb(255, 255, 255), surfaceContainerLow = rgb(255, 255, 255),
+            surfaceContainerHigh = rgb(255, 255, 255), surfaceContainerHighest = rgb(255, 255, 255),
+            outline = rgb(226, 232, 240), outlineVariant = rgb(226, 232, 240)
+        )
     }
 }

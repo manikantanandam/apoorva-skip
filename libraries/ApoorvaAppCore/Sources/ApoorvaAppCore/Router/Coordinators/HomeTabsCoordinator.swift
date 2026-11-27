@@ -1,4 +1,5 @@
 import Foundation
+import SkipFuse
 import Observation
 import ApoorvaModels
 
@@ -24,6 +25,16 @@ final class HomeTabsCoordinator {
     init(container: AppContainer, appCoordinator: AppCoordinator? = nil) {
         self.container = container
         self.appCoordinator = appCoordinator
+    }
+
+    /// True while the selected tab shows its first screen (nothing pushed).
+    var isAtTabRoot: Bool {
+        switch selectedTab {
+        case .home: homeCoordinator.path.isEmpty
+        case .bills: billsCoordinator.path.isEmpty
+        case .customers: customersCoordinator.path.isEmpty
+        case .more: moreCoordinator.path.isEmpty
+        }
     }
 
     func newBillTapped() {

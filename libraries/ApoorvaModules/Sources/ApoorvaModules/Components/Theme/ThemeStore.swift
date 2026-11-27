@@ -1,4 +1,5 @@
 import ManiSwiftUIComponents
+import SkipFuse
 import SwiftUI
 import Observation
 import ApoorvaModels
@@ -16,7 +17,13 @@ public final class ThemeStore {
     private let defaults: UserDefaults
     private var userId: String?
 
-    public init(defaults: UserDefaults = .standard) {
+    /// Uses `UserDefaults.standard`. The defaults are injectable only internally (tests): on Android, Skip maps
+    /// `UserDefaults` in this module to an internal bridge type, so it can't appear in a public signature.
+    public convenience init() {
+        self.init(defaults: .standard)
+    }
+
+    init(defaults: UserDefaults) {
         self.defaults = defaults
         let preference = Self.loadPreference(from: defaults, for: nil)
         let resolved = ThemeResolver.resolve(org: nil, store: nil, user: preference, vertical: nil)

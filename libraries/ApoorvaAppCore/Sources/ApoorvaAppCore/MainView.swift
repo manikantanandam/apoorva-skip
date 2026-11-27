@@ -9,10 +9,18 @@ import SwiftUI
 import ApoorvaModules
 import ManiSwiftUIComponents
 
+/// The one `AppCoordinator` per process. `@State`'s initial value is evaluated every time `MainView` is
+/// re-created (often on Android), and each extra coordinator opened its own database connection and started
+/// its own sync, which caused "database is locked" errors.
+@MainActor
+enum RootCoordinator {
+    static let instance = AppCoordinator()
+}
+
 public struct MainView: View {
 
-    @State private var coordinator = AppCoordinator()
-    @Environment(\.scenePhase) private var scenePhase
+    @State var coordinator = RootCoordinator.instance
+    @Environment(\.scenePhase) var scenePhase
 
     public init() {}
 
@@ -55,8 +63,8 @@ public struct MainView: View {
 }
 
 /// Shown while the session resolves: the brand mark (same look as the splash screen).
-private struct LaunchView: View {
-    @Environment(\.maniTheme) private var theme
+struct LaunchView: View {
+    @Environment(\.maniTheme) var theme
 
     var body: some View {
         VStack(spacing: ManiSpacing.sm) {

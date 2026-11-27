@@ -24,7 +24,7 @@ public struct FirstRunStep: Identifiable, Hashable {
 
 /// "Welcome! 3 quick steps" — shown on Home until the shop has its first bill.
 public struct FirstRunGuideView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     private let shopName: String
     private let steps: [FirstRunStep]
     private let onStep: (FirstRunStep) -> Void
@@ -81,9 +81,9 @@ public struct FirstRunGuideView: View {
 
 /// One-time coach marks per screen ("Tip 1 of 3"), remembered on the device.
 public struct TipsOverlayModifier: ViewModifier {
-    @Environment(\.maniTheme) private var theme
-    @AppStorage private var seen: Bool
-    @State private var index = 0
+    @Environment(\.maniTheme) var theme
+    @AppStorage var seen: Bool
+    @State var index = 0
     private let tips: [String]
 
     public init(screen: String, tips: [String]) {

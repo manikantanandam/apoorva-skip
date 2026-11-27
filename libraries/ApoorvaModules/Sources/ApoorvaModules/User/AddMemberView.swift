@@ -8,7 +8,7 @@ import ApoorvaModels
 import ManiSwiftUIComponents
 
 public struct AddMemberView: View {
-    @Bindable private var viewModel: AddMemberViewModel
+    @Bindable var viewModel: AddMemberViewModel
     private let onDone: () -> Void
 
     public init(viewModel: AddMemberViewModel, onDone: @escaping () -> Void) {

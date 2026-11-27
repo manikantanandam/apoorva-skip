@@ -4,7 +4,7 @@ import ManiLogger
 
 /// Developer settings in its own `NavigationStack`, for places outside the More tab.
 struct DeveloperCoordinatorView: View {
-    @State private var coordinator = DeveloperCoordinator()
+    @State var coordinator = DeveloperCoordinator()
     let container: AppContainer
 
     var body: some View {
@@ -55,8 +55,8 @@ struct DeveloperRouteView: View {
 }
 
 /// Holds the hub's view model so it isn't rebuilt each time the navigation destination re-evaluates.
-private struct DeveloperHubRouteView: View {
-    @State private var viewModel: DeveloperSettingsViewModel?
+struct DeveloperHubRouteView: View {
+    @State var viewModel: DeveloperSettingsViewModel?
     let container: AppContainer
     let onOpenEnvironment: () -> Void
     let onOpenFlags: () -> Void

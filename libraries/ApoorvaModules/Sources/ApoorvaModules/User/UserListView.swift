@@ -18,10 +18,10 @@ enum UserListRoute: Identifiable {
 }
 
 public struct UserListView: View {
-    @Environment(\.maniTheme) private var theme
+    @Environment(\.maniTheme) var theme
     @Bindable var viewModel: UserListViewModel
-    @State private var activeRoute: UserListRoute?
-    @State private var inviteToRevoke: MemberInvite?
+    @State var activeRoute: UserListRoute?
+    @State var inviteToRevoke: MemberInvite?
     private let onAddMember: (() -> Void)?
 
     public init(viewModel: UserListViewModel, onAddMember: (() -> Void)? = nil) {

@@ -23,8 +23,8 @@ private extension OrderStatus {
 // MARK: - Orders (58)
 
 public struct OrdersListView: View {
-    @Environment(\.maniTheme) private var theme
-    @Bindable private var viewModel: OrdersViewModel
+    @Environment(\.maniTheme) var theme
+    @Bindable var viewModel: OrdersViewModel
     private let onAdd: () -> Void
     private let onSelect: (Order) -> Void
 
@@ -74,7 +74,7 @@ public struct OrdersListView: View {
 // MARK: - New order (59)
 
 public struct OrderFormView: View {
-    @Bindable private var viewModel: OrderFormViewModel
+    @Bindable var viewModel: OrderFormViewModel
     private let onSaved: (Order) -> Void
 
     public init(viewModel: OrderFormViewModel, onSaved: @escaping (Order) -> Void) {
@@ -134,9 +134,9 @@ public struct OrderFormView: View {
 // MARK: - Order detail (60)
 
 public struct OrderDetailView: View {
-    @Environment(\.maniTheme) private var theme
-    @Environment(\.openURL) private var openURL
-    @Bindable private var viewModel: OrderDetailViewModel
+    @Environment(\.maniTheme) var theme
+    @Environment(\.openURL) var openURL
+    @Bindable var viewModel: OrderDetailViewModel
     private let onDeliver: (PosCart) -> Void
 
     public init(viewModel: OrderDetailViewModel, onDeliver: @escaping (PosCart) -> Void) {
@@ -202,7 +202,7 @@ public struct OrderDetailView: View {
 // MARK: - Warranty (63)
 
 public struct WarrantyView: View {
-    @Bindable private var viewModel: WarrantyViewModel
+    @Bindable var viewModel: WarrantyViewModel
 
     public init(viewModel: WarrantyViewModel) {
         self.viewModel = viewModel
