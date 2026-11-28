@@ -7,9 +7,10 @@ name: Android UI Tests
 # - The debug APK is built on macOS (Skip needs Xcode); the emulator runs on Linux, since GitHub's
 #   Apple-silicon macOS runners can't run the Android emulator.
 on:
-  # TEMPORARY: run on pushes to this branch, since workflow_dispatch only works once the file is on main. Remove before merging.
+  # TEMPORARY: run on pushes to this branch, since workflow_dispatch only works once the file is on main.
+  # Verifying the PR #251 Maestro login fix. Remove this branch before merging.
   push:
-    branches: [ "feature/android-ui-tests" ]
+    branches: [ "fix/ui-test-failures" ]
   workflow_call:
   workflow_dispatch:
     inputs:
