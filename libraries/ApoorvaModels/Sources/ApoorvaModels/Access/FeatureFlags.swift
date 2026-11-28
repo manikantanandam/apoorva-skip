@@ -7,6 +7,7 @@ import Foundation
 
 /// The docs/05 flag catalogue. Raw values are the flag keys used in config docs.
 public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
+    // billing — grouped under the "billing" Remote Config parameter
     case creditSales = "billing.credit_sales"
     case returns = "billing.returns"
     case holdBills = "billing.hold_bills"
@@ -15,26 +16,48 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
     case calculatorMode = "billing.calculator_mode"
     case wholesalePrice = "billing.wholesale_price"
     case warranty = "billing.warranty"
+
+    // printing — grouped under "printing"
     case bluetoothPrinting = "printing.bluetooth"
+
+    // inventory — grouped under "inventory"
     case inventoryEdit = "inventory.edit"
+
+    // insights — grouped under "insights"
     case insightsView = "insights.view"
     case insightsExport = "insights.export"
+
+    // standalone modules — each its own one-field group, e.g. "orders" → {"enabled": true}
     case orders
     case suppliers
     case expenses
+
+    // staff — grouped under "staff"
     case staffAttendance = "staff.attendance"
+
+    // offers — grouped under "offers"
     case offersMessages = "offers.messages"
+
+    // summary — grouped under "summary"
     case summaryWhatsAppAuto = "summary.whatsapp_auto"
+
+    // plan — grouped under "plan"
     case planStaffAccounts = "plan.staff_accounts"
     case planReportsExport = "plan.reports_export"
     case planPackages = "plan.packages"
+
+    // kill — grouped under "kill"
     case killSyncWrites = "kill.sync_writes"
+
+    // auth — grouped under "auth"
     case authPhoneOTP = "auth.phone_otp"
     case authEmailPassword = "auth.email_password"
     case authGoogle = "auth.google"
     case authApple = "auth.apple"
     case authEmailVerificationRequired = "auth.email_verification_required"
     case authRegistrationsOpen = "auth.registrations_open"
+
+    // non-bool, ungrouped
     case minAppVersion = "min_app_version"
     case syncIntervalSec = "sync.interval_sec"
 
