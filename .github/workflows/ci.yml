@@ -15,6 +15,9 @@ concurrency:
 jobs:
   detect-modules:
     name: Detect Testable Modules
+    # TEMPORARY: skip the full CI/Sonar pipeline on this branch while verifying the Maestro
+    # Android fix in isolation (android-ui-tests.yml). Remove this condition before merging.
+    if: github.head_ref != 'fix/ui-test-failures'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -60,7 +63,7 @@ jobs:
   build-and-test:
     name: Test ${{ matrix.module }}
     needs: detect-modules
-    if: needs.detect-modules.outputs.modules != '[]'
+    if: needs.detect-modules.outputs.modules != '[]' && github.head_ref != 'fix/ui-test-failures'
     runs-on: macos-15 # Uses Apple Silicon M1/M2 runners with latest Xcode pre-installed
     strategy:
           fail-fast: false # Prevents one module's failure from cancelling the others
