@@ -19,7 +19,7 @@ struct RemoteConfigCoverageTests {
         #expect(service.boolValue(forKey: "b"))
         #expect(service.stringValue(forKey: "s") == "x")
         #expect(service.numberValue(forKey: "n") == 2)
-        #expect(service.jsonValue(forKey: "j", as: VersionGateValue.self) == nil)
+        #expect(service.jsonValue(forKey: "j", as: [String: Bool].self) == nil)
         // Wrong-typed lookups fall through to the zero value.
         #expect(!service.boolValue(forKey: "s"))
         #expect(service.stringValue(forKey: "b") == nil)
@@ -43,7 +43,7 @@ struct RemoteConfigCoverageTests {
         for definition in RemoteConfigCatalog.all {
             let value = defaults[definition.key]
             switch (definition.kind, value) {
-            case (.bool, .bool?), (.string, .string?), (.number, .number?), (.versionGate, .json?): break
+            case (.bool, .bool?), (.string, .string?), (.number, .number?): break
             default: Issue.record("unexpected default type for \(definition.key)")
             }
         }

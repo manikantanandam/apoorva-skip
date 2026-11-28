@@ -51,18 +51,16 @@ struct RemoteConfigCatalogDefaultsTests {
 }
 
 struct RemoteConfigJSONRoundTripTests {
-    @Test func versionGateDefaultRoundTripsThroughJSONValue() {
-        let definition = RemoteConfigKeyDefinition.versionGate("test.gate", title: "Test Gate",
-                                                                 default: VersionGateValue(enabled: true, minVersion: "2.3.0"))
+    @Test func groupDefaultRoundTripsThroughJSONValue() {
         let service = NoOpRemoteConfigService()
-        service.setDefaults([definition.key: .json(try! JSONEncoder().encode(definition.defaultVersionGate))])
+        service.setDefaults(["test.group": .json(try! JSONEncoder().encode(["enabled": true]))])
 
-        let decoded = service.jsonValue(forKey: definition.key, as: VersionGateValue.self)
-        #expect(decoded == VersionGateValue(enabled: true, minVersion: "2.3.0"))
+        let decoded = service.jsonValue(forKey: "test.group", as: [String: Bool].self)
+        #expect(decoded == ["enabled": true])
     }
 
     @Test func missingKeyReturnsNil() {
         let service = NoOpRemoteConfigService()
-        #expect(service.jsonValue(forKey: "missing", as: VersionGateValue.self) == nil)
+        #expect(service.jsonValue(forKey: "missing", as: [String: Bool].self) == nil)
     }
 }

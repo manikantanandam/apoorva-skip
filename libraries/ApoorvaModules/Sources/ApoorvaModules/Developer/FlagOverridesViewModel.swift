@@ -70,7 +70,6 @@ public class FlagOverridesViewModel {
         case .bool: return AppConfig.resolveBool(definition, from: service) ? "On" : "Off"
         case .string: return service.stringValue(forKey: definition.key) ?? definition.defaultString
         case .number: return formatted(service.numberValue(forKey: definition.key) ?? definition.defaultNumber)
-        case .versionGate: return formatted(service.jsonValue(forKey: definition.key, as: VersionGateValue.self) ?? definition.defaultVersionGate)
         }
     }
 
@@ -102,20 +101,11 @@ public class FlagOverridesViewModel {
         switch kind {
         case .bool: return (Bool(raw) ?? false) ? "On" : "Off"
         case .string, .number: return raw
-        case .versionGate:
-            guard let data = raw.data(using: .utf8), let gate = try? JSONDecoder().decode(VersionGateValue.self, from: data) else { return raw }
-            return formatted(gate)
         }
     }
 
     private static func formatted(_ number: Double) -> String {
         number == number.rounded() ? String(Int(number)) : String(number)
-    }
-
-    private static func formatted(_ gate: VersionGateValue) -> String {
-        guard gate.enabled else { return "Off" }
-        guard let minVersion = gate.minVersion else { return "On" }
-        return "On ≥ \(minVersion)"
     }
 
     /// Setting a value equal to what Firebase (or the compiled default) already serves clears the override.
@@ -183,9 +173,6 @@ public class FlagOverridesViewModel {
             return raw == (remoteConfigService.stringValue(forKey: key) ?? definition.defaultString)
         case .number:
             return Double(raw) == (remoteConfigService.numberValue(forKey: key) ?? definition.defaultNumber)
-        case .versionGate:
-            guard let data = raw.data(using: .utf8), let gate = try? JSONDecoder().decode(VersionGateValue.self, from: data) else { return false }
-            return gate == (remoteConfigService.jsonValue(forKey: key, as: VersionGateValue.self) ?? definition.defaultVersionGate)
         }
     }
 
@@ -202,26 +189,8 @@ public class FlagOverridesViewModel {
         case .number:
             guard Double(rawValue) != nil else { return false }
             setRemoteConfigOverride(row.id, value: rawValue)
-        case .versionGate:
-            // Edited via `setVersionGateOverride`, not this raw-text path.
-            return false
         }
         return true
-    }
-
-    public func versionGateRemoteValue(forKey key: String) -> VersionGateValue {
-        let defaultValue = RemoteConfigCatalog.all.first { $0.key == key }?.defaultVersionGate ?? VersionGateValue(enabled: false)
-        return remoteConfigService.jsonValue(forKey: key, as: VersionGateValue.self) ?? defaultValue
-    }
-
-    public func versionGateOverrideValue(forKey key: String) -> VersionGateValue? {
-        guard let raw = remoteConfigOverrides[key], let data = raw.data(using: .utf8) else { return nil }
-        return try? JSONDecoder().decode(VersionGateValue.self, from: data)
-    }
-
-    public func setVersionGateOverride(key: String, value: VersionGateValue) {
-        guard let data = try? JSONEncoder().encode(value), let json = String(data: data, encoding: .utf8) else { return }
-        setRemoteConfigOverride(key, value: json)
     }
 
     public func resetRemoteConfigOverrides() {

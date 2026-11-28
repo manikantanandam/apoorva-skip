@@ -207,9 +207,9 @@ struct DebugRemoteConfigOverrideCoverageTests {
         #expect(service.numberValue(forKey: "n") == 7.5)
         #expect(service.numberValue(forKey: "bad") == nil)
         #expect(service.boolValue(forKey: "bad") == false)
-        let gate = service.jsonValue(forKey: "j", as: VersionGateValue.self)
-        #expect(gate?.enabled == true)
-        #expect(service.jsonValue(forKey: "badJson", as: VersionGateValue.self) == nil)
+        let group = service.jsonValue(forKey: "j", as: [String: Bool].self)
+        #expect(group?["enabled"] == true)
+        #expect(service.jsonValue(forKey: "badJson", as: [String: Bool].self) == nil)
         #expect(service.stringValue(forKey: "n") == "7.5")
     }
 }

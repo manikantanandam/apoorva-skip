@@ -65,8 +65,6 @@ struct RemoteConfigKeyRow: View {
                 BoolOverrideControl(row: row, viewModel: viewModel)
             case .string, .number:
                 TextOverrideControl(row: row, viewModel: viewModel)
-            case .versionGate:
-                VersionGateOverrideControl(row: row, viewModel: viewModel)
             }
         }
         .swipeActions {
@@ -116,30 +114,3 @@ struct TextOverrideControl: View {
     }
 }
 
-struct VersionGateOverrideControl: View {
-    let row: RemoteConfigRowDisplay
-    let viewModel: FlagOverridesViewModel
-    @State var enabled = false
-    @State var minVersion = ""
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Toggle("Enabled", isOn: $enabled)
-            HStack {
-                TextField("Min version (optional)", text: $minVersion)
-                    .autocorrectionDisabled()
-                Button("Set") {
-                    viewModel.setVersionGateOverride(
-                        key: row.id,
-                        value: VersionGateValue(enabled: enabled, minVersion: minVersion.isEmpty ? nil : minVersion)
-                    )
-                }
-            }
-        }
-        .onAppear {
-            let current = viewModel.versionGateOverrideValue(forKey: row.id) ?? viewModel.versionGateRemoteValue(forKey: row.id)
-            enabled = current.enabled
-            minVersion = current.minVersion ?? ""
-        }
-    }
-}

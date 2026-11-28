@@ -73,16 +73,16 @@ struct FirebaseRemoteConfigServiceTests {
 
     @Test func typedGettersReadBackendValues() {
         let backend = MockRemoteConfigBackend()
-        let gate = try! JSONEncoder().encode(VersionGateValue(enabled: true, minVersion: "2.0.0"))
-        backend.values["k"] = RemoteConfigValueInfo(bool: true, string: "s", number: 3, data: gate, source: .remote)
+        let group = try! JSONEncoder().encode(["enabled": true])
+        backend.values["k"] = RemoteConfigValueInfo(bool: true, string: "s", number: 3, data: group, source: .remote)
         let service = FirebaseRemoteConfigService(backend: backend)
         #expect(service.boolValue(forKey: "k"))
         #expect(service.stringValue(forKey: "k") == "s")
         #expect(service.numberValue(forKey: "k") == 3)
-        #expect(service.jsonValue(forKey: "k", as: VersionGateValue.self)?.minVersion == "2.0.0")
+        #expect(service.jsonValue(forKey: "k", as: [String: Bool].self)?["enabled"] == true)
         #expect(service.isRemoteValue(forKey: "k"))
         #expect(!service.isRemoteValue(forKey: "other"))
-        #expect(service.jsonValue(forKey: "other", as: VersionGateValue.self) == nil)
+        #expect(service.jsonValue(forKey: "other", as: [String: Bool].self) == nil)
     }
 
     @Test func setDefaultsBridgesEveryCase() {

@@ -72,7 +72,7 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
     }
 
     /// Compiled default. Google and phone OTP ship off: their SDKs/console setup aren't in place yet.
-    /// Only meaningful when `kind == .bool` — see `defaultStringValue`/`defaultNumberValue`/`defaultVersionGateValue` otherwise.
+    /// Only meaningful when `kind == .bool` — see `defaultStringValue`/`defaultNumberValue` otherwise.
     public var defaultValue: Bool {
         switch self {
         case .warranty, .bluetoothPrinting, .insightsExport, .summaryWhatsAppAuto,
@@ -99,9 +99,6 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
         default: return 0
         }
     }
-
-    /// Only meaningful when `kind == .versionGate`. No version-gated flag exists yet.
-    public var defaultVersionGateValue: VersionGateValue { VersionGateValue(enabled: false) }
 
     /// App-level only: orgs/stores/roles can't change these. Non-bool flags are always app-only —
     /// `FlagResolver`'s org/store/role layering only understands bool values.

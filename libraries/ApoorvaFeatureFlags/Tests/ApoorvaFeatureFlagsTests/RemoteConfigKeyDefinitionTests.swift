@@ -18,7 +18,6 @@ struct RemoteConfigKeyDefinitionTests {
         #expect(def.defaultBool)
         #expect(def.defaultString.isEmpty)
         #expect(def.defaultNumber == 0)
-        #expect(!def.defaultVersionGate.enabled)
     }
 
     @Test("String factory")
@@ -36,14 +35,6 @@ struct RemoteConfigKeyDefinitionTests {
         #expect(def.defaultNumber == 7.5)
     }
 
-    @Test("Version gate factory")
-    func versionGateFactory() {
-        let gate = VersionGateValue(enabled: true, minVersion: "2.0.0")
-        let def = RemoteConfigKeyDefinition.versionGate("k", title: "T", default: gate)
-        #expect(def.kind == .versionGate)
-        #expect(def.defaultVersionGate == gate)
-    }
-
     @Test("Catalog has one definition per flag with matching key, title and kind")
     func catalogMatchesFlags() {
         #expect(RemoteConfigCatalog.all.count == FeatureFlag.allCases.count)
@@ -56,7 +47,6 @@ struct RemoteConfigKeyDefinitionTests {
             case .bool: #expect(def.defaultBool == flag.defaultValue)
             case .string: #expect(def.defaultString == flag.defaultStringValue)
             case .number: #expect(def.defaultNumber == flag.defaultNumberValue)
-            case .versionGate: #expect(def.defaultVersionGate == flag.defaultVersionGateValue)
             }
         }
     }
@@ -65,12 +55,5 @@ struct RemoteConfigKeyDefinitionTests {
     func uniqueKeys() {
         let keys = RemoteConfigCatalog.all.map(\.key)
         #expect(Set(keys).count == keys.count)
-    }
-
-    @Test("VersionGateValue round-trips through Codable")
-    func gateCodable() throws {
-        let gate = VersionGateValue(enabled: true, minVersion: "1.2.0")
-        let decoded = try JSONDecoder().decode(VersionGateValue.self, from: JSONEncoder().encode(gate))
-        #expect(decoded == gate)
     }
 }

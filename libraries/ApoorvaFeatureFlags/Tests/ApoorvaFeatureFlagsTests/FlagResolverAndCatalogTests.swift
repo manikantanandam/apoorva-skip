@@ -90,33 +90,9 @@ struct RemoteConfigCatalogTests {
         }
         #expect(FeatureFlag.allCases.filter { $0.remoteConfigGroupKey == "misc" }.isEmpty)
     }
-}
 
-struct VersionGateValueTests {
-    @Test func disabledIsAlwaysOff() {
-        #expect(!VersionGateValue(enabled: false, minVersion: "1.0.0").isOn(currentAppVersion: "9.0.0"))
-    }
-
-    @Test func enabledWithNoMinVersionIsOn() {
-        #expect(VersionGateValue(enabled: true).isOn(currentAppVersion: "0.1.0"))
-    }
-
-    @Test func enabledGatesOnCurrentVersion() {
-        let gate = VersionGateValue(enabled: true, minVersion: "2.3.0")
-        #expect(!gate.isOn(currentAppVersion: "2.2.9"))
-        #expect(gate.isOn(currentAppVersion: "2.3.0"))
-        #expect(gate.isOn(currentAppVersion: "2.3.1"))
-    }
-
-    @Test("Remote config value kinds list all four shapes")
+    @Test("Remote config value kinds list all three shapes")
     func valueKinds() {
-        #expect(RemoteConfigValueKind.allCases.map(\.rawValue) == ["bool", "string", "number", "versionGate"])
-    }
-
-    @Test("Version gate without min version is on for any version, including empty")
-    func gateNoMin() {
-        #expect(VersionGateValue(enabled: true).isOn(currentAppVersion: ""))
-        #expect(VersionGateValue(enabled: true, minVersion: "1.0").isOn(currentAppVersion: "1.0.0"))
-        #expect(!VersionGateValue(enabled: true, minVersion: "1.0.1").isOn(currentAppVersion: "1.0"))
+        #expect(RemoteConfigValueKind.allCases.map(\.rawValue) == ["bool", "string", "number"])
     }
 }
