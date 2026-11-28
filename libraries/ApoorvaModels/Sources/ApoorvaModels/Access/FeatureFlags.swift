@@ -82,6 +82,37 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
     public var title: String {
         rawValue.replacingOccurrences(of: "_", with: " ").replacingOccurrences(of: ".", with: " · ").capitalized
     }
+
+    /// Every bool flag is grouped into a shared JSON-object Remote Config parameter — dot-namespaced
+    /// flags (e.g. `billing.credit_sales`) by their namespace, a standalone app module (`orders`,
+    /// `suppliers`, `expenses`) into its own group named after itself (value `{"enabled": Bool}`,
+    /// see `remoteConfigFieldName`), anything else ungrouped into the `misc` catch-all — so a
+    /// flag's parameter never changes `valueType` later (bool → object) and never needs a forced
+    /// update for legacy clients. Only non-bool flags (just `min_app_version` today) stay flat.
+    public var remoteConfigGroupKey: String? {
+        guard kind == .bool else { return nil }
+        if let dot = rawValue.firstIndex(of: ".") { return String(rawValue[..<dot]) }
+        switch self {
+        case .orders, .suppliers, .expenses: return rawValue
+        default: return "misc"
+        }
+    }
+
+    /// This flag's field name within its `remoteConfigGroupKey` JSON object: `"enabled"` for a
+    /// standalone module (its own one-member group), the dot-suffix for a namespaced flag, or the
+    /// rawValue itself for anything else (e.g. inside `misc`).
+    public var remoteConfigFieldName: String {
+        switch self {
+        case .orders, .suppliers, .expenses: return "enabled"
+        default: break
+        }
+        guard let dot = rawValue.firstIndex(of: ".") else { return rawValue }
+        return String(rawValue[rawValue.index(after: dot)...])
+    }
+
+    /// The literal Remote Config parameter name to create in the Firebase console / fetch at
+    /// runtime: the group key for grouped flags, the rawValue otherwise.
+    public var remoteConfigParameterKey: String { remoteConfigGroupKey ?? rawValue }
 }
 
 public enum FlagSource: String, Sendable, Equatable {

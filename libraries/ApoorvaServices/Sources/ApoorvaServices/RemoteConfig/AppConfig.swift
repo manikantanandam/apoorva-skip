@@ -17,7 +17,18 @@ public final class AppConfig: Sendable {
 
     public func bool(_ flag: FeatureFlag) -> Bool {
         assert(flag.kind == .bool)
-        return service.boolValue(forKey: flag.rawValue)
+        return Self.resolveBool(RemoteConfigKeyDefinition(flag: flag), from: service)
+    }
+
+    /// Group-aware bool read, shared with `FlagOverridesViewModel` so the group-decode logic
+    /// isn't duplicated: grouped flags live in a shared JSON-object Remote Config parameter (see
+    /// `FeatureFlag.remoteConfigGroupKey`), ungrouped flags are a flat bool key.
+    public static func resolveBool(_ definition: RemoteConfigKeyDefinition, from service: RemoteConfigServicing) -> Bool {
+        guard let group = definition.remoteConfigGroupKey else {
+            return service.boolValue(forKey: definition.key)
+        }
+        let values = service.jsonValue(forKey: group, as: [String: Bool].self) ?? [:]
+        return values[definition.remoteConfigFieldName] ?? definition.defaultBool
     }
 
     public func string(_ flag: FeatureFlag) -> String {

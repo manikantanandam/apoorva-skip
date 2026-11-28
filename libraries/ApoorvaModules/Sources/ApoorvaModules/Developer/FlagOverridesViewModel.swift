@@ -47,30 +47,56 @@ public class FlagOverridesViewModel {
         self.remoteConfigOverrides = tools.remoteConfigOverrides
     }
 
+    /// A key is known when it's a Remote Config parameter the current code actually reads/writes:
+    /// an ungrouped flag's own key, or the shared group key for a dot-namespaced bool flag — never
+    /// a grouped flag's own dotted key, which pre-migration builds may have persisted but which is
+    /// no longer a valid storage location (dropped as an "invented key persisted by an older build").
     private static func isKnownRemoteConfigKey(_ key: String) -> Bool {
-        RemoteConfigCatalog.all.contains { $0.key == key }
+        RemoteConfigCatalog.all.contains { $0.remoteConfigParameterKey == key }
     }
 
     /// The locally declared Remote Config keys with their live remote value and, if set, override.
     public var remoteConfigRows: [RemoteConfigRowDisplay] {
         RemoteConfigCatalog.all.map { definition in
             let remoteDisplay = Self.displayValue(forRemote: definition, service: remoteConfigService)
-            let overrideDisplay = remoteConfigOverrides[definition.key].map { raw in
-                Self.displayValue(forOverrideRaw: raw, kind: definition.kind)
-            }
             return RemoteConfigRowDisplay(id: definition.key, title: definition.title, kind: definition.kind,
-                                           remoteDisplayValue: remoteDisplay, isFromRemote: remoteConfigService.isRemoteValue(forKey: definition.key),
-                                           overrideValue: overrideDisplay)
+                                           remoteDisplayValue: remoteDisplay,
+                                           isFromRemote: remoteConfigService.isRemoteValue(forKey: definition.remoteConfigParameterKey),
+                                           overrideValue: overrideDisplayValue(for: definition))
         }
     }
 
     private static func displayValue(forRemote definition: RemoteConfigKeyDefinition, service: RemoteConfigServicing) -> String {
         switch definition.kind {
-        case .bool: return service.boolValue(forKey: definition.key) ? "On" : "Off"
+        case .bool: return AppConfig.resolveBool(definition, from: service) ? "On" : "Off"
         case .string: return service.stringValue(forKey: definition.key) ?? definition.defaultString
         case .number: return formatted(service.numberValue(forKey: definition.key) ?? definition.defaultNumber)
         case .versionGate: return formatted(service.jsonValue(forKey: definition.key, as: VersionGateValue.self) ?? definition.defaultVersionGate)
         }
+    }
+
+    /// The override display string for one row: for a grouped flag, that field's value in the
+    /// shared group blob — but only when it actually differs from the live remote/default
+    /// baseline. Overriding one field pins the *whole* group's snapshot into storage (Remote
+    /// Config overrides a parameter's value atomically), so an untouched sibling is still present
+    /// in the blob at its unchanged value; comparing against the baseline is what distinguishes
+    /// "actually overridden" from "merely carried along in the snapshot".
+    private func overrideDisplayValue(for definition: RemoteConfigKeyDefinition) -> String? {
+        guard let group = definition.remoteConfigGroupKey else {
+            guard let raw = remoteConfigOverrides[definition.key] else { return nil }
+            return Self.displayValue(forOverrideRaw: raw, kind: definition.kind)
+        }
+        let overridden = decodedGroupOverride(group: group)
+        guard let storedValue = overridden[definition.remoteConfigFieldName],
+              storedValue != AppConfig.resolveBool(definition, from: remoteConfigService) else { return nil }
+        return storedValue ? "On" : "Off"
+    }
+
+    /// Decodes the group's stored override blob, or `[:]` if there isn't one (or it's unparsable).
+    private func decodedGroupOverride(group: String) -> [String: Bool] {
+        guard let raw = remoteConfigOverrides[group], let data = raw.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([String: Bool].self, from: data) else { return [:] }
+        return decoded
     }
 
     private static func displayValue(forOverrideRaw raw: String, kind: RemoteConfigValueKind) -> String {
@@ -95,11 +121,58 @@ public class FlagOverridesViewModel {
 
     /// Setting a value equal to what Firebase (or the compiled default) already serves clears the override.
     public func setRemoteConfigOverride(_ key: String, value: String?) {
-        guard Self.isKnownRemoteConfigKey(key) else { return }
+        guard let definition = RemoteConfigCatalog.all.first(where: { $0.key == key }) else { return }
+        if let group = definition.remoteConfigGroupKey {
+            setGroupFieldOverride(definition: definition, group: group, rawValue: value)
+            return
+        }
         let stored = value.flatMap { matchesRemote(key, $0) ? nil : $0 }
         tools.setRemoteConfigOverride(key, value: stored)
         remoteConfigOverrides = tools.remoteConfigOverrides
         onChange()
+    }
+
+    /// Remote Config groups are read/overridden as one JSON object, so overriding one field
+    /// necessarily carries its siblings' current values along — overriding one field in a group
+    /// pins the whole group's snapshot until that field is cleared or all overrides are reset.
+    /// (`overrideDisplayValue` is what keeps an untouched sibling from *showing* as overridden.)
+    private func setGroupFieldOverride(definition: RemoteConfigKeyDefinition, group: String, rawValue: String?) {
+        var merged = effectiveGroupValues(group: group)
+        if let rawValue, let newBool = Bool(rawValue) {
+            merged[definition.remoteConfigFieldName] = newBool
+        } else {
+            // Clear: reset just this field to its remote/default value, keep siblings' overrides.
+            merged[definition.remoteConfigFieldName] = AppConfig.resolveBool(definition, from: remoteConfigService)
+        }
+        storeGroupOverride(group: group, values: merged)
+    }
+
+    /// Current effective (override-if-set, else remote, else compiled default) value for every
+    /// sibling field in `group`.
+    private func effectiveGroupValues(group: String) -> [String: Bool] {
+        let overridden = decodedGroupOverride(group: group)
+        let siblings = RemoteConfigCatalog.all.filter { $0.remoteConfigGroupKey == group }
+        return Dictionary(uniqueKeysWithValues: siblings.map { sibling in
+            (sibling.remoteConfigFieldName, overridden[sibling.remoteConfigFieldName] ?? AppConfig.resolveBool(sibling, from: remoteConfigService))
+        })
+    }
+
+    /// Stores the merged blob, or clears the override entirely if it now matches the no-override
+    /// baseline for every field in the group.
+    private func storeGroupOverride(group: String, values: [String: Bool]) {
+        let siblings = RemoteConfigCatalog.all.filter { $0.remoteConfigGroupKey == group }
+        let baseline = Dictionary(uniqueKeysWithValues: siblings.map {
+            ($0.remoteConfigFieldName, AppConfig.resolveBool($0, from: remoteConfigService))
+        })
+        let stored: String? = values == baseline ? nil : encodeJSON(values)
+        tools.setRemoteConfigOverride(group, value: stored)
+        remoteConfigOverrides = tools.remoteConfigOverrides
+        onChange()
+    }
+
+    private func encodeJSON(_ values: [String: Bool]) -> String? {
+        guard let data = try? JSONEncoder().encode(values), let json = String(data: data, encoding: .utf8) else { return nil }
+        return json
     }
 
     private func matchesRemote(_ key: String, _ raw: String) -> Bool {

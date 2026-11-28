@@ -63,6 +63,33 @@ struct RemoteConfigCatalogTests {
     @Test func everyNonBoolFlagIsAppOnly() {
         #expect(FeatureFlag.allCases.allSatisfy { $0.kind == .bool || $0.isAppOnly })
     }
+
+    /// Firebase Remote Config parameter keys can't contain dots — every flag's actual Remote
+    /// Config parameter (its group key for dot-namespaced bool flags, its own key otherwise)
+    /// must be dot-free, or creating it in the console fails outright.
+    @Test func everyRemoteConfigParameterKeyIsDotFree() {
+        #expect(FeatureFlag.allCases.allSatisfy { !$0.remoteConfigParameterKey.contains(".") })
+    }
+
+    /// Every bool flag shares a JSON-object group parameter (its namespace, or the `misc`
+    /// catch-all) — never a flat bool parameter of its own — so a flag's Remote Config parameter
+    /// never needs its `valueType` changed later, which would silently break legacy clients
+    /// reading it via `boolValue(forKey:)` without a forced update.
+    @Test func everyBoolFlagIsGrouped() {
+        #expect(FeatureFlag.allCases.allSatisfy { $0.kind != .bool || $0.remoteConfigGroupKey != nil })
+    }
+
+    /// `orders`/`suppliers`/`expenses` are standalone app modules, not a dot-namespace — each gets
+    /// its own one-member group (named after itself) with a single `"enabled"` field, rather than
+    /// the generic `misc` catch-all, since a module is the more likely place to grow a second
+    /// property later (e.g. a delivery-only setting on `orders`).
+    @Test func standaloneModulesAreTheirOwnGroup() {
+        for flag in [FeatureFlag.orders, .suppliers, .expenses] {
+            #expect(flag.remoteConfigGroupKey == flag.rawValue)
+            #expect(flag.remoteConfigFieldName == "enabled")
+        }
+        #expect(FeatureFlag.allCases.filter { $0.remoteConfigGroupKey == "misc" }.isEmpty)
+    }
 }
 
 struct VersionGateValueTests {

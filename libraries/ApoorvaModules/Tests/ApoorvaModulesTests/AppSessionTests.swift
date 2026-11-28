@@ -108,7 +108,8 @@ struct AppSessionTests {
 
     @Test func remoteConfigDrivesAppLayer() async {
         let remoteConfig = NoOpRemoteConfigService()
-        remoteConfig.setDefaults([FeatureFlag.orders.rawValue: .bool(false)])
+        // "orders" has no dot namespace, so it's its own one-member group: {"enabled": false}.
+        remoteConfig.setDefaults(["orders": .json(try! JSONEncoder().encode(["enabled": false]))])
         let tools = StubDeveloperTools()
         let session = makeSession(tools: tools, remoteConfig: remoteConfig)
         await session.configure(user: makeSessionUser(), platform: PlatformConfig())

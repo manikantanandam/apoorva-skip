@@ -28,19 +28,42 @@ struct FlagOverridesViewModelTests {
 
     @Test func staleInventedOverridesArePrunedOnInit() {
         let tools = StubDeveloperTools()
-        tools.remoteConfigOverrides = ["made.up": "x", FeatureFlag.holdBills.rawValue: "false"]
+        tools.remoteConfigOverrides = ["made.up": "x", "orders": "{\"enabled\":false}"]
 
         let viewModel = makeViewModel(tools: tools)
 
-        #expect(viewModel.remoteConfigOverrides == [FeatureFlag.holdBills.rawValue: "false"])
+        #expect(viewModel.remoteConfigOverrides == ["orders": "{\"enabled\":false}"])
+    }
+
+    /// `orders`/`suppliers`/`expenses` briefly shared a `misc` catch-all before getting their own
+    /// dedicated groups — a value stored at `misc` by that older build is stale now that nothing
+    /// maps to `misc` any more.
+    @Test func staleMiscGroupKeyIsPrunedOnInit() {
+        let tools = StubDeveloperTools()
+        tools.remoteConfigOverrides = ["misc": "{\"orders\":false}"]
+
+        let viewModel = makeViewModel(tools: tools)
+
+        #expect(viewModel.remoteConfigOverrides.isEmpty)
+    }
+
+    /// A grouped flag's own dotted key (e.g. "billing.hold_bills") may have been persisted by a
+    /// pre-grouping build; it's no longer a valid storage key now that siblings share "billing".
+    @Test func staleFlatKeyForGroupedFlagIsPrunedOnInit() {
+        let tools = StubDeveloperTools()
+        tools.remoteConfigOverrides = [FeatureFlag.holdBills.rawValue: "false"]
+
+        let viewModel = makeViewModel(tools: tools)
+
+        #expect(viewModel.remoteConfigOverrides.isEmpty)
     }
 
     @Test func rowShowsRemoteValueWhenNotOverridden() {
         let remoteConfig = NoOpRemoteConfigService()
-        remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
+        remoteConfig.setDefaults(["orders": .json(try! JSONEncoder().encode(["enabled": true]))])
         let viewModel = makeViewModel(remoteConfig: remoteConfig)
 
-        let row = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }
+        let row = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.orders.rawValue }
         #expect(row?.remoteDisplayValue == "On")
         #expect(row?.isOverridden == false)
         #expect(row?.effectiveDisplayValue == "On")
@@ -48,12 +71,78 @@ struct FlagOverridesViewModelTests {
 
     @Test func rowIsOnlyMarkedRemoteWhenFirebaseServesTheKey() {
         let remoteConfig = NoOpRemoteConfigService()
-        remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
+        remoteConfig.setDefaults(["orders": .json(try! JSONEncoder().encode(["enabled": true]))])
+        let viewModel = makeViewModel(remoteConfig: remoteConfig)
+        #expect(viewModel.remoteConfigRows.first { $0.id == FeatureFlag.orders.rawValue }?.isFromRemote == false)
+
+        remoteConfig.markRemote(["orders"])
+        #expect(viewModel.remoteConfigRows.first { $0.id == FeatureFlag.orders.rawValue }?.isFromRemote == true)
+    }
+
+    @Test func groupedFlagReadsFromSharedJSONParameter() {
+        let remoteConfig = NoOpRemoteConfigService()
+        remoteConfig.setDefaults(["billing": .json(try! JSONEncoder().encode(["hold_bills": false, "returns": true]))])
+        let viewModel = makeViewModel(remoteConfig: remoteConfig)
+
+        #expect(viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }?.remoteDisplayValue == "Off")
+        #expect(viewModel.remoteConfigRows.first { $0.id == FeatureFlag.returns.rawValue }?.remoteDisplayValue == "On")
+    }
+
+    @Test func isFromRemoteIsSharedAcrossGroupSiblings() {
+        let remoteConfig = NoOpRemoteConfigService()
+        remoteConfig.setDefaults(["billing": .json(try! JSONEncoder().encode(["hold_bills": true, "returns": true]))])
         let viewModel = makeViewModel(remoteConfig: remoteConfig)
         #expect(viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }?.isFromRemote == false)
 
-        remoteConfig.markRemote([FeatureFlag.holdBills.rawValue])
+        remoteConfig.markRemote(["billing"])
         #expect(viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }?.isFromRemote == true)
+        #expect(viewModel.remoteConfigRows.first { $0.id == FeatureFlag.returns.rawValue }?.isFromRemote == true)
+    }
+
+    @Test func overridingOneGroupedFieldDoesNotMarkSiblingAsOverridden() {
+        let remoteConfig = NoOpRemoteConfigService()
+        remoteConfig.setDefaults(["billing": .json(try! JSONEncoder().encode(["hold_bills": true, "returns": true]))])
+        let viewModel = makeViewModel(remoteConfig: remoteConfig)
+
+        viewModel.setRemoteConfigOverride(FeatureFlag.holdBills.rawValue, value: "false")
+
+        let holdBillsRow = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }
+        let returnsRow = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.returns.rawValue }
+        #expect(holdBillsRow?.isOverridden == true)
+        #expect(holdBillsRow?.effectiveDisplayValue == "Off")
+        #expect(returnsRow?.isOverridden == false)
+        #expect(returnsRow?.effectiveDisplayValue == "On")
+    }
+
+    @Test func clearingOneGroupedOverridePreservesSiblingOverride() {
+        let remoteConfig = NoOpRemoteConfigService()
+        remoteConfig.setDefaults(["billing": .json(try! JSONEncoder().encode(["hold_bills": true, "returns": true]))])
+        let viewModel = makeViewModel(remoteConfig: remoteConfig)
+
+        viewModel.setRemoteConfigOverride(FeatureFlag.holdBills.rawValue, value: "false")
+        viewModel.setRemoteConfigOverride(FeatureFlag.returns.rawValue, value: "false")
+
+        viewModel.setRemoteConfigOverride(FeatureFlag.holdBills.rawValue, value: nil)
+
+        let holdBillsRow = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }
+        let returnsRow = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.returns.rawValue }
+        #expect(holdBillsRow?.isOverridden == false)
+        #expect(holdBillsRow?.effectiveDisplayValue == "On")
+        #expect(returnsRow?.isOverridden == true)
+        #expect(returnsRow?.effectiveDisplayValue == "Off")
+    }
+
+    @Test func overridingGroupedFlagBackToBaselineClearsTheOverride() {
+        let remoteConfig = NoOpRemoteConfigService()
+        remoteConfig.setDefaults(["billing": .json(try! JSONEncoder().encode(["hold_bills": true, "returns": true]))])
+        let tools = StubDeveloperTools()
+        let viewModel = makeViewModel(remoteConfig: remoteConfig, tools: tools)
+
+        viewModel.setRemoteConfigOverride(FeatureFlag.holdBills.rawValue, value: "false")
+        #expect(tools.remoteConfigOverrides["billing"] != nil)
+
+        viewModel.setRemoteConfigOverride(FeatureFlag.holdBills.rawValue, value: "true")
+        #expect(tools.remoteConfigOverrides["billing"] == nil)
     }
 
     @Test func onChangeFiresWhenOverridesChange() async {
@@ -70,11 +159,11 @@ struct FlagOverridesViewModelTests {
 
     @Test func rowShowsOverrideAndIsMarkedOverridden() {
         let remoteConfig = NoOpRemoteConfigService()
-        remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
+        remoteConfig.setDefaults(["orders": .json(try! JSONEncoder().encode(["enabled": true]))])
         let viewModel = makeViewModel(remoteConfig: remoteConfig)
 
-        viewModel.setRemoteConfigOverride(FeatureFlag.holdBills.rawValue, value: "false")
-        let row = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }
+        viewModel.setRemoteConfigOverride(FeatureFlag.orders.rawValue, value: "false")
+        let row = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.orders.rawValue }
         #expect(row?.remoteDisplayValue == "On")
         #expect(row?.isOverridden == true)
         #expect(row?.effectiveDisplayValue == "Off")
@@ -82,10 +171,10 @@ struct FlagOverridesViewModelTests {
 
     @Test func overridingBackToRemoteValueClearsTheOverride() {
         let remoteConfig = NoOpRemoteConfigService()
-        remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
+        remoteConfig.setDefaults(["orders": .json(try! JSONEncoder().encode(["enabled": true]))])
         let tools = StubDeveloperTools()
         let viewModel = makeViewModel(remoteConfig: remoteConfig, tools: tools)
-        let key = FeatureFlag.holdBills.rawValue
+        let key = FeatureFlag.orders.rawValue
 
         viewModel.setRemoteConfigOverride(key, value: "false")
         #expect(viewModel.remoteConfigRows.first { $0.id == key }?.isOverridden == true)
@@ -111,23 +200,23 @@ struct FlagOverridesViewModelTests {
     @Test func clearingOverrideStillNotifiesChange() {
         var changes = 0
         let remoteConfig = NoOpRemoteConfigService()
-        remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
+        remoteConfig.setDefaults(["orders": .json(try! JSONEncoder().encode(["enabled": true]))])
         let viewModel = FlagOverridesViewModel(tools: StubDeveloperTools(), remoteConfigService: remoteConfig,
                                                onChange: { changes += 1 })
 
-        viewModel.setRemoteConfigOverride(FeatureFlag.holdBills.rawValue, value: "true")
+        viewModel.setRemoteConfigOverride(FeatureFlag.orders.rawValue, value: "true")
 
         #expect(changes == 1)
     }
 
     @Test func resetRevertsToRemoteValue() {
         let remoteConfig = NoOpRemoteConfigService()
-        remoteConfig.setDefaults([FeatureFlag.holdBills.rawValue: .bool(true)])
+        remoteConfig.setDefaults(["orders": .json(try! JSONEncoder().encode(["enabled": true]))])
         let viewModel = makeViewModel(remoteConfig: remoteConfig)
 
-        viewModel.setRemoteConfigOverride(FeatureFlag.holdBills.rawValue, value: "false")
+        viewModel.setRemoteConfigOverride(FeatureFlag.orders.rawValue, value: "false")
         viewModel.resetRemoteConfigOverrides()
-        let row = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.holdBills.rawValue }
+        let row = viewModel.remoteConfigRows.first { $0.id == FeatureFlag.orders.rawValue }
         #expect(row?.isOverridden == false)
         #expect(row?.effectiveDisplayValue == "On")
     }
