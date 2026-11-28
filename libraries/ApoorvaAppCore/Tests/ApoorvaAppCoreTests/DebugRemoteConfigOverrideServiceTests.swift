@@ -6,7 +6,7 @@
 import Testing
 import Foundation
 import ApoorvaModels
-import ApoorvaServices
+import ApoorvaFeatureFlags
 import ApoorvaEnvironment
 @testable import ApoorvaAppCore
 

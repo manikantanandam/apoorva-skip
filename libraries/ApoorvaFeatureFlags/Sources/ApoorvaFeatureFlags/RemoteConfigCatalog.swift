@@ -1,9 +1,10 @@
 //
 //  RemoteConfigCatalog.swift
-//  ApoorvaModels
+//  ApoorvaFeatureFlags
 //
 
 import Foundation
+import ApoorvaModels
 
 public enum RemoteConfigValueKind: String, Sendable, CaseIterable {
     case bool, string, number, versionGate

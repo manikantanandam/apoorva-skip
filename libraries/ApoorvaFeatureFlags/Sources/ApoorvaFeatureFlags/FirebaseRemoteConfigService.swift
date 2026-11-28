@@ -1,11 +1,10 @@
 //
 //  FirebaseRemoteConfigService.swift
-//  ApoorvaServices
+//  ApoorvaFeatureFlags
 //
 
 import Foundation
 import SkipFirebaseRemoteConfig
-import ApoorvaModels
 import ManiLogger
 
 private let logger = AppLogger(category: .config)

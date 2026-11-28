@@ -97,6 +97,22 @@
 - Firebase console (`apoorva-debug-8f9eb`): redeployed, 14 parameters — `orders`, `suppliers`, `expenses` each `{"enabled": true}`, replacing the short-lived combined `modules` parameter; confirmed via `firebase remoteconfig:get`.
 - **Not yet run**: `scripts/build.sh ApoorvaModels/ApoorvaServices/ApoorvaModules test` — no iOS Simulator in this worktree. All reasoning above is from manual tracing, not a test run; verify before relying on it further.
 
+## Update 2026-11-28: extracted into its own `ApoorvaFeatureFlags` package
+
+**Motivation:** every module that only wanted to read a flag had to `import ApoorvaServices`, which pulls in Firestore/Auth/Analytics/Crashlytics/Performance unconditionally (one monolithic target) — no way to depend on just the flag-reading path. Not a Remote Config logic change: same resolution order, same namespace-grouping scheme, same tests (moved/split, not rewritten).
+
+**What moved:** everything flag-related, catalogue and sync layer alike, into a new local package `libraries/ApoorvaFeatureFlags`:
+- From `ApoorvaModels/Access/`: `FeatureFlags.swift` (`FeatureFlag`, `FlagSource`, `FlagResolution`, `FlagResolver`), `RemoteConfigCatalog.swift` (`RemoteConfigKeyDefinition`, `RemoteConfigCatalog.all`, `VersionGateValue`).
+- From `ApoorvaServices/RemoteConfig/`: `RemoteConfigServicing.swift`, `AppConfig.swift`, `FirebaseRemoteConfigService.swift`, `NoOpRemoteConfigService.swift`, `FakeRemoteConfigService.swift`, `RemoteConfigCatalogDefaults.swift`, `RemoteConfigLogFormatter.swift`.
+- `ApoorvaServices` dropped its `SkipFirebaseRemoteConfig` dependency entirely — nothing in it references Remote Config any more.
+- `DebugRemoteConfigOverrideService` stays in `ApoorvaAppCore` (needs `ApoorvaEnvironment`'s `DeveloperToolsProtocol` too), just re-pointed at `ApoorvaFeatureFlags` for the protocol.
+
+**Why the catalogue moved too, not just the sync layer:** `FeatureFlag`/`RemoteConfigCatalog`/`FlagResolver` have no dependency on anything else in `ApoorvaModels`, so nothing stops them moving — except `ApoorvaModels/Org/Vertical.swift`, which read `FeatureFlag.<case>.rawValue` to seed org flag defaults. Since `ApoorvaModels` sits beneath every other package, having it depend on `ApoorvaFeatureFlags` would drag Firebase into the base of the whole module graph (including `ApoorvaOfflineStorage`, which has zero Firebase dependency today). Fixed by changing `Vertical.defaultFlags` to raw string literals instead of the enum; `VerticalTests.defaultFlags` still asserts those literals against the real `FeatureFlag` cases via a test-only dependency on `ApoorvaFeatureFlags` in `ApoorvaModelsTests` (the library target itself has no such dependency).
+
+**Resulting graph:** `ApoorvaFeatureFlags` depends only on `ApoorvaModels` (for `AppVersion`, used by `VersionGateValue.isOn`) + `ManiLogger` + `skip-firebase`'s RemoteConfig/Core products. `ApoorvaModules` and `ApoorvaAppCore` now depend on `ApoorvaServices` (unrelated services) and `ApoorvaFeatureFlags` (flags/config) side by side.
+
+**Not done:** no compatibility re-export from `ApoorvaServices` — every known call site's import was updated directly, since a shim would have let old call sites keep the heavy import without ever adopting the lighter one.
+
 ## Update 2026-11-13: local flag override layer removed
 
 - The bool "developer override" layer (`DeveloperTools.flagOverrides`, `FlagResolver` `developerOverride`, `FlagSource.developer`) and the Feature flags screen's "Local overrides" section were removed. The screen only overrides existing catalogue keys, through the Remote Config section (app layer); `setRemoteConfigOverride` ignores unknown keys and invented keys persisted earlier are pruned on init.

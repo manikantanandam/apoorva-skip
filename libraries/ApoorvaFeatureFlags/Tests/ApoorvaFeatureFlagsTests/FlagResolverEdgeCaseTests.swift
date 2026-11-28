@@ -1,11 +1,11 @@
 //
 //  FlagResolverEdgeCaseTests.swift
-//  ApoorvaModels
+//  ApoorvaFeatureFlags
 //
 
 import Testing
 import Foundation
-@testable import ApoorvaModels
+@testable import ApoorvaFeatureFlags
 
 @Suite("FeatureFlag & FlagResolver Edge Case Tests")
 struct FlagResolverEdgeCaseTests {

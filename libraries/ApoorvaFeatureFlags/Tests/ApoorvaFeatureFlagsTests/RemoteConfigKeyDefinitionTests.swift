@@ -1,11 +1,11 @@
 //
 //  RemoteConfigKeyDefinitionTests.swift
-//  ApoorvaModels
+//  ApoorvaFeatureFlags
 //
 
 import Testing
 import Foundation
-@testable import ApoorvaModels
+@testable import ApoorvaFeatureFlags
 
 @Suite("RemoteConfigKeyDefinition Tests")
 struct RemoteConfigKeyDefinitionTests {

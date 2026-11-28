@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Overview** — offline-first POS app, Swift/SwiftUI via Skip (iOS + Android), SQLite source of truth syncing to Firestore.
 - **Layout** — `app/` (Skip app shell) + `libraries/Apoorva*` (independent SwiftPM packages); open `app/Project.xcworkspace` in Xcode.
-- **Module dependency graph** — chain from `ApoorvaModels` up through `ApoorvaOfflineStorage` → `ApoorvaServices`/`ApoorvaRepository` → `ApoorvaModules` → `ApoorvaAppCore` → app.
+- **Module dependency graph** — chain from `ApoorvaModels` up through `ApoorvaOfflineStorage` → `ApoorvaServices`/`ApoorvaRepository` → `ApoorvaModules` → `ApoorvaAppCore` → app; `ApoorvaFeatureFlags` depends only on `ApoorvaModels` and feeds into `ApoorvaModules`/`ApoorvaAppCore` alongside `ApoorvaServices`.
 - **Commands** — **mandatory:** use `scripts/build.sh`/`scripts/toggle-library.sh`; never call `xcodebuild`, `swift build`, or `swift test` directly.
 - **Conventions** — Swift 6 strict concurrency; never edit generated Kotlin or anything under `.build/`; never write files via Bash heredoc or run `git merge`/`gh pr merge`.
 - **Docs** — `docs/01`–`docs/12` cover product/architecture/security/etc.; check before product or architecture decisions.
@@ -27,12 +27,14 @@ Apoorva is an offline-first POS / business management app written in Swift + Swi
 ```
 app (Apoorva) → ApoorvaAppCore → ApoorvaModules → ApoorvaRepository → ApoorvaOfflineStorage → ApoorvaModels → ApoorvaUtilities
                                               ↘ ApoorvaUtilities          ↘ ApoorvaServices → ApoorvaModels
+                                              ↘ ApoorvaFeatureFlags → ApoorvaModels
 ```
 
 - **ManiLogger** (remote, `Libraries/ManiLogger`, pinned in `scripts/library-registry.json`) — logger + in-app log viewer used by every module (`private let logger = AppLogger(category:)`); console + Logs screen + file + Crashlytics sinks registered in `AppContainer`. Never use `print()`; see `docs/decisions/logging.md`.
 - **ApoorvaModels** — pure data models (`Codable`, `SQLCodable`).
 - **ApoorvaOfflineStorage** — local DB layer. Uses the `SkipSQL/` backend (`SkipSqlDatabase`). DAOs are protocol-based (e.g. `InventoryItemLocalStorageProtocol`).
 - **ApoorvaServices** — Firebase (Auth, Firestore) via `firebase-ios-sdk` directly, e.g. `AuthService`, `UserService`; also `Observability/` for Analytics/Crashlytics/Performance (`AnalyticsServicing`, `CrashReportingServicing` and `PerformanceMonitoringServicing` are provider-agnostic; the `Firebase*Service` classes are the Firebase implementations).
+- **ApoorvaFeatureFlags** — the isolated home for everything flag-related: the `FeatureFlag` catalogue, `FlagResolver`, and the Remote Config sync layer (`RemoteConfigServicing`, `AppConfig`). Depends only on `ApoorvaModels` (for `AppVersion`) + Firebase's RemoteConfig/Core products — not Firestore/Auth/Analytics/Crashlytics/Performance. See `docs/decisions/remote-config.md`.
 - **ApoorvaRepository** — offline-first coordination between local storage and services.
 - **ApoorvaModules** — feature SwiftUI views + `@Observable` view models (POS, Cashflow, DailyCashflowSummary, Inventory, Customers, Sale, Login, Profile).
 - **ApoorvaAppCore** — composition root. `Containers/AppContainer.swift` builds `ServicesContainer`, `OfflineStorageContainer`, `RepositoryContainer`, `ModulesContainer` with lazy properties; no singletons. New dependencies get wired here and injected downward — the Analytics/Crashlytics/Performance services are wired in `ServicesContainer` the same way. Also holds `Router/` and the root `MainView`/`HomeView`.

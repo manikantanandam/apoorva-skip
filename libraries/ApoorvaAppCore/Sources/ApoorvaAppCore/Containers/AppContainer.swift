@@ -10,7 +10,7 @@ import ApoorvaModels
 import ApoorvaModules
 import ApoorvaUtilities
 import ApoorvaEnvironment
-import ApoorvaServices
+import ApoorvaFeatureFlags
 import ManiLogger
 
 private let logger = AppLogger(category: .app)

@@ -1,10 +1,10 @@
 //
 //  RemoteConfigLogFormatterTests.swift
-//  ApoorvaServices
+//  ApoorvaFeatureFlags
 //
 
 import Testing
-@testable import ApoorvaServices
+@testable import ApoorvaFeatureFlags
 
 struct RemoteConfigLogFormatterTests {
     @Test func summaryListsOnlyFirebaseValuesAndCountsDefaults() {

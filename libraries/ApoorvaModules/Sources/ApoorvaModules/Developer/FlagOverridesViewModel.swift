@@ -6,8 +6,7 @@
 import Foundation
 import SkipFuse
 import Observation
-import ApoorvaModels
-import ApoorvaServices
+import ApoorvaFeatureFlags
 import ApoorvaEnvironment
 
 /// One row of the catalogue-driven Remote Config list in Developer Settings: the live remote

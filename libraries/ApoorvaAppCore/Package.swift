@@ -19,6 +19,7 @@ let package = Package(
         .package(path: "../ApoorvaEnvironment"),
         .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.2.1"),
         .package(path: "../ApoorvaServices"),
+        .package(path: "../ApoorvaFeatureFlags"),
         .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.19.2"),
         .package(url: "https://github.com/skiptools/skip.git", from: "1.9.13"),
         .package(url: "https://github.com/skiptools/skip-fuse-ui.git", from: "1.0.0")
@@ -34,6 +35,7 @@ let package = Package(
                 .product(name: "ApoorvaEnvironment", package: "ApoorvaEnvironment"),
                 .product(name: "ManiLogger", package: "ManiLogger"),
                 .product(name: "ApoorvaServices", package: "ApoorvaServices"),
+                .product(name: "ApoorvaFeatureFlags", package: "ApoorvaFeatureFlags"),
                 // Unconditional (like the app target): skipstone resolves the Kotlin side's dependencies on the
                 // host, so an Android-only condition leaves the generated bridge code without `skip.bridge`.
                 .product(name: "SkipFuseUI", package: "skip-fuse-ui")
@@ -48,6 +50,7 @@ let package = Package(
                 "ApoorvaAppCore",
                 .product(name: "ApoorvaEnvironment", package: "ApoorvaEnvironment"),
                 .product(name: "ApoorvaServices", package: "ApoorvaServices"),
+                .product(name: "ApoorvaFeatureFlags", package: "ApoorvaFeatureFlags"),
                 .product(name: "FirebaseCore", package: "firebase-ios-sdk")
             ]
         ),

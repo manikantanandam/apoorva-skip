@@ -17,6 +17,7 @@ let package = Package(
         .package(path: "../ApoorvaRepository"),
         .package(path: "../ApoorvaServices"),
         .package(path: "../ApoorvaModels"),
+        .package(path: "../ApoorvaFeatureFlags"),
         .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
         .package(path: "../ApoorvaEnvironment"),
         .package(url: "https://github.com/manikantanandam/ManiLogger.git", exact: "1.2.1"),
@@ -33,6 +34,7 @@ let package = Package(
                 .product(name: "ApoorvaRepository", package: "ApoorvaRepository"),
                 .product(name: "ApoorvaUtilities", package: "ManiUtilities"),
                 .product(name: "ApoorvaEnvironment", package: "ApoorvaEnvironment"),
+                .product(name: "ApoorvaFeatureFlags", package: "ApoorvaFeatureFlags"),
                 .product(name: "ManiLogger", package: "ManiLogger"),
                 .product(name: "ManiSwiftUIComponents", package: "ManiSwiftUIComponents"),
                 // Unconditional (like the app target): skipstone resolves the Kotlin side's dependencies on the
@@ -50,6 +52,7 @@ let package = Package(
                 .product(name: "ApoorvaServices", package: "ApoorvaServices"),
                 .product(name: "ApoorvaModels", package: "ApoorvaModels"),
                 .product(name: "ApoorvaRepository", package: "ApoorvaRepository"),
+                .product(name: "ApoorvaFeatureFlags", package: "ApoorvaFeatureFlags"),
                 .product(name: "ManiLogger", package: "ManiLogger")
             ]
         ),

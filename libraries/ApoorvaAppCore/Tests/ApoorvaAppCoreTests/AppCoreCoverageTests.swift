@@ -10,6 +10,7 @@ import FirebaseCore
 import ApoorvaModels
 import ApoorvaModules
 import ApoorvaServices
+import ApoorvaFeatureFlags
 import ApoorvaEnvironment
 import ManiLogger
 @testable import ApoorvaAppCore

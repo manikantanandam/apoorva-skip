@@ -5,6 +5,7 @@
 
 import Testing
 import Foundation
+import ApoorvaFeatureFlags
 @testable import ApoorvaModels
 
 @Suite("Vertical Model Tests")

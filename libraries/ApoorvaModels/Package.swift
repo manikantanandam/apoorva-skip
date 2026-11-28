@@ -16,7 +16,11 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0")
+        .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
+        // Test-only: lets tests assert `Vertical.defaultFlags`' raw string keys against the real
+        // `FeatureFlag` cases. The library target itself has no dependency on `ApoorvaFeatureFlags` —
+        // depending on it here would pull Firebase into the base of the whole module graph.
+        .package(path: "../ApoorvaFeatureFlags")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -31,7 +35,8 @@ let package = Package(
             name: "ApoorvaModelsTests",
             dependencies: [
                 "ApoorvaModels",
-                .product(name: "ApoorvaUtilities", package: "ManiUtilities")
+                .product(name: "ApoorvaUtilities", package: "ManiUtilities"),
+                .product(name: "ApoorvaFeatureFlags", package: "ApoorvaFeatureFlags")
             ]
         ),
 

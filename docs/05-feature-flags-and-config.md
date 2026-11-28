@@ -18,7 +18,7 @@ Rules:
 4. **User preferences** (theme, compact lists) are not flags. They live in Settings.
 
 ## Implementation
-- `FeatureFlagService` protocol in `ApoorvaServices`, with a `FlagResolver` that is a pure function in `ApoorvaModels`, fully unit tested.
+- `RemoteConfigServicing` protocol in `ApoorvaFeatureFlags`, with a `FlagResolver` that is a pure function (also in `ApoorvaFeatureFlags`), fully unit tested.
 - Sources: Firebase Remote Config (app level, compiled defaults) plus Firestore docs for org/store/role, cached in SQLite so flags work offline.
 - View models ask `flags.isOn(.returns)`. Views never read Remote Config directly.
 - Kill switches are checked at the start of each operation, not cached for the session.

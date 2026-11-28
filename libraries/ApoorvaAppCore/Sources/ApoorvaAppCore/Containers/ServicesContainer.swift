@@ -7,6 +7,7 @@
 
 import Foundation
 import ApoorvaServices
+import ApoorvaFeatureFlags
 
 // In ApoorvaAppCore
 @MainActor

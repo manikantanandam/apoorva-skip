@@ -1,10 +1,9 @@
 //
 //  AppConfig.swift
-//  ApoorvaServices
+//  ApoorvaFeatureFlags
 //
 
 import Foundation
-import ApoorvaModels
 
 /// The one typed read path for app-level Remote Config. Keyed by `FeatureFlag`, so callers never
 /// touch raw keys or repeat the compiled-default fallback. Built once by the app container.

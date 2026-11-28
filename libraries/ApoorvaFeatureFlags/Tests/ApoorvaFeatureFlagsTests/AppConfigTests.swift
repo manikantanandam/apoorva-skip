@@ -1,12 +1,11 @@
 //
 //  AppConfigTests.swift
-//  ApoorvaServices
+//  ApoorvaFeatureFlags
 //
 
 import Testing
 import Foundation
-import ApoorvaModels
-@testable import ApoorvaServices
+@testable import ApoorvaFeatureFlags
 
 struct AppConfigTests {
     @Test func stringFallsBackToCompiledDefaultWhenNoRemoteValue() {

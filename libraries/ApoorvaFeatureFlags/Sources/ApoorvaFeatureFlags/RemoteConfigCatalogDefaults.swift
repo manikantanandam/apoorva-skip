@@ -1,10 +1,9 @@
 //
 //  RemoteConfigCatalogDefaults.swift
-//  ApoorvaServices
+//  ApoorvaFeatureFlags
 //
 
 import Foundation
-import ApoorvaModels
 
 /// Builds Remote Config's compiled defaults from the single local `RemoteConfigCatalog`,
 /// so the key list isn't duplicated between the two. Dot-namespaced bool flags are bucketed into
