@@ -5,7 +5,6 @@
 
 import Testing
 import Foundation
-import ApoorvaFeatureFlags
 @testable import ApoorvaModels
 
 @Suite("Vertical Model Tests")
@@ -34,13 +33,16 @@ struct VerticalTests {
         #expect(Vertical.parlour.billingStyle == .services)
     }
 
+    /// Raw `FeatureFlag` keys, not the enum itself — `ApoorvaModels` doesn't depend on
+    /// `ApoorvaFeatureFlags` (that would be a circular package dependency, since
+    /// `ApoorvaFeatureFlags` depends on `ApoorvaModels` for `AppVersion`).
     @Test("Default flags seed the expected features")
     func defaultFlags() {
-        #expect(Vertical.kirana.defaultFlags == [FeatureFlag.orders.rawValue: true])
-        #expect(Vertical.fancy.defaultFlags == [FeatureFlag.warranty.rawValue: true])
-        #expect(Vertical.jewellery.defaultFlags == [FeatureFlag.orders.rawValue: true])
-        #expect(Vertical.parlour.defaultFlags == [FeatureFlag.staffCommission.rawValue: true,
-                                                   FeatureFlag.planPackages.rawValue: true])
+        #expect(Vertical.kirana.defaultFlags == ["orders": true])
+        #expect(Vertical.fancy.defaultFlags == ["billing.warranty": true])
+        #expect(Vertical.jewellery.defaultFlags == ["orders": true])
+        #expect(Vertical.parlour.defaultFlags == ["billing.staff_commission": true,
+                                                   "plan.packages": true])
     }
 
     @Test("Home highlight titles per vertical")

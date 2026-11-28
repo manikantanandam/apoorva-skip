@@ -16,11 +16,12 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0"),
-        // Test-only: lets tests assert `Vertical.defaultFlags`' raw string keys against the real
-        // `FeatureFlag` cases. The library target itself has no dependency on `ApoorvaFeatureFlags` —
-        // depending on it here would pull Firebase into the base of the whole module graph.
-        .package(path: "../ApoorvaFeatureFlags")
+        .package(url: "https://github.com/manikantanandam/ManiUtilities.git", exact: "1.0.0")
+        // No dependency on ApoorvaFeatureFlags, even test-only: ApoorvaFeatureFlags depends on
+        // ApoorvaModels (for AppVersion), so the reverse would be a circular package dependency —
+        // which Xcode's plugin-context graph walker doesn't detect, it just recurses until it
+        // stack-overflows (crashes Xcode outright rather than erroring). Vertical.defaultFlags and
+        // its test both use raw string literals instead of the FeatureFlag enum for this reason.
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -35,8 +36,7 @@ let package = Package(
             name: "ApoorvaModelsTests",
             dependencies: [
                 "ApoorvaModels",
-                .product(name: "ApoorvaUtilities", package: "ManiUtilities"),
-                .product(name: "ApoorvaFeatureFlags", package: "ApoorvaFeatureFlags")
+                .product(name: "ApoorvaUtilities", package: "ManiUtilities")
             ]
         ),
 
