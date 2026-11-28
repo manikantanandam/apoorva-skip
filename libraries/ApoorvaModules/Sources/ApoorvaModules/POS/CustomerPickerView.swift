@@ -69,7 +69,7 @@ public struct CustomerPickerView: View {
             if focus != .search {
                 SectionHeader(title: "New customer")
                 ManiInputField(label: "Phone", text: $viewModel.newPhone, placeholder: "98480 55667",
-                               focus: focusBinding(.phone), submitKind: .next) {
+                               keyboard: .phone, focus: focusBinding(.phone), submitKind: .next) {
                     logger.info("Phone submitted, moving focus to Name")
                     focus = .name
                 }
