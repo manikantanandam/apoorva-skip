@@ -57,6 +57,28 @@ jobs:
           brew install skiptools/skip/skip
           skip android sdk install
 
+      # `skip export` resolves+builds the whole SwiftPM graph (Firebase, Skip libraries) under
+      # app/.build, then skipstone transpiles it and Gradle compiles the Android side from there —
+      # with no cache this is a cold build every run (~35-50 min). Keyed on the resolved dependency
+      # graph so a dependency bump invalidates it; restore-keys gives a partial hit otherwise.
+      - name: Cache SwiftPM/skipstone build (app/.build)
+        uses: actions/cache@v4
+        with:
+          path: app/.build
+          key: spm-build-${{ runner.os }}-${{ hashFiles('app/Package.resolved', 'libraries/**/Package.resolved', 'app/Skip.env') }}
+          restore-keys: |
+            spm-build-${{ runner.os }}-
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('app/Package.resolved', 'libraries/**/Package.resolved') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
       # The google-services plugin fails the build without it; test mode never touches Firebase.
       - name: Write Android Firebase config
         env:
