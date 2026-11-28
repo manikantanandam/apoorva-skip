@@ -35,8 +35,7 @@ let package = Package(
                 .product(name: "SkipFirebaseAuth", package: "skip-firebase"),
                 .product(name: "SkipFirebaseAnalytics", package: "skip-firebase"),
                 .product(name: "SkipFirebaseCrashlytics", package: "skip-firebase"),
-                .product(name: "SkipFirebasePerformance", package: "skip-firebase"),
-                .product(name: "SkipFirebaseRemoteConfig", package: "skip-firebase")
+                .product(name: "SkipFirebasePerformance", package: "skip-firebase")
             ]
         ),
         .testTarget(

@@ -4,7 +4,7 @@
 //
 
 import Foundation
-import ApoorvaServices
+import ApoorvaFeatureFlags
 import ApoorvaEnvironment
 
 /// Wraps a `RemoteConfigServicing` with local, debug-only overrides from `DeveloperTools`.

@@ -1,11 +1,11 @@
 //
 //  FlagResolverEdgeCaseTests.swift
-//  ApoorvaModels
+//  ApoorvaFeatureFlags
 //
 
 import Testing
 import Foundation
-@testable import ApoorvaModels
+@testable import ApoorvaFeatureFlags
 
 @Suite("FeatureFlag & FlagResolver Edge Case Tests")
 struct FlagResolverEdgeCaseTests {
@@ -37,7 +37,6 @@ struct FlagResolverEdgeCaseTests {
         #expect(FeatureFlag.minAppVersion.defaultStringValue == "1.0.0")
         #expect(FeatureFlag.orders.defaultStringValue.isEmpty)
         #expect(FeatureFlag.orders.defaultNumberValue == 0)
-        #expect(!FeatureFlag.orders.defaultVersionGateValue.enabled)
     }
 
     @Test("Opt-in flags ship off")

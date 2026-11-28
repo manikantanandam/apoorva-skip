@@ -1,12 +1,13 @@
 //
 //  FeatureFlags.swift
-//  ApoorvaModels
+//  ApoorvaFeatureFlags
 //
 
 import Foundation
 
 /// The docs/05 flag catalogue. Raw values are the flag keys used in config docs.
 public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
+    // billing — grouped under the "billing" Remote Config parameter
     case creditSales = "billing.credit_sales"
     case returns = "billing.returns"
     case holdBills = "billing.hold_bills"
@@ -15,26 +16,48 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
     case calculatorMode = "billing.calculator_mode"
     case wholesalePrice = "billing.wholesale_price"
     case warranty = "billing.warranty"
+
+    // printing — grouped under "printing"
     case bluetoothPrinting = "printing.bluetooth"
+
+    // inventory — grouped under "inventory"
     case inventoryEdit = "inventory.edit"
+
+    // insights — grouped under "insights"
     case insightsView = "insights.view"
     case insightsExport = "insights.export"
+
+    // standalone modules — each its own one-field group, e.g. "orders" → {"enabled": true}
     case orders
     case suppliers
     case expenses
+
+    // staff — grouped under "staff"
     case staffAttendance = "staff.attendance"
+
+    // offers — grouped under "offers"
     case offersMessages = "offers.messages"
+
+    // summary — grouped under "summary"
     case summaryWhatsAppAuto = "summary.whatsapp_auto"
+
+    // plan — grouped under "plan"
     case planStaffAccounts = "plan.staff_accounts"
     case planReportsExport = "plan.reports_export"
     case planPackages = "plan.packages"
+
+    // kill — grouped under "kill"
     case killSyncWrites = "kill.sync_writes"
+
+    // auth — grouped under "auth"
     case authPhoneOTP = "auth.phone_otp"
     case authEmailPassword = "auth.email_password"
     case authGoogle = "auth.google"
     case authApple = "auth.apple"
     case authEmailVerificationRequired = "auth.email_verification_required"
     case authRegistrationsOpen = "auth.registrations_open"
+
+    // non-bool, ungrouped
     case minAppVersion = "min_app_version"
     case syncIntervalSec = "sync.interval_sec"
 
@@ -49,7 +72,7 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
     }
 
     /// Compiled default. Google and phone OTP ship off: their SDKs/console setup aren't in place yet.
-    /// Only meaningful when `kind == .bool` — see `defaultStringValue`/`defaultNumberValue`/`defaultVersionGateValue` otherwise.
+    /// Only meaningful when `kind == .bool` — see `defaultStringValue`/`defaultNumberValue` otherwise.
     public var defaultValue: Bool {
         switch self {
         case .warranty, .bluetoothPrinting, .insightsExport, .summaryWhatsAppAuto,
@@ -77,9 +100,6 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
         }
     }
 
-    /// Only meaningful when `kind == .versionGate`. No version-gated flag exists yet.
-    public var defaultVersionGateValue: VersionGateValue { VersionGateValue(enabled: false) }
-
     /// App-level only: orgs/stores/roles can't change these. Non-bool flags are always app-only —
     /// `FlagResolver`'s org/store/role layering only understands bool values.
     public var isAppOnly: Bool {
@@ -89,6 +109,37 @@ public enum FeatureFlag: String, Codable, Sendable, CaseIterable, Hashable {
     public var title: String {
         rawValue.replacingOccurrences(of: "_", with: " ").replacingOccurrences(of: ".", with: " · ").capitalized
     }
+
+    /// Every bool flag is grouped into a shared JSON-object Remote Config parameter — dot-namespaced
+    /// flags (e.g. `billing.credit_sales`) by their namespace, a standalone app module (`orders`,
+    /// `suppliers`, `expenses`) into its own group named after itself (value `{"enabled": Bool}`,
+    /// see `remoteConfigFieldName`), anything else ungrouped into the `misc` catch-all — so a
+    /// flag's parameter never changes `valueType` later (bool → object) and never needs a forced
+    /// update for legacy clients. Only non-bool flags (just `min_app_version` today) stay flat.
+    public var remoteConfigGroupKey: String? {
+        guard kind == .bool else { return nil }
+        if let dot = rawValue.firstIndex(of: ".") { return String(rawValue[..<dot]) }
+        switch self {
+        case .orders, .suppliers, .expenses: return rawValue
+        default: return "misc"
+        }
+    }
+
+    /// This flag's field name within its `remoteConfigGroupKey` JSON object: `"enabled"` for a
+    /// standalone module (its own one-member group), the dot-suffix for a namespaced flag, or the
+    /// rawValue itself for anything else (e.g. inside `misc`).
+    public var remoteConfigFieldName: String {
+        switch self {
+        case .orders, .suppliers, .expenses: return "enabled"
+        default: break
+        }
+        guard let dot = rawValue.firstIndex(of: ".") else { return rawValue }
+        return String(rawValue[rawValue.index(after: dot)...])
+    }
+
+    /// The literal Remote Config parameter name to create in the Firebase console / fetch at
+    /// runtime: the group key for grouped flags, the rawValue otherwise.
+    public var remoteConfigParameterKey: String { remoteConfigGroupKey ?? rawValue }
 }
 
 public enum FlagSource: String, Sendable, Equatable {

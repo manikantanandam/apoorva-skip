@@ -64,6 +64,7 @@
 		49F90C2F2A52156300F06D93 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		49F90C312A52156300F06D93 /* Entitlements.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Entitlements.plist; sourceTree = "<group>"; };
 		530DFB713071638E00C3D1A7 /* ApoorvaModels */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaModels; sourceTree = "<group>"; };
+		45F82B1764A170DE716A8AEA /* ApoorvaFeatureFlags */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaFeatureFlags; sourceTree = "<group>"; };
 		530DFB723071638E00C3D1A7 /* ApoorvaOfflineStorage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaOfflineStorage; sourceTree = "<group>"; };
 		530DFB733071638E00C3D1A7 /* ApoorvaRepository */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaRepository; sourceTree = "<group>"; };
 		530DFB743071638E00C3D1A7 /* ApoorvaServices */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ApoorvaServices; sourceTree = "<group>"; };
@@ -221,6 +222,7 @@
 				530DFB723071638E00C3D1A7 /* ApoorvaOfflineStorage */,
 				530DFB733071638E00C3D1A7 /* ApoorvaRepository */,
 				530DFB743071638E00C3D1A7 /* ApoorvaServices */,
+				45F82B1764A170DE716A8AEA /* ApoorvaFeatureFlags */,
 			);
 			name = libraries;
 			path = ../../libraries;

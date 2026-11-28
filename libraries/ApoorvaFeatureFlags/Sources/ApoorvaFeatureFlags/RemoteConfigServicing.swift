@@ -1,6 +1,6 @@
 //
 //  RemoteConfigServicing.swift
-//  ApoorvaServices
+//  ApoorvaFeatureFlags
 //
 
 import Foundation

@@ -198,16 +198,4 @@ struct CoverageGapTests {
         #expect(theme.scheme == .light)
         #expect(theme.isLockedByOrg)
     }
-
-    @Test("Remote config value kinds list all four shapes")
-    func valueKinds() {
-        #expect(RemoteConfigValueKind.allCases.map(\.rawValue) == ["bool", "string", "number", "versionGate"])
-    }
-
-    @Test("Version gate without min version is on for any version, including empty")
-    func gateNoMin() {
-        #expect(VersionGateValue(enabled: true).isOn(currentAppVersion: ""))
-        #expect(VersionGateValue(enabled: true, minVersion: "1.0").isOn(currentAppVersion: "1.0.0"))
-        #expect(!VersionGateValue(enabled: true, minVersion: "1.0.1").isOn(currentAppVersion: "1.0"))
-    }
 }

@@ -6,7 +6,7 @@
 import Testing
 import Foundation
 import ApoorvaModels
-import ApoorvaServices
+import ApoorvaFeatureFlags
 import ApoorvaEnvironment
 @testable import ApoorvaAppCore
 
@@ -40,20 +40,20 @@ struct DebugRemoteConfigOverrideServiceTests {
 
     @Test func jsonOverrideWinsOverBase() {
         let base = NoOpRemoteConfigService()
-        base.setDefaults(["test.gate": .json(try! JSONEncoder().encode(VersionGateValue(enabled: false)))])
+        base.setDefaults(["test.group": .json(try! JSONEncoder().encode(["enabled": false]))])
         let tools = StubDeveloperTools()
-        let overrideJSON = String(data: try! JSONEncoder().encode(VersionGateValue(enabled: true, minVersion: "2.3.0")), encoding: .utf8)!
-        tools.remoteConfigOverrides = ["test.gate": overrideJSON]
+        let overrideJSON = String(data: try! JSONEncoder().encode(["enabled": true]), encoding: .utf8)!
+        tools.remoteConfigOverrides = ["test.group": overrideJSON]
         let service = DebugRemoteConfigOverrideService(base: base, developerTools: tools)
 
-        #expect(service.jsonValue(forKey: "test.gate", as: VersionGateValue.self) == VersionGateValue(enabled: true, minVersion: "2.3.0"))
+        #expect(service.jsonValue(forKey: "test.group", as: [String: Bool].self) == ["enabled": true])
     }
 
     @Test func jsonFallsBackToBaseWhenNoOverride() {
         let base = NoOpRemoteConfigService()
-        base.setDefaults(["test.gate": .json(try! JSONEncoder().encode(VersionGateValue(enabled: false)))])
+        base.setDefaults(["test.group": .json(try! JSONEncoder().encode(["enabled": false]))])
         let service = DebugRemoteConfigOverrideService(base: base, developerTools: StubDeveloperTools())
 
-        #expect(service.jsonValue(forKey: "test.gate", as: VersionGateValue.self) == VersionGateValue(enabled: false))
+        #expect(service.jsonValue(forKey: "test.group", as: [String: Bool].self) == ["enabled": false])
     }
 }

@@ -52,19 +52,6 @@ struct FirebaseAdapterSmokeTests {
         #expect(await FirebasePerformanceMonitoringService().measure("smoke") { 1 } == 1)
     }
 
-    @Test func remoteConfigAdapterReadsDefaults() {
-        _ = configureFirebase
-        let service = FirebaseRemoteConfigService(minimumFetchInterval: 0)
-        service.setDefaults(["b": .bool(true), "s": .string("x"), "n": .number(2)])
-        #expect(service.boolValue(forKey: "b"))
-        #expect(service.stringValue(forKey: "s") == "x")
-        #expect(service.numberValue(forKey: "n") == 2)
-        #expect(!service.isRemoteValue(forKey: "s"))
-        #expect(FirebaseRemoteConfigBackend().remoteKeys().isEmpty)
-        _ = service.resolvedEntries()
-        Task { try? await service.fetchAndActivate() }
-    }
-
     @Test func authAdapterWithNoUser() async throws {
         _ = configureFirebase
         let backend = FirebaseAuthBackend()

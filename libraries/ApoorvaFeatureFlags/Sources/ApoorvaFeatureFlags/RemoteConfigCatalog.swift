@@ -1,29 +1,13 @@
 //
 //  RemoteConfigCatalog.swift
-//  ApoorvaModels
+//  ApoorvaFeatureFlags
 //
 
 import Foundation
+import ApoorvaModels
 
 public enum RemoteConfigValueKind: String, Sendable, CaseIterable {
-    case bool, string, number, versionGate
-}
-
-/// A version-gated feature: on only once the running app is at or above `minVersion`.
-public struct VersionGateValue: Sendable, Hashable, Codable {
-    public let enabled: Bool
-    public let minVersion: String?
-
-    public init(enabled: Bool, minVersion: String? = nil) {
-        self.enabled = enabled
-        self.minVersion = minVersion
-    }
-
-    public func isOn(currentAppVersion: String) -> Bool {
-        guard enabled else { return false }
-        guard let minVersion else { return true }
-        return AppVersion(currentAppVersion) >= AppVersion(minVersion)
-    }
+    case bool, string, number
 }
 
 /// A single locally-declared Remote Config key, derived from `FeatureFlag` — the single source
@@ -37,39 +21,54 @@ public struct RemoteConfigKeyDefinition: Sendable, Hashable, Identifiable {
     public let defaultBool: Bool
     public let defaultString: String
     public let defaultNumber: Double
-    public let defaultVersionGate: VersionGateValue
 
     public var id: String { key }
 
+    /// Mirrors `FeatureFlag.remoteConfigGroupKey`/`remoteConfigFieldName`/`remoteConfigParameterKey`
+    /// (`key` here is always a flag's rawValue, so the derivation is identical) — kept here too so
+    /// code working from the catalogue doesn't need the originating `FeatureFlag` case.
+    public var remoteConfigGroupKey: String? {
+        guard kind == .bool else { return nil }
+        if let dot = key.firstIndex(of: ".") { return String(key[..<dot]) }
+        // A standalone app module is its own group, keyed `{"enabled": Bool}` — see `remoteConfigFieldName`.
+        if Self.moduleKeys.contains(key) { return key }
+        // "misc" is reserved for a future ungrouped flag — nothing lives here today.
+        return "misc"
+    }
+
+    public var remoteConfigFieldName: String {
+        if Self.moduleKeys.contains(key) { return "enabled" }
+        guard let dot = key.firstIndex(of: ".") else { return key }
+        return String(key[key.index(after: dot)...])
+    }
+
+    public var remoteConfigParameterKey: String { remoteConfigGroupKey ?? key }
+
+    private static let moduleKeys: Set<String> = ["orders", "suppliers", "expenses"]
+
     public init(key: String, title: String, kind: RemoteConfigValueKind, defaultBool: Bool, defaultString: String,
-                defaultNumber: Double, defaultVersionGate: VersionGateValue) {
+                defaultNumber: Double) {
         self.key = key
         self.title = title
         self.kind = kind
         self.defaultBool = defaultBool
         self.defaultString = defaultString
         self.defaultNumber = defaultNumber
-        self.defaultVersionGate = defaultVersionGate
     }
 
     public static func bool(_ key: String, title: String, default defaultValue: Bool) -> RemoteConfigKeyDefinition {
         RemoteConfigKeyDefinition(key: key, title: title, kind: .bool, defaultBool: defaultValue, defaultString: "",
-                                   defaultNumber: 0, defaultVersionGate: VersionGateValue(enabled: false))
+                                   defaultNumber: 0)
     }
 
     public static func string(_ key: String, title: String, default defaultValue: String) -> RemoteConfigKeyDefinition {
         RemoteConfigKeyDefinition(key: key, title: title, kind: .string, defaultBool: false, defaultString: defaultValue,
-                                   defaultNumber: 0, defaultVersionGate: VersionGateValue(enabled: false))
+                                   defaultNumber: 0)
     }
 
     public static func number(_ key: String, title: String, default defaultValue: Double) -> RemoteConfigKeyDefinition {
         RemoteConfigKeyDefinition(key: key, title: title, kind: .number, defaultBool: false, defaultString: "",
-                                   defaultNumber: defaultValue, defaultVersionGate: VersionGateValue(enabled: false))
-    }
-
-    public static func versionGate(_ key: String, title: String, default defaultValue: VersionGateValue) -> RemoteConfigKeyDefinition {
-        RemoteConfigKeyDefinition(key: key, title: title, kind: .versionGate, defaultBool: false, defaultString: "",
-                                   defaultNumber: 0, defaultVersionGate: defaultValue)
+                                   defaultNumber: defaultValue)
     }
 
     public init(flag: FeatureFlag) {
@@ -80,8 +79,6 @@ public struct RemoteConfigKeyDefinition: Sendable, Hashable, Identifiable {
             self = .string(flag.rawValue, title: flag.title, default: flag.defaultStringValue)
         case .number:
             self = .number(flag.rawValue, title: flag.title, default: flag.defaultNumberValue)
-        case .versionGate:
-            self = .versionGate(flag.rawValue, title: flag.title, default: flag.defaultVersionGateValue)
         }
     }
 }

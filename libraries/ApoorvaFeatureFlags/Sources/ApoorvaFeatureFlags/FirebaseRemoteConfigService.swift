@@ -1,11 +1,10 @@
 //
 //  FirebaseRemoteConfigService.swift
-//  ApoorvaServices
+//  ApoorvaFeatureFlags
 //
 
 import Foundation
 import SkipFirebaseRemoteConfig
-import ApoorvaModels
 import ManiLogger
 
 private let logger = AppLogger(category: .config)
@@ -69,7 +68,7 @@ public final class FirebaseRemoteConfigService: RemoteConfigServicing {
             let text: String
             switch definition.kind {
             case .bool: text = String(value.bool)
-            case .string, .versionGate: text = value.string
+            case .string: text = value.string
             case .number: text = String(value.number)
             }
             return RemoteConfigLogEntry(key: definition.key, value: text, source: value.source)

@@ -46,13 +46,15 @@ public enum Vertical: String, Codable, Sendable, CaseIterable, Hashable {
         }
     }
 
-    /// Flags seeded into a new org of this type.
+    /// Flags seeded into a new org of this type. Raw `FeatureFlag` keys (not the enum itself —
+    /// `ApoorvaModels` doesn't depend on `ApoorvaFeatureFlags`, see `VerticalTests.defaultFlags`
+    /// for the compile-time check that these stay in sync with the real cases).
     public var defaultFlags: [String: Bool] {
         switch self {
-        case .kirana: [FeatureFlag.orders.rawValue: true]
-        case .fancy: [FeatureFlag.warranty.rawValue: true]
-        case .jewellery: [FeatureFlag.orders.rawValue: true]
-        case .parlour: [FeatureFlag.staffCommission.rawValue: true, FeatureFlag.planPackages.rawValue: true]
+        case .kirana: ["orders": true]
+        case .fancy: ["billing.warranty": true]
+        case .jewellery: ["orders": true]
+        case .parlour: ["billing.staff_commission": true, "plan.packages": true]
         }
     }
 
